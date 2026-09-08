@@ -11,7 +11,12 @@ const securityHeaders = [
 ]
 
 const nextConfig: NextConfig = {
-  output: 'standalone',
+  /**
+   * Standalone output is for the Docker image (spec 34). Vercel does its own
+   * output tracing and looks for `.next/next-server.js.nft.json`, which
+   * standalone mode does not leave there — setting it breaks the deploy.
+   */
+  output: process.env.VERCEL ? undefined : 'standalone',
   turbopack: { root: import.meta.dirname },
   poweredByHeader: false,
   reactStrictMode: true,
