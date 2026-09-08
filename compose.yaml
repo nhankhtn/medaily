@@ -1,0 +1,38 @@
+# Primary deployment target (spec 34): the app on localhost, Postgres unpublished.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: personal_os
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-locally}
+      POSTGRES_DB: personal_os
+    # Deliberately not published: nothing outside the compose network needs it.
+    expose:
+      - '5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backups:/backups
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U personal_os -d personal_os']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    environment:
+      DATABASE_URL: postgres://personal_os:${POSTGRES_PASSWORD:-change-me-locally}@postgres:5432/personal_os
+      NODE_ENV: production
+    # Bound to loopback: there is no authentication yet (spec 29).
+    ports:
+      - '127.0.0.1:3000:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:
