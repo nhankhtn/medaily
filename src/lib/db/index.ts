@@ -8,7 +8,9 @@ declare global {
 }
 
 function createClient() {
-  return postgres(env.DATABASE_URL, {
+  // An unset URL cannot throw here (see lib/env): the connection then fails at
+  // query time, and `/api/health` reports `not_configured` before trying.
+  return postgres(env.DATABASE_URL || 'postgres://unset@127.0.0.1:1/unset', {
     max: isProduction ? 10 : 5,
     idle_timeout: 20,
     // Dev-mode slow query log (spec 30)

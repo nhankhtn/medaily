@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
 import { Toaster } from 'sonner'
-import { getSettings } from '@/server/services/settings'
+import { getShellSettings } from '@/server/services/settings'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -28,7 +28,11 @@ export const viewport: Viewport = {
 const themeScript = `(function(){try{var t=document.documentElement.dataset.themePref;var d=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d)}catch(e){}})()`
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const [locale, messages, settings] = await Promise.all([getLocale(), getMessages(), getSettings()])
+  const [locale, messages, settings] = await Promise.all([
+    getLocale(),
+    getMessages(),
+    getShellSettings(),
+  ])
 
   return (
     <html

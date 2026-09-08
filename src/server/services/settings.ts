@@ -73,3 +73,41 @@ export function dayContextOf(settings: ResolvedSettings): DayContext {
 }
 
 export const getDayContext = cache(async (): Promise<DayContext> => dayContextOf(await getSettings()))
+
+/** Defaults used when the database cannot be reached (see `getShellSettings`). */
+const FALLBACK_SETTINGS: ResolvedSettings = {
+  userId: '',
+  locale: 'en',
+  timezone: 'Asia/Ho_Chi_Minh',
+  dayRolloverHour: 4,
+  weekStart: 'monday',
+  theme: 'system',
+  density: 'comfortable',
+  accent: 'indigo',
+  unitSystem: 'metric',
+  defaultCurrency: 'VND',
+  scoreWeights: DEFAULT_SCORE_WEIGHTS,
+  scoreTargets: DEFAULT_SCORE_TARGETS,
+  streakThresholds: DEFAULT_STREAK_THRESHOLDS,
+  streakGraceEnabled: true,
+  insightThresholds: DEFAULT_INSIGHT_THRESHOLDS,
+  reminderTime: '21:00',
+  dashboardCards: null,
+}
+
+/**
+ * Settings for the shell only — the root layout and the sign-in page.
+ *
+ * Those two must render even when the database is unreachable: a layout that
+ * throws takes the whole document with it, and the resulting Server Components
+ * error says nothing a reader can act on. Data pages keep using `getSettings`,
+ * which still fails loudly, and `/api/health` reports the real cause.
+ */
+export const getShellSettings = cache(async (): Promise<ResolvedSettings> => {
+  try {
+    return await getSettings()
+  } catch (error) {
+    console.error('[settings] falling back to defaults:', error)
+    return FALLBACK_SETTINGS
+  }
+})

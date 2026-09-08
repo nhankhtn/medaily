@@ -91,6 +91,31 @@ the same database whenever the schema changes:
 DATABASE_URL="<the same connection string>" pnpm db:migrate
 ```
 
+**Use `pnpm db:migrate`, not `drizzle-kit push`.** `push` creates the tables and
+nothing else — no views, no triggers, no `unaccent`, no owner row — and the app
+then fails on every page that reads settings. If a database is already in that
+state, fix it without losing data:
+
+```bash
+pnpm db:baseline   # records the existing migrations so migrate stays incremental
+pnpm db:migrate    # applies views, triggers and the owner row
+```
+
+### When something is wrong
+
+`GET /api/health` is the first place to look. It names missing environment
+variables and the actual driver error, and never echoes a value:
+
+```json
+{ "status": "error", "database": "unreachable",
+  "reason": "connect ECONNREFUSED …",
+  "missingEnv": ["AUTH_SECRET"], "authConfigured": false }
+```
+
+The sign-in page and the app shell fall back to defaults when the database is
+unreachable, so you get a usable page and a real diagnosis instead of a
+minified Server Components error.
+
 > **Do not set `output: 'standalone'` unconditionally.** Vercel does its own
 > output tracing and then reads `.next/next-server.js.nft.json`, which
 > standalone mode does not leave in `.next` — the build compiles and then fails
@@ -111,6 +136,7 @@ DATABASE_URL="<the same connection string>" pnpm db:migrate
 | `pnpm smoke` | Signs a session and requests every route in both locales |
 | `pnpm db:generate` | Generate a migration from schema changes |
 | `pnpm db:migrate` | Apply migrations, then re-apply views/triggers (idempotent) |
+| `pnpm db:baseline` | Mark existing migrations as applied — for a database created with `drizzle-kit push` |
 | `pnpm db:seed` | Seed 90 days of demo data (`SEED_DAYS=365` to change) |
 | `pnpm db:reset` | Drop schema → migrate → seed (refuses in production) |
 | `scripts/backup.sh` | `pg_dump` to `./backups`, with retention |
