@@ -71,6 +71,32 @@ open http://127.0.0.1:3000
 The app binds to `127.0.0.1` and the Postgres port is never published. See the
 authentication warning above before changing either.
 
+## Deploying to Vercel
+
+Set these in the project's environment variables — the app refuses every request
+except `/api/health` until all four are present:
+
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | the managed Postgres connection string (use the **pooled** one) |
+| `AUTH_USERNAME` | your login |
+| `AUTH_PASSWORD` | a long password |
+| `AUTH_SECRET` | `openssl rand -hex 32` |
+| `ANTHROPIC_API_KEY` | optional — only to enable the AI review |
+
+Migrations do not run on build, by design. Run them from your machine against
+the same database whenever the schema changes:
+
+```bash
+DATABASE_URL="<the same connection string>" pnpm db:migrate
+```
+
+> **Do not set `output: 'standalone'` unconditionally.** Vercel does its own
+> output tracing and then reads `.next/next-server.js.nft.json`, which
+> standalone mode does not leave in `.next` — the build compiles and then fails
+> with `ENOENT`. [next.config.ts](next.config.ts) keeps standalone for Docker
+> and switches it off when `VERCEL` is set.
+
 ## Scripts
 
 | Command | What it does |
