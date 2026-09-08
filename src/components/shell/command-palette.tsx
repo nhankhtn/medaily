@@ -194,7 +194,7 @@ export function CommandPalette({ today }: { today: ISODate }) {
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-start justify-center bg-black/40 p-4 pt-[10vh]"
+      className="fixed inset-0 z-[60] flex items-start justify-center p-4 pt-[10vh]"
       onClick={() => setOpen(false)}
       role="presentation"
     >
