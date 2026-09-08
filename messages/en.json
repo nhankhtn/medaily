@@ -61,7 +61,8 @@
     "themeDark": "Dark",
     "themeSystem": "System",
     "language": "Language",
-    "openMenu": "Open menu"
+    "openMenu": "Open menu",
+    "pickDate": "Pick a date"
   },
   "daily": {
     "title": "Daily Log",

@@ -16,6 +16,7 @@ export function DateNav({ date, today }: { date: ISODate; today: ISODate }) {
   const t = useTranslations('common')
   const format = useFormatter()
   const touchStart = useRef<{ x: number; y: number } | null>(null)
+  const dateInputRef = useRef<HTMLInputElement>(null)
 
   const go = (target: ISODate) => {
     if (target > today) return
@@ -74,22 +75,40 @@ export function DateNav({ date, today }: { date: ISODate; today: ISODate }) {
         <ChevronLeft className="size-4" />
       </Button>
 
-      <label className="relative flex h-9 cursor-pointer items-center gap-2 rounded-[var(--radius)] border border-border-strong px-3 text-sm hover:bg-surface-2">
-        <CalendarDays className="size-4 text-text-subtle" />
-        <span className="tabular-nums">
-          {isToday
-            ? t('today')
-            : format.dateTime(fromISODate(date), { day: 'numeric', month: 'short' })}
-        </span>
+      <div className="relative">
+        <button
+          type="button"
+          aria-label={t('pickDate')}
+          onClick={() => {
+            const input = dateInputRef.current
+            if (!input) return
+            try {
+              input.showPicker()
+            } catch {
+              input.focus()
+            }
+          }}
+          className="border-border-strong hover:bg-surface-2 flex h-9 cursor-pointer items-center gap-2 rounded-[var(--radius)] border px-3 text-sm"
+        >
+          <CalendarDays className="text-text-subtle size-4" />
+          <span className="tabular-nums">
+            {isToday
+              ? t('today')
+              : format.dateTime(fromISODate(date), { day: 'numeric', month: 'short' })}
+          </span>
+        </button>
+
         <input
+          ref={dateInputRef}
           type="date"
           value={date}
           max={today}
+          tabIndex={-1}
+          aria-hidden
           onChange={(event) => event.target.value && go(event.target.value)}
-          className="absolute inset-0 cursor-pointer opacity-0"
-          aria-label={t('today')}
+          className="pointer-events-none absolute inset-0 opacity-0"
         />
-      </label>
+      </div>
 
       <Button
         variant="outline"
