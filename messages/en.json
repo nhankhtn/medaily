@@ -792,5 +792,74 @@
     "failed": "Could not generate the review",
     "empty": "No narrative for this period yet.",
     "label": "AI-generated"
+  },
+  "onboarding": {
+    "welcome": "Welcome",
+    "stepOf": "{current} of {total}",
+    "skip": "Skip",
+    "back": "Back",
+    "next": "Next",
+    "finish": "Start logging",
+    "replay": "Show the introduction again",
+    "replayDone": "The introduction will show next time you open Home",
+    "tour": {
+      "log": {
+        "title": "Start with one day",
+        "body": "Everything else is built from the daily log. Energy, sleep and focus time are the four that matter; the rest is optional. It takes under a minute, and you can edit any past day.",
+        "cta": "Open the daily log"
+      },
+      "dashboard": {
+        "title": "Home reads it back",
+        "body": "Today's numbers with yesterday's beside them, a score you can open to see exactly how it was calculated, streaks that survive one missed day, and trends once you have a few days in.",
+        "cta": "See Home"
+      },
+      "habitsGoals": {
+        "title": "Habits and goals track themselves",
+        "body": "A habit can be tied to a metric — \"sleep 7h+\" ticks itself from your log, so you never enter the same fact twice. A goal like \"300 study minutes a week\" fills its own progress bar.",
+        "cta": "Set up a habit"
+      },
+      "insight": {
+        "title": "Analytics and reviews",
+        "body": "Trends, and comparisons like energy on 7-hour nights versus shorter ones. Nothing appears until there is enough data to mean something, and it is always stated as an association, never a cause.",
+        "cta": "Open Analytics"
+      },
+      "life": {
+        "title": "The rest is there when you want it",
+        "body": "Projects, learning sessions with a timer, health, finance, journal, notes, calendar, people and career. Ignore all of it until you need it — none of it is required for the daily loop.",
+        "cta": "Have a look"
+      },
+      "settings": {
+        "title": "Make it yours",
+        "body": "Switch between English and Vietnamese anywhere, set your timezone and when a day rolls over, change what the score weighs, and export everything as JSON whenever you like.",
+        "cta": "Open Settings"
+      }
+    },
+    "checklist": {
+      "title": "Getting started",
+      "progress": "{done} of {total} done",
+      "dismiss": "Hide this",
+      "startHere": "Start here",
+      "stepProgress": "{current}/{target}",
+      "log": {
+        "title": "Log today",
+        "hint": "Under a minute — four fields is enough"
+      },
+      "habit": {
+        "title": "Create one habit",
+        "hint": "Try tying it to a metric so it ticks itself"
+      },
+      "goal": {
+        "title": "Set one goal",
+        "hint": "A weekly number works well: \"300 study minutes\""
+      },
+      "trends": {
+        "title": "Log three days",
+        "hint": "Trends and comparisons need at least three"
+      },
+      "review": {
+        "title": "Write a weekly review",
+        "hint": "The numbers are already filled in for you"
+      }
+    }
   }
 }

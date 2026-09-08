@@ -11,16 +11,20 @@ import { ScoreCard } from '@/features/dashboard/score-card'
 import { StatTile } from '@/features/dashboard/stat-tile'
 import { StreakStrip } from '@/features/dashboard/streak-strip'
 import { Trends } from '@/features/dashboard/trends'
+import { GettingStarted } from '@/features/onboarding/getting-started'
+import { WelcomeTour } from '@/features/onboarding/welcome-tour'
 import { fromISODate } from '@/lib/dates'
 import { getDashboardData } from '@/server/services/dashboard'
+import { getOnboardingView } from '@/server/services/onboarding'
 
 export default async function DashboardPage() {
-  const [t, tc, tm, format, data] = await Promise.all([
+  const [t, tc, tm, format, data, onboarding] = await Promise.all([
     getTranslations('dashboard'),
     getTranslations('common'),
     getTranslations('metrics'),
     getFormatter(),
     getDashboardData(),
+    getOnboardingView(),
   ])
 
   const { todayCard, weekTotals, previousWeekTotals } = data
@@ -42,6 +46,10 @@ export default async function DashboardPage() {
           })}
         </p>
       </div>
+
+      <WelcomeTour open={onboarding.openTour} />
+
+      {onboarding.showChecklist ? <GettingStarted checklist={onboarding.checklist} /> : null}
 
       {/* 1. Today — an unlogged day gets the two-tap quick log instead of tiles */}
       {todayCard.logged ? (

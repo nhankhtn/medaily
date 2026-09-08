@@ -1,16 +1,13 @@
 import { relations, sql } from 'drizzle-orm'
-import {
-  boolean,
-  jsonb,
-  pgTable,
-  smallint,
-  text,
-  time,
-  timestamp,
-  uuid,
-} from 'drizzle-orm/pg-core'
+import { boolean, jsonb, pgTable, smallint, text, time, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { localeEnum, themeEnum, unitSystemEnum, weekStartEnum } from './enums'
-import type { InsightThresholds, ScoreTargets, ScoreWeights, StreakThresholds } from '../../types'
+import type {
+  InsightThresholds,
+  OnboardingState,
+  ScoreTargets,
+  ScoreWeights,
+  StreakThresholds,
+} from '../../types'
 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -41,6 +38,7 @@ export const userSettings = pgTable('user_settings', {
   reminderTime: time('reminder_time').notNull().default('21:00'),
   notificationPrefs: jsonb('notification_prefs').$type<Record<string, boolean>>(),
   dashboardCards: jsonb('dashboard_cards').$type<string[]>(),
+  onboarding: jsonb('onboarding').$type<OnboardingState>(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })

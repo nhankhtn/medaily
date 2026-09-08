@@ -46,6 +46,19 @@ export type InsightThresholds = {
   goalOffPaceProgress: number
 }
 
+export type OnboardingState = {
+  /** Set when the welcome tour was finished or skipped. */
+  tourSeenAt?: string
+  /** Set when the getting-started checklist was dismissed by hand. */
+  checklistDismissedAt?: string
+  /**
+   * Set when the user asked for the tour again from Settings. Kept separate
+   * from `tourSeenAt` because auto-opening is for first runs only — someone
+   * with months of data still has to be able to replay it on demand.
+   */
+  tourRequestedAt?: string
+}
+
 /** Metrics that habits, goals and analytics can address by key. */
 export const METRIC_KEYS = [
   'energy',

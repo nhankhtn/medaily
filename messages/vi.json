@@ -792,5 +792,74 @@
     "failed": "Không tạo được bản tường thuật",
     "empty": "Kỳ này chưa có bản tường thuật.",
     "label": "Do AI tạo"
+  },
+  "onboarding": {
+    "welcome": "Chào bạn",
+    "stepOf": "{current}/{total}",
+    "skip": "Bỏ qua",
+    "back": "Quay lại",
+    "next": "Tiếp",
+    "finish": "Bắt đầu ghi",
+    "replay": "Xem lại phần giới thiệu",
+    "replayDone": "Phần giới thiệu sẽ hiện lần tới khi bạn mở Trang chính",
+    "tour": {
+      "log": {
+        "title": "Bắt đầu bằng một ngày",
+        "body": "Mọi thứ còn lại đều dựng từ bản ghi ngày. Bốn thứ quan trọng là năng lượng, giấc ngủ và thời gian tập trung; phần còn lại không bắt buộc. Mất chưa tới một phút, và ngày cũ nào cũng sửa được.",
+        "cta": "Mở bản ghi ngày"
+      },
+      "dashboard": {
+        "title": "Trang chính đọc lại cho bạn",
+        "body": "Số liệu hôm nay đặt cạnh hôm qua, điểm số bấm vào là thấy cách tính từng thành phần, chuỗi ngày không đứt chỉ vì bỏ lỡ một hôm, và xu hướng khi bạn đã ghi được vài ngày.",
+        "cta": "Xem Trang chính"
+      },
+      "habitsGoals": {
+        "title": "Thói quen và mục tiêu tự chạy",
+        "body": "Thói quen có thể gắn với một chỉ số — \"ngủ từ 7 giờ\" sẽ tự đánh dấu từ bản ghi ngày, nên bạn không phải nhập cùng một việc hai lần. Mục tiêu kiểu \"300 phút học mỗi tuần\" tự chạy thanh tiến độ.",
+        "cta": "Tạo một thói quen"
+      },
+      "insight": {
+        "title": "Thống kê và tổng kết",
+        "body": "Xu hướng, và những so sánh kiểu năng lượng vào đêm ngủ 7 giờ so với đêm ngủ ít hơn. Không có gì hiện ra khi dữ liệu chưa đủ để có ý nghĩa, và luôn được nói là liên hệ, không phải nguyên nhân.",
+        "cta": "Mở Thống kê"
+      },
+      "life": {
+        "title": "Phần còn lại chờ khi bạn cần",
+        "body": "Dự án, phiên học có bấm giờ, sức khỏe, tài chính, nhật ký, ghi chú, lịch, quan hệ và sự nghiệp. Cứ bỏ qua hết cho tới lúc cần — vòng ghi ngày không đòi thứ nào trong đó.",
+        "cta": "Xem thử"
+      },
+      "settings": {
+        "title": "Chỉnh cho vừa với bạn",
+        "body": "Đổi Việt–Anh ở bất cứ đâu, đặt múi giờ và giờ chuyển ngày, sửa trọng số của điểm, và xuất toàn bộ dữ liệu ra JSON bất cứ lúc nào.",
+        "cta": "Mở Cài đặt"
+      }
+    },
+    "checklist": {
+      "title": "Bắt đầu từ đây",
+      "progress": "Xong {done}/{total}",
+      "dismiss": "Ẩn phần này",
+      "startHere": "Làm bước này trước",
+      "stepProgress": "{current}/{target}",
+      "log": {
+        "title": "Ghi hôm nay",
+        "hint": "Chưa tới một phút — bốn ô là đủ"
+      },
+      "habit": {
+        "title": "Tạo một thói quen",
+        "hint": "Thử gắn với một chỉ số để nó tự đánh dấu"
+      },
+      "goal": {
+        "title": "Đặt một mục tiêu",
+        "hint": "Một con số theo tuần là hợp: \"300 phút học\""
+      },
+      "trends": {
+        "title": "Ghi đủ ba ngày",
+        "hint": "Xu hướng và so sánh cần ít nhất ba ngày"
+      },
+      "review": {
+        "title": "Viết tổng kết tuần",
+        "hint": "Số liệu đã được điền sẵn cho bạn"
+      }
+    }
   }
 }

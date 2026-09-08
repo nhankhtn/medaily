@@ -2,6 +2,7 @@ import { getTranslations } from 'next-intl/server'
 import { LocaleSwitcher } from '@/components/shell/locale-switcher'
 import { ThemeToggle } from '@/components/shell/theme-toggle'
 import { DataPanel } from '@/features/settings/data-panel'
+import { ReplayOnboardingButton } from '@/features/onboarding/replay-button'
 import { SettingsForm } from '@/features/settings/settings-form'
 import { getSettings } from '@/server/services/settings'
 
@@ -18,6 +19,7 @@ export default async function SettingsPage() {
         <div className="flex flex-wrap items-center gap-3">
           <LocaleSwitcher />
           <ThemeToggle current={settings.theme} />
+          <ReplayOnboardingButton />
         </div>
       </section>
 
