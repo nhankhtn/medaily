@@ -1,6 +1,6 @@
 # Personal OS – Product Requirements & Technical Specification
 
-**Version:** 2.0 (supersedes v1 — see [requirement.v1.md](requirement.v1.md))
+**Version:** 2.0 — supersedes v1, which is kept in git history (`git show e32ed38:requirement.md`)
 **Stack:** Next.js (App Router) + TypeScript + PostgreSQL + Drizzle ORM
 **Architecture:** Modular Monolith
 **UI:** Responsive Web App, bilingual (English / Vietnamese)
