@@ -29,6 +29,20 @@
       "when": 1788881118347,
       "tag": "0003_onboarding",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788968594673,
+      "tag": "0004_partner_relationship",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1788970123004,
+      "tag": "0005_drop_is_demo",
+      "breakpoints": true
     }
   ]
 }

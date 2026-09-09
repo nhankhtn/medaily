@@ -1,6 +1,5 @@
 import { relations, sql } from 'drizzle-orm'
 import {
-  boolean,
   check,
   date,
   index,
@@ -32,7 +31,6 @@ export const projects = pgTable(
     goalId: uuid('goal_id').references(() => goals.id, { onDelete: 'set null' }),
     color: text('color'),
     notes: text('notes'),
-    isDemo: boolean('is_demo').notNull().default(false),
     archivedAt: timestamp('archived_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

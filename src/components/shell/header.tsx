@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { getFormatter, getTranslations } from 'next-intl/server'
 import Link from 'next/link'
 import { ClipboardList } from 'lucide-react'
@@ -17,11 +18,7 @@ export async function Header({
   today: ISODate
   theme: 'light' | 'dark' | 'system'
 }) {
-  const [t, format, timer] = await Promise.all([
-    getTranslations('common'),
-    getFormatter(),
-    getRunningTimer(),
-  ])
+  const [t, format] = await Promise.all([getTranslations('common'), getFormatter()])
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border-base bg-bg/90 px-4 backdrop-blur">
@@ -36,9 +33,11 @@ export async function Header({
         </span>
       </div>
 
-      {timer ? (
-        <TimerWidget key={timer.startedAt} timer={timer} topics={[]} projects={[]} compact />
-      ) : null}
+      {/* Streamed separately: a badge that is usually absent must not hold up
+          the whole shell for a database round trip. */}
+      <Suspense fallback={null}>
+        <HeaderTimer />
+      </Suspense>
       <CommandPalette today={today} />
       <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">
         <Link href="/daily">
@@ -51,4 +50,11 @@ export async function Header({
       <SignOutButton />
     </header>
   )
+}
+
+async function HeaderTimer() {
+  const timer = await getRunningTimer()
+  if (!timer) return null
+
+  return <TimerWidget key={timer.startedAt} timer={timer} topics={[]} projects={[]} compact />
 }

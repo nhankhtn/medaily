@@ -1,6 +1,5 @@
 import { relations, sql } from 'drizzle-orm'
 import {
-  boolean,
   check,
   date,
   index,
@@ -49,7 +48,6 @@ export const goals = pgTable(
 
     recurrence: recurrenceEnum('recurrence'),
     notes: text('notes'),
-    isDemo: boolean('is_demo').notNull().default(false),
     completedAt: timestamp('completed_at', { withTimezone: true }),
     archivedAt: timestamp('archived_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

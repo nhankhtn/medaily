@@ -137,7 +137,7 @@ minified Server Components error.
 | `pnpm db:generate` | Generate a migration from schema changes |
 | `pnpm db:migrate` | Apply migrations, then re-apply views/triggers (idempotent) |
 | `pnpm db:baseline` | Mark existing migrations as applied — for a database created with `drizzle-kit push` |
-| `pnpm db:seed` | Seed 90 days of demo data (`SEED_DAYS=365` to change) |
+| `pnpm db:seed` | Seed 90 days of sample data (`SEED_DAYS=365` to change). Refuses on a database that already has data — use `pnpm db:reset`, or `pnpm db:seed -- --force` |
 | `pnpm db:reset` | Drop schema → migrate → seed (refuses in production) |
 | `scripts/backup.sh` | `pg_dump` to `./backups`, with retention |
 | `scripts/restore.sh <dump>` | Restore into `TARGET_DATABASE_URL` |

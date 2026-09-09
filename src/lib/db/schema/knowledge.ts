@@ -1,6 +1,5 @@
 import { sql } from 'drizzle-orm'
 import {
-  boolean,
   customType,
   date,
   index,
@@ -40,7 +39,6 @@ export const notes = pgTable(
     topicId: uuid('topic_id').references(() => topics.id, { onDelete: 'set null' }),
     resourceId: uuid('resource_id').references(() => resources.id, { onDelete: 'set null' }),
     searchTsv: tsvector('search_tsv'),
-    isDemo: boolean('is_demo').notNull().default(false),
     archivedAt: timestamp('archived_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -111,7 +109,6 @@ export const journalEntries = pgTable(
     mood: smallint('mood'),
     tags: text('tags').array(),
     searchTsv: tsvector('search_tsv'),
-    isDemo: boolean('is_demo').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

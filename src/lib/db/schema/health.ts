@@ -1,6 +1,5 @@
 import { sql } from 'drizzle-orm'
 import {
-  boolean,
   check,
   date,
   index,
@@ -29,7 +28,6 @@ export const workouts = pgTable(
     /** Rate of perceived exertion, 1–10. */
     rpe: smallint('rpe'),
     note: text('note'),
-    isDemo: boolean('is_demo').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -68,7 +66,6 @@ export const bodyMeasurements = pgTable(
     restingHr: smallint('resting_hr'),
     bloodPressure: text('blood_pressure'),
     note: text('note'),
-    isDemo: boolean('is_demo').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -95,7 +92,6 @@ export const nutritionLogs = pgTable(
     fatG: smallint('fat_g'),
     waterMl: smallint('water_ml'),
     note: text('note'),
-    isDemo: boolean('is_demo').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

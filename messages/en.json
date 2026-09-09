@@ -232,7 +232,57 @@
     "completionRate": "{rate}% in 30 days",
     "scheduledPerWeek": "{count}× per week",
     "derivedFromLog": "From daily log",
-    "notScheduled": "Not scheduled today"
+    "notScheduled": "Not scheduled today",
+    "edit": "Edit habit",
+    "name": "Name",
+    "category": "Category",
+    "frequency": "How often",
+    "frequencies": {
+      "daily": "Every day",
+      "weekly": "A number of times a week",
+      "specific_days": "On chosen weekdays",
+      "interval": "Every N days"
+    },
+    "targetCount": "Times",
+    "targetCountDaily": "Times per day",
+    "targetCountWeekly": "Times per week",
+    "weekdays": "Weekdays",
+    "intervalDays": "Repeat every (days)",
+    "startDate": "Tracking from",
+    "notes": "Notes",
+    "autoTick": "Tick it automatically",
+    "autoTickHint": "Tie this habit to a number you already log, and it marks itself — no second entry.",
+    "noLink": "Tick it myself",
+    "metric": "When",
+    "operator": "is",
+    "operators": {
+      "gte": "at least",
+      "lte": "at most",
+      "eq": "exactly"
+    },
+    "threshold": "Value",
+    "linkPreview": "Ticks when {metric} is {operator} {threshold}",
+    "saved": "Habit saved",
+    "backfilled": "Checked {count} days you had already logged",
+    "archive": "Archive",
+    "archived": "Habit archived",
+    "archiveHint": "History is kept; it just stops appearing.",
+    "categories": {
+      "career": "Career",
+      "health": "Health",
+      "finance": "Finance",
+      "knowledge": "Knowledge",
+      "life": "Life"
+    },
+    "weekdayShort": {
+      "1": "Mon",
+      "2": "Tue",
+      "3": "Wed",
+      "4": "Thu",
+      "5": "Fri",
+      "6": "Sat",
+      "7": "Sun"
+    }
   },
   "goals": {
     "title": "Goals",
@@ -255,6 +305,59 @@
       "completed": "Completed",
       "paused": "Paused",
       "cancelled": "Cancelled"
+    },
+    "edit": "Edit goal",
+    "name": "Name",
+    "description": "Description",
+    "category": "Category",
+    "priority": "Priority",
+    "startDate": "Start",
+    "targetDate": "Deadline",
+    "noDeadlineHint": "Leave empty for no deadline",
+    "progressMode": "How progress is measured",
+    "modes": {
+      "manual": "I set the percentage myself",
+      "metric": "From a number I log",
+      "milestones": "From milestones"
+    },
+    "manualValue": "Progress now (%)",
+    "metric": "Metric",
+    "aggregation": "Combine how",
+    "aggregations": {
+      "sum": "Total",
+      "avg": "Average",
+      "count_days": "Days with any",
+      "latest": "Latest value"
+    },
+    "period": "Over",
+    "periods": {
+      "total": "The whole goal",
+      "weekly": "Each week",
+      "monthly": "Each month"
+    },
+    "target": "Target",
+    "direction": "Direction",
+    "directions": {
+      "at_least": "At least the target",
+      "at_most": "At most the target"
+    },
+    "metricPreview": "Progress = {aggregation} of {metric} {period}, target {target}",
+    "milestones": "Milestones",
+    "milestoneHint": "One per line",
+    "saved": "Goal saved",
+    "archive": "Archive",
+    "archived": "Goal archived",
+    "categories": {
+      "career": "Career",
+      "health": "Health",
+      "finance": "Finance",
+      "knowledge": "Knowledge",
+      "life": "Life"
+    },
+    "priorities": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
     }
   },
   "settings": {
@@ -598,7 +701,8 @@
     "noPrice": "No price entered",
     "saved": "Saved",
     "transferHint": "A transfer moves money between two of your own accounts, so it never counts as income or expense.",
-    "noPriceFeed": "Prices are entered by hand — there is no market data feed."
+    "noPriceFeed": "Prices are entered by hand — there is no market data feed.",
+    "needCategoryFirst": "Budgets need a category first — create an expense category, then set its monthly limit."
   },
   "journal": {
     "title": "Journal",
@@ -702,7 +806,8 @@
       "friend": "Friend",
       "colleague": "Colleague",
       "mentor": "Mentor",
-      "other": "Other"
+      "other": "Other",
+      "partner": "Partner"
     },
     "company": "Company",
     "role": "Role",
@@ -738,7 +843,12 @@
     "noReminders": "Nothing due",
     "reminderTitle": "What",
     "dueOn": "Due",
-    "markDone": "Done"
+    "markDone": "Done",
+    "notesHint": "Markdown works here — **bold**, lists, [links](https://example.com)",
+    "notesAbout": "Notes about {name}",
+    "noNotes": "No notes yet",
+    "showNotes": "Show notes",
+    "hideNotes": "Hide notes"
   },
   "career": {
     "title": "Career",
@@ -862,5 +972,18 @@
         "hint": "The numbers are already filled in for you"
       }
     }
+  },
+  "metricNames": {
+    "energy": "Energy",
+    "mood": "Mood",
+    "sleep_hours": "Sleep (hours)",
+    "technical_study_minutes": "Study (minutes)",
+    "deep_work_minutes": "Deep work (minutes)",
+    "focus_minutes": "Focus, study + deep work (minutes)",
+    "exercise_minutes": "Exercise (minutes)",
+    "reading_minutes": "Reading (minutes)",
+    "reading_pages": "Reading (pages)",
+    "entertainment_minutes": "Entertainment (minutes)",
+    "english_minutes": "English (minutes)"
   }
 }

@@ -1,6 +1,5 @@
 import { relations, sql } from 'drizzle-orm'
 import {
-  boolean,
   check,
   date,
   index,
@@ -24,7 +23,6 @@ export const topics = pgTable(
     name: text('name').notNull(),
     category: text('category'),
     parentId: uuid('parent_id'),
-    isDemo: boolean('is_demo').notNull().default(false),
     archivedAt: timestamp('archived_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -57,7 +55,6 @@ export const focusSessions = pgTable(
     taskId: uuid('task_id').references(() => projectTasks.id, { onDelete: 'set null' }),
     note: text('note'),
     source: focusSourceEnum('source').notNull().default('manual'),
-    isDemo: boolean('is_demo').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

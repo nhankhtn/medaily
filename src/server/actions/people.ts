@@ -29,7 +29,9 @@ export async function savePerson(input: unknown) {
     .object({
       id: z.string().uuid().optional(),
       name: z.string().min(1).max(200),
-      relationship: z.enum(['family', 'friend', 'colleague', 'mentor', 'other']).default('friend'),
+      relationship: z
+        .enum(['partner', 'family', 'friend', 'colleague', 'mentor', 'other'])
+        .default('friend'),
       company: optionalText,
       role: optionalText,
       birthday: isoDateSchema.nullable().optional(),

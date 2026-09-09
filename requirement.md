@@ -215,7 +215,7 @@ This screen gets more design attention than any other.
 
 ### 6.5 Empty and first-run states
 
-- First run offers **demo data** (90 days, §32) that can be wiped in one click from Settings — the dashboard is never demonstrated empty.
+- Sample data is available from the command line (`pnpm db:seed`, §32) for trying the app out or for development; the app itself does not write sample rows into a real database.
 - Every module empty state explains the value in one sentence and gives one primary action.
 
 ---
@@ -909,7 +909,7 @@ Mutations are **Server Actions** (typed, Zod-validated, revalidating). REST rout
 
 **Reviews:** `getReviewDraft(period, key)` · `upsertReview` · `finalizeReview` · `recomputeReviewSnapshot`.
 
-**System:** `updateSettings` · `setLocale` · `exportData(format, scope)` · `importData(file, mapping)` · `wipeDemoData` · `GET /api/health` · `GET /api/calendar.ics` · `POST /api/cron/daily` (reminders, recurring materialization, insight generation).
+**System:** `updateSettings` · `setLocale` · `exportData(format, scope)` · `importData(file, mapping)` · `GET /api/health` · `GET /api/calendar.ics` · `POST /api/cron/daily` (reminders, recurring materialization, insight generation).
 
 ---
 
@@ -978,7 +978,7 @@ Timezone changes · the rollover hour boundary · DST-shifting timezones · mont
 - Correlations are **planted with noise** so the analytics engine has something real but not clean to find (sleep→energy positive, entertainment→study negative).
 - Seeds cover every module: habits with all four frequency types, goals in all three progress modes, projects with tasks and sessions, transactions across categories with budgets, workouts and measurements, notes with links and tags, people with interactions, one finalized weekly review and one draft.
 - Idempotent and reproducible: a fixed RNG seed, and `db:reset` = drop → migrate → seed.
-- Demo data is tagged (`source='import'` / a `demo` flag) so `wipeDemoData()` removes it cleanly without touching real entries.
+- Seeding **refuses to run against a database that already holds data** (override with `pnpm db:seed -- --force`, start over with `pnpm db:reset`). Nothing distinguishes a seeded row from a real one afterwards, and nothing should: an `is_demo` flag on every table would be a column carried on all of them to serve a wipe button, so the guard replaces it.
 
 ---
 

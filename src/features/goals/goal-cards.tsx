@@ -1,10 +1,12 @@
 'use client'
 
-import { Check, ChevronDown } from 'lucide-react'
+import { Check, ChevronDown, Pencil } from 'lucide-react'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { GoalDialog } from '@/features/goals/goal-dialog'
 import { Progress } from '@/components/ui/progress'
 import { fromISODate } from '@/lib/dates'
 import { setManualProgress, toggleMilestone } from '@/server/actions/goals'
@@ -19,7 +21,7 @@ const PACE_TONE = {
   not_started: 'neutral',
 } as const
 
-export function GoalCards({ goals }: { goals: GoalView[] }) {
+export function GoalCards({ goals, today }: { goals: GoalView[]; today: string }) {
   const t = useTranslations('goals')
   const format = useFormatter()
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -27,9 +29,12 @@ export function GoalCards({ goals }: { goals: GoalView[] }) {
 
   if (goals.length === 0) {
     return (
-      <div className="rounded-[var(--radius)] border border-border-base bg-surface p-6 text-center">
+      <div className="rounded-[var(--radius)] border border-dashed border-border-strong bg-surface p-6 text-center">
         <p className="font-medium">{t('noneYet')}</p>
-        <p className="mt-1 text-sm text-text-subtle">{t('noneYetBody')}</p>
+        <p className="mx-auto mt-1 max-w-prose text-sm text-text-subtle">{t('noneYetBody')}</p>
+        <div className="mt-4 flex justify-center">
+          <GoalDialog today={today} />
+        </div>
       </div>
     )
   }
@@ -52,8 +57,19 @@ export function GoalCards({ goals }: { goals: GoalView[] }) {
                   <p className="mt-0.5 line-clamp-2 text-sm text-text-subtle">{goal.description}</p>
                 ) : null}
               </div>
-              <span className="shrink-0 text-lg font-semibold tabular-nums">
-                {percent === null ? '—' : `${Math.round(percent)}%`}
+              <span className="flex shrink-0 items-center gap-1">
+                <span className="text-lg font-semibold tabular-nums">
+                  {percent === null ? '—' : `${Math.round(percent)}%`}
+                </span>
+                <GoalDialog
+                  goal={goal}
+                  today={today}
+                  trigger={
+                    <Button variant="ghost" size="sm" className="h-7 px-1.5">
+                      <Pencil className="size-3.5" />
+                    </Button>
+                  }
+                />
               </span>
             </div>
 

@@ -6,6 +6,7 @@ import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { MoneyInput } from '@/components/ui/money-input'
 import { Select } from '@/components/ui/select'
 import type { FinanceCategory } from '@/lib/db/schema'
 import type { ISODate } from '@/lib/dates'
@@ -76,15 +77,7 @@ export function TransactionForm({
 
         <label className="w-32 space-y-1.5">
           <span className="text-xs font-medium text-text-muted">{t('amount')}</span>
-          <Input
-            type="number"
-            name="amount"
-            inputMode="decimal"
-            min={0}
-            step="any"
-            required
-            className="text-right tabular-nums"
-          />
+          <MoneyInput name="amount" required className="text-right tabular-nums" />
         </label>
 
         <label className="min-w-36 flex-1 space-y-1.5">

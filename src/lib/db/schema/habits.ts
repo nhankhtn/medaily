@@ -42,7 +42,6 @@ export const habits = pgTable(
     endDate: date('end_date'),
     notes: text('notes'),
     sortOrder: integer('sort_order').notNull().default(0),
-    isDemo: boolean('is_demo').notNull().default(false),
     archivedAt: timestamp('archived_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

@@ -1,4 +1,4 @@
-import { boolean, date, numeric, pgView, smallint, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { date, numeric, pgView, smallint, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { logSourceEnum } from './enums'
 
 /**
@@ -29,7 +29,6 @@ export const dailyEffective = pgView('v_daily_effective', {
   tomorrowPriority: text('tomorrow_priority'),
   note: text('note'),
   source: logSourceEnum('source').notNull(),
-  isDemo: boolean('is_demo').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
   effectiveStudyMinutes: smallint('effective_study_minutes'),

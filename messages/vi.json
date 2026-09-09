@@ -232,7 +232,57 @@
     "completionRate": "{rate}% trong 30 ngày",
     "scheduledPerWeek": "{count} lần/tuần",
     "derivedFromLog": "Từ bản ghi ngày",
-    "notScheduled": "Hôm nay không có lịch"
+    "notScheduled": "Hôm nay không có lịch",
+    "edit": "Sửa thói quen",
+    "name": "Tên",
+    "category": "Nhóm",
+    "frequency": "Tần suất",
+    "frequencies": {
+      "daily": "Hằng ngày",
+      "weekly": "Vài lần mỗi tuần",
+      "specific_days": "Vào những thứ nhất định",
+      "interval": "Mỗi N ngày một lần"
+    },
+    "targetCount": "Số lần",
+    "targetCountDaily": "Số lần mỗi ngày",
+    "targetCountWeekly": "Số lần mỗi tuần",
+    "weekdays": "Chọn thứ",
+    "intervalDays": "Lặp mỗi (ngày)",
+    "startDate": "Theo dõi từ ngày",
+    "notes": "Ghi chú",
+    "autoTick": "Tự đánh dấu",
+    "autoTickHint": "Gắn thói quen này với một con số bạn vẫn ghi, nó sẽ tự tích — không phải nhập lần hai.",
+    "noLink": "Tôi tự tích tay",
+    "metric": "Khi",
+    "operator": "ở mức",
+    "operators": {
+      "gte": "từ trở lên",
+      "lte": "từ trở xuống",
+      "eq": "đúng bằng"
+    },
+    "threshold": "Giá trị",
+    "linkPreview": "Tự tích khi {metric} {operator} {threshold}",
+    "saved": "Đã lưu thói quen",
+    "backfilled": "Đã tính lại {count} ngày bạn đã ghi trước đó",
+    "archive": "Lưu trữ",
+    "archived": "Đã lưu trữ thói quen",
+    "archiveHint": "Lịch sử vẫn giữ, chỉ là không hiện ra nữa.",
+    "categories": {
+      "career": "Sự nghiệp",
+      "health": "Sức khỏe",
+      "finance": "Tài chính",
+      "knowledge": "Kiến thức",
+      "life": "Cuộc sống"
+    },
+    "weekdayShort": {
+      "1": "T2",
+      "2": "T3",
+      "3": "T4",
+      "4": "T5",
+      "5": "T6",
+      "6": "T7",
+      "7": "CN"
+    }
   },
   "goals": {
     "title": "Mục tiêu",
@@ -255,6 +305,59 @@
       "completed": "Hoàn thành",
       "paused": "Tạm dừng",
       "cancelled": "Đã hủy"
+    },
+    "edit": "Sửa mục tiêu",
+    "name": "Tên",
+    "description": "Mô tả",
+    "category": "Nhóm",
+    "priority": "Ưu tiên",
+    "startDate": "Bắt đầu",
+    "targetDate": "Hạn",
+    "noDeadlineHint": "Để trống nếu không có hạn",
+    "progressMode": "Tiến độ tính theo",
+    "modes": {
+      "manual": "Tôi tự nhập phần trăm",
+      "metric": "Theo một con số tôi ghi hằng ngày",
+      "milestones": "Theo các mốc"
+    },
+    "manualValue": "Tiến độ hiện tại (%)",
+    "metric": "Chỉ số",
+    "aggregation": "Cách gộp",
+    "aggregations": {
+      "sum": "Tổng",
+      "avg": "Trung bình",
+      "count_days": "Số ngày có",
+      "latest": "Giá trị mới nhất"
+    },
+    "period": "Trong",
+    "periods": {
+      "total": "Cả mục tiêu",
+      "weekly": "Mỗi tuần",
+      "monthly": "Mỗi tháng"
+    },
+    "target": "Mục tiêu",
+    "direction": "Chiều",
+    "directions": {
+      "at_least": "Đạt tối thiểu",
+      "at_most": "Không vượt quá"
+    },
+    "metricPreview": "Tiến độ = {aggregation} của {metric} {period}, mục tiêu {target}",
+    "milestones": "Các mốc",
+    "milestoneHint": "Mỗi dòng một mốc",
+    "saved": "Đã lưu mục tiêu",
+    "archive": "Lưu trữ",
+    "archived": "Đã lưu trữ mục tiêu",
+    "categories": {
+      "career": "Sự nghiệp",
+      "health": "Sức khỏe",
+      "finance": "Tài chính",
+      "knowledge": "Kiến thức",
+      "life": "Cuộc sống"
+    },
+    "priorities": {
+      "low": "Thấp",
+      "medium": "Trung bình",
+      "high": "Cao"
     }
   },
   "settings": {
@@ -598,7 +701,8 @@
     "noPrice": "Chưa nhập giá",
     "saved": "Đã lưu",
     "transferHint": "Chuyển khoản là chuyển tiền giữa hai tài khoản của chính bạn, nên không tính vào thu hay chi.",
-    "noPriceFeed": "Giá do bạn tự nhập — ứng dụng không lấy dữ liệu thị trường."
+    "noPriceFeed": "Giá do bạn tự nhập — ứng dụng không lấy dữ liệu thị trường.",
+    "needCategoryFirst": "Ngân sách cần có danh mục — tạo một danh mục Chi trước, rồi đặt mức mỗi tháng cho nó."
   },
   "journal": {
     "title": "Nhật ký",
@@ -702,7 +806,8 @@
       "friend": "Bạn bè",
       "colleague": "Đồng nghiệp",
       "mentor": "Người hướng dẫn",
-      "other": "Khác"
+      "other": "Khác",
+      "partner": "Người yêu"
     },
     "company": "Công ty",
     "role": "Vai trò",
@@ -738,7 +843,12 @@
     "noReminders": "Không có việc đến hạn",
     "reminderTitle": "Nội dung",
     "dueOn": "Hạn",
-    "markDone": "Xong"
+    "markDone": "Xong",
+    "notesHint": "Dùng được markdown — **in đậm**, danh sách, [liên kết](https://example.com)",
+    "notesAbout": "Ghi chú về {name}",
+    "noNotes": "Chưa có ghi chú",
+    "showNotes": "Xem ghi chú",
+    "hideNotes": "Ẩn ghi chú"
   },
   "career": {
     "title": "Sự nghiệp",
@@ -862,5 +972,18 @@
         "hint": "Số liệu đã được điền sẵn cho bạn"
       }
     }
+  },
+  "metricNames": {
+    "energy": "Năng lượng",
+    "mood": "Tâm trạng",
+    "sleep_hours": "Giấc ngủ (giờ)",
+    "technical_study_minutes": "Học kỹ thuật (phút)",
+    "deep_work_minutes": "Deep work (phút)",
+    "focus_minutes": "Tập trung, học + deep work (phút)",
+    "exercise_minutes": "Tập luyện (phút)",
+    "reading_minutes": "Đọc sách (phút)",
+    "reading_pages": "Đọc sách (trang)",
+    "entertainment_minutes": "Giải trí (phút)",
+    "english_minutes": "Tiếng Anh (phút)"
   }
 }

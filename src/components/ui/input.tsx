@@ -6,7 +6,7 @@ export function Input({ className, ...props }: React.ComponentProps<'input'>) {
     <input
       className={cn(
         'h-11 w-full rounded-[var(--radius)] border border-border-strong bg-surface px-3 text-base text-text',
-        'placeholder:text-text-subtle focus:border-accent focus:outline-none',
+        'placeholder:text-text-subtle focus:border-accent focus:outline-none focus:inset-ring-1 focus:inset-ring-accent',
         className,
       )}
       {...props}
@@ -19,7 +19,7 @@ export function Textarea({ className, ...props }: React.ComponentProps<'textarea
     <textarea
       className={cn(
         'min-h-20 w-full resize-y rounded-[var(--radius)] border border-border-strong bg-surface px-3 py-2 text-base text-text',
-        'placeholder:text-text-subtle focus:border-accent focus:outline-none',
+        'placeholder:text-text-subtle focus:border-accent focus:outline-none focus:inset-ring-1 focus:inset-ring-accent',
         className,
       )}
       {...props}

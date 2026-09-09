@@ -1,7 +1,7 @@
 import './load-env'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import {
   accounts,
   achievements,
@@ -38,10 +38,12 @@ import { SINGLE_USER_ID } from '../src/lib/auth/current-user'
  * streak that breaks once, missing days, and correlations planted with noise so
  * the analytics engine has something real but not clean to find.
  *
- * Reproducible: fixed RNG seed, idempotent per user, everything tagged
- * `is_demo` so it can be wiped without touching real entries.
+ * Reproducible: a fixed RNG seed, and it refuses to run against a database
+ * that already holds data (use `pnpm db:reset` to start over).
  */
-const DAYS = Number(process.env.SEED_DAYS ?? process.argv[2] ?? 90)
+// Only a bare number is a day count; flags like `--force` must not become NaN.
+const DAY_ARG = process.argv.slice(2).find((arg) => /^\d+$/.test(arg))
+const DAYS = Number(process.env.SEED_DAYS ?? DAY_ARG ?? 90)
 const RNG_SEED = 20260907
 
 function mulberry32(seed: number) {
@@ -106,33 +108,35 @@ async function main() {
   const owner = await db.select().from(users).where(eq(users.id, SINGLE_USER_ID)).limit(1)
   if (owner.length === 0) throw new Error('owner row missing — run pnpm db:migrate first')
 
-  console.log(`→ clearing previous demo data`)
-  await db.delete(interactions).where(eq(interactions.isDemo, true))
-  await db.delete(reminders).where(eq(reminders.isDemo, true))
-  await db.delete(people).where(eq(people.isDemo, true))
-  await db.delete(transactions).where(eq(transactions.isDemo, true))
-  await db.delete(budgets).where(eq(budgets.isDemo, true))
-  await db.delete(financeCategories).where(eq(financeCategories.isDemo, true))
-  await db.delete(accounts).where(eq(accounts.isDemo, true))
-  await db.delete(workouts).where(eq(workouts.isDemo, true))
-  await db.delete(bodyMeasurements).where(eq(bodyMeasurements.isDemo, true))
-  await db.delete(journalEntries).where(eq(journalEntries.isDemo, true))
-  await db.delete(notes).where(eq(notes.isDemo, true))
-  await db.delete(events).where(eq(events.isDemo, true))
-  await db.delete(plannedBlocks).where(eq(plannedBlocks.isDemo, true))
-  await db.delete(skills).where(eq(skills.isDemo, true))
-  await db.delete(achievements).where(eq(achievements.isDemo, true))
-  await db.delete(resources).where(eq(resources.isDemo, true))
-  await db.delete(projectTasks).where(eq(projectTasks.userId, SINGLE_USER_ID))
-  await db.delete(projects).where(eq(projects.isDemo, true))
-  await db.delete(focusSessions).where(eq(focusSessions.isDemo, true))
-  await db.delete(habitLogs).where(eq(habitLogs.userId, SINGLE_USER_ID))
-  await db.delete(habits).where(eq(habits.isDemo, true))
-  await db.delete(goalMilestones)
-  await db.delete(goals).where(eq(goals.isDemo, true))
-  await db.delete(dailyLogs).where(eq(dailyLogs.isDemo, true))
-  await db.delete(topics).where(eq(topics.isDemo, true))
-  await db.delete(weeklyReviews).where(eq(weeklyReviews.userId, SINGLE_USER_ID))
+  /**
+   * Seeding is a first-run and development tool, so it refuses to touch a
+   * database that already holds data. There is no way to tell a seeded row
+   * from a real one — and there should not be: tagging every table with a
+   * `is_demo` column to support a "wipe the samples" button that was never
+   * built is a column carried for nothing. `pnpm db:reset` is the honest way
+   * to start over.
+   */
+  const [existing] = await db.execute<{ rows: number }>(sql`
+    SELECT
+      (SELECT COUNT(*) FROM daily_logs) +
+      (SELECT COUNT(*) FROM habits) +
+      (SELECT COUNT(*) FROM goals) +
+      (SELECT COUNT(*) FROM projects) +
+      (SELECT COUNT(*) FROM transactions) +
+      (SELECT COUNT(*) FROM people) AS rows
+  `)
+
+  if (Number(existing?.rows ?? 0) > 0 && !process.argv.includes('--force')) {
+    console.error(
+      `✗ the database already has ${existing?.rows} rows.\n` +
+        '  Seeding would add sample data on top of real entries, and nothing\n' +
+        '  distinguishes the two afterwards.\n\n' +
+        '  To start from scratch:  pnpm db:reset\n' +
+        // The `--` matters: without it pnpm consumes `--force` itself.
+        '  To add anyway:          pnpm db:seed -- --force',
+    )
+    process.exit(1)
+  }
 
   console.log(`→ seeding topics`)
   const topicRows = await db
@@ -144,7 +148,7 @@ async function main() {
         { name: 'Go', category: 'engineering' },
         { name: 'System design', category: 'engineering' },
         { name: 'English', category: 'language' },
-      ].map((t) => ({ ...t, userId: SINGLE_USER_ID, isDemo: true })),
+      ].map((t) => ({ ...t, userId: SINGLE_USER_ID })),
     )
     .returning()
 
@@ -224,7 +228,6 @@ async function main() {
       tomorrowPriority: chance(0.4) ? pick(PRIORITIES) : null,
       note: chance(0.15) ? 'Felt scattered but got the important thing done.' : null,
       source: 'import',
-      isDemo: true,
     })
 
     // Some days are logged through focus sessions instead of the quick field,
@@ -243,7 +246,6 @@ async function main() {
           kind: 'learning',
           topicId: pick(topicRows).id,
           source: 'manual',
-          isDemo: true,
         })
       }
     }
@@ -273,7 +275,6 @@ async function main() {
         linkedThreshold: '7',
         startDate: isoDate(-DAYS),
         sortOrder: 0,
-        isDemo: true,
       },
       {
         userId: SINGLE_USER_ID,
@@ -286,7 +287,6 @@ async function main() {
         linkedThreshold: '30',
         startDate: isoDate(-DAYS),
         sortOrder: 1,
-        isDemo: true,
       },
       {
         userId: SINGLE_USER_ID,
@@ -299,7 +299,6 @@ async function main() {
         linkedThreshold: '60',
         startDate: isoDate(-DAYS),
         sortOrder: 2,
-        isDemo: true,
       },
       {
         userId: SINGLE_USER_ID,
@@ -309,7 +308,6 @@ async function main() {
         targetCount: 4,
         startDate: isoDate(-DAYS),
         sortOrder: 3,
-        isDemo: true,
       },
       {
         userId: SINGLE_USER_ID,
@@ -320,7 +318,6 @@ async function main() {
         weekdays: [1, 3, 5],
         startDate: isoDate(-DAYS),
         sortOrder: 4,
-        isDemo: true,
       },
       {
         userId: SINGLE_USER_ID,
@@ -331,7 +328,6 @@ async function main() {
         intervalDays: 7,
         startDate: isoDate(-DAYS),
         sortOrder: 5,
-        isDemo: true,
       },
     ])
     .returning()
@@ -434,7 +430,6 @@ async function main() {
         metricTarget: '300',
         metricDirection: 'at_least',
         recurrence: 'weekly',
-        isDemo: true,
       },
       {
         userId: SINGLE_USER_ID,
@@ -450,7 +445,6 @@ async function main() {
         metricTarget: '600',
         metricDirection: 'at_most',
         recurrence: 'weekly',
-        isDemo: true,
       },
       {
         userId: SINGLE_USER_ID,
@@ -462,7 +456,6 @@ async function main() {
         startDate: isoDate(-40),
         targetDate: isoDate(45),
         progressMode: 'milestones',
-        isDemo: true,
       },
       {
         userId: SINGLE_USER_ID,
@@ -475,7 +468,6 @@ async function main() {
         progressMode: 'manual',
         progressManual: '42',
         progressUpdatedAt: new Date(),
-        isDemo: true,
       },
     ])
     .returning()
@@ -527,7 +519,6 @@ async function main() {
         status: 'active',
         priority: 'high',
         startDate: isoDate(-40),
-        isDemo: true,
       },
       {
         userId: SINGLE_USER_ID,
@@ -536,7 +527,6 @@ async function main() {
         status: 'on_hold',
         priority: 'low',
         startDate: isoDate(-70),
-        isDemo: true,
       },
     ])
     .returning()
@@ -569,7 +559,6 @@ async function main() {
         kind: 'project' as const,
         projectId: mainProject.id,
         source: 'manual' as const,
-        isDemo: true,
       })),
     )
   }
@@ -584,14 +573,12 @@ async function main() {
       progressPercent: 62,
       topicId: topicRows[0]?.id ?? null,
       startedAt: isoDate(-60),
-      isDemo: true,
     },
     {
       userId: SINGLE_USER_ID,
       type: 'course',
       title: 'Postgres internals',
       status: 'backlog',
-      isDemo: true,
     },
     {
       userId: SINGLE_USER_ID,
@@ -601,7 +588,6 @@ async function main() {
       status: 'done',
       rating: 4,
       finishedAt: isoDate(-25),
-      isDemo: true,
     },
   ])
 
@@ -615,7 +601,6 @@ async function main() {
         type: (row.exerciseType as string) ?? 'Running',
         durationMinutes: row.exerciseMinutes ?? 30,
         rpe: intBetween(4, 9),
-        isDemo: true,
       })),
     )
   }
@@ -626,7 +611,6 @@ async function main() {
       measuredOn: isoDate(-i * 6),
       weightKg: (70 + between(-1.2, 1.2) - i * 0.05).toFixed(1),
       restingHr: intBetween(52, 64),
-      isDemo: true,
     })),
   )
 
@@ -634,19 +618,19 @@ async function main() {
   const accountRows = await db
     .insert(accounts)
     .values([
-      { userId: SINGLE_USER_ID, name: 'Bank', type: 'bank', currency: 'VND', openingBalance: '45000000', isDemo: true },
-      { userId: SINGLE_USER_ID, name: 'Cash', type: 'cash', currency: 'VND', openingBalance: '2000000', isDemo: true },
+      { userId: SINGLE_USER_ID, name: 'Bank', type: 'bank', currency: 'VND', openingBalance: '45000000' },
+      { userId: SINGLE_USER_ID, name: 'Cash', type: 'cash', currency: 'VND', openingBalance: '2000000' },
     ])
     .returning()
 
   const categoryRows = await db
     .insert(financeCategories)
     .values([
-      { userId: SINGLE_USER_ID, name: 'Salary', kind: 'income' as const, isDemo: true },
-      { userId: SINGLE_USER_ID, name: 'Rent', kind: 'expense' as const, isDemo: true },
-      { userId: SINGLE_USER_ID, name: 'Food', kind: 'expense' as const, isDemo: true },
-      { userId: SINGLE_USER_ID, name: 'Transport', kind: 'expense' as const, isDemo: true },
-      { userId: SINGLE_USER_ID, name: 'Learning', kind: 'expense' as const, isDemo: true },
+      { userId: SINGLE_USER_ID, name: 'Salary', kind: 'income' as const },
+      { userId: SINGLE_USER_ID, name: 'Rent', kind: 'expense' as const },
+      { userId: SINGLE_USER_ID, name: 'Food', kind: 'expense' as const },
+      { userId: SINGLE_USER_ID, name: 'Transport', kind: 'expense' as const },
+      { userId: SINGLE_USER_ID, name: 'Learning', kind: 'expense' as const },
     ])
     .returning()
 
@@ -664,7 +648,6 @@ async function main() {
         accountId: bank.id,
         categoryId: categoryRows[0]?.id ?? null,
         merchant: 'Employer',
-        isDemo: true,
       },
     ]
 
@@ -679,7 +662,6 @@ async function main() {
         accountId: bank.id,
         categoryId: category.id,
         merchant: category.name,
-        isDemo: true,
       })
     }
 
@@ -692,7 +674,6 @@ async function main() {
         categoryId: category.id,
         periodStart: monthStart,
         amount: String(intBetween(3, 9) * 1000000),
-        isDemo: true,
       })),
     )
   }
@@ -705,14 +686,12 @@ async function main() {
       bodyMd: 'Multiversion concurrency control keeps a version chain per row. See [[Postgres vacuum]].',
       type: 'concept',
       topicId: topicRows[0]?.id ?? null,
-      isDemo: true,
     },
     {
       userId: SINGLE_USER_ID,
       title: 'Postgres vacuum',
       bodyMd: 'Vacuum reclaims dead tuples left behind by MVCC.',
       type: 'concept',
-      isDemo: true,
     },
     {
       userId: SINGLE_USER_ID,
@@ -720,7 +699,6 @@ async function main() {
       bodyMd: 'Reference site on SQL indexing.',
       type: 'bookmark',
       url: 'https://use-the-index-luke.com',
-      isDemo: true,
     },
   ])
 
@@ -732,7 +710,6 @@ async function main() {
       bodyMd:
         'Wrote this instead of scrolling. The days that go well are boring days: sleep, one hard problem, a walk.',
       mood: intBetween(5, 9),
-      isDemo: true,
     })),
   )
 
@@ -743,13 +720,11 @@ async function main() {
       title: 'Team retro',
       startsAt: new Date(`${isoDate(2)}T09:00:00`),
       endsAt: new Date(`${isoDate(2)}T10:00:00`),
-      isDemo: true,
     },
     {
       userId: SINGLE_USER_ID,
       title: 'Dentist',
       startsAt: new Date(`${isoDate(5)}T14:30:00`),
-      isDemo: true,
     },
   ])
 
@@ -761,7 +736,6 @@ async function main() {
       endTime: i % 2 === 0 ? '11:00' : '10:30',
       kind: i % 3 === 0 ? ('learning' as const) : ('deep_work' as const),
       projectId: mainProject?.id ?? null,
-      isDemo: true,
     })),
   )
 
@@ -769,16 +743,16 @@ async function main() {
   const peopleRows = await db
     .insert(people)
     .values([
-      { userId: SINGLE_USER_ID, name: 'Minh', relationship: 'friend' as const, contactIntervalDays: 14, birthday: '1994-09-20', isDemo: true },
-      { userId: SINGLE_USER_ID, name: 'Lan', relationship: 'colleague' as const, contactIntervalDays: 30, company: 'Hasaki', isDemo: true },
-      { userId: SINGLE_USER_ID, name: 'Duc', relationship: 'mentor' as const, contactIntervalDays: 60, isDemo: true },
+      { userId: SINGLE_USER_ID, name: 'Minh', relationship: 'friend' as const, contactIntervalDays: 14, birthday: '1994-09-20' },
+      { userId: SINGLE_USER_ID, name: 'Lan', relationship: 'colleague' as const, contactIntervalDays: 30, company: 'Hasaki' },
+      { userId: SINGLE_USER_ID, name: 'Duc', relationship: 'mentor' as const, contactIntervalDays: 60 },
     ])
     .returning()
 
   if (peopleRows.length > 0) {
     await db.insert(interactions).values([
-      { userId: SINGLE_USER_ID, personId: peopleRows[0]!.id, occurredOn: isoDate(-25), channel: 'message' as const, summary: 'Caught up about the move', isDemo: true },
-      { userId: SINGLE_USER_ID, personId: peopleRows[1]!.id, occurredOn: isoDate(-3), channel: 'call' as const, summary: 'Project handover', isDemo: true },
+      { userId: SINGLE_USER_ID, personId: peopleRows[0]!.id, occurredOn: isoDate(-25), channel: 'message' as const, summary: 'Caught up about the move' },
+      { userId: SINGLE_USER_ID, personId: peopleRows[1]!.id, occurredOn: isoDate(-3), channel: 'call' as const, summary: 'Project handover' },
     ])
 
     await db.insert(reminders).values({
@@ -786,16 +760,15 @@ async function main() {
       title: 'Send Duc the design doc',
       dueOn: isoDate(1),
       personId: peopleRows[2]!.id,
-      isDemo: true,
     })
   }
 
   // Career.
   await db.insert(skills).values([
-    { userId: SINGLE_USER_ID, name: 'PostgreSQL', category: 'engineering', level: 3, targetLevel: 5, isDemo: true },
-    { userId: SINGLE_USER_ID, name: 'Go', category: 'engineering', level: 4, targetLevel: 5, isDemo: true },
-    { userId: SINGLE_USER_ID, name: 'System design', category: 'engineering', level: 3, targetLevel: 4, isDemo: true },
-    { userId: SINGLE_USER_ID, name: 'English', category: 'language', level: 3, targetLevel: 4, isDemo: true },
+    { userId: SINGLE_USER_ID, name: 'PostgreSQL', category: 'engineering', level: 3, targetLevel: 5 },
+    { userId: SINGLE_USER_ID, name: 'Go', category: 'engineering', level: 4, targetLevel: 5 },
+    { userId: SINGLE_USER_ID, name: 'System design', category: 'engineering', level: 3, targetLevel: 4 },
+    { userId: SINGLE_USER_ID, name: 'English', category: 'language', level: 3, targetLevel: 4 },
   ])
 
   await db.insert(achievements).values([
@@ -804,7 +777,6 @@ async function main() {
       title: 'Cut checkout latency by 40%',
       achievedOn: isoDate(-45),
       impact: 'p95 from 820ms to 490ms after fixing the N+1 and adding a covering index.',
-      isDemo: true,
     },
   ])
 

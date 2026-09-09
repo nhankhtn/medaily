@@ -48,7 +48,7 @@ export function MinuteInput({
             }}
             className={cn(
               'h-11 w-full rounded-[var(--radius)] border border-border-strong bg-surface pr-12 pl-3',
-              'text-base tabular-nums text-text placeholder:text-text-subtle focus:border-accent focus:outline-none',
+              'text-base tabular-nums text-text placeholder:text-text-subtle focus:border-accent focus:outline-none focus:inset-ring-1 focus:inset-ring-accent',
             )}
           />
           <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-text-subtle">

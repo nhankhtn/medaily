@@ -56,7 +56,7 @@ export function Stepper({
             if (Number.isNaN(parsed)) return
             onChange(Math.min(max, Math.max(min, parsed)))
           }}
-          className="h-11 w-full rounded-[var(--radius)] border border-border-strong bg-surface px-3 text-center text-base tabular-nums text-text focus:border-accent focus:outline-none"
+          className="h-11 w-full rounded-[var(--radius)] border border-border-strong bg-surface px-3 text-center text-base tabular-nums text-text focus:border-accent focus:outline-none focus:inset-ring-1 focus:inset-ring-accent"
         />
         {suffix ? (
           <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-text-subtle">

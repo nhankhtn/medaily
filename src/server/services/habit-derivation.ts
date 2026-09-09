@@ -1,6 +1,6 @@
-import { eq, and } from 'drizzle-orm'
+import { and, asc, eq, gte } from 'drizzle-orm'
 import type { DbOrTx } from '@/lib/db'
-import { dailyEffective } from '@/lib/db/schema'
+import { dailyEffective, dailyLogs } from '@/lib/db/schema'
 import type { Habit } from '@/lib/db/schema'
 import { evaluateLink, isScheduledOn } from '@/lib/habits/schedule'
 import type { ISODate } from '@/lib/dates'
@@ -112,4 +112,39 @@ export async function recomputeDerivedHabitLogs(
   // completion is evaluated at read time from the same derived day rows.
   void weekStart
   return { updated }
+}
+
+
+/** How far back a newly created or re-bound habit will catch up. */
+export const BACKFILL_DAYS = 400
+
+/**
+ * Recomputes derived habit logs for every day already recorded from `from`
+ * onwards.
+ *
+ * Without this, creating "sleep 7h+" today leaves last week untouched and the
+ * habit looks broken — the user entered the sleep, the rule matches, and
+ * nothing ticked (spec 7.3: a binding change recomputes its history).
+ *
+ * Only dates that actually have a daily log are visited: days with nothing
+ * recorded have nothing to derive from.
+ */
+export async function backfillDerivedHabitLogs(
+  tx: DbOrTx,
+  userId: string,
+  from: ISODate,
+  weekStart: 'monday' | 'sunday',
+): Promise<{ days: number }> {
+  const rows = await tx
+    .select({ logDate: dailyLogs.logDate })
+    .from(dailyLogs)
+    .where(and(eq(dailyLogs.userId, userId), gte(dailyLogs.logDate, from)))
+    .orderBy(asc(dailyLogs.logDate))
+    .limit(BACKFILL_DAYS)
+
+  for (const row of rows) {
+    await recomputeDerivedHabitLogs(tx, userId, row.logDate, weekStart)
+  }
+
+  return { days: rows.length }
 }

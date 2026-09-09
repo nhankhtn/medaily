@@ -1,10 +1,12 @@
 'use client'
 
-import { Check, Flame, Link2, Snowflake } from 'lucide-react'
+import { Check, Flame, Link2, Pencil, Snowflake } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { HabitDialog } from '@/features/habits/habit-dialog'
 import type { ISODate } from '@/lib/dates'
 import { toggleHabit } from '@/server/actions/habits'
 import type { HabitView } from '@/server/services/habits'
@@ -24,9 +26,12 @@ export function HabitList({ habits, today }: { habits: HabitView[]; today: ISODa
 
   if (habits.length === 0) {
     return (
-      <div className="rounded-[var(--radius)] border border-border-base bg-surface p-6 text-center">
+      <div className="rounded-[var(--radius)] border border-dashed border-border-strong bg-surface p-6 text-center">
         <p className="font-medium">{t('noneYet')}</p>
-        <p className="mt-1 text-sm text-text-subtle">{t('noneYetBody')}</p>
+        <p className="mx-auto mt-1 max-w-prose text-sm text-text-subtle">{t('noneYetBody')}</p>
+        <div className="mt-4 flex justify-center">
+          <HabitDialog today={today} />
+        </div>
       </div>
     )
   }
@@ -101,6 +106,15 @@ export function HabitList({ habits, today }: { habits: HabitView[]; today: ISODa
                       {t('completionRate', { rate: Math.round(habit.monthlyRate * 100) })}
                     </span>
                   ) : null}
+                  <HabitDialog
+                    habit={habit}
+                    today={today}
+                    trigger={
+                      <Button variant="ghost" size="sm" className="ml-auto h-6 px-1.5">
+                        <Pencil className="size-3" />
+                      </Button>
+                    }
+                  />
                   {!habit.scheduledToday && !weekly ? <span>{t('notScheduled')}</span> : null}
                 </div>
 

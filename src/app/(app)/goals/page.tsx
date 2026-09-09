@@ -1,5 +1,7 @@
 import { getTranslations } from 'next-intl/server'
+import { PageHeader } from '@/components/ui/page'
 import { GoalCards } from '@/features/goals/goal-cards'
+import { GoalDialog } from '@/features/goals/goal-dialog'
 import { getGoalsView } from '@/server/services/goals'
 
 export default async function GoalsPage() {
@@ -7,8 +9,8 @@ export default async function GoalsPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">{t('title')}</h1>
-      <GoalCards goals={data.goals} />
+      <PageHeader title={t('title')} action={<GoalDialog today={data.today} />} />
+      <GoalCards goals={data.goals} today={data.today} />
     </div>
   )
 }

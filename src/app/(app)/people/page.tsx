@@ -8,6 +8,7 @@ import {
   PersonDialog,
   ReminderPanel,
 } from '@/features/people/people-ui'
+import { PersonNotes } from '@/features/people/person-notes'
 import { fromISODate } from '@/lib/dates'
 import { getPeopleData } from '@/server/services/people'
 
@@ -91,28 +92,25 @@ export default async function PeoplePage() {
             <CardBody>
               <ul className="divide-y divide-border-base">
                 {data.people.map((person) => (
-                  <li key={person.id} className="flex flex-wrap items-center gap-3 py-2.5">
-                    <span className="min-w-0 flex-1 truncate font-medium">{person.name}</span>
-                    <Badge>{t(`relationships.${person.relationship}`)}</Badge>
-                    {person.company ? (
-                      <span className="truncate text-xs text-text-subtle">{person.company}</span>
-                    ) : null}
-                    <span className="text-xs tabular-nums text-text-subtle">
-                      {person.lastInteractionOn
-                        ? format.dateTime(fromISODate(person.lastInteractionOn), {
-                            day: 'numeric',
-                            month: 'short',
-                          })
-                        : '—'}
-                    </span>
-                    <PersonDialog
-                      person={person}
-                      trigger={
-                        <button type="button" className="text-xs text-accent hover:underline">
-                          ···
-                        </button>
-                      }
-                    />
+                  <li key={person.id} className="py-2.5">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="min-w-0 flex-1 truncate font-medium">{person.name}</span>
+                      <Badge tone={person.relationship === 'partner' ? 'accent' : 'neutral'}>
+                        {t(`relationships.${person.relationship}`)}
+                      </Badge>
+                      {person.company ? (
+                        <span className="truncate text-xs text-text-subtle">{person.company}</span>
+                      ) : null}
+                      <span className="text-xs tabular-nums text-text-subtle">
+                        {person.lastInteractionOn
+                          ? format.dateTime(fromISODate(person.lastInteractionOn), {
+                              day: 'numeric',
+                              month: 'short',
+                            })
+                          : '—'}
+                      </span>
+                    </div>
+                    <PersonNotes person={person} />
                   </li>
                 ))}
               </ul>

@@ -1,6 +1,5 @@
 import { sql } from 'drizzle-orm'
 import {
-  boolean,
   check,
   date,
   index,
@@ -27,7 +26,6 @@ export const skills = pgTable(
     targetLevel: smallint('target_level'),
     topicId: uuid('topic_id').references(() => topics.id, { onDelete: 'set null' }),
     notes: text('notes'),
-    isDemo: boolean('is_demo').notNull().default(false),
     archivedAt: timestamp('archived_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -50,7 +48,6 @@ export const achievements = pgTable('achievements', {
   description: text('description'),
   impact: text('impact'),
   link: text('link'),
-  isDemo: boolean('is_demo').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
@@ -65,7 +62,6 @@ export const portfolioItems = pgTable('portfolio_items', {
   description: text('description'),
   tech: text('tech').array(),
   projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
-  isDemo: boolean('is_demo').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })

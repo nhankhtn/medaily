@@ -14,7 +14,7 @@ import { fromISODate, type ISODate } from '@/lib/dates'
 import { createReminder, logInteraction, markReminderDone, savePerson } from '@/server/actions/people'
 import type { PeopleData, PersonView } from '@/server/services/people'
 
-const RELATIONSHIPS = ['family', 'friend', 'colleague', 'mentor', 'other'] as const
+const RELATIONSHIPS = ['partner', 'family', 'friend', 'colleague', 'mentor', 'other'] as const
 const CHANNELS = ['in_person', 'call', 'message', 'email', 'other'] as const
 
 export function PersonDialog({ person, trigger }: { person?: PersonView; trigger?: React.ReactNode }) {
@@ -109,7 +109,13 @@ export function PersonDialog({ person, trigger }: { person?: PersonView; trigger
           </Field>
 
           <Field label={t('notes')}>
-            <Textarea name="notes" defaultValue={person?.notes ?? ''} rows={3} />
+            <Textarea
+              name="notes"
+              defaultValue={person?.notes ?? ''}
+              rows={8}
+              className="font-mono text-sm"
+            />
+            <p className="mt-1 text-xs text-text-subtle">{t('notesHint')}</p>
           </Field>
 
           <div className="flex justify-end gap-2">

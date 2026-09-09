@@ -49,7 +49,6 @@ export const dailyLogs = pgTable(
     note: text('note'),
 
     source: logSourceEnum('source').notNull().default('manual'),
-    isDemo: boolean('is_demo').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

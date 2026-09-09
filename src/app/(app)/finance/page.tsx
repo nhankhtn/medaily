@@ -23,6 +23,7 @@ export default async function FinancePage() {
   ])
 
   const money = (amount: number) => formatMoney(amount, data.currency, locale)
+  const hasExpenseCategory = data.categories.some((category) => category.kind === 'expense')
 
   return (
     <div className="space-y-4">
@@ -97,10 +98,20 @@ export default async function FinancePage() {
             <Card>
               <CardHeader
                 title={t('budgets')}
-                action={<BudgetDialog categories={data.categories} monthStart={data.monthStart} />}
+                action={
+                  hasExpenseCategory ? (
+                    <BudgetDialog categories={data.categories} monthStart={data.monthStart} />
+                  ) : (
+                    <CategoryDialog />
+                  )
+                }
               />
               <CardBody>
-                {data.budgets.length === 0 ? (
+                {!hasExpenseCategory ? (
+                  <p className="text-sm leading-snug text-text-subtle">
+                    {t('needCategoryFirst')}
+                  </p>
+                ) : data.budgets.length === 0 ? (
                   <p className="text-sm text-text-subtle">{t('noBudgets')}</p>
                 ) : (
                   <ul className="space-y-3">

@@ -1,6 +1,5 @@
 import { sql } from 'drizzle-orm'
 import {
-  boolean,
   check,
   date,
   index,
@@ -31,7 +30,6 @@ export const people = pgTable(
     notes: text('notes'),
     /** Desired cadence: anyone past it appears in the "reach out" list (spec 15). */
     contactIntervalDays: smallint('contact_interval_days'),
-    isDemo: boolean('is_demo').notNull().default(false),
     archivedAt: timestamp('archived_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -58,7 +56,6 @@ export const interactions = pgTable(
     occurredOn: date('occurred_on').notNull(),
     channel: interactionChannelEnum('channel').notNull().default('message'),
     summary: text('summary'),
-    isDemo: boolean('is_demo').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -82,7 +79,6 @@ export const reminders = pgTable(
     note: text('note'),
     doneAt: timestamp('done_at', { withTimezone: true }),
     snoozedUntil: date('snoozed_until'),
-    isDemo: boolean('is_demo').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { MoneyInput } from '@/components/ui/money-input'
 import { Select } from '@/components/ui/select'
 import { Field } from '@/features/projects/project-dialog'
 import type { FinanceCategory } from '@/lib/db/schema'
@@ -87,7 +88,7 @@ export function AccountDialog({ defaultCurrency }: { defaultCurrency: string }) 
             </Field>
           </div>
           <Field label={t('openingBalance')}>
-            <Input type="number" name="openingBalance" step="any" defaultValue={0} className="text-right tabular-nums" />
+            <MoneyInput name="openingBalance" defaultValue={0} allowNegative className="text-right tabular-nums" />
           </Field>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
@@ -170,6 +171,8 @@ export function BudgetDialog({
     setOpen(false)
   })
 
+  // A budget is a limit on a category, so there is nothing to configure until
+  // one exists. The caller shows the way forward instead (see the Budgets card).
   const expenseCategories = categories.filter((category) => category.kind === 'expense')
   if (expenseCategories.length === 0) return null
 
@@ -204,7 +207,7 @@ export function BudgetDialog({
             </Select>
           </Field>
           <Field label={t('amount')}>
-            <Input type="number" name="amount" step="any" min={0} required className="text-right tabular-nums" />
+            <MoneyInput name="amount" required className="text-right tabular-nums" />
           </Field>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
@@ -262,7 +265,7 @@ export function AssetDialog({ today }: { today: ISODate }) {
               </Select>
             </Field>
             <Field label={t('amount')}>
-              <Input type="number" name="value" step="any" min={0} required className="text-right tabular-nums" />
+              <MoneyInput name="value" required className="text-right tabular-nums" />
             </Field>
           </div>
           <Field label={t('date')}>
@@ -322,11 +325,11 @@ export function InvestmentDialog({ today }: { today: ISODate }) {
               <Input type="number" name="quantity" step="any" min={0} required className="text-right tabular-nums" />
             </Field>
             <Field label={t('avgCost')}>
-              <Input type="number" name="avgCost" step="any" min={0} required className="text-right tabular-nums" />
+              <MoneyInput name="avgCost" required className="text-right tabular-nums" />
             </Field>
           </div>
           <Field label={t('lastPrice')}>
-            <Input type="number" name="lastPrice" step="any" min={0} className="text-right tabular-nums" />
+            <MoneyInput name="lastPrice" className="text-right tabular-nums" />
           </Field>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>

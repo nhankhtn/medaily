@@ -108,10 +108,23 @@ html[data-density='compact'] {
   --radius: 0.6rem;
 }
 
-:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-  border-radius: 4px;
+/*
+ * One focus ring for buttons, links and anything else without its own.
+ *
+ * It lives in `base` on purpose: an unlayered rule outranks every utility, so
+ * `focus:outline-none` on a form field would be ignored and the field would
+ * get both its accent border *and* an offset ring. Form controls draw their
+ * own focus state (see components/ui/input.tsx).
+ *
+ * Never set `border-radius` here. The outline already follows the element's
+ * own corners; forcing a radius squares off rounded fields the moment they
+ * take focus, and the offset ring then sticks out past the border.
+ */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
