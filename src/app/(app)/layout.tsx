@@ -2,14 +2,14 @@ import { BottomNav } from '@/components/shell/bottom-nav'
 import { Header } from '@/components/shell/header'
 import { Sidebar } from '@/components/shell/sidebar'
 import { today } from '@/lib/dates'
-import { dayContextOf, getSettings } from '@/server/services/settings'
+import { dayContextOf, getShellSettings } from '@/server/services/settings'
 
 /**
  * The application shell. It lives in a route group so the sign-in page renders
  * on its own, without navigation to a place the visitor cannot reach yet.
  */
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const settings = await getSettings()
+  const settings = await getShellSettings()
   const logicalToday = today(dayContextOf(settings))
 
   return (
