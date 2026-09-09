@@ -62,7 +62,11 @@
     "themeSystem": "Theo hệ thống",
     "language": "Ngôn ngữ",
     "openMenu": "Mở menu",
-    "pickDate": "Chọn ngày"
+    "pickDate": "Chọn ngày",
+    "loadFailed": "Không tải được dữ liệu",
+    "loadFailedHint": "Phần còn lại của ứng dụng vẫn dùng được — cứ điều hướng sang chỗ khác. Nếu lỗi lặp lại, /api/health sẽ nói rõ nguyên nhân.",
+    "checkHealth": "Kiểm tra /api/health",
+    "seeServerLogs": "nội dung lỗi đầy đủ nằm trong log server"
   },
   "daily": {
     "title": "Ghi ngày",

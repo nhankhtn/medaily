@@ -62,7 +62,11 @@
     "themeSystem": "System",
     "language": "Language",
     "openMenu": "Open menu",
-    "pickDate": "Pick a date"
+    "pickDate": "Pick a date",
+    "loadFailed": "Could not load this data",
+    "loadFailedHint": "The rest of the app still works — use the navigation to carry on. If this keeps happening, /api/health names the actual cause.",
+    "checkHealth": "Check /api/health",
+    "seeServerLogs": "the full message is in the server logs"
   },
   "daily": {
     "title": "Daily Log",

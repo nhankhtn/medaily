@@ -53,7 +53,16 @@ export async function Header({
 }
 
 async function HeaderTimer() {
-  const timer = await getRunningTimer()
+  /*
+   * `Suspense` above catches pending, not throwing. This query lives in the
+   * layout, so an unreachable database here would take the whole shell down
+   * before any page-level boundary could help. A missing badge is the right
+   * degraded state for it.
+   */
+  const timer = await getRunningTimer().catch((error: unknown) => {
+    console.error('[shell] running timer unavailable:', error)
+    return null
+  })
   if (!timer) return null
 
   return <TimerWidget key={timer.startedAt} timer={timer} topics={[]} projects={[]} compact />
