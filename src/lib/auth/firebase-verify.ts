@@ -10,8 +10,14 @@ import { createRemoteJWKSet, jwtVerify, type JWTPayload } from 'jose'
  * This runs once per sign-in. Every subsequent request is authenticated by our
  * own HMAC cookie instead, which is why the JWKS round trip here is affordable.
  */
-const JWKS_URL = new URL(
-  'https://www.googleapis.com/service_accounts/v1/jwks/securetoken@system.gserviceaccount.com',
+/**
+ * Note the path is `jwk`, singular. The plural spelling returns 404, and
+ * because `createRemoteJWKSet` only fetches on first verification, a wrong
+ * URL here fails at sign-in rather than at boot — as an `invalid_token`
+ * that looks exactly like a bad credential.
+ */
+export const JWKS_URL = new URL(
+  'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com',
 )
 
 /**
@@ -81,7 +87,17 @@ export async function verifyFirebaseIdToken(
     })
     claims = result.payload
   } catch (error) {
-    const code = (error as { code?: string }).code
+    const code = (error as { code?: string }).code ?? 'unknown'
+
+    // The caller answers the browser with a single opaque reason, which is
+    // right — a stranger learns nothing from a failed sign-in. But an
+    // operator needs to tell "expired token" from "key endpoint unreachable"
+    // from "wrong project", so the real cause is logged here, server side.
+    console.error(
+      `[auth/firebase] token rejected: ${code}`,
+      error instanceof Error ? error.message : error,
+    )
+
     if (code === 'ERR_JWT_CLAIM_VALIDATION_FAILED') throw new FirebaseVerifyError('wrong_audience')
     throw new FirebaseVerifyError('invalid_token')
   }
