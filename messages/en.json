@@ -706,7 +706,8 @@
     "saved": "Saved",
     "transferHint": "A transfer moves money between two of your own accounts, so it never counts as income or expense.",
     "noPriceFeed": "Prices are entered by hand — there is no market data feed.",
-    "needCategoryFirst": "Budgets need a category first — create an expense category, then set its monthly limit."
+    "needCategoryFirst": "Budgets need a category first — create an expense category, then set its monthly limit.",
+    "noCategories": "No categories yet"
   },
   "journal": {
     "title": "Journal",

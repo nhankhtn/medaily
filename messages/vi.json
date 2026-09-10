@@ -706,7 +706,8 @@
     "saved": "Đã lưu",
     "transferHint": "Chuyển khoản là chuyển tiền giữa hai tài khoản của chính bạn, nên không tính vào thu hay chi.",
     "noPriceFeed": "Giá do bạn tự nhập — ứng dụng không lấy dữ liệu thị trường.",
-    "needCategoryFirst": "Ngân sách cần có danh mục — tạo một danh mục Chi trước, rồi đặt mức mỗi tháng cho nó."
+    "needCategoryFirst": "Ngân sách cần có danh mục — tạo một danh mục Chi trước, rồi đặt mức mỗi tháng cho nó.",
+    "noCategories": "Chưa có danh mục nào"
   },
   "journal": {
     "title": "Nhật ký",
