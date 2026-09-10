@@ -21,7 +21,8 @@
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
     "smoke": "tsx scripts/smoke.ts",
-    "db:baseline": "tsx scripts/baseline.ts"
+    "db:baseline": "tsx scripts/baseline.ts",
+    "clean": "rm -rf .next node_modules"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.124.0",
