@@ -43,6 +43,13 @@
       "when": 1788970123004,
       "tag": "0005_drop_is_demo",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789025873762,
+      "tag": "0006_auth_identities",
+      "breakpoints": true
     }
   ]
 }

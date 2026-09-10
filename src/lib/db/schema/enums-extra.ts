@@ -58,8 +58,6 @@ export const relationshipEnum = pgEnum('relationship', [
   'colleague',
   'mentor',
   'other',
-  // Appended rather than inserted: Postgres enums keep their declared order,
-  // and reordering an existing type would rewrite every dependent row.
   'partner',
 ])
 export const interactionChannelEnum = pgEnum('interaction_channel', [
@@ -71,3 +69,5 @@ export const interactionChannelEnum = pgEnum('interaction_channel', [
 ])
 
 export const aiReportKindEnum = pgEnum('ai_report_kind', ['weekly', 'monthly', 'question'])
+
+export const authProviderEnum = pgEnum('auth_provider', ['password', 'google'])
