@@ -89,7 +89,7 @@ export async function saveReport(values: {
   const rows = await db
     .insert(aiReports)
     .values({
-      userId: getCurrentUserId(),
+      userId: await getCurrentUserId(),
       kind: values.kind,
       periodStart: values.periodStart,
       periodEnd: values.periodEnd,
@@ -113,7 +113,7 @@ export const findLatestReport = cache(async (
     .from(aiReports)
     .where(
       and(
-        eq(aiReports.userId, getCurrentUserId()),
+        eq(aiReports.userId, await getCurrentUserId()),
         eq(aiReports.kind, kind),
         eq(aiReports.periodStart, periodStart),
       ),

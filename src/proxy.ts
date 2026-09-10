@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { LOGIN_PATH, PUBLIC_PATHS, readAuthConfig } from '@/lib/auth/config'
+import { LOGIN_PATH, PUBLIC_PATHS, readAuthConfig, readGoogleConfig } from '@/lib/auth/config'
 import { SESSION_COOKIE, verifySession } from '@/lib/auth/session'
 
 /**
@@ -20,7 +20,10 @@ export async function proxy(request: NextRequest) {
   }
 
   const auth = readAuthConfig()
-  const session = auth.configured
+  const google = readGoogleConfig()
+  const usable = auth.secret.length >= 16 && (auth.configured || google.configured)
+
+  const session = usable
     ? await verifySession(request.cookies.get(SESSION_COOKIE)?.value, auth.secret)
     : null
 

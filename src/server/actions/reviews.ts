@@ -31,7 +31,7 @@ export async function saveReview(input: unknown) {
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
   const { period, key, ...values } = parsed.data
-  await upsertReview(getCurrentUserId(), period, key, values)
+  await upsertReview(await getCurrentUserId(), period, key, values)
 
   revalidatePath('/reviews')
   return { ok: true as const }
@@ -85,7 +85,7 @@ export async function reopenReview(input: unknown) {
   const parsed = z.object({ period: periodSchema, key: z.string().min(4).max(10) }).safeParse(input)
   if (!parsed.success) return { ok: false as const }
 
-  await upsertReview(getCurrentUserId(), parsed.data.period, parsed.data.key, {
+  await upsertReview(await getCurrentUserId(), parsed.data.period, parsed.data.key, {
     finalizedAt: null,
   })
   revalidatePath('/reviews')

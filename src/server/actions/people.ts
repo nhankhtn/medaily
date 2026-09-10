@@ -43,7 +43,7 @@ export async function savePerson(input: unknown) {
     .safeParse(input)
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
-  const userId = getCurrentUserId()
+  const userId = await getCurrentUserId()
   const { id, ...values } = parsed.data
 
   if (id) await updatePerson(userId, id, values)
@@ -65,7 +65,7 @@ export async function logInteraction(input: unknown) {
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
   await insertInteraction({
-    userId: getCurrentUserId(),
+    userId: await getCurrentUserId(),
     personId: parsed.data.personId,
     occurredOn: parsed.data.occurredOn,
     channel: parsed.data.channel,
@@ -87,7 +87,7 @@ export async function createReminder(input: unknown) {
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
   await insertReminder({
-    userId: getCurrentUserId(),
+    userId: await getCurrentUserId(),
     title: parsed.data.title,
     dueOn: parsed.data.dueOn,
     personId: parsed.data.personId ?? null,
@@ -99,7 +99,7 @@ export async function createReminder(input: unknown) {
 
 export async function markReminderDone(input: unknown) {
   const id = z.string().uuid().parse(input)
-  await completeReminder(getCurrentUserId(), id)
+  await completeReminder(await getCurrentUserId(), id)
   revalidatePeople()
   return { ok: true }
 }

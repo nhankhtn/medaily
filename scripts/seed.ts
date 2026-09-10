@@ -31,7 +31,7 @@ import {
   weeklyReviews,
   workouts,
 } from '../src/lib/db/schema'
-import { SINGLE_USER_ID } from '../src/lib/auth/current-user'
+import { OWNER_USER_ID as SINGLE_USER_ID } from '../src/lib/auth/current-user'
 
 /**
  * Spec 32 — deliberately imperfect data: weekday/weekend patterns, a slump, a

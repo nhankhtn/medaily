@@ -49,7 +49,7 @@ export type FinanceData = {
 
 export const getFinanceData = cache(async (): Promise<FinanceData> => {
   const settings = await getSettings()
-  const userId = getCurrentUserId()
+  const userId = await getCurrentUserId()
   const today = todayOf(dayContextOf(settings))
   const monthStart = monthStartOf(today)
   const monthEnd = monthEndOf(today)

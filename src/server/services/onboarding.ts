@@ -19,7 +19,7 @@ export type OnboardingView = {
 }
 
 export const getOnboardingView = cache(async (): Promise<OnboardingView> => {
-  const userId = getCurrentUserId()
+  const userId = await getCurrentUserId()
 
   const [signals, settings] = await Promise.all([
     countOnboardingSignals(userId),

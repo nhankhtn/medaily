@@ -40,7 +40,7 @@ export async function createAccount(input: unknown) {
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
   await insertAccount({
-    userId: getCurrentUserId(),
+    userId: await getCurrentUserId(),
     name: parsed.data.name,
     type: parsed.data.type,
     currency: parsed.data.currency.toUpperCase(),
@@ -57,7 +57,7 @@ export async function createCategory(input: unknown) {
     .safeParse(input)
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
-  await insertCategory({ ...parsed.data, userId: getCurrentUserId() })
+  await insertCategory({ ...parsed.data, userId: await getCurrentUserId() })
   revalidateFinance()
   return { ok: true as const }
 }
@@ -106,7 +106,7 @@ export async function createTransaction(input: unknown) {
 
 export async function removeTransaction(input: unknown) {
   const id = z.string().uuid().parse(input)
-  await deleteTransaction(getCurrentUserId(), id)
+  await deleteTransaction(await getCurrentUserId(), id)
   revalidateFinance()
   return { ok: true }
 }
@@ -118,7 +118,7 @@ export async function saveBudget(input: unknown) {
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
   await upsertBudget({
-    userId: getCurrentUserId(),
+    userId: await getCurrentUserId(),
     categoryId: parsed.data.categoryId,
     periodStart: parsed.data.periodStart,
     amount: String(parsed.data.amount),

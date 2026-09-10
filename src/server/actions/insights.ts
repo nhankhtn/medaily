@@ -10,7 +10,7 @@ import { getDayContext } from '@/server/services/settings'
 const idSchema = z.string().uuid()
 
 export async function dismiss(insightId: unknown) {
-  await dismissInsight(getCurrentUserId(), idSchema.parse(insightId))
+  await dismissInsight(await getCurrentUserId(), idSchema.parse(insightId))
   revalidatePath('/')
   return { ok: true }
 }
@@ -18,7 +18,7 @@ export async function dismiss(insightId: unknown) {
 /** Snoozing hides a card for a week rather than forever (spec 18.4). */
 export async function snooze(insightId: unknown) {
   const ctx = await getDayContext()
-  await snoozeInsight(getCurrentUserId(), idSchema.parse(insightId), addDays(today(ctx), 7))
+  await snoozeInsight(await getCurrentUserId(), idSchema.parse(insightId), addDays(today(ctx), 7))
   revalidatePath('/')
   return { ok: true }
 }

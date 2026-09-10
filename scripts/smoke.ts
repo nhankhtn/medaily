@@ -1,4 +1,5 @@
 import './load-env'
+import { OWNER_USER_ID } from '../src/lib/auth/current-user'
 import { signSession } from '../src/lib/auth/session'
 
 /**
@@ -36,7 +37,10 @@ async function main() {
   const { AUTH_USERNAME, AUTH_SECRET } = process.env
   if (!AUTH_USERNAME || !AUTH_SECRET) throw new Error('AUTH_USERNAME and AUTH_SECRET are required')
 
-  const token = await signSession({ sub: AUTH_USERNAME }, AUTH_SECRET)
+  const token = await signSession(
+    { uid: OWNER_USER_ID, sub: AUTH_USERNAME, provider: 'password' },
+    AUTH_SECRET,
+  )
   let failures = 0
 
   for (const locale of ['en', 'vi'] as const) {

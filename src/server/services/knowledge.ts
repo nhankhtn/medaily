@@ -20,7 +20,7 @@ export const getKnowledgeData = cache(async (): Promise<{
   notes: NoteView[]
   tags: Tag[]
 }> => {
-  const userId = getCurrentUserId()
+  const userId = await getCurrentUserId()
   const [rows, tags] = await Promise.all([findNotes(userId), findTags(userId)])
   const noteTagRows = await findNoteTags(rows.map((note) => note.id))
 
@@ -34,7 +34,7 @@ export const getKnowledgeData = cache(async (): Promise<{
 })
 
 export const getNoteDetail = cache(async (noteId: string) => {
-  const userId = getCurrentUserId()
+  const userId = await getCurrentUserId()
   const note = await findNote(userId, noteId)
   if (!note) return null
 
@@ -52,6 +52,6 @@ export const getJournalData = cache(async (): Promise<{
 })
 
 export const runSearch = cache(async (query: string): Promise<SearchHit[]> => {
-  return searchEverything(getCurrentUserId(), query)
+  return searchEverything(await getCurrentUserId(), query)
 })
 

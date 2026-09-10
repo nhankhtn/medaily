@@ -37,7 +37,7 @@ export type PlanningData = {
  */
 export const getPlanningData = cache(async (weekOf?: ISODate): Promise<PlanningData> => {
   const settings = await getSettings()
-  const userId = getCurrentUserId()
+  const userId = await getCurrentUserId()
   const today = todayOf(dayContextOf(settings))
   const weekStart = weekStartOf(weekOf ?? today, settings.weekStart)
   const range = { start: weekStart, end: weekEndOf(weekStart, settings.weekStart) }

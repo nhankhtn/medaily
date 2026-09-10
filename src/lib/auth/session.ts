@@ -2,17 +2,31 @@
  * Minimal signed-cookie session. Runs in both the Node and Edge runtimes, so it
  * uses Web Crypto only — the middleware cannot import node:crypto.
  *
- * Credentials live in the environment (spec 29): this is a single-user gate in
- * front of personal data, not a user directory.
+ * This cookie, not the Firebase ID token, is what every request is checked
+ * against (spec 29). A Firebase token is verified exactly once, at sign-in,
+ * and exchanged for one of these; afterwards no request touches Google.
  */
 const COOKIE_NAME = 'medaily_session'
 const DEFAULT_TTL_SECONDS = 60 * 60 * 24 * 30
 
 export const SESSION_COOKIE = COOKIE_NAME
 
+/**
+ * Payload version. v1 carried only `sub` (the configured username) because the
+ * app was single-user; it cannot name a user row, so v1 cookies are rejected
+ * and their holders sign in again once.
+ */
+export const SESSION_VERSION = 2
+
+export type SessionProvider = 'password' | 'google'
+
 export type SessionPayload = {
-  /** Subject: the configured username. */
+  v: number
+  /** The `users.id` this session acts as. The only identity the app trusts. */
+  uid: string
+  /** Display subject: the username or the Google email. Never used for lookup. */
   sub: string
+  provider: SessionProvider
   /** Issued-at and expiry, both seconds since epoch. */
   iat: number
   exp: number
@@ -47,12 +61,12 @@ async function hmacKey(secret: string): Promise<CryptoKey> {
 }
 
 export async function signSession(
-  payload: Omit<SessionPayload, 'iat' | 'exp'>,
+  payload: Omit<SessionPayload, 'iat' | 'exp' | 'v'>,
   secret: string,
   ttlSeconds = DEFAULT_TTL_SECONDS,
 ): Promise<string> {
   const now = Math.floor(Date.now() / 1000)
-  const body: SessionPayload = { ...payload, iat: now, exp: now + ttlSeconds }
+  const body: SessionPayload = { ...payload, v: SESSION_VERSION, iat: now, exp: now + ttlSeconds }
   const encoded = base64UrlEncode(encoder().encode(JSON.stringify(body)))
   const signature = await crypto.subtle.sign(
     'HMAC',
@@ -87,6 +101,8 @@ export async function verifySession(
 
   try {
     const payload = JSON.parse(new TextDecoder().decode(base64UrlDecode(encoded))) as SessionPayload
+    if (payload.v !== SESSION_VERSION) return null
+    if (typeof payload.uid !== 'string' || payload.uid.length === 0) return null
     if (typeof payload.exp !== 'number' || payload.exp < Math.floor(Date.now() / 1000)) return null
     return payload
   } catch {
@@ -105,4 +121,15 @@ export function safeEqual(a: string, b: string): boolean {
     diff |= (left[i] ?? 0) ^ (right[i] ?? 0)
   }
   return diff === 0
+}
+
+/** Cookie attributes shared by every place that writes the session. */
+export function sessionCookieOptions(maxAge = DEFAULT_TTL_SECONDS) {
+  return {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge,
+  } as const
 }

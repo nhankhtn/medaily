@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
-import { readAuthConfig } from '@/lib/auth/config'
+import { readAccessPolicy, readAuthConfig, readGoogleConfig } from '@/lib/auth/config'
 
 /**
  * Spec 30 — the only endpoint safe to expose. It reports liveness, migration
@@ -25,11 +25,24 @@ export async function GET() {
     !process.env.AUTH_SECRET && 'AUTH_SECRET',
   ].filter((name): name is string => Boolean(name))
 
+  const google = readGoogleConfig()
+  const policy = readAccessPolicy()
+
   const config = {
     missingEnv: missing,
     authConfigured: auth.configured,
     // A set-but-too-short secret is a common and otherwise silent mistake.
     authSecretTooShort: Boolean(process.env.AUTH_SECRET) && process.env.AUTH_SECRET!.length < 16,
+    // Names and counts only, never an address: this endpoint is public.
+    googleConfigured: google.configured,
+    googleClientConfigured:
+      Boolean(process.env.NEXT_PUBLIC_FIREBASE_API_KEY) &&
+      Boolean(process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN) &&
+      Boolean(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID),
+    ownerEmailSet: policy.ownerEmail !== null,
+    allowedEmailCount: policy.allowedEmails.length,
+    allowedDomainCount: policy.allowedDomains.length,
+    signupOpen: policy.allowSignup,
   }
 
   if (!process.env.DATABASE_URL) {

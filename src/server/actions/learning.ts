@@ -142,7 +142,7 @@ export async function startTimer(input: unknown) {
   if (!parsed.success) return { ok: false as const }
 
   await persistTimer({
-    userId: getCurrentUserId(),
+    userId: await getCurrentUserId(),
     startedAt: new Date(),
     kind: parsed.data.kind,
     topicId: parsed.data.topicId ?? null,
@@ -192,7 +192,7 @@ export async function createTopic(input: unknown) {
   if (!parsed.success) return { ok: false as const }
 
   const topic = await insertTopic({
-    userId: getCurrentUserId(),
+    userId: await getCurrentUserId(),
     name: parsed.data.name,
     category: parsed.data.category ?? null,
   })
@@ -216,7 +216,7 @@ export async function saveResource(input: unknown) {
   const parsed = resourceSchema.safeParse(input)
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
-  await upsertResource(getCurrentUserId(), {
+  await upsertResource(await getCurrentUserId(), {
     ...parsed.data,
     author: parsed.data.author ?? null,
     url: parsed.data.url ?? null,

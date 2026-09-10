@@ -22,14 +22,14 @@ const COOKIE_OPTIONS = {
  */
 export async function setLocale(locale: string) {
   const parsed = z.enum(LOCALES).parse(locale)
-  await updateSettings(getCurrentUserId(), { locale: parsed })
+  await updateSettings(await getCurrentUserId(), { locale: parsed })
   ;(await cookies()).set(LOCALE_COOKIE, parsed, COOKIE_OPTIONS)
   revalidatePath('/', 'layout')
 }
 
 export async function setTheme(theme: string) {
   const parsed = z.enum(['light', 'dark', 'system']).parse(theme)
-  await updateSettings(getCurrentUserId(), { theme: parsed })
+  await updateSettings(await getCurrentUserId(), { theme: parsed })
   revalidatePath('/', 'layout')
 }
 
@@ -56,9 +56,9 @@ export async function updateUserSettings(input: unknown) {
     if (!weightsAreValid(merged)) {
       return { ok: false as const, error: 'weights_must_sum_to_100' }
     }
-    await updateSettings(getCurrentUserId(), { ...patch, scoreWeights: merged })
+    await updateSettings(await getCurrentUserId(), { ...patch, scoreWeights: merged })
   } else {
-    await updateSettings(getCurrentUserId(), patch)
+    await updateSettings(await getCurrentUserId(), patch)
   }
 
   revalidatePath('/', 'layout')
@@ -66,7 +66,7 @@ export async function updateUserSettings(input: unknown) {
 }
 
 export async function resetScoreDefaults() {
-  await updateSettings(getCurrentUserId(), {
+  await updateSettings(await getCurrentUserId(), {
     scoreWeights: DEFAULT_SCORE_WEIGHTS,
     scoreTargets: DEFAULT_SCORE_TARGETS,
   })

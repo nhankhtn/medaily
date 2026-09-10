@@ -36,7 +36,7 @@ export type LearningData = {
 
 export const getLearningData = cache(async (days = 30): Promise<LearningData> => {
   const settings = await getSettings()
-  const userId = getCurrentUserId()
+  const userId = await getCurrentUserId()
   const today = todayOf(dayContextOf(settings))
   const range = rangeOfLastDays(today, days)
 
@@ -75,7 +75,7 @@ export const getLearningData = cache(async (days = 30): Promise<LearningData> =>
 
 /** Just the running timer, for the header — cheaper than the whole page payload. */
 export const getRunningTimer = cache(async (): Promise<RunningTimer | null> => {
-  const timer = await findTimer(getCurrentUserId())
+  const timer = await findTimer(await getCurrentUserId())
   if (!timer) return null
 
   return {

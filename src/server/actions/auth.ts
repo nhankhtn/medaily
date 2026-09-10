@@ -4,7 +4,8 @@ import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { LOGIN_PATH, readAuthConfig } from '@/lib/auth/config'
-import { safeEqual, SESSION_COOKIE, signSession } from '@/lib/auth/session'
+import { safeEqual, SESSION_COOKIE, sessionCookieOptions, signSession } from '@/lib/auth/session'
+import { resolvePasswordIdentity } from '@/server/services/auth'
 
 const credentialsSchema = z.object({
   username: z.string().min(1).max(200),
@@ -58,15 +59,15 @@ export async function login(_previous: LoginState, formData: FormData): Promise<
 
   attempts.delete(key)
 
-  const token = await signSession({ sub: auth.username }, auth.secret)
+
+  const userId = await resolvePasswordIdentity(auth.username)
+
+  const token = await signSession(
+    { uid: userId, sub: auth.username, provider: 'password' },
+    auth.secret,
+  )
   const cookieStore = await cookies()
-  cookieStore.set(SESSION_COOKIE, token, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    maxAge: 60 * 60 * 24 * 30,
-  })
+  cookieStore.set(SESSION_COOKIE, token, sessionCookieOptions())
 
   const target = parsed.data.next
   redirect(target && target.startsWith('/') && !target.startsWith('//') ? target : '/')
