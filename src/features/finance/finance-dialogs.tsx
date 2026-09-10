@@ -28,12 +28,17 @@ function useDialogAction(onDone: () => void) {
 
   const run = (action: () => Promise<{ ok: boolean }>) =>
     startTransition(async () => {
-      const result = await action()
-      if (!result.ok) {
+      try {
+        const result = await action()
+        if (!result.ok) {
+          toast.error(tc('error'))
+          return
+        }
+        onDone()
+      } catch (error) {
+        console.error('[finance] action failed:', error)
         toast.error(tc('error'))
-        return
       }
-      onDone()
     })
 
   return { pending, run }
@@ -88,7 +93,12 @@ export function AccountDialog({ defaultCurrency }: { defaultCurrency: string }) 
             </Field>
           </div>
           <Field label={t('openingBalance')}>
-            <MoneyInput name="openingBalance" defaultValue={0} allowNegative className="text-right tabular-nums" />
+            <MoneyInput
+              name="openingBalance"
+              defaultValue={0}
+              allowNegative
+              className="text-right tabular-nums"
+            />
           </Field>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
@@ -322,7 +332,14 @@ export function InvestmentDialog({ today }: { today: ISODate }) {
               <Input name="symbol" required autoFocus maxLength={20} />
             </Field>
             <Field label={t('quantity')}>
-              <Input type="number" name="quantity" step="any" min={0} required className="text-right tabular-nums" />
+              <Input
+                type="number"
+                name="quantity"
+                step="any"
+                min={0}
+                required
+                className="text-right tabular-nums"
+              />
             </Field>
             <Field label={t('avgCost')}>
               <MoneyInput name="avgCost" required className="text-right tabular-nums" />

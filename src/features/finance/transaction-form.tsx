@@ -36,24 +36,29 @@ export function TransactionForm({
 
   const submit = (formData: FormData) => {
     startTransition(async () => {
-      const result = await createTransaction({
-        occurredOn: String(formData.get('occurredOn') ?? today),
-        amount: Number(formData.get('amount') ?? 0),
-        kind,
-        accountId: String(formData.get('accountId') ?? ''),
-        counterAccountId: emptyToNull(formData.get('counterAccountId')),
-        categoryId: emptyToNull(formData.get('categoryId')),
-        merchant: String(formData.get('merchant') ?? ''),
-        note: '',
-      })
+      try {
+        const result = await createTransaction({
+          occurredOn: String(formData.get('occurredOn') ?? today),
+          amount: Number(formData.get('amount') ?? 0),
+          kind,
+          accountId: String(formData.get('accountId') ?? ''),
+          counterAccountId: emptyToNull(formData.get('counterAccountId')),
+          categoryId: emptyToNull(formData.get('categoryId')),
+          merchant: String(formData.get('merchant') ?? ''),
+          note: '',
+        })
 
-      if (!result.ok) {
+        if (!result.ok) {
+          toast.error(tc('error'))
+          return
+        }
+        toast.success(t('saved'))
+        const form = document.getElementById('transaction-form') as HTMLFormElement | null
+        form?.reset()
+      } catch (error) {
+        console.error('[finance] could not save the transaction:', error)
         toast.error(tc('error'))
-        return
       }
-      toast.success(t('saved'))
-      const form = document.getElementById('transaction-form') as HTMLFormElement | null
-      form?.reset()
     })
   }
 
@@ -65,7 +70,7 @@ export function TransactionForm({
     <form id="transaction-form" action={submit} className="space-y-2">
       <div className="flex flex-wrap items-end gap-2">
         <label className="w-28 space-y-1.5">
-          <span className="text-xs font-medium text-text-muted">{t('kind')}</span>
+          <span className="text-text-muted text-xs font-medium">{t('kind')}</span>
           <Select value={kind} onChange={(event) => setKind(event.target.value as typeof kind)}>
             {(['expense', 'income', 'transfer'] as const).map((option) => (
               <option key={option} value={option}>
@@ -76,12 +81,12 @@ export function TransactionForm({
         </label>
 
         <label className="w-32 space-y-1.5">
-          <span className="text-xs font-medium text-text-muted">{t('amount')}</span>
+          <span className="text-text-muted text-xs font-medium">{t('amount')}</span>
           <MoneyInput name="amount" required className="text-right tabular-nums" />
         </label>
 
         <label className="min-w-36 flex-1 space-y-1.5">
-          <span className="text-xs font-medium text-text-muted">{t('account')}</span>
+          <span className="text-text-muted text-xs font-medium">{t('account')}</span>
           <Select name="accountId" required>
             {accounts.map((account) => (
               <option key={account.id} value={account.id}>
@@ -93,7 +98,7 @@ export function TransactionForm({
 
         {kind === 'transfer' ? (
           <label className="min-w-36 flex-1 space-y-1.5">
-            <span className="text-xs font-medium text-text-muted">{t('toAccount')}</span>
+            <span className="text-text-muted text-xs font-medium">{t('toAccount')}</span>
             <Select name="counterAccountId" required>
               {accounts.map((account) => (
                 <option key={account.id} value={account.id}>
@@ -104,7 +109,7 @@ export function TransactionForm({
           </label>
         ) : (
           <label className="min-w-36 flex-1 space-y-1.5">
-            <span className="text-xs font-medium text-text-muted">{t('category')}</span>
+            <span className="text-text-muted text-xs font-medium">{t('category')}</span>
             <Select name="categoryId">
               <option value="">{t('noCategory')}</option>
               {relevantCategories.map((category) => (
@@ -117,12 +122,12 @@ export function TransactionForm({
         )}
 
         <label className="min-w-32 flex-1 space-y-1.5">
-          <span className="text-xs font-medium text-text-muted">{t('merchant')}</span>
+          <span className="text-text-muted text-xs font-medium">{t('merchant')}</span>
           <Input name="merchant" maxLength={200} />
         </label>
 
         <label className="w-36 space-y-1.5">
-          <span className="text-xs font-medium text-text-muted">{t('date')}</span>
+          <span className="text-text-muted text-xs font-medium">{t('date')}</span>
           <Input type="date" name="occurredOn" defaultValue={today} />
         </label>
 
@@ -132,9 +137,7 @@ export function TransactionForm({
         </Button>
       </div>
 
-      {kind === 'transfer' ? (
-        <p className="text-xs text-text-subtle">{t('transferHint')}</p>
-      ) : null}
+      {kind === 'transfer' ? <p className="text-text-subtle text-xs">{t('transferHint')}</p> : null}
     </form>
   )
 }
