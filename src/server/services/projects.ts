@@ -19,7 +19,7 @@ export const getProjectsView = cache(async (): Promise<{
   projects: ProjectView[]
   goals: { id: string; name: string }[]
 }> => {
-  const userId = getCurrentUserId()
+  const userId = await getCurrentUserId()
   const [rows, tasks, goals] = await Promise.all([
     findProjects(userId),
     findTasks(userId),
@@ -50,7 +50,7 @@ export const getProjectsView = cache(async (): Promise<{
 export const getProjectDetail = cache(async (
   projectId: string,
 ): Promise<{ project: ProjectView; tasks: ProjectTask[] } | null> => {
-  const userId = getCurrentUserId()
+  const userId = await getCurrentUserId()
   const project = await findProject(userId, projectId)
   if (!project) return null
 

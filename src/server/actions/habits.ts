@@ -36,7 +36,7 @@ export async function toggleHabit(input: unknown): Promise<ToggleHabitResult> {
   const parsed = toggleSchema.safeParse(input)
   if (!parsed.success) return { ok: false, error: 'invalid_input' }
 
-  const userId = getCurrentUserId()
+  const userId = await getCurrentUserId()
   const habit = await findHabit(userId, parsed.data.habitId)
   if (!habit) return { ok: false, error: 'not_found' }
   if (habit.linkedMetric) return { ok: false, error: 'derived' }
@@ -158,7 +158,7 @@ export async function saveHabit(input: unknown): Promise<SaveHabitResult> {
 
 export async function archiveHabit(input: unknown) {
   const id = z.string().uuid().parse(input)
-  await updateHabit(getCurrentUserId(), id, { archivedAt: new Date() })
+  await updateHabit(await getCurrentUserId(), id, { archivedAt: new Date() })
   revalidatePath('/habits')
   revalidatePath('/')
   return { ok: true }
@@ -166,7 +166,7 @@ export async function archiveHabit(input: unknown) {
 
 export async function unarchiveHabit(input: unknown) {
   const id = z.string().uuid().parse(input)
-  await updateHabit(getCurrentUserId(), id, { archivedAt: null })
+  await updateHabit(await getCurrentUserId(), id, { archivedAt: null })
   revalidatePath('/habits')
   return { ok: true }
 }

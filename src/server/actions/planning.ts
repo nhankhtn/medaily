@@ -43,7 +43,7 @@ export async function createEvent(input: unknown) {
   const endsAt = allDay ? null : endTime ? new Date(`${date}T${endTime}:00`) : null
 
   await insertEvent({
-    userId: getCurrentUserId(),
+    userId: await getCurrentUserId(),
     title: parsed.data.title,
     startsAt,
     endsAt,
@@ -58,7 +58,7 @@ export async function createEvent(input: unknown) {
 
 export async function removeEvent(input: unknown) {
   const id = z.string().uuid().parse(input)
-  await deleteEvent(getCurrentUserId(), id)
+  await deleteEvent(await getCurrentUserId(), id)
   revalidatePlanning()
   return { ok: true }
 }
@@ -81,7 +81,7 @@ export async function createPlannedBlock(input: unknown) {
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
   await insertPlannedBlock({
-    userId: getCurrentUserId(),
+    userId: await getCurrentUserId(),
     blockDate: parsed.data.blockDate,
     startTime: parsed.data.startTime,
     endTime: parsed.data.endTime,
@@ -96,7 +96,7 @@ export async function createPlannedBlock(input: unknown) {
 
 export async function removePlannedBlock(input: unknown) {
   const id = z.string().uuid().parse(input)
-  await deletePlannedBlock(getCurrentUserId(), id)
+  await deletePlannedBlock(await getCurrentUserId(), id)
   revalidatePlanning()
   return { ok: true }
 }

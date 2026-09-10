@@ -9,7 +9,7 @@ export async function GET() {
   const today = todayOf(dayContextOf(settings))
 
   const events = await findEvents(
-    getCurrentUserId(),
+    await getCurrentUserId(),
     fromISODate(addDays(today, -365)),
     fromISODate(addDays(today, 365)),
   )

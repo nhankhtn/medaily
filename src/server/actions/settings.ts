@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import { z } from 'zod'
-import { getCurrentUserId } from '@/lib/auth/current-user'
+import { getCurrentUserId, readSession } from '@/lib/auth/current-user'
 import { LOCALE_COOKIE, LOCALES } from '@/i18n/config'
 import { DEFAULT_SCORE_TARGETS, DEFAULT_SCORE_WEIGHTS } from '@/lib/defaults'
 import { weightsAreValid } from '@/lib/scoring'
@@ -19,17 +19,25 @@ const COOKIE_OPTIONS = {
 /**
  * Locale lives in settings and is mirrored to a cookie so the next server
  * render is already correct without a URL prefix (spec 21).
+ *
+ * The switcher also sits on the sign-in page, where there is no session and
+ * so no settings row to write to. Reading the page in your own language is a
+ * device preference before it is an account preference: the cookie carries it
+ * on its own until someone signs in, and the row catches up from then on.
  */
 export async function setLocale(locale: string) {
   const parsed = z.enum(LOCALES).parse(locale)
-  await updateSettings(getCurrentUserId(), { locale: parsed })
+
+  const session = await readSession()
+  if (session) await updateSettings(session.uid, { locale: parsed })
+
   ;(await cookies()).set(LOCALE_COOKIE, parsed, COOKIE_OPTIONS)
   revalidatePath('/', 'layout')
 }
 
 export async function setTheme(theme: string) {
   const parsed = z.enum(['light', 'dark', 'system']).parse(theme)
-  await updateSettings(getCurrentUserId(), { theme: parsed })
+  await updateSettings(await getCurrentUserId(), { theme: parsed })
   revalidatePath('/', 'layout')
 }
 
@@ -56,9 +64,9 @@ export async function updateUserSettings(input: unknown) {
     if (!weightsAreValid(merged)) {
       return { ok: false as const, error: 'weights_must_sum_to_100' }
     }
-    await updateSettings(getCurrentUserId(), { ...patch, scoreWeights: merged })
+    await updateSettings(await getCurrentUserId(), { ...patch, scoreWeights: merged })
   } else {
-    await updateSettings(getCurrentUserId(), patch)
+    await updateSettings(await getCurrentUserId(), patch)
   }
 
   revalidatePath('/', 'layout')
@@ -66,7 +74,7 @@ export async function updateUserSettings(input: unknown) {
 }
 
 export async function resetScoreDefaults() {
-  await updateSettings(getCurrentUserId(), {
+  await updateSettings(await getCurrentUserId(), {
     scoreWeights: DEFAULT_SCORE_WEIGHTS,
     scoreTargets: DEFAULT_SCORE_TARGETS,
   })

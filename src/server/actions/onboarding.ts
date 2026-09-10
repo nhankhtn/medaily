@@ -10,7 +10,7 @@ import { findSettings, updateSettings } from '@/server/repositories/settings'
  * `undefined` in the patch removes that key rather than writing a null.
  */
 async function patchOnboarding(patch: OnboardingState) {
-  const userId = getCurrentUserId()
+  const userId = await getCurrentUserId()
   const settings = await findSettings(userId)
 
   const merged: OnboardingState = { ...(settings?.onboarding ?? {}), ...patch }
@@ -43,7 +43,7 @@ export async function dismissChecklist() {
  * guidance comes back even for a user who already has plenty of data.
  */
 export async function restartOnboarding() {
-  const userId = getCurrentUserId()
+  const userId = await getCurrentUserId()
   await updateSettings(userId, { onboarding: { tourRequestedAt: new Date().toISOString() } })
   revalidatePath('/')
   revalidatePath('/settings')

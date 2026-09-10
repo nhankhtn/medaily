@@ -1,5 +1,5 @@
 import { cache } from 'react'
-import { getCurrentUserId } from '@/lib/auth/current-user'
+import { getCurrentUserId, UnauthenticatedError } from '@/lib/auth/current-user'
 import type { DayContext } from '@/lib/dates'
 import {
   DEFAULT_INSIGHT_THRESHOLDS,
@@ -13,7 +13,25 @@ import type {
   ScoreWeights,
   StreakThresholds,
 } from '@/lib/types'
-import { findSettings, insertDefaultSettings } from '@/server/repositories/settings'
+import { findUserById } from '@/server/repositories/auth'
+import { findSettings, insertUserSettings } from '@/server/repositories/settings'
+
+/**
+ * A user with no settings row is repaired; a settings row for a user that no
+ * longer exists is not. Recreating the user here would mean a still-valid
+ * cookie could resurrect a deleted account on its next request.
+ */
+async function settingsForKnownUser(userId: string) {
+  if (!(await findUserById(userId))) throw new UnknownUserError(userId)
+  return insertUserSettings(userId)
+}
+
+export class UnknownUserError extends Error {
+  constructor(readonly userId: string) {
+    super(`session names a user that does not exist: ${userId}`)
+    this.name = 'UnknownUserError'
+  }
+}
 
 export type ResolvedSettings = {
   userId: string
@@ -40,8 +58,8 @@ export type ResolvedSettings = {
  * defaults so a partially written blob can never produce an undefined target.
  */
 export const getSettings = cache(async (): Promise<ResolvedSettings> => {
-  const userId = getCurrentUserId()
-  const row = (await findSettings(userId)) ?? (await insertDefaultSettings(userId))
+  const userId = await getCurrentUserId()
+  const row = (await findSettings(userId)) ?? (await settingsForKnownUser(userId))
 
   return {
     userId,
@@ -107,7 +125,27 @@ export const getShellSettings = cache(async (): Promise<ResolvedSettings> => {
   try {
     return await getSettings()
   } catch (error) {
-    console.error('[settings] falling back to defaults:', error)
+    // Next signals control flow by throwing. Reading cookies during static
+    // generation raises DYNAMIC_SERVER_USAGE to mark the route dynamic, and
+    // redirect()/notFound() raise NEXT_*. Catching those would tell the build
+    // the page rendered fine and leave it prerendered with these defaults for
+    // everyone — so they pass straight through.
+    if (isFrameworkSignal(error)) throw error
+
+    // The sign-in page renders inside this same root layout, so "no session"
+    // is the normal case here, not a fault worth logging on every visit.
+    if (!(error instanceof UnauthenticatedError)) {
+      console.error('[settings] falling back to defaults:', error)
+    }
     return FALLBACK_SETTINGS
   }
 })
+
+/**
+ * Matched on `digest` rather than by importing Next's `isDynamicServerError`,
+ * which lives under `next/dist/client/components/...` and is not public API.
+ */
+function isFrameworkSignal(error: unknown): boolean {
+  const digest = (error as { digest?: unknown } | null)?.digest
+  return typeof digest === 'string' && (digest === 'DYNAMIC_SERVER_USAGE' || digest.startsWith('NEXT_'))
+}

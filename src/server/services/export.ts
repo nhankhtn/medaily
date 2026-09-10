@@ -75,7 +75,7 @@ export type ExportPayload = {
  * requirement, not a backlog item: the data must be removable at any time.
  */
 export async function buildExport(): Promise<ExportPayload> {
-  const userId = getCurrentUserId()
+  const userId = await getCurrentUserId()
   const tables: ExportPayload['tables'] = {}
 
   for (const table of EXPORT_TABLES) {
@@ -132,7 +132,7 @@ export async function importPayload(payload: unknown, dryRun: boolean): Promise<
   if (summary.errors.length > 0) return summary
 
   summary.schemaVersion = parsed.schemaVersion
-  const userId = getCurrentUserId()
+  const userId = await getCurrentUserId()
 
   for (const table of EXPORT_TABLES) {
     const rows = parsed.tables?.[table]
@@ -188,7 +188,7 @@ export async function importPayload(payload: unknown, dryRun: boolean): Promise<
 
 /** Per-module CSV, for spreadsheets rather than round-tripping. */
 export async function buildCsv(table: ExportTable): Promise<string> {
-  const userId = getCurrentUserId()
+  const userId = await getCurrentUserId()
   const rows = (await db.execute(
     sql`SELECT * FROM ${sql.identifier(table)} WHERE user_id = ${userId}`,
   )) as unknown as Record<string, unknown>[]

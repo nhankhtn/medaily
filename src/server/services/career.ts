@@ -14,7 +14,7 @@ export type CareerData = {
 
 export const getCareerData = cache(async (): Promise<CareerData> => {
   const settings = await getSettings()
-  const userId = getCurrentUserId()
+  const userId = await getCurrentUserId()
 
   const [skills, achievements, portfolio] = await Promise.all([
     findSkills(userId),

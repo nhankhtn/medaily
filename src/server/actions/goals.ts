@@ -17,7 +17,7 @@ export async function setManualProgress(input: unknown) {
     .object({ goalId: z.string().uuid(), percent: z.number().min(0).max(100) })
     .parse(input)
 
-  await updateGoal(getCurrentUserId(), goalId, {
+  await updateGoal(await getCurrentUserId(), goalId, {
     progressManual: String(percent),
     progressUpdatedAt: new Date(),
   })
@@ -64,7 +64,7 @@ export async function updateGoalStatus(input: unknown) {
     })
     .parse(input)
 
-  await updateGoal(getCurrentUserId(), goalId, {
+  await updateGoal(await getCurrentUserId(), goalId, {
     status,
     completedAt: status === 'completed' ? new Date() : null,
   })
@@ -120,7 +120,7 @@ export async function saveGoal(input: unknown): Promise<SaveGoalResult> {
     return { ok: false, error: 'invalid_input', detail: parsed.error.issues[0]?.message }
   }
 
-  const userId = getCurrentUserId()
+  const userId = await getCurrentUserId()
   const { id, milestoneTitles, ...values } = parsed.data
   const isMetric = values.progressMode === 'metric'
 
@@ -168,7 +168,7 @@ export async function saveGoal(input: unknown): Promise<SaveGoalResult> {
 
 export async function archiveGoal(input: unknown) {
   const id = z.string().uuid().parse(input)
-  await updateGoal(getCurrentUserId(), id, { archivedAt: new Date() })
+  await updateGoal(await getCurrentUserId(), id, { archivedAt: new Date() })
   revalidatePath('/goals')
   revalidatePath('/')
   return { ok: true }

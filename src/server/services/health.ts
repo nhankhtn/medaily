@@ -24,7 +24,7 @@ export type HealthData = {
 
 export const getHealthData = cache(async (days = 90): Promise<HealthData> => {
   const settings = await getSettings()
-  const userId = getCurrentUserId()
+  const userId = await getCurrentUserId()
   const today = todayOf(dayContextOf(settings))
   const range = rangeOfLastDays(today, days)
 

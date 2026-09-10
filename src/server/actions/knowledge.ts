@@ -35,7 +35,7 @@ export async function saveNote(input: unknown) {
   const parsed = noteSchema.safeParse(input)
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
-  const userId = getCurrentUserId()
+  const userId = await getCurrentUserId()
   const { tags: tagNames, ...values } = parsed.data
 
   const note = await upsertNote(userId, {
@@ -56,7 +56,7 @@ export async function saveNote(input: unknown) {
 
 export async function removeNote(input: unknown) {
   const id = z.string().uuid().parse(input)
-  await deleteNote(getCurrentUserId(), id)
+  await deleteNote(await getCurrentUserId(), id)
   revalidatePath('/knowledge')
   return { ok: true }
 }
@@ -74,7 +74,7 @@ export async function saveJournalEntry(input: unknown) {
   const parsed = journalSchema.safeParse(input)
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
-  const entry = await upsertJournalEntry(getCurrentUserId(), {
+  const entry = await upsertJournalEntry(await getCurrentUserId(), {
     id: parsed.data.id,
     entryDate: parsed.data.entryDate,
     title: parsed.data.title ?? null,
@@ -90,7 +90,7 @@ export async function saveJournalEntry(input: unknown) {
 
 export async function removeJournalEntry(input: unknown) {
   const id = z.string().uuid().parse(input)
-  await deleteJournalEntry(getCurrentUserId(), id)
+  await deleteJournalEntry(await getCurrentUserId(), id)
   revalidatePath('/journal')
   return { ok: true }
 }

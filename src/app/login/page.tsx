@@ -1,5 +1,6 @@
 import { getTranslations } from 'next-intl/server'
 import { LocaleSwitcher } from '@/components/shell/locale-switcher'
+import { GoogleButton } from '@/features/auth/google-button'
 import { LoginForm } from '@/features/auth/login-form'
 
 export default async function LoginPage({
@@ -20,6 +21,8 @@ export default async function LoginPage({
         </div>
 
         <h1 className="text-2xl font-semibold">{t('title')}</h1>
+
+        <GoogleButton next={params.next} />
 
         <LoginForm next={params.next} />
       </div>

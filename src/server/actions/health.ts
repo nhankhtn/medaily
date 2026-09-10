@@ -92,7 +92,7 @@ export async function saveWorkout(input: unknown) {
 
 export async function removeWorkout(input: unknown) {
   const id = z.string().uuid().parse(input)
-  await deleteWorkout(getCurrentUserId(), id)
+  await deleteWorkout(await getCurrentUserId(), id)
   revalidatePath('/health')
   return { ok: true }
 }
@@ -114,7 +114,7 @@ export async function saveMeasurement(input: unknown) {
     value === null || value === undefined ? null : String(value)
 
   await upsertMeasurement({
-    userId: getCurrentUserId(),
+    userId: await getCurrentUserId(),
     measuredOn: parsed.data.measuredOn,
     weightKg: toNumeric(parsed.data.weightKg),
     bodyFatPct: toNumeric(parsed.data.bodyFatPct),
@@ -140,7 +140,7 @@ export async function saveNutrition(input: unknown) {
   const parsed = nutritionSchema.safeParse(input)
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
-  await upsertNutrition({ ...parsed.data, userId: getCurrentUserId() })
+  await upsertNutrition({ ...parsed.data, userId: await getCurrentUserId() })
   revalidatePath('/health')
   return { ok: true as const }
 }

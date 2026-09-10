@@ -29,7 +29,7 @@ export type PeopleData = {
 
 export const getPeopleData = cache(async (): Promise<PeopleData> => {
   const settings = await getSettings()
-  const userId = getCurrentUserId()
+  const userId = await getCurrentUserId()
   const today = todayOf(dayContextOf(settings))
 
   const [rows, lastByPerson, interactions, reminders] = await Promise.all([

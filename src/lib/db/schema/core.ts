@@ -1,5 +1,15 @@
 import { relations, sql } from 'drizzle-orm'
-import { boolean, jsonb, pgTable, smallint, text, time, timestamp, uuid } from 'drizzle-orm/pg-core'
+import {
+  boolean,
+  jsonb,
+  pgTable,
+  smallint,
+  text,
+  time,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from 'drizzle-orm/pg-core'
 import { localeEnum, themeEnum, unitSystemEnum, weekStartEnum } from './enums'
 import type {
   InsightThresholds,
@@ -9,13 +19,24 @@ import type {
   StreakThresholds,
 } from '../../types'
 
-export const users = pgTable('users', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  displayName: text('display_name').notNull().default('Me'),
-  email: text('email'),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-})
+export const users = pgTable(
+  'users',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    displayName: text('display_name').notNull().default('Me'),
+    email: text('email'),
+    imageUrl: text('image_url'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    // Case-insensitive and partial: an address identifies at most one person,
+    // but the owner row seeded by migration has no email at all.
+    uniqueIndex('users_email_uniq')
+      .on(sql`lower(${t.email})`)
+      .where(sql`${t.email} IS NOT NULL`),
+  ],
+)
 
 export const userSettings = pgTable('user_settings', {
   userId: uuid('user_id')

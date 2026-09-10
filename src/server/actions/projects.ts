@@ -37,7 +37,7 @@ export async function saveProject(input: unknown) {
   const parsed = projectSchema.safeParse(input)
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
-  const userId = getCurrentUserId()
+  const userId = await getCurrentUserId()
   const { id, ...values } = parsed.data
 
   const project = id
@@ -51,7 +51,7 @@ export async function saveProject(input: unknown) {
 
 export async function archiveProject(input: unknown) {
   const id = z.string().uuid().parse(input)
-  await updateProject(getCurrentUserId(), id, { archivedAt: new Date() })
+  await updateProject(await getCurrentUserId(), id, { archivedAt: new Date() })
   revalidatePath('/projects')
   return { ok: true }
 }
@@ -71,7 +71,7 @@ export async function saveTask(input: unknown) {
   const parsed = taskSchema.safeParse(input)
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
-  const userId = getCurrentUserId()
+  const userId = await getCurrentUserId()
   const { id, ...values } = parsed.data
 
   // `completed_at` follows the status, so "done" always carries its timestamp.
@@ -88,7 +88,7 @@ export async function saveTask(input: unknown) {
 
 export async function toggleTask(input: unknown) {
   const id = z.string().uuid().parse(input)
-  const userId = getCurrentUserId()
+  const userId = await getCurrentUserId()
 
   const task = await findTask(userId, id)
   if (!task) return { ok: false as const }
@@ -106,7 +106,7 @@ export async function toggleTask(input: unknown) {
 
 export async function removeTask(input: unknown) {
   const id = z.string().uuid().parse(input)
-  const userId = getCurrentUserId()
+  const userId = await getCurrentUserId()
   const task = await findTask(userId, id)
   if (!task) return { ok: false }
 

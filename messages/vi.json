@@ -457,7 +457,12 @@
     "invalid": "Sai tên đăng nhập hoặc mật khẩu.",
     "rateLimited": "Thử quá nhiều lần. Đợi vài phút rồi thử lại.",
     "notConfigured": "Chưa cấu hình đăng nhập. Đặt AUTH_USERNAME, AUTH_PASSWORD và AUTH_SECRET rồi khởi động lại.",
-    "signedInAs": "Đang đăng nhập: {name}"
+    "signedInAs": "Đang đăng nhập: {name}",
+    "or": "hoặc",
+    "continueWithGoogle": "Tiếp tục với Google",
+    "googleFailed": "Đăng nhập Google thất bại. Thử lại nhé.",
+    "popupBlocked": "Trình duyệt đã chặn cửa sổ đăng nhập. Cho phép popup ở trang này rồi thử lại.",
+    "notAllowed": "Tài khoản này không được phép đăng nhập."
   },
   "projects": {
     "title": "Dự án",

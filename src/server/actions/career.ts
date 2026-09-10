@@ -29,7 +29,7 @@ export async function saveSkill(input: unknown) {
     .safeParse(input)
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
-  await upsertSkill(getCurrentUserId(), {
+  await upsertSkill(await getCurrentUserId(), {
     ...parsed.data,
     category: parsed.data.category ?? null,
     targetLevel: parsed.data.targetLevel ?? null,
@@ -52,7 +52,7 @@ export async function saveAchievement(input: unknown) {
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
   await insertAchievement({
-    userId: getCurrentUserId(),
+    userId: await getCurrentUserId(),
     title: parsed.data.title,
     achievedOn: parsed.data.achievedOn,
     description: parsed.data.description ?? null,
@@ -76,7 +76,7 @@ export async function savePortfolioItem(input: unknown) {
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
   await insertPortfolioItem({
-    userId: getCurrentUserId(),
+    userId: await getCurrentUserId(),
     title: parsed.data.title,
     url: parsed.data.url ?? null,
     description: parsed.data.description ?? null,

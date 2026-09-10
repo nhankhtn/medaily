@@ -19,11 +19,25 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   ANTHROPIC_API_KEY: z.string().optional(),
 
-  // Auth is a single hard-coded credential pair (spec 29). Absent values keep
-  // the gate closed rather than open.
+  // Auth is a hard-coded credential pair plus, optionally, Google sign-in
+  // (spec 29). Absent values keep the gate closed rather than open.
   AUTH_USERNAME: z.string().optional(),
   AUTH_PASSWORD: z.string().optional(),
   AUTH_SECRET: z.string().min(16, 'AUTH_SECRET must be at least 16 characters').optional(),
+
+  // Google sign-in through Firebase. Only the project id is needed on the
+  // server: ID tokens are verified against Google's public keys, so there is
+  // no service account and no second secret.
+  FIREBASE_PROJECT_ID: z.string().optional(),
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID: z.string().optional(),
+  NEXT_PUBLIC_FIREBASE_API_KEY: z.string().optional(),
+  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: z.string().optional(),
+
+  // Who may sign in. Empty lists with signup off means owner-only.
+  AUTH_OWNER_EMAIL: z.string().optional(),
+  AUTH_ALLOWED_EMAILS: z.string().optional(),
+  AUTH_ALLOWED_DOMAINS: z.string().optional(),
+  AUTH_ALLOW_SIGNUP: z.string().optional(),
 })
 
 export type Env = z.infer<typeof envSchema>
@@ -44,6 +58,14 @@ export const env: Env = parsed.success
       AUTH_USERNAME: process.env.AUTH_USERNAME,
       AUTH_PASSWORD: process.env.AUTH_PASSWORD,
       AUTH_SECRET: process.env.AUTH_SECRET,
+      FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+      NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+      AUTH_OWNER_EMAIL: process.env.AUTH_OWNER_EMAIL,
+      AUTH_ALLOWED_EMAILS: process.env.AUTH_ALLOWED_EMAILS,
+      AUTH_ALLOWED_DOMAINS: process.env.AUTH_ALLOWED_DOMAINS,
+      AUTH_ALLOW_SIGNUP: process.env.AUTH_ALLOW_SIGNUP,
     }
 
 // Read straight from process.env so this holds even when parsing failed.
