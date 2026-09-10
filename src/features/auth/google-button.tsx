@@ -105,6 +105,17 @@ export function GoogleButton({ next }: { next?: string }) {
           {error}
         </p>
       ) : null}
+
+      {/*
+        The separator belongs to this component, not the page: when Firebase
+        is unconfigured the button returns null above, and a page that owned
+        the divider would leave an "or" hanging over nothing.
+      */}
+      <div className="flex items-center gap-3 pt-1 text-xs text-text-subtle">
+        <span className="h-px flex-1 bg-border-base" />
+        {t('or')}
+        <span className="h-px flex-1 bg-border-base" />
+      </div>
     </div>
   )
 }

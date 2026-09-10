@@ -24,12 +24,6 @@ export default async function LoginPage({
 
         <GoogleButton next={params.next} />
 
-        <div className="flex items-center gap-3 text-xs text-text-subtle">
-          <span className="h-px flex-1 bg-border" />
-          {t('or')}
-          <span className="h-px flex-1 bg-border" />
-        </div>
-
         <LoginForm next={params.next} />
       </div>
     </div>
