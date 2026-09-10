@@ -125,9 +125,27 @@ export const getShellSettings = cache(async (): Promise<ResolvedSettings> => {
   try {
     return await getSettings()
   } catch (error) {
+    // Next signals control flow by throwing. Reading cookies during static
+    // generation raises DYNAMIC_SERVER_USAGE to mark the route dynamic, and
+    // redirect()/notFound() raise NEXT_*. Catching those would tell the build
+    // the page rendered fine and leave it prerendered with these defaults for
+    // everyone — so they pass straight through.
+    if (isFrameworkSignal(error)) throw error
+
+    // The sign-in page renders inside this same root layout, so "no session"
+    // is the normal case here, not a fault worth logging on every visit.
     if (!(error instanceof UnauthenticatedError)) {
       console.error('[settings] falling back to defaults:', error)
     }
     return FALLBACK_SETTINGS
   }
 })
+
+/**
+ * Matched on `digest` rather than by importing Next's `isDynamicServerError`,
+ * which lives under `next/dist/client/components/...` and is not public API.
+ */
+function isFrameworkSignal(error: unknown): boolean {
+  const digest = (error as { digest?: unknown } | null)?.digest
+  return typeof digest === 'string' && (digest === 'DYNAMIC_SERVER_USAGE' || digest.startsWith('NEXT_'))
+}
