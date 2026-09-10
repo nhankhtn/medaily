@@ -42,9 +42,6 @@ export function GoogleButton({ next }: { next?: string }) {
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Rendered only when the deploy actually has a Firebase project, so a
-  // local run without one shows the credential form alone instead of a
-  // button that can only fail.
   if (!firebaseConfigured()) return null
 
   const start = async () => {
@@ -62,8 +59,6 @@ export function GoogleButton({ next }: { next?: string }) {
       const result = (await response.json()) as { ok: boolean; error?: string }
 
       if (!result.ok) {
-        // The Firebase session is useless to us now; drop it so the next
-        // attempt starts from the account chooser rather than looping.
         await signOutFirebase()
         setError(t(errorKey(result.error)))
         return
@@ -71,8 +66,6 @@ export function GoogleButton({ next }: { next?: string }) {
 
       const target = next && next.startsWith('/') && !next.startsWith('//') ? next : '/'
       router.replace(target)
-      // The shell is a Server Component: without this it would re-render from
-      // the cached, signed-out tree.
       router.refresh()
     } catch (cause) {
       if (cause instanceof GoogleSignInError) {
