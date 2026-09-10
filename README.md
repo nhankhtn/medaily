@@ -12,8 +12,9 @@ authority on product decisions; this one is how to run the thing.
 
 ## Sign-in
 
-One account, credentials in the environment. Set all three or the app refuses
-every request except `/api/health` — a misconfigured deploy is closed, not open.
+Two doors into the same app: **Google** (via Firebase) and an **env credential
+pair**. Both mint the same signed, httpOnly session cookie, and `AUTH_SECRET`
+signs it either way.
 
 ```bash
 AUTH_USERNAME=me
@@ -21,14 +22,50 @@ AUTH_PASSWORD=something-long
 AUTH_SECRET=$(openssl rand -hex 32)   # signs the session cookie
 ```
 
-Middleware checks a signed, httpOnly session cookie on every route, so no page,
-action or API handler can forget the check. Sign-in attempts are rate limited
-per process (8 per 15 minutes).
+Middleware checks the cookie on every route, so no page, action or API handler
+can forget the check. Sign-in attempts are rate limited per process (8 per 15
+minutes for credentials, 20 for Google).
 
-**This is a single-user gate, not a user system.** It is enough to put the app
-on a private URL; it is not multi-tenant, there is no password reset, and the
-in-process rate limiter resets on restart. For anything beyond personal use, put
-it behind a private network (Tailscale, WireGuard) as well.
+### What each request actually verifies
+
+A Firebase ID token is verified **once**, at sign-in, by
+[`/api/auth/google`](src/app/api/auth/google/route.ts) — signature checked
+against Google's public keys with `jose`, then traded for our own cookie and
+discarded. Every request after that verifies only the HMAC cookie: no network
+call, no database read, and nothing that stops `proxy.ts` running at the edge.
+
+The trade is that revocation is not instant. Disabling an account in the
+Firebase console does not kill a cookie already issued; it expires on its own
+after 30 days. To cut someone off now, delete their `users` row — the session
+then names a user that no longer exists and every request fails closed.
+
+### Who is allowed in
+
+The default is **closed**: with no lists configured, only the owner can sign
+in, and an unknown Google account is refused rather than handed a new
+workspace.
+
+| Variable | Effect |
+|---|---|
+| `AUTH_OWNER_EMAIL` | this address links to the pre-existing owner row instead of creating a new one |
+| `AUTH_ALLOWED_EMAILS` | comma-separated addresses that may sign in |
+| `AUTH_ALLOWED_DOMAINS` | comma-separated domains that may sign in |
+| `AUTH_ALLOW_SIGNUP` | `true` lets any permitted address create its own workspace |
+| `NEXT_PUBLIC_FIREBASE_API_KEY`<br>`NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`<br>`NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Firebase web config. Not secrets — they identify the project, they authorise nothing. Absent, the Google button simply does not render. |
+
+Set `AUTH_OWNER_EMAIL` to your own Google address before first sign-in.
+Otherwise your Google account is a stranger to the database and gets an empty
+workspace beside the one holding all your data.
+
+**Multi-user, but not a user system.** Each account gets its own workspace and
+every query is filtered by `user_id`, but there is no password reset, no
+invitations, no roles, and the in-process rate limiter resets on restart. For
+anything beyond personal use, put it behind a private network (Tailscale,
+WireGuard) as well.
+
+> Upgrading from the single-user build? Session cookies issued before this
+> change name a username rather than a user row, so they are rejected and you
+> sign in once more. Nothing else changes: your data stays on the owner row.
 
 ---
 
@@ -83,6 +120,7 @@ except `/api/health` until all four are present:
 | `AUTH_PASSWORD` | a long password |
 | `AUTH_SECRET` | `openssl rand -hex 32` |
 | `ANTHROPIC_API_KEY` | optional — only to enable the AI review |
+| `NEXT_PUBLIC_FIREBASE_*`, `AUTH_OWNER_EMAIL` | optional — only to enable Google sign-in (see [Sign-in](#sign-in)) |
 
 Migrations do not run on build, by design. Run them from your machine against
 the same database whenever the schema changes:

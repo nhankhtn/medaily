@@ -457,7 +457,12 @@
     "invalid": "Wrong username or password.",
     "rateLimited": "Too many attempts. Wait a few minutes and try again.",
     "notConfigured": "Sign-in is not configured. Set AUTH_USERNAME, AUTH_PASSWORD and AUTH_SECRET, then restart.",
-    "signedInAs": "Signed in as {name}"
+    "signedInAs": "Signed in as {name}",
+    "or": "or",
+    "continueWithGoogle": "Continue with Google",
+    "googleFailed": "Google sign-in failed. Try again.",
+    "popupBlocked": "Your browser blocked the sign-in window. Allow popups for this site and try again.",
+    "notAllowed": "This account is not allowed to sign in."
   },
   "projects": {
     "title": "Projects",
