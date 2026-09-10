@@ -21,9 +21,9 @@ export async function Header({
   const [t, format] = await Promise.all([getTranslations('common'), getFormatter()])
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border-base bg-bg/90 px-4 backdrop-blur">
+    <header className="border-border-base bg-bg/90 sticky top-0 z-30 flex h-14 items-center gap-3 border-b px-4 backdrop-blur">
       <div className="flex min-w-0 flex-1 items-center gap-2">
-        <span className="truncate text-sm font-medium text-text-muted">
+        <span className="text-text-muted truncate text-sm font-medium">
           {format.dateTime(fromISODate(today), {
             weekday: 'short',
             day: 'numeric',
@@ -46,7 +46,7 @@ export async function Header({
         </Link>
       </Button>
       <LocaleSwitcher />
-      <ThemeToggle current={theme} />
+      <ThemeToggle current={theme} className="hidden sm:flex" />
       <SignOutButton />
     </header>
   )

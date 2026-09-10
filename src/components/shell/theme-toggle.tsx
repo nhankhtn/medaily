@@ -12,7 +12,13 @@ const OPTIONS = [
   { value: 'system', icon: Monitor, labelKey: 'themeSystem' },
 ] as const
 
-export function ThemeToggle({ current }: { current: 'light' | 'dark' | 'system' }) {
+export function ThemeToggle({
+  current,
+  className,
+}: {
+  current: 'light' | 'dark' | 'system'
+  className?: string
+}) {
   const t = useTranslations('common')
   const [pending, startTransition] = useTransition()
 
@@ -28,7 +34,10 @@ export function ThemeToggle({ current }: { current: 'light' | 'dark' | 'system' 
 
   return (
     <div
-      className="hidden items-center gap-0.5 rounded-full border border-border-base bg-surface-2 p-0.5 sm:flex"
+      className={cn(
+        'flex items-center gap-0.5 rounded-full border border-border-base bg-surface-2 p-0.5',
+        className,
+      )}
       role="group"
       aria-label={t('theme')}
     >
