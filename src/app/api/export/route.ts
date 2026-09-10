@@ -1,9 +1,5 @@
 import { buildCsv, buildExport, EXPORT_TABLES, type ExportTable } from '@/server/services/export'
 
-/**
- * Full JSON dump, or one module as CSV. Protected by the same session gate as
- * every other route — the middleware matcher covers `/api/export` (spec 29).
- */
 export async function GET(request: Request) {
   const url = new URL(request.url)
   const format = url.searchParams.get('format') ?? 'json'
