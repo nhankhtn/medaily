@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
 import { Toaster } from 'sonner'
+import { themeBootScript } from '@/lib/themes'
 import { getShellSettings } from '@/server/services/settings'
 import './globals.css'
 
@@ -22,10 +23,10 @@ export const viewport: Viewport = {
 }
 
 /**
- * The theme class is applied before first paint to avoid a flash. `system` is
- * resolved in the browser because the server cannot know the OS preference.
+ * The theme is applied before first paint to avoid a flash. `system` is
+ * resolved in the browser, because the server cannot know the OS preference.
  */
-const themeScript = `(function(){try{var t=document.documentElement.dataset.themePref;var d=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d)}catch(e){}})()`
+const themeScript = themeBootScript()
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const [locale, messages, settings] = await Promise.all([

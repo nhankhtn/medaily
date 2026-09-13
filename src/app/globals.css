@@ -10,9 +10,13 @@
 }
 
 /*
- * Palette is defined once on :root (light) and re-declared for .dark. Every
- * colour used by the app comes from a token so the accent and density settings
- * (spec 22.7) can change one variable instead of a hundred classes.
+ * Palette is defined once on :root (light) and re-declared per theme. Every
+ * colour used by the app comes from a token, so a whole theme is one block
+ * here — nothing else in the codebase names a colour.
+ *
+ * A theme's block must set every token :root sets. `.dark` carries the dark
+ * palette because Tailwind's `dark:` variant keys off that class; the boot
+ * script adds it for any theme whose base is dark (see lib/themes.ts).
  */
 :root {
   --bg: oklch(98.5% 0.002 250);
@@ -57,6 +61,34 @@
   --bad: oklch(68% 0.16 25);
   --bad-soft: oklch(30% 0.06 25);
   --shadow-card: 0 1px 2px oklch(0% 0 0 / 0.3);
+}
+
+/*
+ * Pink. Light-based, so it keeps the light `color-scheme`. Text is a warm
+ * near-black rather than the neutral one, which stops it reading as grey
+ * against a tinted background.
+ */
+[data-theme='pink'] {
+  --bg: oklch(98% 0.012 350);
+  --surface: oklch(100% 0.004 350);
+  --surface-2: oklch(96% 0.02 350);
+  --border: oklch(91% 0.028 350);
+  --border-strong: oklch(83% 0.045 350);
+  --text: oklch(24% 0.05 350);
+  --text-muted: oklch(48% 0.06 350);
+  --text-subtle: oklch(58% 0.05 350);
+  --accent: oklch(55% 0.2 355);
+  --accent-hover: oklch(48% 0.2 355);
+  --accent-soft: oklch(94% 0.04 350);
+  --accent-text: oklch(100% 0 0);
+  --good: oklch(52% 0.14 155);
+  --good-soft: oklch(94% 0.04 155);
+  --warn: oklch(60% 0.13 60);
+  --warn-soft: oklch(95% 0.05 70);
+  --bad: oklch(54% 0.19 20);
+  --bad-soft: oklch(95% 0.04 20);
+  --shadow-card: 0 1px 2px oklch(40% 0.1 350 / 0.06), 0 1px 3px oklch(40% 0.1 350 / 0.06);
+  --radius: 0.9rem;
 }
 
 @theme inline {

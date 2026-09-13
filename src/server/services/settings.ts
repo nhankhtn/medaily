@@ -15,6 +15,7 @@ import type {
 } from '@/lib/types'
 import { findUserById } from '@/server/repositories/auth'
 import { findSettings, insertUserSettings } from '@/server/repositories/settings'
+import { DEFAULT_THEME, isThemePreference, type ThemePreference } from '@/lib/themes'
 
 /**
  * A user with no settings row is repaired; a settings row for a user that no
@@ -39,7 +40,7 @@ export type ResolvedSettings = {
   timezone: string
   dayRolloverHour: number
   weekStart: 'monday' | 'sunday'
-  theme: 'light' | 'dark' | 'system'
+  theme: ThemePreference
   density: string
   accent: string
   unitSystem: 'metric' | 'imperial'
@@ -67,7 +68,7 @@ export const getSettings = cache(async (): Promise<ResolvedSettings> => {
     timezone: row.timezone,
     dayRolloverHour: row.dayRolloverHour,
     weekStart: row.weekStart,
-    theme: row.theme,
+    theme: isThemePreference(row.theme) ? row.theme : DEFAULT_THEME,
     density: row.density,
     accent: row.accent,
     unitSystem: row.unitSystem,
@@ -99,7 +100,7 @@ const FALLBACK_SETTINGS: ResolvedSettings = {
   timezone: 'Asia/Ho_Chi_Minh',
   dayRolloverHour: 4,
   weekStart: 'monday',
-  theme: 'system',
+  theme: DEFAULT_THEME,
   density: 'comfortable',
   accent: 'indigo',
   unitSystem: 'metric',

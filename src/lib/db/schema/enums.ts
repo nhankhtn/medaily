@@ -1,7 +1,6 @@
 import { pgEnum } from 'drizzle-orm/pg-core'
 
 export const localeEnum = pgEnum('locale', ['en', 'vi'])
-export const themeEnum = pgEnum('theme', ['light', 'dark', 'system'])
 export const weekStartEnum = pgEnum('week_start', ['monday', 'sunday'])
 export const unitSystemEnum = pgEnum('unit_system', ['metric', 'imperial'])
 

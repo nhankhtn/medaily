@@ -10,7 +10,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
-import { localeEnum, themeEnum, unitSystemEnum, weekStartEnum } from './enums'
+import { localeEnum, unitSystemEnum, weekStartEnum } from './enums'
 import type {
   InsightThresholds,
   OnboardingState,
@@ -46,7 +46,8 @@ export const userSettings = pgTable('user_settings', {
   timezone: text('timezone').notNull().default('Asia/Ho_Chi_Minh'),
   dayRolloverHour: smallint('day_rollover_hour').notNull().default(4),
   weekStart: weekStartEnum('week_start').notNull().default('monday'),
-  theme: themeEnum('theme').notNull().default('system'),
+  /** A theme id from lib/themes, or 'system'. Text, so a new theme is one file. */
+  theme: text('theme').notNull().default('system'),
   density: text('density').notNull().default('comfortable'),
   accent: text('accent').notNull().default('indigo'),
   unitSystem: unitSystemEnum('unit_system').notNull().default('metric'),

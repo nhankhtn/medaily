@@ -10,6 +10,7 @@ import { PATHS } from '@/lib/paths'
 import { weightsAreValid } from '@/lib/scoring'
 import { SCORE_COMPONENTS } from '@/lib/types'
 import { updateSettings } from '@/server/repositories/settings'
+import { isThemePreference } from '@/lib/themes'
 
 const COOKIE_OPTIONS = {
   path: '/',
@@ -37,7 +38,8 @@ export async function setLocale(locale: string) {
 }
 
 export async function setTheme(theme: string) {
-  const parsed = z.enum(['light', 'dark', 'system']).parse(theme)
+  // Validated against the theme registry, so a new theme needs no change here.
+  const parsed = z.string().refine(isThemePreference).parse(theme)
   await updateSettings(await getCurrentUserId(), { theme: parsed })
   revalidatePath(PATHS.home, 'layout')
 }
