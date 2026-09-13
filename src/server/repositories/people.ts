@@ -12,6 +12,15 @@ export async function findPeople(userId: string): Promise<Person[]> {
     .orderBy(asc(people.name))
 }
 
+export async function findPerson(userId: string, personId: string): Promise<Person | null> {
+  const rows = await db
+    .select()
+    .from(people)
+    .where(and(eq(people.userId, userId), eq(people.id, personId)))
+    .limit(1)
+  return rows[0] ?? null
+}
+
 export async function insertPerson(values: PersonInsert): Promise<Person> {
   const rows = await db.insert(people).values(values).returning()
   const row = rows[0]

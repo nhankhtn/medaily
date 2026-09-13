@@ -3,10 +3,12 @@ import {
   check,
   date,
   index,
+  integer,
   pgTable,
   smallint,
   text,
   timestamp,
+  unique,
   uuid,
 } from 'drizzle-orm/pg-core'
 import { users } from './core'
@@ -62,6 +64,37 @@ export const interactions = pgTable(
   (t) => [index('idx_interactions_person_date').on(t.personId, t.occurredOn.desc())],
 )
 
+/**
+ * Photos live on Cloudinary; this table holds only what is needed to build a
+ * URL and order a gallery. `public_id` is the Cloudinary handle, unique per
+ * user so a re-upload cannot silently shadow an existing asset.
+ */
+export const personPhotos = pgTable(
+  'person_photos',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    personId: uuid('person_id')
+      .notNull()
+      .references(() => people.id, { onDelete: 'cascade' }),
+    publicId: text('public_id').notNull(),
+    format: text('format'),
+    width: integer('width'),
+    height: integer('height'),
+    bytes: integer('bytes'),
+    caption: text('caption'),
+    takenOn: date('taken_on'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique('person_photos_user_public_id_uniq').on(t.userId, t.publicId),
+    index('idx_person_photos_person').on(t.personId, t.createdAt.desc()),
+  ],
+)
+
 /** One reminders table serves every module (spec 15). */
 export const reminders = pgTable(
   'reminders',
@@ -93,3 +126,4 @@ export type Person = typeof people.$inferSelect
 export type PersonInsert = typeof people.$inferInsert
 export type Interaction = typeof interactions.$inferSelect
 export type Reminder = typeof reminders.$inferSelect
+export type PersonPhoto = typeof personPhotos.$inferSelect

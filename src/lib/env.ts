@@ -19,6 +19,11 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   ANTHROPIC_API_KEY: z.string().optional(),
 
+  // Gemini backs the natural-language capture in finance. Absent, the
+  // capture box is simply not offered and the manual form is unchanged.
+  GEMINI_API_KEY: z.string().optional(),
+  GEMINI_MODEL: z.string().optional(),
+
   // Auth is a hard-coded credential pair plus, optionally, Google sign-in
   // (spec 29). Absent values keep the gate closed rather than open.
   AUTH_USERNAME: z.string().optional(),
@@ -38,6 +43,12 @@ const envSchema = z.object({
   AUTH_ALLOWED_EMAILS: z.string().optional(),
   AUTH_ALLOWED_DOMAINS: z.string().optional(),
   AUTH_ALLOW_SIGNUP: z.string().optional(),
+
+  // Photo storage. Absent means the photo UI is simply not offered.
+  CLOUDINARY_CLOUD_NAME: z.string().optional(),
+  CLOUDINARY_API_KEY: z.string().optional(),
+  CLOUDINARY_API_SECRET: z.string().optional(),
+  CLOUDINARY_FOLDER: z.string().optional(),
 })
 
 export type Env = z.infer<typeof envSchema>
@@ -55,6 +66,8 @@ export const env: Env = parsed.success
       DATABASE_URL: process.env.DATABASE_URL ?? '',
       NODE_ENV: (process.env.NODE_ENV as Env['NODE_ENV']) ?? 'development',
       ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+      GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+      GEMINI_MODEL: process.env.GEMINI_MODEL,
       AUTH_USERNAME: process.env.AUTH_USERNAME,
       AUTH_PASSWORD: process.env.AUTH_PASSWORD,
       AUTH_SECRET: process.env.AUTH_SECRET,
@@ -66,6 +79,10 @@ export const env: Env = parsed.success
       AUTH_ALLOWED_EMAILS: process.env.AUTH_ALLOWED_EMAILS,
       AUTH_ALLOWED_DOMAINS: process.env.AUTH_ALLOWED_DOMAINS,
       AUTH_ALLOW_SIGNUP: process.env.AUTH_ALLOW_SIGNUP,
+      CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
+      CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
+      CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
+      CLOUDINARY_FOLDER: process.env.CLOUDINARY_FOLDER,
     }
 
 // Read straight from process.env so this holds even when parsing failed.

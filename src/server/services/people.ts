@@ -9,6 +9,7 @@ import {
   lastInteractionByPerson,
 } from '@/server/repositories/people'
 import { dayContextOf, getSettings } from '@/server/services/settings'
+import { getPersonPhotos, mediaEnabled, type PhotoView } from '@/server/services/media'
 
 export type PersonView = Person & {
   lastInteractionOn: ISODate | null
@@ -20,6 +21,8 @@ export type PersonView = Person & {
 
 export type PeopleData = {
   today: ISODate
+  photosEnabled: boolean
+  photosByPerson: Map<string, PhotoView[]>
   people: PersonView[]
   overdue: PersonView[]
   birthdays: PersonView[]
@@ -39,6 +42,11 @@ export const getPeopleData = cache(async (): Promise<PeopleData> => {
     findReminders(userId, addDays(today, 30)),
   ])
 
+  const photosByPerson = await getPersonPhotos(
+    userId,
+    rows.map((person) => person.id),
+  )
+
   const views = rows.map((person): PersonView => {
     const lastInteractionOn = lastByPerson.get(person.id) ?? null
     const daysSinceContact = lastInteractionOn ? diffDays(today, lastInteractionOn) : null
@@ -57,6 +65,8 @@ export const getPeopleData = cache(async (): Promise<PeopleData> => {
 
   return {
     today,
+    photosEnabled: mediaEnabled(),
+    photosByPerson,
     people: views,
     // The whole point of a personal CRM: being told when it has been too long.
     overdue: views

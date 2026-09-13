@@ -9,6 +9,7 @@ import {
   ReminderPanel,
 } from '@/features/people/people-ui'
 import { PersonNotes } from '@/features/people/person-notes'
+import { PersonPhotos } from '@/features/people/person-photos'
 import { fromISODate } from '@/lib/dates'
 import { getPeopleData } from '@/server/services/people'
 
@@ -40,13 +41,13 @@ export default async function PeoplePage() {
               <CardHeader title={t('reachOut')} />
               <CardBody>
                 {data.overdue.length === 0 ? (
-                  <p className="text-sm text-text-subtle">{t('noReachOut')}</p>
+                  <p className="text-text-subtle text-sm">{t('noReachOut')}</p>
                 ) : (
-                  <ul className="divide-y divide-border-base">
+                  <ul className="divide-border-base divide-y">
                     {data.overdue.map((person) => (
                       <li key={person.id} className="flex items-center gap-3 py-2">
                         <span className="min-w-0 flex-1 truncate font-medium">{person.name}</span>
-                        <span className="shrink-0 text-xs text-text-subtle">
+                        <span className="text-text-subtle shrink-0 text-xs">
                           {person.lastInteractionOn
                             ? t('lastContact', {
                                 date: format.dateTime(fromISODate(person.lastInteractionOn), {
@@ -90,7 +91,7 @@ export default async function PeoplePage() {
           <Card>
             <CardHeader title={t('title')} />
             <CardBody>
-              <ul className="divide-y divide-border-base">
+              <ul className="divide-border-base divide-y">
                 {data.people.map((person) => (
                   <li key={person.id} className="py-2.5">
                     <div className="flex flex-wrap items-center gap-3">
@@ -99,9 +100,9 @@ export default async function PeoplePage() {
                         {t(`relationships.${person.relationship}`)}
                       </Badge>
                       {person.company ? (
-                        <span className="truncate text-xs text-text-subtle">{person.company}</span>
+                        <span className="text-text-subtle truncate text-xs">{person.company}</span>
                       ) : null}
-                      <span className="text-xs tabular-nums text-text-subtle">
+                      <span className="text-text-subtle text-xs tabular-nums">
                         {person.lastInteractionOn
                           ? format.dateTime(fromISODate(person.lastInteractionOn), {
                               day: 'numeric',
@@ -111,6 +112,12 @@ export default async function PeoplePage() {
                       </span>
                     </div>
                     <PersonNotes person={person} />
+                    <PersonPhotos
+                      personId={person.id}
+                      personName={person.name}
+                      photos={data.photosByPerson.get(person.id) ?? []}
+                      enabled={data.photosEnabled}
+                    />
                   </li>
                 ))}
               </ul>
@@ -120,12 +127,12 @@ export default async function PeoplePage() {
           <Card>
             <CardHeader title={t('interactions')} />
             <CardBody>
-              <ul className="divide-y divide-border-base">
+              <ul className="divide-border-base divide-y">
                 {data.interactions.slice(0, 15).map((interaction) => {
                   const person = data.people.find((row) => row.id === interaction.personId)
                   return (
                     <li key={interaction.id} className="flex items-center gap-3 py-2">
-                      <span className="w-16 shrink-0 text-xs tabular-nums text-text-subtle">
+                      <span className="text-text-subtle w-16 shrink-0 text-xs tabular-nums">
                         {format.dateTime(fromISODate(interaction.occurredOn), {
                           day: 'numeric',
                           month: 'short',
@@ -133,7 +140,7 @@ export default async function PeoplePage() {
                       </span>
                       <span className="shrink-0 text-sm font-medium">{person?.name ?? '—'}</span>
                       <Badge>{t(`channels.${interaction.channel}`)}</Badge>
-                      <span className="min-w-0 flex-1 truncate text-sm text-text-muted">
+                      <span className="text-text-muted min-w-0 flex-1 truncate text-sm">
                         {interaction.summary ?? ''}
                       </span>
                     </li>
