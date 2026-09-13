@@ -23,7 +23,8 @@
     "log": "Ghi",
     "collapse": "Thu gọn thanh bên",
     "expand": "Mở rộng thanh bên",
-    "search": "Tìm kiếm"
+    "search": "Tìm kiếm",
+    "timer": "Bấm giờ"
   },
   "common": {
     "save": "Lưu",
@@ -560,7 +561,53 @@
     "last30": "30 ngày gần nhất",
     "sessionSaved": "Đã lưu phiên",
     "timerCapped": "Bộ đếm đã chạy quá 8 giờ nên bị giới hạn — sửa lại phiên nếu con số không đúng.",
-    "totalMinutes": "{minutes} phút"
+    "totalMinutes": "{minutes} phút",
+    "openTimer": "Mở trang bấm giờ"
+  },
+  "timer": {
+    "title": "Bấm giờ",
+    "subtitle": "Bấm giờ một phiên làm việc hay buổi tập; bấm dừng là tự ghi vào đúng chỗ.",
+    "clock": "Bây giờ",
+    "newRun": "Phiên mới",
+    "targets": {
+      "focus": "Tập trung",
+      "workout": "Tập luyện"
+    },
+    "modes": {
+      "stopwatch": "Đếm lên",
+      "countdown": "Đếm ngược"
+    },
+    "kind": "Loại",
+    "kinds": {
+      "focus": "Tập trung",
+      "learning": "Học",
+      "deep_work": "Deep work",
+      "project": "Dự án"
+    },
+    "topic": "Chủ đề",
+    "project": "Dự án",
+    "workoutType": "Bài tập",
+    "workoutPlaceholder": "Chạy bộ, gym, yoga…",
+    "note": "Ghi chú",
+    "notePlaceholder": "Bạn đang làm gì?",
+    "customMinutes": "Số phút",
+    "minutesShort": "{minutes} phút",
+    "start": "Bắt đầu",
+    "pause": "Tạm dừng",
+    "resume": "Tiếp tục",
+    "stop": "Dừng và lưu",
+    "discard": "Bỏ",
+    "running": "Đang chạy",
+    "paused": "Đang dừng",
+    "reached": "Đã đủ giờ",
+    "spaceHint": "Phím cách để bắt đầu và tạm dừng",
+    "todayTotals": "Hôm nay",
+    "recent": "Gần đây",
+    "noRuns": "Chưa bấm giờ lần nào",
+    "savedSession": "Đã lưu {minutes} phút vào Học tập",
+    "savedWorkout": "Đã lưu {minutes} phút vào Sức khỏe",
+    "tooShort": "Chưa được một phút nên không ghi nhận",
+    "capped": "Phiên bị bỏ quên nên chỉ tính tối đa 8 tiếng"
   },
   "reviews": {
     "title": "Tổng kết",
@@ -894,7 +941,13 @@
     "notesAbout": "Ghi chú về {name}",
     "noNotes": "Chưa có ghi chú",
     "showNotes": "Xem ghi chú",
-    "hideNotes": "Ẩn ghi chú"
+    "hideNotes": "Ẩn ghi chú",
+    "noPhotos": "Chưa có ảnh",
+    "photoCount": "{count} ảnh",
+    "photosAdded": "Đã thêm {count} ảnh",
+    "photoRemoved": "Đã xóa ảnh",
+    "photoTooLarge": "Mỗi ảnh phải dưới 15MB",
+    "photoOf": "Ảnh của {name}"
   },
   "career": {
     "title": "Sự nghiệp",

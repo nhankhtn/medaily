@@ -1,6 +1,7 @@
 import './load-env'
 import { OWNER_USER_ID } from '../src/lib/auth/current-user'
 import { signSession } from '../src/lib/auth/session'
+import { PATHS, STATIC_PAGE_PATHS } from '../src/lib/paths'
 
 /**
  * Signs a session with the configured secret and requests every route, in both
@@ -11,27 +12,7 @@ import { signSession } from '../src/lib/auth/session'
  */
 const BASE = process.argv[2] ?? 'http://localhost:3000'
 
-const ROUTES = [
-  '/',
-  '/daily',
-  '/daily/catch-up',
-  '/habits',
-  '/goals',
-  '/projects',
-  '/learning',
-  '/health',
-  '/finance',
-  '/journal',
-  '/knowledge',
-  '/calendar',
-  '/people',
-  '/career',
-  '/analytics',
-  '/reviews',
-  '/settings',
-  '/search',
-  '/api/health',
-]
+const ROUTES = [...STATIC_PAGE_PATHS, PATHS.api.health]
 
 async function main() {
   const { AUTH_USERNAME, AUTH_SECRET } = process.env

@@ -7,9 +7,10 @@ import { LocaleSwitcher } from './locale-switcher'
 import { SignOutButton } from './sign-out-button'
 import { ThemeToggle } from './theme-toggle'
 import { fromISODate, type ISODate } from '@/lib/dates'
+import { PATHS } from '@/lib/paths'
 import { Button } from '@/components/ui/button'
-import { TimerWidget } from '@/features/learning/timer-widget'
-import { getRunningTimer } from '@/server/services/learning'
+import { TimerBadge } from '@/features/timer/timer-badge'
+import { getRunningTimer } from '@/server/services/timer'
 
 export async function Header({
   today,
@@ -40,7 +41,7 @@ export async function Header({
       </Suspense>
       <CommandPalette today={today} />
       <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">
-        <Link href="/daily">
+        <Link href={PATHS.daily}>
           <ClipboardList className="size-4" />
           {t('today')}
         </Link>
@@ -63,7 +64,5 @@ async function HeaderTimer() {
     console.error('[shell] running timer unavailable:', error)
     return null
   })
-  if (!timer) return null
-
-  return <TimerWidget key={timer.startedAt} timer={timer} topics={[]} projects={[]} compact />
+  return <TimerBadge key={timer?.startedAt ?? 'idle'} timer={timer} />
 }

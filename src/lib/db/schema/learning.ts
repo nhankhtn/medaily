@@ -3,6 +3,7 @@ import {
   check,
   date,
   index,
+  integer,
   pgTable,
   smallint,
   text,
@@ -12,6 +13,7 @@ import {
 import { users } from './core'
 import { projectTasks, projects } from './projects'
 import { focusKindEnum, focusSourceEnum } from './enums'
+import { timerModeEnum, timerTargetEnum } from './enums-extra'
 
 export const topics = pgTable(
   'topics',
@@ -71,18 +73,40 @@ export const focusSessions = pgTable(
   ],
 )
 
-export const timerState = pgTable('timer_state', {
-  userId: uuid('user_id')
-    .primaryKey()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  startedAt: timestamp('started_at', { withTimezone: true }).notNull(),
-  kind: focusKindEnum('kind').notNull().default('learning'),
-  topicId: uuid('topic_id').references(() => topics.id, { onDelete: 'set null' }),
-  projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
-  taskId: uuid('task_id').references(() => projectTasks.id, { onDelete: 'set null' }),
-  note: text('note'),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-})
+/**
+ * One run in flight, per user. `started_at` is the start of the *current*
+ * stretch and `accumulated_seconds` banks the stretches before it, so a pause
+ * is a real pause rather than a subtraction the client has to remember.
+ */
+export const timerState = pgTable(
+  'timer_state',
+  {
+    userId: uuid('user_id')
+      .primaryKey()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    startedAt: timestamp('started_at', { withTimezone: true }).notNull(),
+    pausedAt: timestamp('paused_at', { withTimezone: true }),
+    accumulatedSeconds: integer('accumulated_seconds').notNull().default(0),
+    target: timerTargetEnum('target').notNull().default('focus'),
+    mode: timerModeEnum('mode').notNull().default('stopwatch'),
+    /** Where a countdown stops; null for an open-ended stopwatch. */
+    targetSeconds: integer('target_seconds'),
+    kind: focusKindEnum('kind').notNull().default('learning'),
+    workoutType: text('workout_type'),
+    topicId: uuid('topic_id').references(() => topics.id, { onDelete: 'set null' }),
+    projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
+    taskId: uuid('task_id').references(() => projectTasks.id, { onDelete: 'set null' }),
+    note: text('note'),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check('accumulated_non_negative', sql`${t.accumulatedSeconds} >= 0`),
+    check(
+      'target_seconds_range',
+      sql`${t.targetSeconds} IS NULL OR ${t.targetSeconds} BETWEEN 60 AND 86400`,
+    ),
+  ],
+)
 
 export const topicsRelations = relations(topics, ({ many, one }) => ({
   sessions: many(focusSessions),
@@ -93,5 +117,6 @@ export const focusSessionsRelations = relations(focusSessions, ({ one }) => ({
   topic: one(topics, { fields: [focusSessions.topicId], references: [topics.id] }),
 }))
 
+export type TimerState = typeof timerState.$inferSelect
 export type Topic = typeof topics.$inferSelect
 export type FocusSession = typeof focusSessions.$inferSelect

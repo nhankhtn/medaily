@@ -23,7 +23,8 @@
     "log": "Log",
     "collapse": "Collapse sidebar",
     "expand": "Expand sidebar",
-    "search": "Search"
+    "search": "Search",
+    "timer": "Timer"
   },
   "common": {
     "save": "Save",
@@ -560,7 +561,53 @@
     "last30": "Last 30 days",
     "sessionSaved": "Session saved",
     "timerCapped": "That timer ran over 8 hours, so it was capped — edit the session if that is wrong.",
-    "totalMinutes": "{minutes} min"
+    "totalMinutes": "{minutes} min",
+    "openTimer": "Full timer"
+  },
+  "timer": {
+    "title": "Timer",
+    "subtitle": "Time a stretch of work or a workout; stopping files it where it belongs.",
+    "clock": "Now",
+    "newRun": "New run",
+    "targets": {
+      "focus": "Focus",
+      "workout": "Workout"
+    },
+    "modes": {
+      "stopwatch": "Count up",
+      "countdown": "Count down"
+    },
+    "kind": "Kind",
+    "kinds": {
+      "focus": "Focus",
+      "learning": "Learning",
+      "deep_work": "Deep work",
+      "project": "Project"
+    },
+    "topic": "Topic",
+    "project": "Project",
+    "workoutType": "Workout",
+    "workoutPlaceholder": "Running, gym, yoga…",
+    "note": "Note",
+    "notePlaceholder": "What are you working on?",
+    "customMinutes": "Minutes",
+    "minutesShort": "{minutes}m",
+    "start": "Start",
+    "pause": "Pause",
+    "resume": "Resume",
+    "stop": "Stop and save",
+    "discard": "Discard",
+    "running": "Running",
+    "paused": "Paused",
+    "reached": "Target reached",
+    "spaceHint": "Space starts and pauses",
+    "todayTotals": "Today",
+    "recent": "Recent",
+    "noRuns": "Nothing timed yet",
+    "savedSession": "Saved {minutes} minutes to learning",
+    "savedWorkout": "Saved {minutes} minutes to health",
+    "tooShort": "Under a minute, so nothing was recorded",
+    "capped": "The run was left going, so it was capped at 8 hours"
   },
   "reviews": {
     "title": "Reviews",
@@ -894,7 +941,13 @@
     "notesAbout": "Notes about {name}",
     "noNotes": "No notes yet",
     "showNotes": "Show notes",
-    "hideNotes": "Hide notes"
+    "hideNotes": "Hide notes",
+    "noPhotos": "No photos",
+    "photoCount": "{count} photos",
+    "photosAdded": "Added {count} photos",
+    "photoRemoved": "Photo removed",
+    "photoTooLarge": "Each photo must be under 15MB",
+    "photoOf": "Photo of {name}"
   },
   "career": {
     "title": "Career",

@@ -26,9 +26,11 @@ const config = [
     },
   },
   {
-    // The date library itself, plus writes that record a real wall-clock instant.
+    // The date library itself, the stopwatch (which measures elapsed wall-clock
+    // time, not calendar days), plus writes that record a real instant.
     files: [
       'src/lib/dates/**',
+      'src/lib/timer/**',
       'src/i18n/**',
       'src/features/ai/**',
       'src/server/**',

@@ -5,23 +5,13 @@ import { rangeOfLastDays, today as todayOf, type ISODate } from '@/lib/dates'
 import {
   findResources,
   findSessions,
-  findTimer,
   findTopics,
   sumMinutesByTopic,
   type TopicTotal,
 } from '@/server/repositories/learning'
 import { findProjects } from '@/server/repositories/projects'
 import { dayContextOf, getSettings } from '@/server/services/settings'
-
-export type RunningTimer = {
-  startedAt: string
-  kind: 'learning' | 'deep_work' | 'project'
-  topicId: string | null
-  projectId: string | null
-  note: string | null
-  /** Minutes elapsed at render time; the client keeps counting from here. */
-  elapsedMinutes: number
-}
+import { getRunningTimer, type RunningTimer } from '@/server/services/timer'
 
 export type LearningData = {
   today: ISODate
@@ -46,7 +36,7 @@ export const getLearningData = cache(async (days = 30): Promise<LearningData> =>
     findResources(userId),
     findProjects(userId),
     sumMinutesByTopic(userId, range),
-    findTimer(userId),
+    getRunningTimer(),
   ])
 
   return {
@@ -57,33 +47,6 @@ export const getLearningData = cache(async (days = 30): Promise<LearningData> =>
     projects: projects.map((project) => ({ id: project.id, name: project.name })),
     byTopic,
     totalMinutes: byTopic.reduce((sum, entry) => sum + entry.minutes, 0),
-    timer: timer
-      ? {
-          startedAt: timer.startedAt.toISOString(),
-          kind: timer.kind,
-          topicId: timer.topicId,
-          projectId: timer.projectId,
-          note: timer.note,
-          elapsedMinutes: Math.max(
-            0,
-            Math.floor((Date.now() - timer.startedAt.getTime()) / 60_000),
-          ),
-        }
-      : null,
-  }
-})
-
-/** Just the running timer, for the header — cheaper than the whole page payload. */
-export const getRunningTimer = cache(async (): Promise<RunningTimer | null> => {
-  const timer = await findTimer(await getCurrentUserId())
-  if (!timer) return null
-
-  return {
-    startedAt: timer.startedAt.toISOString(),
-    kind: timer.kind,
-    topicId: timer.topicId,
-    projectId: timer.projectId,
-    note: timer.note,
-    elapsedMinutes: Math.max(0, Math.floor((Date.now() - timer.startedAt.getTime()) / 60_000)),
+    timer,
   }
 })

@@ -4,24 +4,18 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { db } from '@/lib/db'
 import { getCurrentUserId } from '@/lib/auth/current-user'
-import { logicalDateOf } from '@/lib/dates'
+import { PATHS } from '@/lib/paths'
 import { isoDateSchema } from '@/lib/validation/daily'
 import {
-  clearTimer,
   deleteSession,
   findSessionDate,
-  findTimer,
-  insertSession,
   insertTopic,
-  startTimer as persistTimer,
   updateSession,
   upsertResource,
 } from '@/server/repositories/learning'
+import { saveSessionAndDerive } from '@/server/services/focus'
 import { recomputeDerivedHabitLogs } from '@/server/services/habit-derivation'
-import { dayContextOf, getSettings } from '@/server/services/settings'
-
-/** A forgotten timer is capped rather than silently recording a 14-hour day. */
-const MAX_TIMER_MINUTES = 8 * 60
+import { getSettings } from '@/server/services/settings'
 
 const kindSchema = z.enum(['learning', 'deep_work', 'project'])
 const optionalId = z.string().uuid().nullable().optional()
@@ -33,38 +27,12 @@ const optionalNote = z
   .optional()
 
 function revalidateLearning(date?: string) {
-  revalidatePath('/learning')
-  revalidatePath('/')
-  revalidatePath('/daily')
-  revalidatePath('/analytics')
-  revalidatePath('/projects')
-  if (date) revalidatePath(`/daily/${date}`)
-}
-
-/**
- * Sessions and the daily log must never disagree, so writing a session
- * recomputes that day's derived habits in the same transaction — the same rule
- * the daily save follows (spec 7.3).
- */
-async function saveSessionAndDerive(values: {
-  userId: string
-  sessionDate: string
-  minutes: number
-  kind: 'learning' | 'deep_work' | 'project'
-  topicId?: string | null
-  projectId?: string | null
-  note?: string | null
-  source: 'timer' | 'manual'
-  startedAt?: Date | null
-  endedAt?: Date | null
-  weekStart: 'monday' | 'sunday'
-}) {
-  const { weekStart, ...session } = values
-  return db.transaction(async (tx) => {
-    const saved = await insertSession(session)
-    await recomputeDerivedHabitLogs(tx, session.userId, session.sessionDate, weekStart)
-    return saved
-  })
+  revalidatePath(PATHS.learning)
+  revalidatePath(PATHS.home)
+  revalidatePath(PATHS.daily)
+  revalidatePath(PATHS.analytics)
+  revalidatePath(PATHS.projects)
+  if (date) revalidatePath(PATHS.dailyOn(date))
 }
 
 const sessionSchema = z.object({
@@ -133,56 +101,6 @@ export async function editSession(input: unknown) {
 
   revalidateLearning(updated.sessionDate)
   return { ok: true as const }
-}
-
-export async function startTimer(input: unknown) {
-  const parsed = z
-    .object({ kind: kindSchema, topicId: optionalId, projectId: optionalId, note: optionalNote })
-    .safeParse(input)
-  if (!parsed.success) return { ok: false as const }
-
-  await persistTimer({
-    userId: await getCurrentUserId(),
-    startedAt: new Date(),
-    kind: parsed.data.kind,
-    topicId: parsed.data.topicId ?? null,
-    projectId: parsed.data.projectId ?? null,
-    note: parsed.data.note ?? null,
-  })
-
-  revalidateLearning()
-  return { ok: true as const }
-}
-
-export async function stopTimer() {
-  const settings = await getSettings()
-  const timer = await findTimer(settings.userId)
-  if (!timer) return { ok: false as const, error: 'not_running' as const }
-
-  const endedAt = new Date()
-  const rawMinutes = Math.round((endedAt.getTime() - timer.startedAt.getTime()) / 60_000)
-  const capped = rawMinutes > MAX_TIMER_MINUTES
-  const minutes = Math.max(1, Math.min(MAX_TIMER_MINUTES, rawMinutes))
-
-  const sessionDate = logicalDateOf(timer.startedAt, dayContextOf(settings))
-
-  await saveSessionAndDerive({
-    userId: settings.userId,
-    sessionDate,
-    minutes,
-    kind: timer.kind,
-    topicId: timer.topicId,
-    projectId: timer.projectId,
-    note: timer.note,
-    source: 'timer',
-    startedAt: timer.startedAt,
-    endedAt,
-    weekStart: settings.weekStart,
-  })
-
-  await clearTimer(settings.userId)
-  revalidateLearning(sessionDate)
-  return { ok: true as const, minutes, capped }
 }
 
 export async function createTopic(input: unknown) {

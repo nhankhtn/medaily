@@ -71,3 +71,6 @@ export const interactionChannelEnum = pgEnum('interaction_channel', [
 export const aiReportKindEnum = pgEnum('ai_report_kind', ['weekly', 'monthly', 'question'])
 
 export const authProviderEnum = pgEnum('auth_provider', ['password', 'google'])
+
+export const timerTargetEnum = pgEnum('timer_target', ['focus', 'workout'])
+export const timerModeEnum = pgEnum('timer_mode', ['stopwatch', 'countdown'])

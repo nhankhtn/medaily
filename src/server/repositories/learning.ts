@@ -1,6 +1,6 @@
 import { and, asc, between, desc, eq, isNull, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { focusSessions, resources, timerState, topics } from '@/lib/db/schema'
+import { focusSessions, resources, topics } from '@/lib/db/schema'
 import type { FocusSession, Resource, ResourceInsert, Topic } from '@/lib/db/schema'
 import type { DateRange, ISODate } from '@/lib/dates'
 
@@ -147,31 +147,4 @@ export async function upsertResource(
   const row = rows[0]
   if (!row) throw new Error('failed to insert resource')
   return row
-}
-
-export async function findTimer(userId: string) {
-  const rows = await db.select().from(timerState).where(eq(timerState.userId, userId)).limit(1)
-  return rows[0] ?? null
-}
-
-/**
- * The timer lives server-side so it survives a refresh and follows the user
- * between devices (spec 10.3).
- */
-export async function startTimer(values: {
-  userId: string
-  startedAt: Date
-  kind: 'learning' | 'deep_work' | 'project'
-  topicId?: string | null
-  projectId?: string | null
-  note?: string | null
-}) {
-  await db
-    .insert(timerState)
-    .values(values)
-    .onConflictDoUpdate({ target: timerState.userId, set: { ...values, updatedAt: new Date() } })
-}
-
-export async function clearTimer(userId: string) {
-  await db.delete(timerState).where(eq(timerState.userId, userId))
 }

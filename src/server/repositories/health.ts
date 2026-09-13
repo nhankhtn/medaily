@@ -12,6 +12,15 @@ export async function findWorkouts(userId: string, range: DateRange): Promise<Wo
     .orderBy(desc(workouts.performedOn))
 }
 
+export async function findRecentWorkouts(userId: string, limit: number): Promise<Workout[]> {
+  return db
+    .select()
+    .from(workouts)
+    .where(eq(workouts.userId, userId))
+    .orderBy(desc(workouts.performedOn), desc(workouts.createdAt))
+    .limit(limit)
+}
+
 export async function findWorkoutSets(workoutIds: string[]): Promise<WorkoutSet[]> {
   if (workoutIds.length === 0) return []
   return db
