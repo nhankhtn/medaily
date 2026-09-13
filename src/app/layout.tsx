@@ -3,7 +3,7 @@ import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
 import { Toaster } from 'sonner'
 import { themeBootScript } from '@/lib/themes'
-import { getShellSettings } from '@/server/services/settings'
+import { getShellSettings, getShellTheme } from '@/server/services/settings'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -32,16 +32,17 @@ export const viewport: Viewport = {
 const themeScript = themeBootScript()
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const [locale, messages, settings] = await Promise.all([
+  const [locale, messages, settings, theme] = await Promise.all([
     getLocale(),
     getMessages(),
     getShellSettings(),
+    getShellTheme(),
   ])
 
   return (
     <html
       lang={locale}
-      data-theme-pref={settings.theme}
+      data-theme-pref={theme}
       data-density={settings.density}
       suppressHydrationWarning
     >

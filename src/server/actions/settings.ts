@@ -10,7 +10,7 @@ import { PATHS } from '@/lib/paths'
 import { weightsAreValid } from '@/lib/scoring'
 import { SCORE_COMPONENTS } from '@/lib/types'
 import { updateSettings } from '@/server/repositories/settings'
-import { isThemePreference } from '@/lib/themes'
+import { isThemePreference, THEME_COOKIE } from '@/lib/themes'
 
 const COOKIE_OPTIONS = {
   path: '/',
@@ -37,10 +37,15 @@ export async function setLocale(locale: string) {
   revalidatePath(PATHS.home, 'layout')
 }
 
+/** Same shape as `setLocale`, and for the same reason — see its comment. */
 export async function setTheme(theme: string) {
   // Validated against the theme registry, so a new theme needs no change here.
   const parsed = z.string().refine(isThemePreference).parse(theme)
-  await updateSettings(await getCurrentUserId(), { theme: parsed })
+
+  const session = await readSession()
+  if (session) await updateSettings(session.uid, { theme: parsed })
+
+  ;(await cookies()).set(THEME_COOKIE, parsed, COOKIE_OPTIONS)
   revalidatePath(PATHS.home, 'layout')
 }
 

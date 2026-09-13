@@ -31,6 +31,14 @@ export const THEMES: readonly Theme[] = [
 
 export const DEFAULT_THEME: ThemePreference = 'system'
 
+/**
+ * Mirrors the stored preference, the way the locale cookie does. The sign-in
+ * page has no session and so no settings row to read: without this it would
+ * always render in the system theme, and signing in would change the colours
+ * under you.
+ */
+export const THEME_COOKIE = 'medaily_theme'
+
 export const THEME_IDS = THEMES.map((theme) => theme.id)
 
 /** `system` first: it is the default, and the one most people leave alone. */

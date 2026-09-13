@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers'
 import { cache } from 'react'
 import { getCurrentUserId, UnauthenticatedError } from '@/lib/auth/current-user'
 import type { DayContext } from '@/lib/dates'
@@ -15,7 +16,12 @@ import type {
 } from '@/lib/types'
 import { findUserById } from '@/server/repositories/auth'
 import { findSettings, insertUserSettings } from '@/server/repositories/settings'
-import { DEFAULT_THEME, isThemePreference, type ThemePreference } from '@/lib/themes'
+import {
+  DEFAULT_THEME,
+  isThemePreference,
+  THEME_COOKIE,
+  type ThemePreference,
+} from '@/lib/themes'
 
 /**
  * A user with no settings row is repaired; a settings row for a user that no
@@ -150,3 +156,22 @@ function isFrameworkSignal(error: unknown): boolean {
   const digest = (error as { digest?: unknown } | null)?.digest
   return typeof digest === 'string' && (digest === 'DYNAMIC_SERVER_USAGE' || digest.startsWith('NEXT_'))
 }
+
+/**
+ * The theme to paint with, for the root layout and the header.
+ *
+ * Signed in, the row wins: it is the same preference on every device. Signed
+ * out — the sign-in page — there is no row, so the cookie this device last
+ * wrote carries it. Without that the sign-in page is always in the system
+ * theme and the colours change the moment you sign in.
+ */
+export const getShellTheme = cache(async (): Promise<ThemePreference> => {
+  try {
+    return (await getSettings()).theme
+  } catch (error) {
+    if (isFrameworkSignal(error)) throw error
+
+    const cookie = (await cookies()).get(THEME_COOKIE)?.value
+    return isThemePreference(cookie) ? cookie : DEFAULT_THEME
+  }
+})
