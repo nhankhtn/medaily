@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { getFormatter, getTranslations } from 'next-intl/server'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardBody, CardHeader } from '@/components/ui/card'
@@ -83,7 +84,10 @@ export default async function ReviewsPage({
                 label: t('periodScore'),
                 value: metrics.periodScore === null ? '—' : String(Math.round(metrics.periodScore)),
               },
-              { label: t('avgEnergy'), value: metrics.avgEnergy === null ? '—' : String(metrics.avgEnergy) },
+              {
+                label: t('avgEnergy'),
+                value: metrics.avgEnergy === null ? '—' : String(metrics.avgEnergy),
+              },
               {
                 label: t('avgSleep'),
                 value: metrics.avgSleepHours === null ? '—' : `${metrics.avgSleepHours}h`,
@@ -137,6 +141,53 @@ export default async function ReviewsPage({
               },
             ]}
           />
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader
+          title={t('lessons')}
+          action={
+            view.lessonCount > 0 ? (
+              <Badge tone="accent">{t('lessonCount', { count: view.lessonCount })}</Badge>
+            ) : null
+          }
+        />
+        <CardBody>
+          {view.lessonGroups.length === 0 ? (
+            <p className="text-text-subtle text-sm">{t('noLessons')}</p>
+          ) : (
+            <ul className="space-y-4">
+              {view.lessonGroups.map((group) => (
+                <li key={group.tag ?? ''} className="space-y-1.5">
+                  <p className="text-text-muted text-xs font-medium tracking-wide uppercase">
+                    {group.tag ?? t('noLessonPlace')}
+                  </p>
+                  <ul className="divide-border-base divide-y">
+                    {group.lessons.map((lesson) => (
+                      <li
+                        key={lesson.id}
+                        className="flex items-baseline justify-between gap-3 py-1.5"
+                      >
+                        <Link
+                          href={`/knowledge?note=${lesson.id}`}
+                          className="hover:text-accent min-w-0 truncate text-sm"
+                        >
+                          {lesson.title}
+                        </Link>
+                        <span className="text-text-subtle shrink-0 text-xs tabular-nums">
+                          {format.dateTime(fromISODate(lesson.learnedOn), {
+                            day: 'numeric',
+                            month: 'short',
+                          })}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              ))}
+            </ul>
+          )}
         </CardBody>
       </Card>
 

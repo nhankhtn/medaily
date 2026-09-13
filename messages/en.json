@@ -604,7 +604,11 @@
     "noReviewYet": "Nothing written for this period yet",
     "history": "Past reviews",
     "openReview": "Open",
-    "draft": "Draft"
+    "draft": "Draft",
+    "lessons": "Learned this period",
+    "noLessons": "No lessons recorded in this period.",
+    "noLessonPlace": "Untagged",
+    "lessonCount": "{count} lessons"
   },
   "health": {
     "title": "Health",
@@ -741,7 +745,8 @@
     "types": {
       "note": "Note",
       "concept": "Concept",
-      "bookmark": "Bookmark"
+      "bookmark": "Bookmark",
+      "lesson": "Lesson"
     },
     "url": "URL",
     "tags": "Tags",
@@ -754,7 +759,10 @@
     "saved": "Note saved",
     "deleted": "Note deleted",
     "open": "Open",
-    "search": "Search notes"
+    "search": "Search notes",
+    "learnedOn": "Learned on",
+    "close": "Close",
+    "edit": "Edit"
   },
   "search": {
     "title": "Search",
@@ -778,6 +786,21 @@
     "thisWeek": "This week",
     "previousWeek": "Previous week",
     "nextWeek": "Next week",
+    "views": {
+      "week": "Week",
+      "month": "Month",
+      "year": "Year"
+    },
+    "thisMonth": "This month",
+    "thisYear": "This year",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "previousYear": "Previous year",
+    "nextYear": "Next year",
+    "more": "+{count} more",
+    "nothingThisMonth": "Nothing scheduled this month",
+    "nothingThisYear": "Nothing scheduled this year",
+    "itemCount": "{count, plural, one {# item} other {# items}}",
     "events": "Events",
     "addEvent": "New event",
     "noEvents": "Nothing scheduled this week",
@@ -786,6 +809,18 @@
     "startTime": "Start",
     "endTime": "End",
     "allDay": "All day",
+    "repeat": "Repeat",
+    "repeats": {
+      "none": "Does not repeat",
+      "daily": "Every day",
+      "weekly": "Every week",
+      "monthly": "Every month",
+      "quarterly": "Every 3 months",
+      "yearly": "Every year"
+    },
+    "repeatUntil": "Repeat until",
+    "repeatForever": "No end date",
+    "repeatBadge": "Repeats",
     "location": "Location",
     "note": "Note",
     "blocks": "Planned blocks",

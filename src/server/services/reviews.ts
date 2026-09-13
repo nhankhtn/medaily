@@ -17,7 +17,13 @@ import { computePeriodScore } from '@/lib/scoring'
 import type { ReviewMetricsSnapshot } from '@/lib/types'
 import { findEffectiveRange } from '@/server/repositories/daily'
 import { findHabitLogsInRange, findHabits } from '@/server/repositories/habits'
-import { findRecentReviews, findReview, type ReviewPeriod, type ReviewRow } from '@/server/repositories/reviews'
+import {
+  findRecentReviews,
+  findReview,
+  type ReviewPeriod,
+  type ReviewRow,
+} from '@/server/repositories/reviews'
+import { findLessons, findNoteTags } from '@/server/repositories/knowledge'
 import { dayContextOf, getSettings } from '@/server/services/settings'
 
 export const SNAPSHOT_VERSION = 1
@@ -35,9 +41,18 @@ export type ReviewView = {
   /** Seeds for the written fields, quoted from the period's own daily entries. */
   suggestedWins: string[]
   suggestedProblems: string[]
+  /** Lessons learned in the period, grouped by where they came from. */
+  lessonGroups: LessonGroup[]
+  lessonCount: number
   previousPriority: string | null
   previousKey: string
   nextKey: string | null
+}
+
+export type LessonGroup = {
+  /** The tag the lessons were filed under; null groups the untagged ones. */
+  tag: string | null
+  lessons: { id: string; title: string; learnedOn: string }[]
 }
 
 export function rangeOf(period: ReviewPeriod, key: string): DateRange {
@@ -61,7 +76,11 @@ export function previousKey(period: ReviewPeriod, key: string): string {
 
 export function nextKeyOf(period: ReviewPeriod, key: string, latest: string): string | null {
   const next =
-    period === 'weekly' ? addDays(key, 7) : period === 'monthly' ? addMonthsISO(key, 1) : String(Number(key) + 1)
+    period === 'weekly'
+      ? addDays(key, 7)
+      : period === 'monthly'
+        ? addMonthsISO(key, 1)
+        : String(Number(key) + 1)
   return next > latest ? null : next
 }
 
@@ -70,42 +89,78 @@ export function nextKeyOf(period: ReviewPeriod, key: string, latest: string): st
  * finalizing freezes the numbers so a review read a year later still shows what
  * it showed then.
  */
-export const getReviewView = cache(async (
-  period: ReviewPeriod,
-  requestedKey?: string,
-): Promise<ReviewView> => {
-  const settings = await getSettings()
-  const today = todayOf(dayContextOf(settings))
-  const latestKey = currentKey(period, today, settings.weekStart)
-  const key = requestedKey ?? currentKey(period, previousPeriodDate(period, today), settings.weekStart)
+export const getReviewView = cache(
+  async (period: ReviewPeriod, requestedKey?: string): Promise<ReviewView> => {
+    const settings = await getSettings()
+    const today = todayOf(dayContextOf(settings))
+    const latestKey = currentKey(period, today, settings.weekStart)
+    const key =
+      requestedKey ?? currentKey(period, previousPeriodDate(period, today), settings.weekStart)
 
-  const range = rangeOf(period, key)
-  const [row, live] = await Promise.all([
-    findReview(settings.userId, period, key),
-    computeMetrics(range, today),
-  ])
+    const range = rangeOf(period, key)
+    const [row, live] = await Promise.all([
+      findReview(settings.userId, period, key),
+      computeMetrics(range, today),
+    ])
 
-  const seeds = await collectSeeds(range)
+    const seeds = await collectSeeds(range)
+    const lessonGroups = await collectLessons(settings.userId, range)
 
-  const previous = previousKey(period, key)
-  const previousRow = await findReview(settings.userId, period, previous)
+    const previous = previousKey(period, key)
+    const previousRow = await findReview(settings.userId, period, previous)
 
-  return {
-    period,
-    key,
-    range,
-    label: key,
-    metrics: row?.finalizedAt && row.metricsSnapshot ? row.metricsSnapshot : live,
-    live,
-    finalized: Boolean(row?.finalizedAt),
-    row,
-    suggestedWins: seeds.wins,
-    suggestedProblems: seeds.problems,
-    previousPriority: previousRow?.topPriority ?? null,
-    previousKey: previous,
-    nextKey: nextKeyOf(period, key, latestKey),
+    return {
+      period,
+      key,
+      range,
+      label: key,
+      metrics: row?.finalizedAt && row.metricsSnapshot ? row.metricsSnapshot : live,
+      live,
+      finalized: Boolean(row?.finalizedAt),
+      row,
+      suggestedWins: seeds.wins,
+      suggestedProblems: seeds.problems,
+      lessonGroups,
+      lessonCount: lessonGroups.reduce((total, group) => total + group.lessons.length, 0),
+      previousPriority: previousRow?.topPriority ?? null,
+      previousKey: previous,
+      nextKey: nextKeyOf(period, key, latestKey),
+    }
+  },
+)
+
+/**
+ * One lesson can carry several tags, so it appears under each of them. That is
+ * the point: "what did I learn at the office" and "what did I learn about
+ * Postgres" are both legitimate questions about the same note.
+ */
+async function collectLessons(userId: string, range: DateRange): Promise<LessonGroup[]> {
+  const lessons = await findLessons(userId, range)
+  if (lessons.length === 0) return []
+
+  const tagRows = await findNoteTags(lessons.map((lesson) => lesson.id))
+  const byNote = new Map<string, string[]>()
+  for (const row of tagRows) {
+    byNote.set(row.noteId, [...(byNote.get(row.noteId) ?? []), row.name])
   }
-})
+
+  const groups = new Map<string | null, LessonGroup['lessons']>()
+  for (const lesson of lessons) {
+    const entry = { id: lesson.id, title: lesson.title, learnedOn: lesson.learnedOn }
+    const names = byNote.get(lesson.id)
+    for (const tag of names?.length ? names : [null]) {
+      groups.set(tag, [...(groups.get(tag) ?? []), entry])
+    }
+  }
+
+  return [...groups.entries()]
+    .map(([tag, entries]) => ({ tag, lessons: entries }))
+    .sort((a, b) => {
+      if (a.tag === null) return 1
+      if (b.tag === null) return -1
+      return a.tag.localeCompare(b.tag)
+    })
+}
 
 function previousPeriodDate(period: ReviewPeriod, today: ISODate): ISODate {
   if (period === 'weekly') return addDays(today, -7)

@@ -14,13 +14,14 @@ import { Field } from '@/features/projects/project-dialog'
 import { removeNote, saveNote } from '@/server/actions/knowledge'
 import type { NoteView } from '@/server/services/knowledge'
 
-const TYPES = ['note', 'concept', 'bookmark'] as const
+const TYPES = ['note', 'concept', 'bookmark', 'lesson'] as const
 
 export function NoteEditor({ note, trigger }: { note?: NoteView; trigger?: React.ReactNode }) {
   const t = useTranslations('knowledge')
   const tc = useTranslations('common')
   const [open, setOpen] = useState(false)
   const [body, setBody] = useState(note?.bodyMd ?? '')
+  const [type, setType] = useState<string>(note?.type ?? 'note')
   const [preview, setPreview] = useState(false)
   const [pending, startTransition] = useTransition()
 
@@ -32,6 +33,7 @@ export function NoteEditor({ note, trigger }: { note?: NoteView; trigger?: React
         bodyMd: body,
         type: formData.get('type'),
         url: String(formData.get('url') ?? ''),
+        learnedOn: String(formData.get('learnedOn') ?? '') || null,
         tags: String(formData.get('tags') ?? '')
           .split(',')
           .map((tag) => tag.trim())
@@ -66,17 +68,23 @@ export function NoteEditor({ note, trigger }: { note?: NoteView; trigger?: React
 
           <div className="grid grid-cols-2 gap-3">
             <Field label={t('type')}>
-              <Select name="type" defaultValue={note?.type ?? 'note'}>
-                {TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {t(`types.${type}`)}
+              <Select name="type" value={type} onChange={(event) => setType(event.target.value)}>
+                {TYPES.map((option) => (
+                  <option key={option} value={option}>
+                    {t(`types.${option}`)}
                   </option>
                 ))}
               </Select>
             </Field>
-            <Field label={t('url')}>
-              <Input name="url" type="url" defaultValue={note?.url ?? ''} maxLength={500} />
-            </Field>
+            {type === 'lesson' ? (
+              <Field label={t('learnedOn')}>
+                <Input name="learnedOn" type="date" defaultValue={note?.learnedOn ?? ''} />
+              </Field>
+            ) : (
+              <Field label={t('url')}>
+                <Input name="url" type="url" defaultValue={note?.url ?? ''} maxLength={500} />
+              </Field>
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -85,7 +93,7 @@ export function NoteEditor({ note, trigger }: { note?: NoteView; trigger?: React
               <button
                 type="button"
                 onClick={() => setPreview((prev) => !prev)}
-                className="flex items-center gap-1 text-xs text-accent hover:underline"
+                className="text-accent flex items-center gap-1 text-xs hover:underline"
               >
                 {preview ? <Pencil className="size-3" /> : <Eye className="size-3" />}
                 {preview ? tc('edit') : tc('showMore')}
@@ -93,7 +101,7 @@ export function NoteEditor({ note, trigger }: { note?: NoteView; trigger?: React
             </div>
 
             {preview ? (
-              <div className="min-h-40 rounded-[var(--radius)] border border-border-base bg-surface-2 p-3">
+              <div className="border-border-base bg-surface-2 min-h-40 rounded-[var(--radius)] border p-3">
                 <Markdown>{body || '—'}</Markdown>
               </div>
             ) : (
@@ -153,7 +161,7 @@ export function NoteCard({ note }: { note: NoteView }) {
   const t = useTranslations('knowledge')
 
   return (
-    <div className="rounded-[var(--radius)] border border-border-base bg-surface p-4">
+    <div className="border-border-base bg-surface rounded-[var(--radius)] border p-4">
       <div className="flex items-start justify-between gap-2">
         <h3 className="min-w-0 truncate font-medium">{note.title}</h3>
         <Badge tone={note.type === 'bookmark' ? 'accent' : 'neutral'}>
@@ -162,7 +170,9 @@ export function NoteCard({ note }: { note: NoteView }) {
       </div>
 
       {note.bodyMd ? (
-        <p className="mt-1 line-clamp-3 text-sm text-text-subtle">{note.bodyMd}</p>
+        <div className="text-text-subtle mt-1 max-h-16 overflow-hidden">
+          <Markdown>{note.bodyMd}</Markdown>
+        </div>
       ) : null}
 
       {note.url ? (
@@ -170,7 +180,7 @@ export function NoteCard({ note }: { note: NoteView }) {
           href={note.url}
           target="_blank"
           rel="noreferrer noopener"
-          className="mt-2 block truncate text-xs text-accent hover:underline"
+          className="text-accent mt-2 block truncate text-xs hover:underline"
         >
           {note.url}
         </a>

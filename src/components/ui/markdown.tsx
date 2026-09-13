@@ -14,7 +14,7 @@ export function Markdown({ children }: { children: string }) {
   )
 
   return (
-    <div className="prose-sm [&_a]:text-accent [&_code]:bg-surface-2 [&_pre]:bg-surface-2 max-w-none space-y-2 text-sm leading-relaxed [&_a]:underline [&_code]:rounded [&_code]:px-1 [&_h1]:text-lg [&_h1]:font-semibold [&_h2]:text-base [&_h2]:font-semibold [&_li]:ml-4 [&_li]:list-disc [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:p-3 [&_table]:w-full">
+    <div className="prose-sm [&_a]:text-accent [&_code]:bg-surface-2 [&_pre]:bg-surface-2 [&_blockquote]:border-border-strong [&_blockquote]:text-text-muted max-w-none space-y-2 text-sm leading-relaxed [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:pl-3 [&_code]:rounded [&_code]:px-1 [&_h1]:text-lg [&_h1]:font-semibold [&_h2]:text-base [&_h2]:font-semibold [&_ol]:ml-4 [&_ol]:list-decimal [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:p-3 [&_table]:w-full [&_ul]:ml-4 [&_ul]:list-disc">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{

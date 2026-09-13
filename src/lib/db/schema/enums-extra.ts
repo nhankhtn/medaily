@@ -42,7 +42,7 @@ export const recurrenceRuleEnum = pgEnum('recurrence_rule', [
   'yearly',
 ])
 
-export const noteTypeEnum = pgEnum('note_type', ['note', 'concept', 'bookmark'])
+export const noteTypeEnum = pgEnum('note_type', ['note', 'concept', 'bookmark', 'lesson'])
 
 export const blockKindEnum = pgEnum('block_kind', [
   'learning',

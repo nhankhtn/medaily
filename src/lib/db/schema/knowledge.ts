@@ -38,6 +38,8 @@ export const notes = pgTable(
     url: text('url'),
     topicId: uuid('topic_id').references(() => topics.id, { onDelete: 'set null' }),
     resourceId: uuid('resource_id').references(() => resources.id, { onDelete: 'set null' }),
+    /** When the lesson was actually learned, which is not when it was typed. */
+    learnedOn: date('learned_on'),
     searchTsv: tsvector('search_tsv'),
     archivedAt: timestamp('archived_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -45,6 +47,7 @@ export const notes = pgTable(
   },
   (t) => [
     index('idx_notes_user_updated').on(t.userId, t.updatedAt.desc()),
+    index('idx_notes_learned_on').on(t.userId, t.learnedOn.desc()),
     index('idx_notes_search').using('gin', t.searchTsv),
   ],
 )

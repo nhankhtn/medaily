@@ -1,4 +1,4 @@
-import { and, asc, between, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
+import { and, asc, between, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { journalEntries, noteLinks, noteTags, notes, tags } from '@/lib/db/schema'
 import type { JournalEntry, Note, NoteInsert, Tag } from '@/lib/db/schema'
@@ -44,6 +44,27 @@ export async function upsertNote(
   const row = rows[0]
   if (!row) throw new Error('failed to insert note')
   return row
+}
+
+export type LessonRow = { id: string; title: string; bodyMd: string | null; learnedOn: string }
+
+export async function findLessons(userId: string, range: DateRange): Promise<LessonRow[]> {
+  return db
+    .select({ id: notes.id, title: notes.title, bodyMd: notes.bodyMd, learnedOn: notes.learnedOn })
+    .from(notes)
+    .where(
+      and(
+        eq(notes.userId, userId),
+        eq(notes.type, 'lesson'),
+        isNull(notes.archivedAt),
+        isNotNull(notes.learnedOn),
+        between(notes.learnedOn, range.start, range.end),
+      ),
+    )
+    .orderBy(desc(notes.learnedOn))
+    .then((rows) =>
+      rows.flatMap((row) => (row.learnedOn ? [{ ...row, learnedOn: row.learnedOn }] : [])),
+    )
 }
 
 export async function deleteNote(userId: string, noteId: string): Promise<void> {

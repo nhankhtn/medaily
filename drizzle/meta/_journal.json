@@ -50,6 +50,13 @@
       "when": 1789025873762,
       "tag": "0006_auth_identities",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789298197336,
+      "tag": "0007_lessons",
+      "breakpoints": true
     }
   ]
 }

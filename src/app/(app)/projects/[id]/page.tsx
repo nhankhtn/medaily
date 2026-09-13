@@ -3,17 +3,14 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { Badge } from '@/components/ui/badge'
+import { Markdown } from '@/components/ui/markdown'
 import { Button } from '@/components/ui/button'
 import { Card, CardBody, CardHeader } from '@/components/ui/card'
 import { ProjectDialog } from '@/features/projects/project-dialog'
 import { TaskList } from '@/features/projects/task-list'
 import { getProjectDetail, getProjectsView } from '@/server/services/projects'
 
-export default async function ProjectDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
+export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const [t, tc, detail, list] = await Promise.all([
     getTranslations('projects'),
@@ -36,7 +33,7 @@ export default async function ProjectDetailPage({
           </Button>
           <div className="min-w-0">
             <h1 className="truncate text-2xl font-semibold">{project.name}</h1>
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-text-subtle">
+            <div className="text-text-subtle mt-1 flex flex-wrap items-center gap-2 text-xs">
               <Badge tone="accent">{t(`statuses.${project.status}`)}</Badge>
               <Badge>{t(`priorities.${project.priority}`)}</Badge>
               <span className="flex items-center gap-1 tabular-nums">
@@ -60,7 +57,9 @@ export default async function ProjectDetailPage({
       </div>
 
       {project.description ? (
-        <p className="max-w-prose text-sm leading-relaxed text-text-muted">{project.description}</p>
+        <div className="text-text-muted max-w-prose">
+          <Markdown>{project.description}</Markdown>
+        </div>
       ) : null}
 
       <Card>

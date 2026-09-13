@@ -604,7 +604,11 @@
     "noReviewYet": "Kỳ này chưa viết gì",
     "history": "Các bản tổng kết trước",
     "openReview": "Mở",
-    "draft": "Nháp"
+    "draft": "Nháp",
+    "lessons": "Học được trong kỳ",
+    "noLessons": "Kỳ này chưa ghi bài học nào.",
+    "noLessonPlace": "Chưa gắn thẻ",
+    "lessonCount": "{count} bài học"
   },
   "health": {
     "title": "Sức khỏe",
@@ -741,7 +745,8 @@
     "types": {
       "note": "Ghi chú",
       "concept": "Khái niệm",
-      "bookmark": "Bookmark"
+      "bookmark": "Bookmark",
+      "lesson": "Bài học"
     },
     "url": "URL",
     "tags": "Thẻ",
@@ -754,7 +759,10 @@
     "saved": "Đã lưu ghi chú",
     "deleted": "Đã xóa ghi chú",
     "open": "Mở",
-    "search": "Tìm trong ghi chú"
+    "search": "Tìm trong ghi chú",
+    "learnedOn": "Học được ngày",
+    "close": "Đóng",
+    "edit": "Sửa"
   },
   "search": {
     "title": "Tìm kiếm",
@@ -778,6 +786,21 @@
     "thisWeek": "Tuần này",
     "previousWeek": "Tuần trước",
     "nextWeek": "Tuần sau",
+    "views": {
+      "week": "Tuần",
+      "month": "Tháng",
+      "year": "Năm"
+    },
+    "thisMonth": "Tháng này",
+    "thisYear": "Năm nay",
+    "previousMonth": "Tháng trước",
+    "nextMonth": "Tháng sau",
+    "previousYear": "Năm trước",
+    "nextYear": "Năm sau",
+    "more": "+{count} nữa",
+    "nothingThisMonth": "Tháng này chưa có gì",
+    "nothingThisYear": "Năm nay chưa có gì",
+    "itemCount": "{count} mục",
     "events": "Sự kiện",
     "addEvent": "Sự kiện mới",
     "noEvents": "Tuần này chưa có gì",
@@ -786,6 +809,18 @@
     "startTime": "Bắt đầu",
     "endTime": "Kết thúc",
     "allDay": "Cả ngày",
+    "repeat": "Lặp lại",
+    "repeats": {
+      "none": "Không lặp lại",
+      "daily": "Hằng ngày",
+      "weekly": "Hằng tuần",
+      "monthly": "Hằng tháng",
+      "quarterly": "3 tháng một lần",
+      "yearly": "Hằng năm"
+    },
+    "repeatUntil": "Lặp đến ngày",
+    "repeatForever": "Không giới hạn",
+    "repeatBadge": "Lặp lại",
     "location": "Địa điểm",
     "note": "Ghi chú",
     "blocks": "Khối thời gian",
