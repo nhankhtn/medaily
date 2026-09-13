@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { getCurrentUserId } from '@/lib/auth/current-user'
+import { PATHS } from '@/lib/paths'
 import { isoDateSchema } from '@/lib/validation/daily'
 import {
   deleteTask,
@@ -44,15 +45,15 @@ export async function saveProject(input: unknown) {
     ? await updateProject(userId, id, values)
     : await insertProject({ ...values, userId })
 
-  revalidatePath('/projects')
-  revalidatePath(`/projects/${project.id}`)
+  revalidatePath(PATHS.projects)
+  revalidatePath(PATHS.project(project.id))
   return { ok: true as const, id: project.id }
 }
 
 export async function archiveProject(input: unknown) {
   const id = z.string().uuid().parse(input)
   await updateProject(await getCurrentUserId(), id, { archivedAt: new Date() })
-  revalidatePath('/projects')
+  revalidatePath(PATHS.projects)
   return { ok: true }
 }
 
@@ -81,8 +82,8 @@ export async function saveTask(input: unknown) {
     ? await updateTask(userId, id, { ...values, completedAt })
     : await insertTask({ ...values, userId, completedAt })
 
-  revalidatePath('/projects')
-  revalidatePath(`/projects/${values.projectId}`)
+  revalidatePath(PATHS.projects)
+  revalidatePath(PATHS.project(values.projectId))
   return { ok: true as const, id: task.id }
 }
 
@@ -99,8 +100,8 @@ export async function toggleTask(input: unknown) {
     completedAt: done ? null : new Date(),
   })
 
-  revalidatePath('/projects')
-  revalidatePath(`/projects/${task.projectId}`)
+  revalidatePath(PATHS.projects)
+  revalidatePath(PATHS.project(task.projectId))
   return { ok: true as const, done: !done }
 }
 
@@ -111,7 +112,7 @@ export async function removeTask(input: unknown) {
   if (!task) return { ok: false }
 
   await deleteTask(userId, id)
-  revalidatePath('/projects')
-  revalidatePath(`/projects/${task.projectId}`)
+  revalidatePath(PATHS.projects)
+  revalidatePath(PATHS.project(task.projectId))
   return { ok: true }
 }

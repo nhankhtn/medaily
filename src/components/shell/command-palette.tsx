@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import { toast } from 'sonner'
 import { isISODate, type ISODate } from '@/lib/dates'
 import { NAV_ITEMS } from '@/lib/nav'
+import { PATHS } from '@/lib/paths'
 import { saveDay } from '@/server/actions/daily'
 import { cn } from '@/lib/utils'
 
@@ -103,7 +104,7 @@ export function CommandPalette({ today }: { today: ISODate }) {
       }
       if (command.type === 'date') {
         setOpen(false)
-        router.push(command.date === today ? '/daily' : `/daily/${command.date}`)
+        router.push(command.date === today ? '/daily' : PATHS.dailyOn(command.date))
         return
       }
 

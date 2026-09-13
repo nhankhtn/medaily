@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { Input } from '@/components/ui/input'
+import { PATHS } from '@/lib/paths'
 
 export function SearchBox({ initialQuery }: { initialQuery: string }) {
   const t = useTranslations('search')
@@ -15,7 +16,7 @@ export function SearchBox({ initialQuery }: { initialQuery: string }) {
     <form
       onSubmit={(event) => {
         event.preventDefault()
-        router.push(`/search?q=${encodeURIComponent(query)}`)
+        router.push(PATHS.search(query))
       }}
       className="relative"
     >

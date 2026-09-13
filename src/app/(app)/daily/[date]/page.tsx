@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 import { DailyPage } from '@/features/daily/daily-page'
 import { isISODate, today } from '@/lib/dates'
+import { PATHS } from '@/lib/paths'
 import { getDayContext } from '@/server/services/settings'
 
 export default async function DailyByDatePage({
@@ -15,7 +16,7 @@ export default async function DailyByDatePage({
   const logicalToday = today(ctx)
 
   // Future days have no log to edit — planning lives in Calendar (spec 5.3).
-  if (date > logicalToday) redirect('/daily')
+  if (date > logicalToday) redirect(PATHS.daily)
 
   return <DailyPage date={date} />
 }

@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl'
 import { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
+import { PATHS } from '@/lib/paths'
 
 export default function AppError({
   error,
@@ -27,7 +28,7 @@ export default function AppError({
       <div className="flex flex-wrap items-center gap-2">
         <Button onClick={reset}>{t('retry')}</Button>
         <Button asChild variant="outline">
-          <a href="/api/health">{t('checkHealth')}</a>
+          <a href={PATHS.api.health}>{t('checkHealth')}</a>
         </Button>
       </div>
 

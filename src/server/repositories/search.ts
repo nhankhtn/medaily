@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
+import { PATHS } from '@/lib/paths'
 
 export type SearchHit = {
   type: 'note' | 'journal' | 'daily' | 'task' | 'project' | 'goal' | 'person'
@@ -90,17 +91,17 @@ export async function searchEverything(
 function hrefFor(type: SearchHit['type'], id: string, date: string | null): string {
   switch (type) {
     case 'note':
-      return `/knowledge?note=${id}`
+      return PATHS.note(id)
     case 'journal':
-      return `/journal?entry=${id}`
+      return PATHS.journalEntry(id)
     case 'daily':
-      return date ? `/daily/${date}` : '/daily'
+      return date ? PATHS.dailyOn(date) : PATHS.daily
     case 'task':
     case 'project':
-      return `/projects`
+      return PATHS.projects
     case 'goal':
-      return '/goals'
+      return PATHS.goals
     case 'person':
-      return '/people'
+      return PATHS.people
   }
 }

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { PATHS } from '@/lib/paths'
 
 const PERIODS = ['weekly', 'monthly', 'yearly'] as const
 
@@ -26,7 +27,7 @@ export function PeriodPicker({
   const router = useRouter()
 
   const go = (nextPeriod: string, key?: string) =>
-    router.push(`/reviews?period=${nextPeriod}${key ? `&key=${key}` : ''}`)
+    router.push(`${PATHS.reviews}?period=${nextPeriod}${key ? `&key=${key}` : ''}`)
 
   return (
     <div className="flex flex-wrap items-center gap-3">

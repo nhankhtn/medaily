@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { getCurrentUserId, readSession } from '@/lib/auth/current-user'
 import { LOCALE_COOKIE, LOCALES } from '@/i18n/config'
 import { DEFAULT_SCORE_TARGETS, DEFAULT_SCORE_WEIGHTS } from '@/lib/defaults'
+import { PATHS } from '@/lib/paths'
 import { weightsAreValid } from '@/lib/scoring'
 import { SCORE_COMPONENTS } from '@/lib/types'
 import { updateSettings } from '@/server/repositories/settings'
@@ -32,13 +33,13 @@ export async function setLocale(locale: string) {
   if (session) await updateSettings(session.uid, { locale: parsed })
 
   ;(await cookies()).set(LOCALE_COOKIE, parsed, COOKIE_OPTIONS)
-  revalidatePath('/', 'layout')
+  revalidatePath(PATHS.home, 'layout')
 }
 
 export async function setTheme(theme: string) {
   const parsed = z.enum(['light', 'dark', 'system']).parse(theme)
   await updateSettings(await getCurrentUserId(), { theme: parsed })
-  revalidatePath('/', 'layout')
+  revalidatePath(PATHS.home, 'layout')
 }
 
 const settingsSchema = z.object({
@@ -69,7 +70,7 @@ export async function updateUserSettings(input: unknown) {
     await updateSettings(await getCurrentUserId(), patch)
   }
 
-  revalidatePath('/', 'layout')
+  revalidatePath(PATHS.home, 'layout')
   return { ok: true as const }
 }
 
@@ -78,5 +79,5 @@ export async function resetScoreDefaults() {
     scoreWeights: DEFAULT_SCORE_WEIGHTS,
     scoreTargets: DEFAULT_SCORE_TARGETS,
   })
-  revalidatePath('/', 'layout')
+  revalidatePath(PATHS.home, 'layout')
 }

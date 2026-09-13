@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { addDays, addMonthsISO } from '@/lib/dates'
+import { PATHS } from '@/lib/paths'
 import { getSettings } from '@/server/services/settings'
 import { aiEnabled, generateNarrative, saveReport } from '@/server/services/ai'
 import { getReviewView } from '@/server/services/reviews'
@@ -55,7 +56,7 @@ export async function generateReview(input: unknown): Promise<GenerateResult> {
       contentMd,
     })
 
-    revalidatePath('/reviews')
+    revalidatePath(PATHS.reviews)
     return { ok: true, contentMd }
   } catch (error) {
     return {

@@ -14,6 +14,7 @@ import { Trends } from '@/features/dashboard/trends'
 import { GettingStarted } from '@/features/onboarding/getting-started'
 import { WelcomeTour } from '@/features/onboarding/welcome-tour'
 import { fromISODate } from '@/lib/dates'
+import { PATHS } from '@/lib/paths'
 import { getDashboardData } from '@/server/services/dashboard'
 import { getOnboardingView } from '@/server/services/onboarding'
 
@@ -61,7 +62,7 @@ export default async function DashboardPage() {
               title={t('todayCard')}
               action={
                 <Button asChild variant="ghost" size="sm">
-                  <Link href="/daily">
+                  <Link href={PATHS.daily}>
                     {tc('edit')}
                     <ArrowRight className="size-3.5" />
                   </Link>
@@ -206,7 +207,7 @@ export default async function DashboardPage() {
             title={t('goalsCard')}
             action={
               <Button asChild variant="ghost" size="sm">
-                <Link href="/goals">{t('seeAll')}</Link>
+                <Link href={PATHS.goals}>{t('seeAll')}</Link>
               </Button>
             }
           />
@@ -219,7 +220,7 @@ export default async function DashboardPage() {
             title={t('habitsCard')}
             action={
               <Button asChild variant="ghost" size="sm">
-                <Link href="/habits">{t('seeAll')}</Link>
+                <Link href={PATHS.habits}>{t('seeAll')}</Link>
               </Button>
             }
           />

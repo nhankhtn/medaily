@@ -3,9 +3,10 @@
 import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
-import { LOGIN_PATH, readAuthConfig } from '@/lib/auth/config'
+import { readAuthConfig } from '@/lib/auth/config'
 import { safeEqual, SESSION_COOKIE, sessionCookieOptions, signSession } from '@/lib/auth/session'
 import { resolvePasswordIdentity } from '@/server/services/auth'
+import { PATHS } from '@/lib/paths'
 
 const credentialsSchema = z.object({
   username: z.string().min(1).max(200),
@@ -76,5 +77,5 @@ export async function login(_previous: LoginState, formData: FormData): Promise<
 export async function logout() {
   const cookieStore = await cookies()
   cookieStore.delete(SESSION_COOKIE)
-  redirect(LOGIN_PATH)
+  redirect(PATHS.login)
 }

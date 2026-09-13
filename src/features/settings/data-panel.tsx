@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { importData } from '@/server/actions/data'
 import type { ImportSummary } from '@/server/services/export'
+import { PATHS } from '@/lib/paths'
 
 export function DataPanel() {
   const t = useTranslations('data')
@@ -44,13 +45,13 @@ export function DataPanel() {
 
       <div className="flex flex-wrap gap-2">
         <Button asChild variant="outline" size="sm">
-          <a href="/api/export?format=json" download>
+          <a href={PATHS.api.exportJson} download>
             <Download className="size-4" />
             {t('exportJson')}
           </a>
         </Button>
         <Button asChild variant="ghost" size="sm">
-          <a href="/api/export?format=csv&table=daily_logs" download>
+          <a href={PATHS.api.exportCsv('daily_logs')} download>
             <Download className="size-4" />
             {t('exportCsv')}
           </a>

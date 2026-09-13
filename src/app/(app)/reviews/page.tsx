@@ -7,6 +7,7 @@ import { AiReview } from '@/features/ai/ai-review'
 import { PeriodPicker } from '@/features/reviews/period-picker'
 import { ReviewEditor } from '@/features/reviews/review-editor'
 import { fromISODate } from '@/lib/dates'
+import { PATHS } from '@/lib/paths'
 import { aiEnabled, findLatestReport } from '@/server/services/ai'
 import { getReviewView } from '@/server/services/reviews'
 
@@ -170,7 +171,7 @@ export default async function ReviewsPage({
                         className="flex items-baseline justify-between gap-3 py-1.5"
                       >
                         <Link
-                          href={`/knowledge?note=${lesson.id}`}
+                          href={PATHS.note(lesson.id)}
                           className="hover:text-accent min-w-0 truncate text-sm"
                         >
                           {lesson.title}

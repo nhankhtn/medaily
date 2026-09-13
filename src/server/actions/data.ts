@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { importPayload, type ImportSummary } from '@/server/services/export'
+import { PATHS } from '@/lib/paths'
 
 const MAX_IMPORT_BYTES = 25 * 1024 * 1024
 
@@ -29,7 +30,7 @@ export async function importData(input: unknown): Promise<ImportSummary> {
   const summary = await importPayload(payload, parsed.data.dryRun)
 
   if (!summary.dryRun && summary.ok) {
-    revalidatePath('/', 'layout')
+    revalidatePath(PATHS.home, 'layout')
   }
   return summary
 }

@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { fromISODate, type ISODate } from '@/lib/dates'
+import { PATHS } from '@/lib/paths'
 import { getDailyFormData } from '@/server/services/daily'
 import { DailyForm } from './daily-form'
 import { DateNav } from './date-nav'
@@ -44,7 +45,7 @@ export async function DailyPage({ date }: { date: ISODate }) {
             {t('catchUp.banner', { count: data.missingDays.length })}
           </p>
           <Button asChild size="sm" variant="outline">
-            <Link href="/daily/catch-up">
+            <Link href={PATHS.catchUp}>
               {t('catchUp.cta')}
               <ArrowRight className="size-4" />
             </Link>

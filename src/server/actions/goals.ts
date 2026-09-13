@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { getCurrentUserId } from '@/lib/auth/current-user'
+import { PATHS } from '@/lib/paths'
 import { METRIC_KEYS } from '@/lib/types'
 import { isoDateSchema } from '@/lib/validation/daily'
 import {
@@ -21,8 +22,8 @@ export async function setManualProgress(input: unknown) {
     progressManual: String(percent),
     progressUpdatedAt: new Date(),
   })
-  revalidatePath('/goals')
-  revalidatePath('/')
+  revalidatePath(PATHS.goals)
+  revalidatePath(PATHS.home)
   return { ok: true }
 }
 
@@ -51,8 +52,8 @@ export async function toggleMilestone(input: unknown) {
       milestone.id !== target.id ? milestone.completedAt === null : target.completedAt !== null,
   )
 
-  revalidatePath('/goals')
-  revalidatePath('/')
+  revalidatePath(PATHS.goals)
+  revalidatePath(PATHS.home)
   return { ok: true as const, allComplete: remaining.length === 0 }
 }
 
@@ -68,8 +69,8 @@ export async function updateGoalStatus(input: unknown) {
     status,
     completedAt: status === 'completed' ? new Date() : null,
   })
-  revalidatePath('/goals')
-  revalidatePath('/')
+  revalidatePath(PATHS.goals)
+  revalidatePath(PATHS.home)
   return { ok: true }
 }
 
@@ -161,15 +162,15 @@ export async function saveGoal(input: unknown): Promise<SaveGoalResult> {
     }
   }
 
-  revalidatePath('/goals')
-  revalidatePath('/')
+  revalidatePath(PATHS.goals)
+  revalidatePath(PATHS.home)
   return { ok: true, id: goal.id }
 }
 
 export async function archiveGoal(input: unknown) {
   const id = z.string().uuid().parse(input)
   await updateGoal(await getCurrentUserId(), id, { archivedAt: new Date() })
-  revalidatePath('/goals')
-  revalidatePath('/')
+  revalidatePath(PATHS.goals)
+  revalidatePath(PATHS.home)
   return { ok: true }
 }

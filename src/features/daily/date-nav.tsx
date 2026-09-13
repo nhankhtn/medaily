@@ -6,6 +6,7 @@ import { useFormatter, useTranslations } from 'next-intl'
 import { useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { addDays, fromISODate, type ISODate } from '@/lib/dates'
+import { PATHS } from '@/lib/paths'
 
 /**
  * Arrows, a date picker, `[` / `]` and swipe — the same day-hopping affordance
@@ -20,7 +21,7 @@ export function DateNav({ date, today }: { date: ISODate; today: ISODate }) {
 
   const go = (target: ISODate) => {
     if (target > today) return
-    router.push(target === today ? '/daily' : `/daily/${target}`)
+    router.push(target === today ? '/daily' : PATHS.dailyOn(target))
   }
 
   useEffect(() => {

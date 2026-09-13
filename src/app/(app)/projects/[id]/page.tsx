@@ -9,6 +9,7 @@ import { Card, CardBody, CardHeader } from '@/components/ui/card'
 import { ProjectDialog } from '@/features/projects/project-dialog'
 import { TaskList } from '@/features/projects/task-list'
 import { getProjectDetail, getProjectsView } from '@/server/services/projects'
+import { PATHS } from '@/lib/paths'
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -27,7 +28,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-2">
           <Button asChild variant="ghost" size="iconSm">
-            <Link href="/projects" aria-label={t('title')}>
+            <Link href={PATHS.projects} aria-label={t('title')}>
               <ArrowLeft className="size-4" />
             </Link>
           </Button>

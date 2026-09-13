@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { getCurrentUserId } from '@/lib/auth/current-user'
+import { PATHS } from '@/lib/paths'
 import { isoDateSchema } from '@/lib/validation/daily'
 import {
   deleteTransaction,
@@ -24,8 +25,8 @@ const optionalText = z
   .optional()
 
 function revalidateFinance() {
-  revalidatePath('/finance')
-  revalidatePath('/')
+  revalidatePath(PATHS.finance)
+  revalidatePath(PATHS.home)
 }
 
 export async function createAccount(input: unknown) {

@@ -17,6 +17,7 @@ import { useEffect, useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { TOUR_STEPS, type TourStepKey } from '@/lib/onboarding'
+import { PATHS } from '@/lib/paths'
 import { markTourSeen } from '@/server/actions/onboarding'
 import { cn } from '@/lib/utils'
 
@@ -120,7 +121,7 @@ export function WelcomeTour({ open: initiallyOpen }: { open: boolean }) {
 
               {isLast ? (
                 <Button asChild size="sm" onClick={close}>
-                  <Link href="/daily">
+                  <Link href={PATHS.daily}>
                     <Sparkles className="size-4" />
                     {t('finish')}
                   </Link>

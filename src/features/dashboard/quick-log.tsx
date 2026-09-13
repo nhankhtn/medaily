@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { ScaleInput } from '@/components/ui/scale-input'
 import { Stepper } from '@/components/ui/stepper'
 import type { ISODate } from '@/lib/dates'
+import { PATHS } from '@/lib/paths'
 import { saveDay } from '@/server/actions/daily'
 
 /**
@@ -59,7 +60,7 @@ export function QuickLog({ date }: { date: ISODate }) {
           {t('cta')}
         </Button>
         <Button asChild variant="outline">
-          <Link href="/daily">
+          <Link href={PATHS.daily}>
             {t('full')}
             <ArrowRight className="size-4" />
           </Link>

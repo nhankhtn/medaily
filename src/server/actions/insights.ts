@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { getCurrentUserId } from '@/lib/auth/current-user'
 import { addDays, today } from '@/lib/dates'
+import { PATHS } from '@/lib/paths'
 import { dismissInsight, snoozeInsight } from '@/server/repositories/insights'
 import { getDayContext } from '@/server/services/settings'
 
@@ -11,7 +12,7 @@ const idSchema = z.string().uuid()
 
 export async function dismiss(insightId: unknown) {
   await dismissInsight(await getCurrentUserId(), idSchema.parse(insightId))
-  revalidatePath('/')
+  revalidatePath(PATHS.home)
   return { ok: true }
 }
 
@@ -19,6 +20,6 @@ export async function dismiss(insightId: unknown) {
 export async function snooze(insightId: unknown) {
   const ctx = await getDayContext()
   await snoozeInsight(await getCurrentUserId(), idSchema.parse(insightId), addDays(today(ctx), 7))
-  revalidatePath('/')
+  revalidatePath(PATHS.home)
   return { ok: true }
 }

@@ -2,6 +2,7 @@ import { getFormatter, getTranslations } from 'next-intl/server'
 import Link from 'next/link'
 import { Card, CardBody } from '@/components/ui/card'
 import { fromISODate, type ISODate } from '@/lib/dates'
+import { PATHS } from '@/lib/paths'
 import { cn } from '@/lib/utils'
 import type { CalendarDay, CalendarItem, MonthCalendar } from '@/server/services/planning'
 
@@ -49,7 +50,7 @@ function DayCell({ day, today, t, format }: { day: CalendarDay; today: ISODate }
 
   return (
     <Link
-      href={`/calendar?view=week&at=${day.date}`}
+      href={PATHS.calendar({ view: 'week', at: day.date })}
       className={cn(
         'flex min-h-16 flex-col gap-1 border-b border-r border-border-base p-1.5 transition-colors hover:bg-surface-2 sm:min-h-28',
         '[&:nth-child(7n)]:border-r-0 [&:nth-last-child(-n+7)]:border-b-0',

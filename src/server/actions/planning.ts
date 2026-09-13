@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { getCurrentUserId } from '@/lib/auth/current-user'
+import { PATHS } from '@/lib/paths'
 import { RECURRENCE_RULES } from '@/lib/planning/recurrence'
 import { isoDateSchema } from '@/lib/validation/daily'
 import {
@@ -21,8 +22,8 @@ const optionalText = z
   .optional()
 
 function revalidatePlanning() {
-  revalidatePath('/calendar')
-  revalidatePath('/')
+  revalidatePath(PATHS.calendar())
+  revalidatePath(PATHS.home)
 }
 
 export async function createEvent(input: unknown) {

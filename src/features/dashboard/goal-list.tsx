@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import type { DashboardGoal } from '@/server/services/dashboard'
+import { PATHS } from '@/lib/paths'
 
 const PACE_TONE = {
   ahead: 'good',
@@ -35,7 +36,7 @@ export function GoalList({ goals }: { goals: DashboardGoal[] }) {
         return (
           <li key={goal.id} className="space-y-1.5">
             <div className="flex items-baseline justify-between gap-2">
-              <Link href="/goals" className="min-w-0 truncate text-sm font-medium hover:underline">
+              <Link href={PATHS.goals} className="min-w-0 truncate text-sm font-medium hover:underline">
                 {goal.name}
               </Link>
               <span className="shrink-0 text-xs tabular-nums text-text-muted">

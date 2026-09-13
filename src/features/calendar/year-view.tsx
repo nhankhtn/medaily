@@ -2,6 +2,7 @@ import { getFormatter, getTranslations } from 'next-intl/server'
 import Link from 'next/link'
 import { Card, CardBody, CardHeader } from '@/components/ui/card'
 import { fromISODate, type ISODate } from '@/lib/dates'
+import { PATHS } from '@/lib/paths'
 import { cn } from '@/lib/utils'
 import type { YearCalendar } from '@/server/services/planning'
 
@@ -59,7 +60,7 @@ function Day({
 
   return (
     <Link
-      href={`/calendar?view=week&at=${date}`}
+      href={PATHS.calendar({ view: 'week', at: date })}
       className={cn(
         'relative flex aspect-square items-center justify-center rounded text-[11px] tabular-nums transition-colors hover:bg-surface-2',
         date === today ? 'bg-accent font-semibold text-accent-text' : 'text-text-muted',

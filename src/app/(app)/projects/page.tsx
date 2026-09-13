@@ -7,6 +7,7 @@ import { EmptyState, PageHeader } from '@/components/ui/page'
 import { Progress } from '@/components/ui/progress'
 import { ProjectDialog } from '@/features/projects/project-dialog'
 import { getProjectsView } from '@/server/services/projects'
+import { PATHS } from '@/lib/paths'
 
 const STATUS_TONE = {
   planned: 'neutral',
@@ -45,7 +46,7 @@ export default async function ProjectsPage() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <Link
-                    href={`/projects/${project.id}`}
+                    href={PATHS.project(project.id)}
                     className="min-w-0 flex-1 truncate font-medium hover:underline"
                   >
                     {project.name}
@@ -72,7 +73,7 @@ export default async function ProjectsPage() {
                     {Math.round(project.minutesSpent / 60)}h
                   </span>
                   <Button asChild variant="ghost" size="sm" className="ml-auto h-7 px-2">
-                    <Link href={`/projects/${project.id}`}>
+                    <Link href={PATHS.project(project.id)}>
                       <ArrowRight className="size-3.5" />
                     </Link>
                   </Button>

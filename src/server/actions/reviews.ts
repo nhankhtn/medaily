@@ -6,6 +6,7 @@ import { getCurrentUserId } from '@/lib/auth/current-user'
 import { upsertReview } from '@/server/repositories/reviews'
 import { computeMetrics, rangeOf, SNAPSHOT_VERSION } from '@/server/services/reviews'
 import { today as todayOf } from '@/lib/dates'
+import { PATHS } from '@/lib/paths'
 import { dayContextOf, getSettings } from '@/server/services/settings'
 
 const periodSchema = z.enum(['weekly', 'monthly', 'yearly'])
@@ -33,7 +34,7 @@ export async function saveReview(input: unknown) {
   const { period, key, ...values } = parsed.data
   await upsertReview(await getCurrentUserId(), period, key, values)
 
-  revalidatePath('/reviews')
+  revalidatePath(PATHS.reviews)
   return { ok: true as const }
 }
 
@@ -56,8 +57,8 @@ export async function finalizeReview(input: unknown) {
     finalizedAt: new Date(),
   })
 
-  revalidatePath('/reviews')
-  revalidatePath('/')
+  revalidatePath(PATHS.reviews)
+  revalidatePath(PATHS.home)
   return { ok: true as const }
 }
 
@@ -77,7 +78,7 @@ export async function recomputeReviewSnapshot(input: unknown) {
     snapshotVersion: SNAPSHOT_VERSION,
   })
 
-  revalidatePath('/reviews')
+  revalidatePath(PATHS.reviews)
   return { ok: true as const }
 }
 
@@ -88,6 +89,6 @@ export async function reopenReview(input: unknown) {
   await upsertReview(await getCurrentUserId(), parsed.data.period, parsed.data.key, {
     finalizedAt: null,
   })
-  revalidatePath('/reviews')
+  revalidatePath(PATHS.reviews)
   return { ok: true as const }
 }

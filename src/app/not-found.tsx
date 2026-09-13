@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
 import { Button } from '@/components/ui/button'
+import { PATHS } from '@/lib/paths'
 
 export default async function NotFound() {
   const t = await getTranslations('common')
@@ -8,7 +9,7 @@ export default async function NotFound() {
     <div className="flex flex-col items-start gap-3 py-12">
       <h1 className="text-2xl font-semibold">404</h1>
       <Button asChild variant="outline">
-        <Link href="/">{t('today')}</Link>
+        <Link href={PATHS.home}>{t('today')}</Link>
       </Button>
     </div>
   )

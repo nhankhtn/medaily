@@ -8,6 +8,7 @@ import { Markdown } from '@/components/ui/markdown'
 import { EmptyState, PageHeader } from '@/components/ui/page'
 import { NoteCard, NoteEditor } from '@/features/knowledge/note-editor'
 import { getKnowledgeData, getNoteDetail } from '@/server/services/knowledge'
+import { PATHS } from '@/lib/paths'
 
 export default async function KnowledgePage({
   searchParams,
@@ -44,7 +45,7 @@ export default async function KnowledgePage({
                   }
                 />
                 <Button asChild variant="ghost" size="iconSm">
-                  <Link href="/knowledge" aria-label={t('close')}>
+                  <Link href={PATHS.knowledge} aria-label={t('close')}>
                     <X className="size-4" />
                   </Link>
                 </Button>
@@ -74,7 +75,7 @@ export default async function KnowledgePage({
                   {opened.backlinks.map((link) => (
                     <li key={link.id}>
                       <Link
-                        href={`/knowledge?note=${link.id}`}
+                        href={PATHS.note(link.id)}
                         className="hover:text-accent text-sm hover:underline"
                       >
                         {link.title}

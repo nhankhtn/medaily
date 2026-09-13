@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils'
 import { getMonthCalendar, getPlanningData, getYearCalendar } from '@/server/services/planning'
 import { getProjectsView } from '@/server/services/projects'
 import { getDayContext } from '@/server/services/settings'
+import { PATHS } from '@/lib/paths'
 
 const VIEWS = ['week', 'month', 'year'] as const
 
@@ -59,7 +60,7 @@ export default async function CalendarPage({
           {VIEWS.map((candidate) => (
             <Link
               key={candidate}
-              href={`/calendar?view=${candidate}${anchor ? `&at=${anchor}` : ''}`}
+              href={PATHS.calendar({ view: candidate, at: anchor })}
               aria-current={candidate === view ? 'page' : undefined}
               className={cn(
                 'rounded-full px-3 py-1 text-sm transition-colors',
@@ -84,7 +85,7 @@ export default async function CalendarPage({
         </div>
 
         <Button asChild variant="ghost" size="sm" className="ml-auto">
-          <a href="/api/calendar.ics">
+          <a href={PATHS.api.calendarIcs}>
             <Download className="size-4" />
             {t('icsExport')}
           </a>
@@ -123,7 +124,7 @@ async function WeekBar({ anchor }: { anchor?: ISODate }) {
     <>
       <Step
         back
-        href={`/calendar?view=week&at=${addDays(data.weekStart, -7)}`}
+        href={PATHS.calendar({ view: 'week', at: addDays(data.weekStart, -7) })}
         label={t('previousWeek')}
       />
       <span className="px-1 text-sm font-medium whitespace-nowrap">
@@ -134,9 +135,9 @@ async function WeekBar({ anchor }: { anchor?: ISODate }) {
           year: 'numeric',
         })}
       </span>
-      <Step href={`/calendar?view=week&at=${addDays(data.weekStart, 7)}`} label={t('nextWeek')} />
+      <Step href={PATHS.calendar({ view: 'week', at: addDays(data.weekStart, 7) })} label={t('nextWeek')} />
       <Button asChild variant="ghost" size="sm">
-        <Link href="/calendar?view=week">{t('thisWeek')}</Link>
+        <Link href={PATHS.calendar({ view: 'week' })}>{t('thisWeek')}</Link>
       </Button>
     </>
   )
@@ -150,15 +151,15 @@ async function MonthBar({ anchor }: { anchor: ISODate }) {
     <>
       <Step
         back
-        href={`/calendar?view=month&at=${addMonthsISO(month, -1)}`}
+        href={PATHS.calendar({ view: 'month', at: addMonthsISO(month, -1) })}
         label={t('previousMonth')}
       />
       <span className="px-1 text-sm font-medium whitespace-nowrap">
         {format.dateTime(fromISODate(month), { month: 'long', year: 'numeric' })}
       </span>
-      <Step href={`/calendar?view=month&at=${addMonthsISO(month, 1)}`} label={t('nextMonth')} />
+      <Step href={PATHS.calendar({ view: 'month', at: addMonthsISO(month, 1) })} label={t('nextMonth')} />
       <Button asChild variant="ghost" size="sm">
-        <Link href="/calendar?view=month">{t('thisMonth')}</Link>
+        <Link href={PATHS.calendar({ view: 'month' })}>{t('thisMonth')}</Link>
       </Button>
     </>
   )
@@ -169,11 +170,15 @@ async function YearBar({ year }: { year: number }) {
 
   return (
     <>
-      <Step back href={`/calendar?view=year&at=${year - 1}-01-01`} label={t('previousYear')} />
+      <Step
+        back
+        href={PATHS.calendar({ view: 'year', at: `${year - 1}-01-01` })}
+        label={t('previousYear')}
+      />
       <span className="px-1 text-sm font-medium tabular-nums">{year}</span>
-      <Step href={`/calendar?view=year&at=${year + 1}-01-01`} label={t('nextYear')} />
+      <Step href={PATHS.calendar({ view: 'year', at: `${year + 1}-01-01` })} label={t('nextYear')} />
       <Button asChild variant="ghost" size="sm">
-        <Link href="/calendar?view=year">{t('thisYear')}</Link>
+        <Link href={PATHS.calendar({ view: 'year' })}>{t('thisYear')}</Link>
       </Button>
     </>
   )

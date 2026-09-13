@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { getCurrentUserId } from '@/lib/auth/current-user'
+import { PATHS } from '@/lib/paths'
 import { isoDateSchema } from '@/lib/validation/daily'
 import {
   insertAchievement,
@@ -35,7 +36,7 @@ export async function saveSkill(input: unknown) {
     targetLevel: parsed.data.targetLevel ?? null,
   })
 
-  revalidatePath('/career')
+  revalidatePath(PATHS.career)
   return { ok: true as const }
 }
 
@@ -60,7 +61,7 @@ export async function saveAchievement(input: unknown) {
     link: parsed.data.link ?? null,
   })
 
-  revalidatePath('/career')
+  revalidatePath(PATHS.career)
   return { ok: true as const }
 }
 
@@ -83,6 +84,6 @@ export async function savePortfolioItem(input: unknown) {
     tech: parsed.data.tech ?? null,
   })
 
-  revalidatePath('/career')
+  revalidatePath(PATHS.career)
   return { ok: true as const }
 }

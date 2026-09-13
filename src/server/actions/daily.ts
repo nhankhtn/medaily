@@ -16,15 +16,16 @@ import {
   saveDailyLog,
   saveManyDailyLogs,
 } from '@/server/services/daily'
+import { PATHS } from '@/lib/paths'
 
 /** Every action revalidates the surfaces a daily write can change. */
 function revalidateDaily(date: string) {
-  revalidatePath('/')
-  revalidatePath('/daily')
-  revalidatePath(`/daily/${date}`)
-  revalidatePath('/habits')
-  revalidatePath('/goals')
-  revalidatePath('/analytics')
+  revalidatePath(PATHS.home)
+  revalidatePath(PATHS.daily)
+  revalidatePath(PATHS.dailyOn(date))
+  revalidatePath(PATHS.habits)
+  revalidatePath(PATHS.goals)
+  revalidatePath(PATHS.analytics)
 }
 
 export type SaveDayResult =

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { getCurrentUserId } from '@/lib/auth/current-user'
+import { PATHS } from '@/lib/paths'
 import type { OnboardingState } from '@/lib/types'
 import { findSettings, updateSettings } from '@/server/repositories/settings'
 
@@ -20,8 +21,8 @@ async function patchOnboarding(patch: OnboardingState) {
 
   await updateSettings(userId, { onboarding: merged })
 
-  revalidatePath('/')
-  revalidatePath('/settings')
+  revalidatePath(PATHS.home)
+  revalidatePath(PATHS.settings)
 }
 
 /**
@@ -45,7 +46,7 @@ export async function dismissChecklist() {
 export async function restartOnboarding() {
   const userId = await getCurrentUserId()
   await updateSettings(userId, { onboarding: { tourRequestedAt: new Date().toISOString() } })
-  revalidatePath('/')
-  revalidatePath('/settings')
+  revalidatePath(PATHS.home)
+  revalidatePath(PATHS.settings)
   return { ok: true }
 }

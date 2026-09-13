@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { LOGIN_PATH, PUBLIC_PATHS, readAuthConfig, readGoogleConfig } from '@/lib/auth/config'
+import { readAuthConfig, readGoogleConfig } from '@/lib/auth/config'
+import { PATHS, PUBLIC_PATHS } from '@/lib/paths'
 import { SESSION_COOKIE, verifySession } from '@/lib/auth/session'
 
 /**
@@ -30,9 +31,9 @@ export async function proxy(request: NextRequest) {
   if (session) return NextResponse.next()
 
   const url = request.nextUrl.clone()
-  url.pathname = LOGIN_PATH
+  url.pathname = PATHS.login
   // Come back to where the user was heading once they are signed in.
-  url.search = pathname === '/' ? '' : `?next=${encodeURIComponent(pathname + request.nextUrl.search)}`
+  url.search = pathname === PATHS.home ? '' : `?next=${encodeURIComponent(pathname + request.nextUrl.search)}`
   return NextResponse.redirect(url)
 }
 

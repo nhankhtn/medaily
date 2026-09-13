@@ -97,13 +97,3 @@ export function emailIsPermitted(email: string, policy: AccessPolicy): boolean {
     policy.allowedEmails.length === 0 && policy.allowedDomains.length === 0 && policy.allowSignup
   )
 }
-
-export const LOGIN_PATH = '/login'
-
-/** Paths that must stay reachable without a session. */
-export const PUBLIC_PATHS = [
-  LOGIN_PATH,
-  '/api/health',
-  '/api/auth/google',
-  '/manifest.webmanifest',
-]

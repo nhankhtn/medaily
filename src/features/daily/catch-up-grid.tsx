@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { fromISODate, type ISODate } from '@/lib/dates'
+import { PATHS } from '@/lib/paths'
 import { saveCatchUp } from '@/server/actions/daily'
 import { cn } from '@/lib/utils'
 
@@ -70,7 +71,7 @@ export function CatchUpGrid({ dates }: { dates: ISODate[] }) {
         return
       }
       toast.success(t('savedToast', { count: result.count }))
-      router.push('/')
+      router.push(PATHS.home)
     })
   }
 

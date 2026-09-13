@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { db } from '@/lib/db'
 import { getCurrentUserId } from '@/lib/auth/current-user'
+import { PATHS } from '@/lib/paths'
 import { isoDateSchema } from '@/lib/validation/daily'
 import { upsertLog } from '@/server/repositories/daily'
 import {
@@ -84,16 +85,16 @@ export async function saveWorkout(input: unknown) {
     })
   }
 
-  revalidatePath('/health')
-  revalidatePath('/daily')
-  revalidatePath('/')
+  revalidatePath(PATHS.health)
+  revalidatePath(PATHS.daily)
+  revalidatePath(PATHS.home)
   return { ok: true as const, backfilled: existing === null }
 }
 
 export async function removeWorkout(input: unknown) {
   const id = z.string().uuid().parse(input)
   await deleteWorkout(await getCurrentUserId(), id)
-  revalidatePath('/health')
+  revalidatePath(PATHS.health)
   return { ok: true }
 }
 
@@ -123,7 +124,7 @@ export async function saveMeasurement(input: unknown) {
     note: parsed.data.note ?? null,
   })
 
-  revalidatePath('/health')
+  revalidatePath(PATHS.health)
   return { ok: true as const }
 }
 
@@ -141,6 +142,6 @@ export async function saveNutrition(input: unknown) {
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
   await upsertNutrition({ ...parsed.data, userId: await getCurrentUserId() })
-  revalidatePath('/health')
+  revalidatePath(PATHS.health)
   return { ok: true as const }
 }

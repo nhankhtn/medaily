@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { NAV_GROUPS, NAV_ITEMS } from '@/lib/nav'
+import { PATHS } from '@/lib/paths'
 import { cn } from '@/lib/utils'
 
 const COLLAPSE_KEY = 'medaily.sidebar.collapsed'
@@ -51,7 +52,7 @@ export function Sidebar() {
     >
       <div className="flex h-14 items-center gap-2 px-3">
         <Link
-          href="/"
+          href={PATHS.home}
           className="flex items-center gap-2 overflow-hidden rounded-md px-1 py-1 font-semibold"
         >
           <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent text-sm text-accent-text">

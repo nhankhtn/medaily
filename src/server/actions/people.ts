@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { getCurrentUserId } from '@/lib/auth/current-user'
+import { PATHS } from '@/lib/paths'
 import { isoDateSchema } from '@/lib/validation/daily'
 import {
   completeReminder,
@@ -20,8 +21,8 @@ const optionalText = z
   .optional()
 
 function revalidatePeople() {
-  revalidatePath('/people')
-  revalidatePath('/')
+  revalidatePath(PATHS.people)
+  revalidatePath(PATHS.home)
 }
 
 export async function savePerson(input: unknown) {

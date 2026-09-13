@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { ANALYTICS_RANGES, type AnalyticsRange } from '@/lib/analytics/ranges'
 import { cn } from '@/lib/utils'
+import { PATHS } from '@/lib/paths'
 
 /** Filters sit in one row above the charts (dataviz interaction guidance). */
 export function RangePicker({ active }: { active: AnalyticsRange }) {
@@ -21,7 +22,7 @@ export function RangePicker({ active }: { active: AnalyticsRange }) {
           onClick={() => {
             const next = new URLSearchParams(params.toString())
             next.set('range', String(range))
-            router.push(`/analytics?${next.toString()}`)
+            router.push(`${PATHS.analytics}?${next.toString()}`)
           }}
           className={cn(
             'h-9 rounded-full border px-3.5 text-sm font-medium transition-colors',

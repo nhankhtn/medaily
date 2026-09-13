@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { db } from '@/lib/db'
 import { getCurrentUserId } from '@/lib/auth/current-user'
+import { PATHS } from '@/lib/paths'
 import { METRIC_KEYS } from '@/lib/types'
 import { isoDateSchema } from '@/lib/validation/daily'
 import {
@@ -49,8 +50,8 @@ export async function toggleHabit(input: unknown): Promise<ToggleHabitResult> {
 
   if (nextCount <= 0) {
     await deleteHabitLog(habit.id, parsed.data.date, userId)
-    revalidatePath('/')
-    revalidatePath('/habits')
+    revalidatePath(PATHS.home)
+    revalidatePath(PATHS.habits)
     return { ok: true, completed: false, count: 0 }
   }
 
@@ -63,8 +64,8 @@ export async function toggleHabit(input: unknown): Promise<ToggleHabitResult> {
     source: 'manual',
   })
 
-  revalidatePath('/')
-  revalidatePath('/habits')
+  revalidatePath(PATHS.home)
+  revalidatePath(PATHS.habits)
   return { ok: true, completed: saved.completed, count: saved.count }
 }
 
@@ -151,22 +152,22 @@ export async function saveHabit(input: unknown): Promise<SaveHabitResult> {
     return { habitId: saved.id, backfilledDays: days }
   })
 
-  revalidatePath('/habits')
-  revalidatePath('/')
+  revalidatePath(PATHS.habits)
+  revalidatePath(PATHS.home)
   return { ok: true, id: habitId, backfilledDays }
 }
 
 export async function archiveHabit(input: unknown) {
   const id = z.string().uuid().parse(input)
   await updateHabit(await getCurrentUserId(), id, { archivedAt: new Date() })
-  revalidatePath('/habits')
-  revalidatePath('/')
+  revalidatePath(PATHS.habits)
+  revalidatePath(PATHS.home)
   return { ok: true }
 }
 
 export async function unarchiveHabit(input: unknown) {
   const id = z.string().uuid().parse(input)
   await updateHabit(await getCurrentUserId(), id, { archivedAt: null })
-  revalidatePath('/habits')
+  revalidatePath(PATHS.habits)
   return { ok: true }
 }

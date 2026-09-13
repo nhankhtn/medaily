@@ -1,5 +1,6 @@
 'use client'
 
+import { PATHS } from '@/lib/paths'
 /**
  * Last resort: when the root layout itself throws, React cannot render the
  * normal error boundary, and a production build shows only a minified digest.
@@ -40,7 +41,7 @@ export default function GlobalError({
 
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
             <a
-              href="/api/health"
+              href={PATHS.api.health}
               style={{
                 border: '1px solid #cfcfd6',
                 borderRadius: '0.5rem',

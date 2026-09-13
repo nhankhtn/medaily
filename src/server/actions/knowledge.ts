@@ -15,6 +15,7 @@ import {
 } from '@/server/repositories/knowledge'
 import { extractWikiLinks } from '@/lib/knowledge/links'
 import { today } from '@/lib/dates'
+import { PATHS } from '@/lib/paths'
 import { getDayContext } from '@/server/services/settings'
 
 const optionalText = z
@@ -64,15 +65,15 @@ export async function saveNote(input: unknown) {
   )
   await replaceNoteLinks(userId, note.id, extractWikiLinks(values.bodyMd ?? ''))
 
-  revalidatePath('/knowledge')
-  revalidatePath('/reviews')
+  revalidatePath(PATHS.knowledge)
+  revalidatePath(PATHS.reviews)
   return { ok: true as const, id: note.id }
 }
 
 export async function removeNote(input: unknown) {
   const id = z.string().uuid().parse(input)
   await deleteNote(await getCurrentUserId(), id)
-  revalidatePath('/knowledge')
+  revalidatePath(PATHS.knowledge)
   return { ok: true }
 }
 
@@ -98,14 +99,14 @@ export async function saveJournalEntry(input: unknown) {
     tags: parsed.data.tags ?? null,
   })
 
-  revalidatePath('/journal')
-  revalidatePath('/')
+  revalidatePath(PATHS.journal)
+  revalidatePath(PATHS.home)
   return { ok: true as const, id: entry.id }
 }
 
 export async function removeJournalEntry(input: unknown) {
   const id = z.string().uuid().parse(input)
   await deleteJournalEntry(await getCurrentUserId(), id)
-  revalidatePath('/journal')
+  revalidatePath(PATHS.journal)
   return { ok: true }
 }
