@@ -166,7 +166,7 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
                     {t('discard')}
                   </Button>
                 </div>
-                <p className="text-xs text-text-subtle">{t('spaceHint')}</p>
+                <p className="hidden text-xs text-text-subtle sm:block">{t('spaceHint')}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -291,15 +291,17 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
                 </Labelled>
 
                 <div className="flex items-center gap-3 pt-1">
-                  <Button onClick={begin} disabled={pending} size="lg">
+                  <Button onClick={begin} disabled={pending} size="lg" aria-label={t('start')}>
                     {pending ? (
                       <Loader2 className="size-4 animate-spin" />
                     ) : (
                       <Play className="size-4" />
                     )}
-                    {t('start')}
+                    <span className="hidden sm:inline">{t('start')}</span>
                   </Button>
-                  <span className="text-xs text-text-subtle">{t('spaceHint')}</span>
+                  <span className="hidden text-xs text-text-subtle sm:inline">
+                    {t('spaceHint')}
+                  </span>
                 </div>
               </div>
             )}

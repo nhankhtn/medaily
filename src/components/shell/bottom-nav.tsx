@@ -6,17 +6,13 @@ import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { BOTTOM_NAV_ITEMS, MORE_NAV_ITEMS } from '@/lib/nav'
-import type { ThemePreference } from '@/lib/themes'
 import { cn } from '@/lib/utils'
-import { LocaleSwitcher } from './locale-switcher'
 import { SignOutButton } from './sign-out-button'
-import { ThemeToggle } from './theme-toggle'
 
 /** Five destinations, thumb-reachable, everything else under More (spec 22.3). */
-export function BottomNav({ theme }: { theme: ThemePreference }) {
+export function BottomNav() {
   const pathname = usePathname()
   const t = useTranslations('nav')
-  const tc = useTranslations('common')
   // The sheet remembers which route it was opened on, so navigating closes it
   // without an effect that would re-render the whole bar.
   const [openedOn, setOpenedOn] = useState<string | null>(null)
@@ -61,17 +57,8 @@ export function BottomNav({ theme }: { theme: ThemePreference }) {
                   <span className="text-xs leading-tight text-text-muted">{t(item.key)}</span>
                 </Link>
               ))}
-            </div>
-
-            {/* The header has no room for these on a phone, so they live here. */}
-            <div className="mt-6 space-y-3 border-t border-border-base pt-4">
-              <Row label={tc('language')}>
-                <LocaleSwitcher />
-              </Row>
-              <Row label={tc('theme')}>
-                <ThemeToggle current={theme} />
-              </Row>
-              <SignOutButton withLabel />
+              {/* Language and theme live on the settings page, one tile away. */}
+              <SignOutButton variant="card" />
             </div>
           </div>
         </div>
@@ -120,14 +107,5 @@ export function BottomNav({ theme }: { theme: ThemePreference }) {
         </ul>
       </nav>
     </>
-  )
-}
-
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-center justify-between gap-3 px-3">
-      <span className="text-sm font-medium">{label}</span>
-      {children}
-    </div>
   )
 }

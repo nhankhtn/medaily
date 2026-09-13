@@ -23,7 +23,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </main>
         </div>
       </div>
-      <BottomNav theme={settings.theme} />
+      <BottomNav />
     </>
   )
 }

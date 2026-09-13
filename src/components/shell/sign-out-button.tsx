@@ -5,7 +5,8 @@ import { useTranslations } from 'next-intl'
 import { signOutFirebase } from '@/lib/auth/firebase-client'
 import { logout } from '@/server/actions/auth'
 
-export function SignOutButton({ withLabel = false }: { withLabel?: boolean }) {
+/** `card` matches the route tiles in the mobile More sheet. */
+export function SignOutButton({ variant = 'icon' }: { variant?: 'icon' | 'card' }) {
   const t = useTranslations('auth')
 
   /**
@@ -18,15 +19,15 @@ export function SignOutButton({ withLabel = false }: { withLabel?: boolean }) {
     await logout()
   }
 
-  if (withLabel) {
+  if (variant === 'card') {
     return (
       <form action={signOut}>
         <button
           type="submit"
-          className="flex h-11 w-full items-center gap-3 rounded-[var(--radius)] px-3 text-sm font-medium text-text hover:bg-surface-2"
+          className="flex aspect-square w-full flex-col items-center justify-center gap-2 rounded-[var(--radius)] border border-border-base bg-surface p-2 text-center"
         >
-          <LogOut className="size-4 shrink-0 text-text-subtle" />
-          {t('signOut')}
+          <LogOut className="size-6 text-text-subtle" />
+          <span className="text-xs leading-tight text-text-muted">{t('signOut')}</span>
         </button>
       </form>
     )
