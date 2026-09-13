@@ -1,6 +1,6 @@
 'use client'
 
-import { Plus } from 'lucide-react'
+import { Pencil, Plus } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
@@ -151,6 +151,63 @@ export function CategoryDialog() {
               <option value="expense">{t('kinds.expense')}</option>
               <option value="income">{t('kinds.income')}</option>
             </Select>
+          </Field>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+              {tc('cancel')}
+            </Button>
+            <Button type="submit" disabled={pending}>
+              {tc('save')}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+export function BudgetEditDialog({
+  budget,
+}: {
+  budget: { categoryId: string; periodStart: string; categoryName: string; amount: string }
+}) {
+  const t = useTranslations('finance')
+  const tc = useTranslations('common')
+  const [open, setOpen] = useState(false)
+  const { pending, run } = useDialogAction(() => {
+    toast.success(t('saved'))
+    setOpen(false)
+  })
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <button type="button" className="group flex min-w-0 items-center gap-1.5 text-left">
+          <span className="group-hover:text-accent truncate text-sm">{budget.categoryName}</span>
+          <Pencil className="text-text-subtle group-hover:text-accent size-3 shrink-0" />
+        </button>
+      </DialogTrigger>
+      <DialogContent title={t('editBudget')} description={budget.categoryName}>
+        <form
+          action={(formData) =>
+            run(() =>
+              saveBudget({
+                categoryId: budget.categoryId,
+                periodStart: budget.periodStart,
+                amount: Number(formData.get('amount') ?? 0),
+              }),
+            )
+          }
+          className="space-y-3"
+        >
+          <Field label={t('amount')}>
+            <MoneyInput
+              name="amount"
+              defaultValue={Number(budget.amount)}
+              required
+              autoFocus
+              className="text-right tabular-nums"
+            />
           </Field>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>

@@ -7,6 +7,7 @@ import {
   AccountDialog,
   AssetDialog,
   BudgetDialog,
+  BudgetEditDialog,
   CategoryDialog,
   InvestmentDialog,
 } from '@/features/finance/finance-dialogs'
@@ -143,7 +144,7 @@ export default async function FinancePage() {
                   return (
                     <li key={budget.id} className="space-y-1.5">
                       <div className="flex items-baseline justify-between gap-2">
-                        <span className="truncate text-sm">{budget.categoryName}</span>
+                        <BudgetEditDialog budget={budget} />
                         <span className="text-text-muted shrink-0 text-xs tabular-nums">
                           {t('budgetOf', { spent: money(budget.spent), amount: money(amount) })}
                         </span>
