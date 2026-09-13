@@ -5,11 +5,15 @@ import { PATHS } from '@/lib/paths'
 
 export default async function NotFound() {
   const t = await getTranslations('common')
+
   return (
-    <div className="flex flex-col items-start gap-3 py-12">
-      <h1 className="text-2xl font-semibold">404</h1>
-      <Button asChild variant="outline">
-        <Link href={PATHS.home}>{t('today')}</Link>
+    <div className="flex flex-col items-start gap-4 py-12">
+      <div>
+        <p className="text-lg font-medium">{t('notFound')}</p>
+        <p className="mt-1 max-w-prose text-sm text-text-muted">{t('notFoundHint')}</p>
+      </div>
+      <Button asChild>
+        <Link href={PATHS.home}>{t('backHome')}</Link>
       </Button>
     </div>
   )

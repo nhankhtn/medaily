@@ -1,11 +1,14 @@
 'use client'
 
-import { PATHS } from '@/lib/paths'
+import { useEffect } from 'react'
+
 /**
  * Last resort: when the root layout itself throws, React cannot render the
  * normal error boundary, and a production build shows only a minified digest.
- * This page owns its own markup and styles — no i18n, no database, no shell —
- * and points at the one endpoint that explains what is actually wrong.
+ * This page owns its own markup and styles — no i18n, no database, no shell.
+ *
+ * What went wrong goes to the console, not on screen: whoever can fix it is
+ * reading the console, and whoever cannot is only being alarmed by it.
  */
 export default function GlobalError({
   error,
@@ -14,6 +17,14 @@ export default function GlobalError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  useEffect(() => {
+    console.error(
+      `[app] the root layout failed${error.digest ? ` (digest ${error.digest})` : ''};`,
+      'open /api/health for the cause:',
+      error,
+    )
+  }, [error])
+
   return (
     <html lang="en">
       <body
@@ -34,25 +45,10 @@ export default function GlobalError({
             The app could not start
           </h1>
           <p style={{ margin: '0 0 1rem', lineHeight: 1.5, color: '#55555f' }}>
-            This is usually a missing environment variable or a database it cannot
-            reach. Open <code>/api/health</code> — it names the missing
-            configuration and the connection error.
+            Try again in a moment.
           </p>
 
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <a
-              href={PATHS.api.health}
-              style={{
-                border: '1px solid #cfcfd6',
-                borderRadius: '0.5rem',
-                padding: '0.5rem 0.875rem',
-                textDecoration: 'none',
-                color: 'inherit',
-                fontSize: '0.875rem',
-              }}
-            >
-              Check /api/health
-            </a>
             <button
               type="button"
               onClick={reset}
@@ -70,11 +66,6 @@ export default function GlobalError({
             </button>
           </div>
 
-          {error.digest ? (
-            <p style={{ marginTop: '1.5rem', fontSize: '0.75rem', color: '#8a8a94' }}>
-              Digest {error.digest} — the full message is in the server logs.
-            </p>
-          ) : null}
         </main>
       </body>
     </html>

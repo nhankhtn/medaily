@@ -64,10 +64,11 @@
     "language": "Ngôn ngữ",
     "openMenu": "Mở menu",
     "pickDate": "Chọn ngày",
-    "loadFailed": "Không tải được dữ liệu",
-    "loadFailedHint": "Phần còn lại của ứng dụng vẫn dùng được — cứ điều hướng sang chỗ khác. Nếu lỗi lặp lại, /api/health sẽ nói rõ nguyên nhân.",
-    "checkHealth": "Kiểm tra /api/health",
-    "seeServerLogs": "nội dung lỗi đầy đủ nằm trong log server"
+    "loadFailed": "Trang này chưa tải được",
+    "loadFailedHint": "Thử lại sau giây lát nhé.",
+    "backHome": "Về trang chính",
+    "notFound": "Không có trang này",
+    "notFoundHint": "Có thể link đã cũ, hoặc trang đã chuyển chỗ."
   },
   "daily": {
     "title": "Ghi ngày",

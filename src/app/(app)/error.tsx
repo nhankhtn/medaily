@@ -1,10 +1,17 @@
 'use client'
 
+import { RotateCw } from 'lucide-react'
+import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { PATHS } from '@/lib/paths'
 
+/**
+ * What a person sees when a page fails. Diagnostics — the digest, the endpoint
+ * that explains the cause — go to the console, where whoever is fixing it will
+ * look. On screen there is one thing to read and one thing to press.
+ */
 export default function AppError({
   error,
   reset,
@@ -15,7 +22,11 @@ export default function AppError({
   const t = useTranslations('common')
 
   useEffect(() => {
-    console.error('[app] this route failed to render:', error)
+    console.error(
+      `[app] this route failed to render${error.digest ? ` (digest ${error.digest})` : ''};`,
+      'open /api/health for the cause:',
+      error,
+    )
   }, [error])
 
   return (
@@ -26,17 +37,14 @@ export default function AppError({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Button onClick={reset}>{t('retry')}</Button>
-        <Button asChild variant="outline">
-          <a href={PATHS.api.health}>{t('checkHealth')}</a>
+        <Button onClick={reset}>
+          <RotateCw className="size-4" />
+          {t('retry')}
+        </Button>
+        <Button asChild variant="ghost">
+          <Link href={PATHS.home}>{t('backHome')}</Link>
         </Button>
       </div>
-
-      {error.digest ? (
-        <p className="text-xs text-text-subtle">
-          Digest {error.digest} — {t('seeServerLogs')}
-        </p>
-      ) : null}
     </section>
   )
 }
