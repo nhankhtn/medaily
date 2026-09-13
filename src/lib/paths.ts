@@ -56,6 +56,8 @@ export const PATHS = {
 
   manifest: '/manifest.webmanifest',
 
+  firebaseAuthHandler: '/__/auth',
+
   api: {
     health: '/api/health',
     googleAuth: '/api/auth/google',
@@ -94,4 +96,5 @@ export const PUBLIC_PATHS = [
   PATHS.api.health,
   PATHS.api.googleAuth,
   PATHS.manifest,
+  PATHS.firebaseAuthHandler,
 ] as const

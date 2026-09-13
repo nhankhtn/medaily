@@ -23,6 +23,18 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }]
   },
+  async rewrites() {
+    const project =
+      process.env.FIREBASE_PROJECT_ID ?? process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? ''
+    if (!project) return []
+
+    return [
+      {
+        source: '/__/auth/:path*',
+        destination: `https://${project}.firebaseapp.com/__/auth/:path*`,
+      },
+    ]
+  },
 }
 
 export default withNextIntl(nextConfig)
