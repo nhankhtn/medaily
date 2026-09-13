@@ -8,14 +8,23 @@ import { setLocale } from '@/server/actions/settings'
 import { cn } from '@/lib/utils'
 
 /** Instant switch, no reload, no lost form state (spec 21). */
-export function LocaleSwitcher({ compact = false }: { compact?: boolean }) {
+export function LocaleSwitcher({
+  compact = false,
+  className,
+}: {
+  compact?: boolean
+  className?: string
+}) {
   const active = useLocale() as Locale
   const t = useTranslations('common')
   const [pending, startTransition] = useTransition()
 
   return (
     <div
-      className="flex items-center gap-1 rounded-full border border-border-base bg-surface-2 p-0.5"
+      className={cn(
+        'flex items-center gap-1 rounded-full border border-border-base bg-surface-2 p-0.5',
+        className,
+      )}
       role="group"
       aria-label={t('language')}
     >

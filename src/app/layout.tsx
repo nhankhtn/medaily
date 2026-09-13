@@ -16,6 +16,9 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
+  // The soft keyboard shrinks the layout viewport, so a bottom sheet stays
+  // above it and `dvh` means what it says while someone is typing.
+  interactiveWidget: 'resizes-content',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#fafafa' },
     { media: '(prefers-color-scheme: dark)', color: '#1a1a1f' },

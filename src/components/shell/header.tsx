@@ -47,9 +47,13 @@ export async function Header({
           {t('today')}
         </Link>
       </Button>
-      <LocaleSwitcher />
+      {/* Language, theme and sign-out live in the More sheet on a phone —
+          the header has room for the date, the run and search, and no more. */}
+      <LocaleSwitcher className="hidden sm:flex" />
       <ThemeToggle current={theme} className="hidden sm:flex" />
-      <SignOutButton />
+      <span className="hidden sm:block">
+        <SignOutButton />
+      </span>
     </header>
   )
 }

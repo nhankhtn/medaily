@@ -6,12 +6,17 @@ import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { BOTTOM_NAV_ITEMS, MORE_NAV_ITEMS } from '@/lib/nav'
+import type { ThemePreference } from '@/lib/themes'
 import { cn } from '@/lib/utils'
+import { LocaleSwitcher } from './locale-switcher'
+import { SignOutButton } from './sign-out-button'
+import { ThemeToggle } from './theme-toggle'
 
 /** Five destinations, thumb-reachable, everything else under More (spec 22.3). */
-export function BottomNav() {
+export function BottomNav({ theme }: { theme: ThemePreference }) {
   const pathname = usePathname()
   const t = useTranslations('nav')
+  const tc = useTranslations('common')
   // The sheet remembers which route it was opened on, so navigating closes it
   // without an effect that would re-render the whole bar.
   const [openedOn, setOpenedOn] = useState<string | null>(null)
@@ -44,17 +49,30 @@ export function BottomNav() {
               <X className="size-5" />
             </button>
           </div>
-          <div className="grid grid-cols-3 gap-3 overflow-y-auto p-4 pb-24">
-            {MORE_NAV_ITEMS.map((item) => (
-              <Link
-                key={item.key}
-                href={item.href}
-                className="flex aspect-square flex-col items-center justify-center gap-2 rounded-[var(--radius)] border border-border-base bg-surface p-2 text-center"
-              >
-                <item.icon className="size-6 text-accent" />
-                <span className="text-xs leading-tight text-text-muted">{t(item.key)}</span>
-              </Link>
-            ))}
+          <div className="h-[calc(100dvh-3.5rem)] overflow-y-auto overscroll-contain p-4 pb-24">
+            <div className="grid grid-cols-3 gap-3">
+              {MORE_NAV_ITEMS.map((item) => (
+                <Link
+                  key={item.key}
+                  href={item.href}
+                  className="flex aspect-square flex-col items-center justify-center gap-2 rounded-[var(--radius)] border border-border-base bg-surface p-2 text-center"
+                >
+                  <item.icon className="size-6 text-accent" />
+                  <span className="text-xs leading-tight text-text-muted">{t(item.key)}</span>
+                </Link>
+              ))}
+            </div>
+
+            {/* The header has no room for these on a phone, so they live here. */}
+            <div className="mt-6 space-y-3 border-t border-border-base pt-4">
+              <Row label={tc('language')}>
+                <LocaleSwitcher />
+              </Row>
+              <Row label={tc('theme')}>
+                <ThemeToggle current={theme} />
+              </Row>
+              <SignOutButton withLabel />
+            </div>
           </div>
         </div>
       ) : null}
@@ -102,5 +120,14 @@ export function BottomNav() {
         </ul>
       </nav>
     </>
+  )
+}
+
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-3 px-3">
+      <span className="text-sm font-medium">{label}</span>
+      {children}
+    </div>
   )
 }

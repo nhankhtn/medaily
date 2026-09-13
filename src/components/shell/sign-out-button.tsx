@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl'
 import { signOutFirebase } from '@/lib/auth/firebase-client'
 import { logout } from '@/server/actions/auth'
 
-export function SignOutButton() {
+export function SignOutButton({ withLabel = false }: { withLabel?: boolean }) {
   const t = useTranslations('auth')
 
   /**
@@ -16,6 +16,20 @@ export function SignOutButton() {
   const signOut = async () => {
     await signOutFirebase()
     await logout()
+  }
+
+  if (withLabel) {
+    return (
+      <form action={signOut}>
+        <button
+          type="submit"
+          className="flex h-11 w-full items-center gap-3 rounded-[var(--radius)] px-3 text-sm font-medium text-text hover:bg-surface-2"
+        >
+          <LogOut className="size-4 shrink-0 text-text-subtle" />
+          {t('signOut')}
+        </button>
+      </form>
+    )
   }
 
   return (
