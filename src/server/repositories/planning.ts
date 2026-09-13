@@ -1,9 +1,14 @@
-import { and, asc, between, eq, gte, lte } from 'drizzle-orm'
+import { and, asc, between, eq, gte, isNotNull, isNull, lte, or } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { events, plannedBlocks } from '@/lib/db/schema'
 import type { CalendarEvent, PlannedBlock } from '@/lib/db/schema'
-import type { DateRange } from '@/lib/dates'
+import { toISODate, type DateRange } from '@/lib/dates'
 
+/**
+ * Rows that can show up between `from` and `to`. A repeating event is stored
+ * once, at its first occurrence, so it qualifies whenever the series has begun
+ * and has not run out — the occurrences themselves come from `expandAll`.
+ */
 export async function findEvents(
   userId: string,
   from: Date,
@@ -12,7 +17,22 @@ export async function findEvents(
   return db
     .select()
     .from(events)
-    .where(and(eq(events.userId, userId), gte(events.startsAt, from), lte(events.startsAt, to)))
+    .where(
+      and(
+        eq(events.userId, userId),
+        lte(events.startsAt, to),
+        or(
+          and(isNull(events.recurrenceRule), gte(events.startsAt, from)),
+          and(
+            isNotNull(events.recurrenceRule),
+            or(
+              isNull(events.recurrenceUntil),
+              gte(events.recurrenceUntil, toISODate(from)),
+            ),
+          ),
+        ),
+      ),
+    )
     .orderBy(asc(events.startsAt))
 }
 

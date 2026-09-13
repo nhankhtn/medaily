@@ -1,5 +1,6 @@
 import { getCurrentUserId } from '@/lib/auth/current-user'
 import { addDays, fromISODate, today as todayOf } from '@/lib/dates'
+import { toRrule } from '@/lib/planning/recurrence'
 import { findEvents } from '@/server/repositories/planning'
 import { dayContextOf, getSettings } from '@/server/services/settings'
 
@@ -27,6 +28,10 @@ export async function GET() {
         ? `DTSTART;VALUE=DATE:${toIcsDay(event.startsAt)}`
         : `DTSTART:${toIcsDate(event.startsAt)}`,
       ...(event.endsAt && !event.allDay ? [`DTEND:${toIcsDate(event.endsAt)}`] : []),
+      // The series goes out as one VEVENT with a rule; the calendar app expands it.
+      ...(event.recurrenceRule
+        ? [toRrule(event.recurrenceRule, event.recurrenceUntil, event.allDay)]
+        : []),
       `SUMMARY:${escapeIcs(event.title)}`,
       ...(event.location ? [`LOCATION:${escapeIcs(event.location)}`] : []),
       ...(event.note ? [`DESCRIPTION:${escapeIcs(event.note)}`] : []),

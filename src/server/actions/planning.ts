@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { getCurrentUserId } from '@/lib/auth/current-user'
+import { RECURRENCE_RULES } from '@/lib/planning/recurrence'
 import { isoDateSchema } from '@/lib/validation/daily'
 import {
   deleteEvent,
@@ -34,11 +35,17 @@ export async function createEvent(input: unknown) {
       allDay: z.boolean().default(false),
       location: optionalText,
       note: optionalText,
+      recurrenceRule: z.enum(RECURRENCE_RULES).nullable().optional(),
+      recurrenceUntil: isoDateSchema.nullable().optional(),
     })
+    .refine(
+      (value) => !value.recurrenceUntil || value.recurrenceUntil >= value.date,
+      { message: 'the series cannot end before it starts', path: ['recurrenceUntil'] },
+    )
     .safeParse(input)
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
-  const { date, startTime, endTime, allDay } = parsed.data
+  const { date, startTime, endTime, allDay, recurrenceRule } = parsed.data
   const startsAt = new Date(`${date}T${allDay ? '00:00' : (startTime ?? '09:00')}:00`)
   const endsAt = allDay ? null : endTime ? new Date(`${date}T${endTime}:00`) : null
 
@@ -50,6 +57,9 @@ export async function createEvent(input: unknown) {
     allDay,
     location: parsed.data.location ?? null,
     note: parsed.data.note ?? null,
+    recurrenceRule: recurrenceRule ?? null,
+    // An end date without a rule would be a bound on nothing.
+    recurrenceUntil: recurrenceRule ? (parsed.data.recurrenceUntil ?? null) : null,
   })
 
   revalidatePlanning()
