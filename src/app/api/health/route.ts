@@ -1,13 +1,23 @@
 import { sql } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 import { readAccessPolicy, readAuthConfig, readGoogleConfig } from '@/lib/auth/config'
+// Imported, not read from disk: this has to travel with the deployed bundle,
+// and it is the only record of what migrations *this* build expects.
+import journal from '../../../../drizzle/meta/_journal.json'
 
 /**
  * Spec 30 — the only endpoint safe to expose. It reports liveness, migration
  * state, and *which* configuration is missing, by name only: never a value, a
  * connection string or a credential. That is enough to diagnose a broken
  * deploy from the outside without leaking anything.
+ *
+ * `pendingMigrations` is the one number worth reading first. Code deploys in a
+ * minute and migrations never run themselves, so a deploy that is ahead of its
+ * database fails on exactly the pages that use the new columns — which looks
+ * like a bug in those pages and nothing else.
  */
+const EXPECTED_MIGRATIONS = journal.entries.length
+
 function driverReason(error: unknown): string {
   const cause = (error as { cause?: { message?: string } })?.cause
   const message = cause?.message ?? (error instanceof Error ? error.message : 'unknown')
@@ -65,11 +75,18 @@ export async function GET() {
       ) AS count
     `)
 
+    const migrationsApplied = applied[0]?.count ?? 0
+    // Negative would mean the database is ahead of the code — a rollback, not
+    // a missing migration. Either way nothing here is pending.
+    const pendingMigrations = Math.max(0, EXPECTED_MIGRATIONS - migrationsApplied)
+
     return NextResponse.json(
       {
-        status: missing.length === 0 ? 'ok' : 'degraded',
+        status: missing.length === 0 && pendingMigrations === 0 ? 'ok' : 'degraded',
         database: 'reachable',
-        migrationsApplied: applied[0]?.count ?? 0,
+        migrationsApplied,
+        migrationsExpected: EXPECTED_MIGRATIONS,
+        pendingMigrations,
         ...config,
         roundTripMs: Date.now() - startedAt,
       },
