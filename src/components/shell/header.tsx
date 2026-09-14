@@ -13,13 +13,7 @@ import { TimerBadge } from '@/features/timer/timer-badge'
 import { getRunningTimer } from '@/server/services/timer'
 import type { ThemePreference } from '@/lib/themes'
 
-export async function Header({
-  today,
-  theme,
-}: {
-  today: ISODate
-  theme: ThemePreference
-}) {
+export async function Header({ today, theme }: { today: ISODate; theme: ThemePreference }) {
   const [t, format] = await Promise.all([getTranslations('common'), getFormatter()])
 
   return (
