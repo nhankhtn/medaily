@@ -113,6 +113,10 @@ export async function aggregateMetric(
   range: DateRange,
 ): Promise<number | null> {
   const column = METRIC_COLUMNS[metricKey]
+  const owner = sanitizeUuid(userId)
+  const from = sanitizeDate(range.start)
+  const to = sanitizeDate(range.end)
+
   const expression = (() => {
     switch (aggregation) {
       case 'sum':
@@ -122,8 +126,11 @@ export async function aggregateMetric(
       case 'count_days':
         return `COUNT(*) FILTER (WHERE (${column}) IS NOT NULL AND (${column}) > 0)`
       case 'latest':
+        // `sql.raw` sends no parameters, so `$1` here was never bound and the
+        // query threw for every goal that asked for its latest value.
         return `(SELECT ${column} FROM v_daily_effective
-                 WHERE user_id = $1 AND log_date BETWEEN $2 AND $3 AND (${column}) IS NOT NULL
+                 WHERE user_id = '${owner}' AND log_date BETWEEN '${from}' AND '${to}'
+                   AND (${column}) IS NOT NULL
                  ORDER BY log_date DESC LIMIT 1)`
     }
   })()
@@ -132,8 +139,9 @@ export async function aggregateMetric(
     sql.raw(`
       SELECT ${expression} AS value
       FROM v_daily_effective
-      WHERE user_id = '${sanitizeUuid(userId)}'
-        AND log_date BETWEEN '${sanitizeDate(range.start)}' AND '${sanitizeDate(range.end)}'
+      WHERE user_id = '${owner}'
+        AND log_date BETWEEN '${from}' AND '${to}'
+      LIMIT 1
     `),
   )
 
