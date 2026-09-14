@@ -22,6 +22,14 @@ Order matters in one direction only: the migration goes first. Every migration
 in this repo must therefore be safe against the version of the code already
 running — add columns and tables, and leave the drops for a later pass.
 
+# Committing
+
+Do not commit. Write the code, run the checks, say what changed — and stop
+there. `git commit` happens when I ask for it in that turn, and not because a
+piece of work looks finished.
+
+The same goes for `git push`, with the deploy rule above on top of it.
+
 # Text a person reads
 
 Every user-facing string lives in `messages/en.json` and `messages/vi.json`,
