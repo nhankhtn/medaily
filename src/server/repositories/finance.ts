@@ -8,7 +8,14 @@ import {
   investments,
   transactions,
 } from '@/lib/db/schema'
-import type { Account, Asset, Budget, FinanceCategory, Investment, Transaction } from '@/lib/db/schema'
+import type {
+  Account,
+  Asset,
+  Budget,
+  FinanceCategory,
+  Investment,
+  Transaction,
+} from '@/lib/db/schema'
 import type { DateRange, ISODate } from '@/lib/dates'
 
 export async function findAccounts(userId: string): Promise<Account[]> {
@@ -76,7 +83,10 @@ export async function findTransactions(
     .select()
     .from(transactions)
     .where(
-      and(eq(transactions.userId, userId), between(transactions.occurredOn, range.start, range.end)),
+      and(
+        eq(transactions.userId, userId),
+        between(transactions.occurredOn, range.start, range.end),
+      ),
     )
     .orderBy(desc(transactions.occurredOn), desc(transactions.createdAt))
     .limit(limit)
@@ -89,6 +99,15 @@ export async function insertTransaction(
   const row = rows[0]
   if (!row) throw new Error('failed to insert transaction')
   return row
+}
+
+/** One statement, so a batch of drafts is all saved or none of it is. */
+export async function insertTransactions(
+  values: (typeof transactions.$inferInsert)[],
+): Promise<number> {
+  if (values.length === 0) return 0
+  const rows = await db.insert(transactions).values(values).returning({ id: transactions.id })
+  return rows.length
 }
 
 export async function deleteTransaction(userId: string, id: string): Promise<void> {
@@ -106,7 +125,10 @@ export async function sumByCategory(userId: string, range: DateRange): Promise<C
     })
     .from(transactions)
     .where(
-      and(eq(transactions.userId, userId), between(transactions.occurredOn, range.start, range.end)),
+      and(
+        eq(transactions.userId, userId),
+        between(transactions.occurredOn, range.start, range.end),
+      ),
     )
     .groupBy(transactions.categoryId, transactions.kind)
 

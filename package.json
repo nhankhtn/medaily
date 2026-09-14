@@ -21,6 +21,7 @@
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
     "smoke": "tsx scripts/smoke.ts",
+    "capture:check": "tsx scripts/capture-check.ts",
     "db:baseline": "tsx scripts/baseline.ts",
     "clean": "rm -rf .next node_modules"
   },

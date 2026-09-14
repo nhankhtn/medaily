@@ -120,6 +120,8 @@ except `/api/health` until all four are present:
 | `AUTH_PASSWORD` | a long password |
 | `AUTH_SECRET` | `openssl rand -hex 32` |
 | `ANTHROPIC_API_KEY` | optional — only to enable the AI review |
+| `GEMINI_API_KEY` | optional — only to enable the finance quick capture |
+| `GEMINI_MODEL` / `GEMINI_MODELS` | optional — override the model fallback chain |
 | `NEXT_PUBLIC_FIREBASE_*`, `AUTH_OWNER_EMAIL` | optional — only to enable Google sign-in (see [Sign-in](#sign-in)) |
 
 Migrations do not run on build, by design. Run them from your machine against
@@ -172,6 +174,7 @@ minified Server Components error.
 | `pnpm test:unit` | Pure domain logic only — no database needed |
 | `pnpm test:integration` | Constraints, transactions and views against a real Postgres |
 | `pnpm smoke` | Signs a session and requests every route in both locales |
+| `pnpm capture:check` | Runs real notes through the configured Gemini model and checks what comes back (needs `GEMINI_API_KEY`) |
 | `pnpm db:generate` | Generate a migration from schema changes |
 | `pnpm db:migrate` | Apply migrations, then re-apply views/triggers (idempotent) |
 | `pnpm db:baseline` | Mark existing migrations as applied — for a database created with `drizzle-kit push` |
@@ -220,6 +223,85 @@ minified Server Components error.
 - **Import/export** — full JSON round-trip with a dry run, plus CSV.
 - **AI review** *(opt-in)* — a narrative for a period, grounded in aggregates
   only, off unless `ANTHROPIC_API_KEY` is set.
+- **Quick capture** *(opt-in)* — a box in the bottom-right corner of every
+  page. Type a day's spending as one sentence ("sáng ăn phở 40k, cà phê 25k,
+  đổ xăng 100 nghìn") and get one editable draft row per payment. Off unless
+  `GEMINI_API_KEY` is set. See below.
+
+## Quick capture
+
+With `GEMINI_API_KEY` set, a launcher appears in the bottom-right corner of
+every page (**⌘/Ctrl + J** to open or close, **Esc** to close). The finance page
+carries the same box inline, above the transaction form.
+
+Type `/` to choose where the note goes — finance is the only destination wired
+up so far — then write the note the way you'd say it:
+
+```text
+sáng ăn bánh mì 30k, cà phê 25k, trưa cơm gà 55k, hôm qua đổ xăng 100 nghìn
+```
+
+**Xem trước** (⌘/Ctrl + Enter) turns that into four editable rows — merchant,
+amount, kind, category, date — with a running total. Nothing is written until
+you press save.
+
+The destination menu is a registry in
+[`src/lib/capture/modules.ts`](src/lib/capture/modules.ts): a new module is one
+entry there plus a branch in the box's dispatch.
+
+### What actually leaves the machine
+
+The sentence you typed, today's date, your currency code, and the *names* of
+your own categories. No balances, no transaction history, no other module. The
+request sets `store: false`, so the interaction is not retained after it is
+answered.
+
+### How the model's output is treated
+
+It never reaches the database directly:
+
+- Amounts are rounded to whole cents and anything ≤ 0 drops the row.
+- Dates are clamped into the last 365 days, never the future.
+- A category is only attached when it matches one you already created — the
+  match is accent-insensitive, so "an uong" finds "Ăn uống" — otherwise the row
+  saves with no category.
+- The save action re-checks every account and category id against your own rows,
+  so a well-formed id you don't own is rejected.
+- Transfers are out of scope: they need a second account no sentence names.
+  Everything comes back as income or expense, and you can switch a row over in
+  the manual form.
+
+Capped at 25 rows per note and 10 notes per minute.
+
+### Choosing a model
+
+Quota on this API is counted **per model**, so the client walks a chain instead
+of depending on one:
+
+```text
+gemini-3.5-flash-lite → gemini-3.1-flash-lite → gemini-3.5-flash → gemini-3.7-flash
+```
+
+A `429` (out of quota), `503` (overloaded) or `404` (not reachable by this
+project) moves to the next one and logs the switch; anything else is a problem
+with the request itself and fails immediately rather than repeating it three
+more times. `GEMINI_MODEL` names a first choice and keeps the chain behind it;
+`GEMINI_MODELS` (comma-separated) replaces the chain outright.
+
+Check the tier before pinning something newer: on a project without billing
+enabled for it, `gemini-3.8-flash` answers from a 20-request-a-day free bucket
+and is several times slower on this task, while the lite tier returns in about
+two seconds.
+
+`pnpm capture:check` runs a set of real Vietnamese and English notes through
+the configured model and prints what came back, so a model or prompt change can
+be judged rather than guessed at:
+
+```bash
+pnpm capture:check              # every case
+pnpm capture:check xăng 7       # only cases matching "xăng", plus case 7
+pnpm capture:check --gap=0      # no pacing (for a paid key)
+```
 
 ## Architecture in one screen
 
@@ -260,8 +342,13 @@ Rules that are enforced, not just documented:
 ## Keyboard
 
 `⌘K` command palette (jump, or type `sleep 7.5`, `study 45`, `2026-09-01`) ·
-`g` then `d/h/g/a/s/o` to navigate · `[` / `]` previous/next day · `t` today ·
-`1`–`0` set the focused 1–10 metric · `s` save · `Esc` closes any layer.
+`⌘J` quick capture · `g` then `d/h/g/a/s/o` to navigate · `[` / `]`
+previous/next day · `t` today · `1`–`0` set the focused 1–10 metric · `s` save ·
+`Esc` closes any layer.
+
+The full list is on the settings page, so it is findable without the README:
+[`src/features/settings/shortcuts-panel.tsx`](src/features/settings/shortcuts-panel.tsx).
+Adding a key means adding a row there.
 
 ## License
 

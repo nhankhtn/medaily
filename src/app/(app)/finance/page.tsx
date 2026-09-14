@@ -11,10 +11,12 @@ import {
   CategoryDialog,
   InvestmentDialog,
 } from '@/features/finance/finance-dialogs'
+import { TransactionCapture } from '@/features/finance/transaction-capture'
 import { TransactionForm } from '@/features/finance/transaction-form'
 import { TransactionList } from '@/features/finance/transaction-list'
 import { formatMoney } from '@/lib/format/money'
 import { getFinanceData } from '@/server/services/finance'
+import { geminiEnabled } from '@/server/services/gemini'
 
 export default async function FinancePage() {
   const [t, locale, data] = await Promise.all([
@@ -37,7 +39,6 @@ export default async function FinancePage() {
           </div>
         }
       />
-
       <StatRow
         items={[
           { label: t('netWorth'), value: money(data.totals.netWorth) },
@@ -53,7 +54,6 @@ export default async function FinancePage() {
           },
         ]}
       />
-
       {data.accounts.length === 0 ? (
         <EmptyState
           title={t('noAccounts')}
@@ -64,6 +64,7 @@ export default async function FinancePage() {
         <Card>
           <CardHeader title={t('transactions')} />
           <CardBody className="space-y-4">
+            <TransactionCapture enabled={geminiEnabled()} />
             <TransactionForm
               accounts={data.accounts}
               categories={data.categories}
@@ -78,7 +79,6 @@ export default async function FinancePage() {
           </CardBody>
         </Card>
       )}
-
       <div className="grid gap-4 lg:grid-cols-2">
         {data.accounts.length > 0 ? (
           <Card>

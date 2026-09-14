@@ -1,7 +1,9 @@
 import { BottomNav } from '@/components/shell/bottom-nav'
 import { Header } from '@/components/shell/header'
 import { Sidebar } from '@/components/shell/sidebar'
+import { CaptureBox } from '@/features/capture/capture-box'
 import { today } from '@/lib/dates'
+import { geminiEnabled } from '@/server/services/gemini'
 import { dayContextOf, getShellSettings, getShellTheme } from '@/server/services/settings'
 
 /**
@@ -24,6 +26,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </div>
       <BottomNav />
+      <CaptureBox enabled={geminiEnabled()} />
     </>
   )
 }
