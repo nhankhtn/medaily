@@ -16,6 +16,7 @@ import {
 } from '@/lib/capture/modules'
 import { cn } from '@/lib/utils'
 import { FinanceDraftList } from '@/features/finance/draft-list'
+import { useShortcut } from '@/features/shortcuts/provider'
 import { parseTransactionText, type ParseTransactionsResult } from '@/server/actions/finance'
 
 type Parsed = { module: 'finance'; result: Extract<ParseTransactionsResult, { ok: true }> }
@@ -35,20 +36,18 @@ export function CaptureBox({ enabled }: { enabled: boolean }) {
   const tc = useTranslations('common')
   const [open, setOpen] = useState(false)
 
+  useShortcut('capture', () => setOpen((previous) => !previous), enabled)
+
+  // Escape closes from anywhere in the panel, including a focused field, and
+  // is not the registry's to hand out.
   useEffect(() => {
-    if (!enabled) return
+    if (!enabled || !open) return
     const onKey = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'j') {
-        event.preventDefault()
-        setOpen((previous) => !previous)
-        return
-      }
-      // Escape closes from anywhere in the panel, including a focused field.
       if (event.key === 'Escape') setOpen(false)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [enabled])
+  }, [enabled, open])
 
   if (!enabled) return null
 
