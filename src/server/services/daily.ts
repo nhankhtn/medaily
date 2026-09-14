@@ -1,8 +1,14 @@
+import type { CustomMetric } from '@/lib/db/schema'
 import { db } from '@/lib/db'
 import type { DailyLog } from '@/lib/db/schema'
 import { addDays, rangeOfLastDays, today, type ISODate } from '@/lib/dates'
 import type { DailyLogPatchInput } from '@/lib/validation/daily'
 import { recomputeDerivedHabitLogs } from '@/server/services/habit-derivation'
+import {
+  findCustomMetrics,
+  findCustomValues,
+  saveCustomValues,
+} from '@/server/repositories/custom-metrics'
 import { dayContextOf, getSettings } from '@/server/services/settings'
 import {
   deleteLog,
@@ -46,6 +52,7 @@ export async function saveDailyLog(
   date: ISODate,
   patch: DailyLogPatchInput,
   source: 'manual' | 'catch_up' | 'import' = 'manual',
+  custom?: Record<string, number | boolean | string | null>,
 ): Promise<SaveResult> {
   const settings = await getSettings()
   const logicalToday = today(dayContextOf(settings))
@@ -54,6 +61,9 @@ export async function saveDailyLog(
   return db.transaction(async (tx) => {
     const previous = await findRawLog(settings.userId, date)
     const saved = await upsertLog(settings.userId, date, { ...toDbPatch(patch), source }, tx)
+    // Before the habits recompute, so one bound to a custom metric sees today's
+    // number rather than yesterday's.
+    if (custom) await saveCustomValues(saved.id, custom, tx)
     await recomputeDerivedHabitLogs(tx, settings.userId, date, settings.weekStart)
     return { saved, previous }
   })
@@ -91,6 +101,9 @@ export type DailyFormData = {
   previousDay: DailyLog | null
   /** Unlogged days in the recent past, for the catch-up banner (spec 6.4). */
   missingDays: ISODate[]
+  customMetrics: CustomMetric[]
+  /** Today's values for those, keyed by metric id. */
+  customValues: Record<string, number | boolean | string | null>
 }
 
 export async function getDailyFormData(date: ISODate): Promise<DailyFormData> {
@@ -98,14 +111,28 @@ export async function getDailyFormData(date: ISODate): Promise<DailyFormData> {
   const logicalToday = today(dayContextOf(settings))
   const medianSince = addDays(logicalToday, -13)
 
-  const [log, effective, medians, exerciseTypes, previousDay, missingDays] = await Promise.all([
-    findRawLog(settings.userId, date),
-    findEffectiveLog(settings.userId, date),
-    findMedians(settings.userId, medianSince),
-    findExerciseTypes(settings.userId),
-    findLatestLogBefore(settings.userId, date),
-    findMissingDays(logicalToday, 7),
-  ])
+  const [log, effective, medians, exerciseTypes, previousDay, missingDays, customMetrics] =
+    await Promise.all([
+      findRawLog(settings.userId, date),
+      findEffectiveLog(settings.userId, date),
+      findMedians(settings.userId, medianSince),
+      findExerciseTypes(settings.userId),
+      findLatestLogBefore(settings.userId, date),
+      findMissingDays(logicalToday, 7),
+      findCustomMetrics(settings.userId),
+    ])
+
+  const customValues: Record<string, number | boolean | string | null> = {}
+  if (log) {
+    for (const row of await findCustomValues(log.id)) {
+      customValues[row.customMetricId] =
+        row.valueNumeric !== null
+          ? Number(row.valueNumeric)
+          : row.valueBool !== null
+            ? row.valueBool
+            : row.valueText
+    }
+  }
 
   return {
     date,
@@ -116,6 +143,8 @@ export async function getDailyFormData(date: ISODate): Promise<DailyFormData> {
     exerciseTypes,
     previousDay,
     missingDays,
+    customMetrics,
+    customValues,
   }
 }
 

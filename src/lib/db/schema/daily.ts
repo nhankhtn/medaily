@@ -153,3 +153,4 @@ export const customMetricValuesRelations = relations(customMetricValues, ({ one 
 export type DailyLog = typeof dailyLogs.$inferSelect
 export type DailyLogInsert = typeof dailyLogs.$inferInsert
 export type CustomMetric = typeof customMetrics.$inferSelect
+export type CustomMetricInsert = typeof customMetrics.$inferInsert

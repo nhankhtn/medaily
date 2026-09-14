@@ -3,11 +3,13 @@ import { getTranslations } from 'next-intl/server'
 import { LocaleSwitcher } from '@/components/shell/locale-switcher'
 import { ThemeToggle } from '@/components/shell/theme-toggle'
 import { Button } from '@/components/ui/button'
+import { CustomMetricsPanel } from '@/features/settings/custom-metrics-panel'
 import { DataPanel } from '@/features/settings/data-panel'
 import { ReplayOnboardingButton } from '@/features/onboarding/replay-button'
 import { SettingsForm } from '@/features/settings/settings-form'
 import { ShortcutsDialog } from '@/features/settings/shortcuts-panel'
 import { geminiEnabled } from '@/server/services/gemini'
+import { findCustomMetrics } from '@/server/repositories/custom-metrics'
 import { getSettings } from '@/server/services/settings'
 
 export default async function SettingsPage() {
@@ -28,6 +30,7 @@ export default async function SettingsPage() {
       </section>
 
       <SettingsForm settings={settings} />
+      <CustomMetricsPanel metrics={await findCustomMetrics(settings.userId)} />
       <section className="border-border-base bg-surface rounded-[var(--radius)] border p-4">
         <h2 className="text-sm font-semibold">{t('shortcuts.title')}</h2>
         <p className="text-text-subtle mt-0.5 mb-3 text-xs leading-snug">{t('shortcuts.help')}</p>

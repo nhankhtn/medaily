@@ -42,10 +42,10 @@ export async function saveDay(input: unknown): Promise<SaveDayResult> {
   const parsed = saveDailyLogSchema.safeParse(input)
   if (!parsed.success) return { ok: false, error: 'invalid_input' }
 
-  const { date, patch, source } = parsed.data
+  const { date, patch, source, custom } = parsed.data
 
   try {
-    const result = await saveDailyLog(date, patch, source)
+    const result = await saveDailyLog(date, patch, source, custom)
     revalidateDaily(date)
 
     return {

@@ -10,11 +10,13 @@ import { MinuteInput } from '@/components/ui/minute-input'
 import { ScaleInput } from '@/components/ui/scale-input'
 import { Stepper } from '@/components/ui/stepper'
 import type { ISODate } from '@/lib/dates'
+import type { CustomMetric } from '@/lib/db/schema'
 import type { EffectiveDailyLog } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { copyPreviousDay, deleteDay, saveDay, undoSaveDay } from '@/server/actions/daily'
 import type { MetricMedians } from '@/server/repositories/daily'
 import { useShortcut } from '@/features/shortcuts/provider'
+import { CustomFields, type CustomValues } from './custom-fields'
 import { Field, FormSection } from './section'
 import { useDraft, useUnsavedGuard } from './use-draft'
 import {
@@ -34,6 +36,8 @@ export function DailyForm({
   medians,
   exerciseTypes,
   existed,
+  customMetrics,
+  initialCustom,
 }: {
   date: ISODate
   initialValues: DailyFormValues
@@ -41,12 +45,15 @@ export function DailyForm({
   medians: MetricMedians
   exerciseTypes: string[]
   existed: boolean
+  customMetrics: CustomMetric[]
+  initialCustom: CustomValues
 }) {
   const t = useTranslations('daily')
   const tc = useTranslations('common')
   const [values, setValues] = useState<DailyFormValues>(initialValues)
   const [copied, setCopied] = useState<Set<keyof DailyFormValues>>(new Set())
   const [pending, startTransition] = useTransition()
+  const [custom, setCustom] = useState<CustomValues>(initialCustom)
   const [savedAt, setSavedAt] = useState<number | null>(null)
   const { restored, save: saveDraft, clear: clearDraft } = useDraft(date, initialValues)
 
@@ -85,7 +92,7 @@ export function DailyForm({
 
   const submit = useCallback(() => {
     startTransition(async () => {
-      const result = await saveDay({ date, patch: toPatch(values), source: 'manual' })
+      const result = await saveDay({ date, patch: toPatch(values), source: 'manual', custom })
 
       if (!result.ok) {
         toast.error(result.error === 'future_date' ? t('futureBlocked') : tc('error'))
@@ -387,6 +394,12 @@ export function DailyForm({
           />
         </Field>
       </FormSection>
+
+      <CustomFields
+        metrics={customMetrics}
+        values={custom}
+        onChange={(id, value) => setCustom((prev) => ({ ...prev, [id]: value }))}
+      />
 
       <FormSection
         title={t('sections.reflection')}

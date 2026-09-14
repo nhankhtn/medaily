@@ -25,11 +25,10 @@ import type { EffectiveDailyLog, InsightPayload } from '@/lib/types'
 import { findEffectiveRange } from '@/server/repositories/daily'
 import { findHabitLogsInRange, findHabits } from '@/server/repositories/habits'
 import {
-  aggregateMetric,
   findGoals,
   findMilestonesFor,
-  isMetricKey,
 } from '@/server/repositories/goals'
+import { aggregateAnyMetric } from '@/server/services/metrics'
 import { findActiveInsights, recordInsights } from '@/server/repositories/insights'
 import { dayContextOf, getSettings } from '@/server/services/settings'
 
@@ -307,9 +306,9 @@ async function buildGoals({
       const goalMilestones = milestones.filter((milestone) => milestone.goalId === goal.id)
 
       let metricActual: number | null = null
-      if (goal.progressMode === 'metric' && goal.metricKey && isMetricKey(goal.metricKey)) {
+      if (goal.progressMode === 'metric' && goal.metricKey) {
         const range = metricRange(goal.metricPeriod, goal.startDate, today, weekStart)
-        metricActual = await aggregateMetric(
+        metricActual = await aggregateAnyMetric(
           userId,
           goal.metricKey,
           goal.metricAggregation ?? 'sum',

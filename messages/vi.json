@@ -79,7 +79,8 @@
       "essentials": "Cơ bản",
       "activity": "Hoạt động",
       "reflection": "Ghi chú",
-      "filled": "{filled}/{total}"
+      "filled": "{filled}/{total}",
+      "custom": "Của bạn"
     },
     "fields": {
       "energy": "Năng lượng",
@@ -138,7 +139,9 @@
       "body": "Mỗi ngày một dòng. Lưu tất cả cùng lúc.",
       "saveAll": "Lưu {count} ngày",
       "savedToast": "Đã điền {count} ngày"
-    }
+    },
+    "customDone": "Xong",
+    "customNotDone": "Chưa"
   },
   "dashboard": {
     "title": "Trang chính",
@@ -413,6 +416,40 @@
       "resetAll": "Về mặc định hết",
       "resetAllDone": "Mọi phím tắt đã về mặc định",
       "editHint": "Bấm vào phím để đổi. Esc để bỏ."
+    },
+    "metrics": {
+      "title": "Hoạt động của bạn",
+      "help": "Thêm thứ bản ghi ngày chưa theo dõi. Thói quen hay mục tiêu gắn vào được như mọi chỉ số có sẵn.",
+      "none": "Chưa thêm gì",
+      "add": "Hoạt động mới",
+      "edit": "Sửa",
+      "archive": "Bỏ",
+      "archived": "Đã bỏ — những ngày đã ghi vẫn giữ",
+      "saved": "Đã lưu",
+      "failed": "Không lưu được",
+      "key": "Khoá",
+      "keyHelp": "Khoá là thứ thói quen và mục tiêu gắn vào, nên không đổi tuỳ tiện: chữ thường, số và gạch dưới.",
+      "key_taken": "Hoạt động khác đang dùng khoá này",
+      "key_reserved": "Khoá này của một chỉ số có sẵn",
+      "labelEn": "Tên (tiếng Anh)",
+      "labelVi": "Tên (tiếng Việt)",
+      "unit": "Đơn vị",
+      "type": "Kiểu",
+      "aggregation": "Cộng dồn kiểu",
+      "min": "Thấp nhất",
+      "max": "Cao nhất",
+      "types": {
+        "number": "Con số",
+        "scale": "Thang 1-10",
+        "boolean": "Có / không",
+        "text": "Chữ"
+      },
+      "aggregations": {
+        "sum": "Tổng",
+        "avg": "Trung bình",
+        "count_days": "Số ngày làm",
+        "latest": "Mới nhất"
+      }
     }
   },
   "analytics": {

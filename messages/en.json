@@ -79,7 +79,8 @@
       "essentials": "Essentials",
       "activity": "Activity",
       "reflection": "Reflection",
-      "filled": "{filled}/{total}"
+      "filled": "{filled}/{total}",
+      "custom": "Your own"
     },
     "fields": {
       "energy": "Energy",
@@ -138,7 +139,9 @@
       "body": "One row per missing day. Save them all at once.",
       "saveAll": "Save {count} days",
       "savedToast": "{count} days filled in"
-    }
+    },
+    "customDone": "Done",
+    "customNotDone": "Not yet"
   },
   "dashboard": {
     "title": "Home",
@@ -413,6 +416,40 @@
       "resetAll": "Reset all",
       "resetAllDone": "Every shortcut is back to its default",
       "editHint": "Click a key to change it. Esc cancels."
+    },
+    "metrics": {
+      "title": "Your own activities",
+      "help": "Add what the daily log does not track yet. A habit or a goal can bind to it like any built-in one.",
+      "none": "Nothing added yet",
+      "add": "New activity",
+      "edit": "Edit",
+      "archive": "Remove",
+      "archived": "Removed — the days already logged keep it",
+      "saved": "Saved",
+      "failed": "Could not save that",
+      "key": "Key",
+      "keyHelp": "The key is what a habit or a goal binds to, so it cannot change casually: lowercase letters, digits and underscores.",
+      "key_taken": "Another activity already uses that key",
+      "key_reserved": "That key belongs to a built-in metric",
+      "labelEn": "Name (English)",
+      "labelVi": "Name (Vietnamese)",
+      "unit": "Unit",
+      "type": "Kind",
+      "aggregation": "Totals as",
+      "min": "Lowest",
+      "max": "Highest",
+      "types": {
+        "number": "Number",
+        "scale": "Scale 1-10",
+        "boolean": "Yes / no",
+        "text": "Text"
+      },
+      "aggregations": {
+        "sum": "Sum",
+        "avg": "Average",
+        "count_days": "Days done",
+        "latest": "Latest"
+      }
     }
   },
   "analytics": {

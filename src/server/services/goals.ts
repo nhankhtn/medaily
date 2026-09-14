@@ -2,11 +2,10 @@ import { cache } from 'react'
 import { monthStartOf, today as todayOf, weekStartOf, type DateRange, type ISODate } from '@/lib/dates'
 import { computeGoalProgress, type GoalProgress } from '@/lib/goals/progress'
 import {
-  aggregateMetric,
   findGoals,
   findMilestonesFor,
-  isMetricKey,
 } from '@/server/repositories/goals'
+import { aggregateAnyMetric } from '@/server/services/metrics'
 import { dayContextOf, getSettings } from '@/server/services/settings'
 
 export type GoalView = {
@@ -38,8 +37,8 @@ export const getGoalsView = cache(async (): Promise<{ today: ISODate; goals: Goa
       const own = milestones.filter((milestone) => milestone.goalId === row.id)
 
       let metricActual: number | null = null
-      if (row.progressMode === 'metric' && row.metricKey && isMetricKey(row.metricKey)) {
-        metricActual = await aggregateMetric(
+      if (row.progressMode === 'metric' && row.metricKey) {
+        metricActual = await aggregateAnyMetric(
           settings.userId,
           row.metricKey,
           row.metricAggregation ?? 'sum',

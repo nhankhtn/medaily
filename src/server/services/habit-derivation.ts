@@ -4,6 +4,7 @@ import { dailyEffective, dailyLogs } from '@/lib/db/schema'
 import type { Habit } from '@/lib/db/schema'
 import { evaluateLink, isScheduledOn } from '@/lib/habits/schedule'
 import type { ISODate } from '@/lib/dates'
+import { customSnapshotFor } from '@/server/repositories/custom-metrics'
 import {
   deleteHabitLog,
   findHabitsActiveOn,
@@ -44,6 +45,9 @@ export async function loadMetricSnapshot(
     reading_pages: row.readingPages,
     entertainment_minutes: row.entertainmentMinutes,
     english_minutes: row.englishMinutes,
+    // A metric the user invented is a key like any other. The habit code below
+    // looks names up in this map, so it needed no change to bind to one.
+    ...(await customSnapshotFor(userId, date, tx)),
   }
 }
 

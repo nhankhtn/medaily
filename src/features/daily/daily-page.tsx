@@ -28,11 +28,7 @@ export async function DailyPage({ date }: { date: ISODate }) {
             {isToday
               ? t('subtitleToday')
               : t('subtitlePast', {
-                  date: format.dateTime(fromISODate(date), {
-                    weekday: 'long',
-                    day: 'numeric',
-                    month: 'long',
-                  }),
+                  date: format.dateTime(fromISODate(date), 'fullDay'),
                 })}
           </p>
         </div>
@@ -61,6 +57,8 @@ export async function DailyPage({ date }: { date: ISODate }) {
         medians={data.medians}
         exerciseTypes={data.exerciseTypes}
         existed={data.log !== null}
+        customMetrics={data.customMetrics}
+        initialCustom={data.customValues}
       />
     </div>
   )

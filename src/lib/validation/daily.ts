@@ -47,11 +47,17 @@ export const dailyLogPatchSchema = z.object({
   note: text(5000).optional(),
 })
 
+/** Values for the user's own metrics, keyed by `custom_metrics.id`. */
+export const customValuesSchema = z
+  .record(z.uuid(), z.union([z.number().finite(), z.boolean(), z.string().max(500), z.null()]))
+  .optional()
+
 export type DailyLogPatchInput = z.infer<typeof dailyLogPatchSchema>
 
 export const saveDailyLogSchema = z.object({
   date: isoDateSchema,
   patch: dailyLogPatchSchema,
+  custom: customValuesSchema,
   source: z.enum(['manual', 'catch_up', 'import']).default('manual'),
 })
 
