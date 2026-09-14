@@ -59,7 +59,7 @@ export async function archiveProject(input: unknown) {
 
 const taskSchema = z.object({
   id: z.string().uuid().optional(),
-  projectId: z.string().uuid(),
+  projectId: z.string().uuid().nullable().optional(),
   title: z.string().min(1).max(300),
   status: z.enum(['todo', 'doing', 'blocked', 'done']).default('todo'),
   priority: z.enum(['low', 'medium', 'high']).default('medium'),
@@ -83,8 +83,30 @@ export async function saveTask(input: unknown) {
     : await insertTask({ ...values, userId, completedAt })
 
   revalidatePath(PATHS.projects)
-  revalidatePath(PATHS.project(values.projectId))
+  revalidatePath(PATHS.calendar())
+  if (values.projectId) revalidatePath(PATHS.project(values.projectId))
   return { ok: true as const, id: task.id }
+}
+
+const scheduleSchema = z.object({ id: z.string().uuid(), dueDate: z.string().date() })
+
+/**
+ * Give an undated task a day. Narrow on purpose: `saveTask` would carry the
+ * schema's defaults over a task it was only meant to move.
+ */
+export async function scheduleTask(input: unknown) {
+  const parsed = scheduleSchema.safeParse(input)
+  if (!parsed.success) return { ok: false as const }
+
+  const userId = await getCurrentUserId()
+  const task = await findTask(userId, parsed.data.id)
+  if (!task) return { ok: false as const }
+
+  await updateTask(userId, task.id, { dueDate: parsed.data.dueDate })
+  revalidatePath(PATHS.projects)
+  revalidatePath(PATHS.calendar())
+  if (task.projectId) revalidatePath(PATHS.project(task.projectId))
+  return { ok: true as const }
 }
 
 export async function toggleTask(input: unknown) {
@@ -101,7 +123,9 @@ export async function toggleTask(input: unknown) {
   })
 
   revalidatePath(PATHS.projects)
-  revalidatePath(PATHS.project(task.projectId))
+  revalidatePath(PATHS.calendar())
+  // A standalone task belongs to no project page.
+  if (task.projectId) revalidatePath(PATHS.project(task.projectId))
   return { ok: true as const, done: !done }
 }
 
@@ -113,6 +137,8 @@ export async function removeTask(input: unknown) {
 
   await deleteTask(userId, id)
   revalidatePath(PATHS.projects)
-  revalidatePath(PATHS.project(task.projectId))
+  revalidatePath(PATHS.calendar())
+  // A standalone task belongs to no project page.
+  if (task.projectId) revalidatePath(PATHS.project(task.projectId))
   return { ok: true }
 }

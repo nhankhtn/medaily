@@ -19,12 +19,9 @@ export async function MonthView({ data }: { data: MonthCalendar }) {
   return (
     <Card className="overflow-hidden">
       <CardBody className="p-0">
-        <div className="grid grid-cols-7 border-b border-border-base">
+        <div className="border-border-base grid grid-cols-7 border-b">
           {weekdays.map((label, index) => (
-            <div
-              key={index}
-              className="px-2 py-2 text-center text-xs font-medium text-text-subtle"
-            >
+            <div key={index} className="text-text-subtle px-2 py-2 text-center text-xs font-medium">
               {label}
             </div>
           ))}
@@ -52,7 +49,7 @@ function DayCell({ day, today, t, format }: { day: CalendarDay; today: ISODate }
     <Link
       href={PATHS.calendar({ view: 'week', at: day.date })}
       className={cn(
-        'flex min-h-16 flex-col gap-1 border-b border-r border-border-base p-1.5 transition-colors hover:bg-surface-2 sm:min-h-28',
+        'border-border-base hover:bg-surface-2 flex min-h-16 flex-col gap-1 border-r border-b p-1.5 transition-colors sm:min-h-28',
         '[&:nth-child(7n)]:border-r-0 [&:nth-last-child(-n+7)]:border-b-0',
         !day.inMonth && 'bg-surface-2/40',
       )}
@@ -61,7 +58,7 @@ function DayCell({ day, today, t, format }: { day: CalendarDay; today: ISODate }
         className={cn(
           'flex size-6 shrink-0 items-center justify-center rounded-full text-xs tabular-nums',
           day.inMonth ? 'text-text' : 'text-text-subtle',
-          day.date === today && 'bg-accent font-semibold text-accent-text',
+          day.date === today && 'bg-accent text-accent-text font-semibold',
         )}
       >
         {Number(day.date.slice(8))}
@@ -85,7 +82,7 @@ function DayCell({ day, today, t, format }: { day: CalendarDay; today: ISODate }
           <Item key={item.key} item={item} t={t} format={format} />
         ))}
         {hidden > 0 ? (
-          <span className="px-1 text-[11px] text-text-subtle">{t('more', { count: hidden })}</span>
+          <span className="text-text-subtle px-1 text-[11px]">{t('more', { count: hidden })}</span>
         ) : null}
       </span>
     </Link>
@@ -93,8 +90,7 @@ function DayCell({ day, today, t, format }: { day: CalendarDay; today: ISODate }
 }
 
 function Item({ item, t, format }: { item: CalendarItem } & Localised) {
-  const label =
-    item.title ?? (item.blockKind ? t(`kinds.${item.blockKind}`) : t('events'))
+  const label = item.title ?? (item.blockKind ? t(`kinds.${item.blockKind}`) : t('events'))
 
   return (
     <span
@@ -102,14 +98,12 @@ function Item({ item, t, format }: { item: CalendarItem } & Localised) {
         'truncate rounded px-1 text-[11px] leading-5',
         item.kind === 'event'
           ? 'bg-accent/15 text-text'
-          : 'bg-surface-2 text-text-muted ring-1 ring-inset ring-border-base',
+          : 'bg-surface-2 text-text-muted ring-border-base ring-1 ring-inset',
       )}
       title={label}
     >
       {item.at ? (
-        <span className="tabular-nums text-text-subtle">
-          {format.dateTime(item.at, 'time')}{' '}
-        </span>
+        <span className="text-text-subtle tabular-nums">{format.dateTime(item.at, 'time')} </span>
       ) : null}
       {label}
     </span>

@@ -18,6 +18,7 @@ export function TaskList({ projectId, tasks }: { projectId: string; tasks: Proje
   const t = useTranslations('projects')
   const tc = useTranslations('common')
   const [draft, setDraft] = useState('')
+  const [due, setDue] = useState('')
   const [optimistic, setOptimistic] = useState<Record<string, boolean>>({})
   const [pending, startTransition] = useTransition()
 
@@ -25,8 +26,9 @@ export function TaskList({ projectId, tasks }: { projectId: string; tasks: Proje
     const title = draft.trim()
     if (!title) return
     setDraft('')
+    setDue('')
     startTransition(async () => {
-      const result = await saveTask({ projectId, title })
+      const result = await saveTask({ projectId, title, dueDate: due || null })
       if (!result.ok) toast.error(tc('error'))
     })
   }
@@ -34,7 +36,7 @@ export function TaskList({ projectId, tasks }: { projectId: string; tasks: Proje
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
-        <Plus className="size-4 shrink-0 text-text-subtle" />
+        <Plus className="text-text-subtle size-4 shrink-0" />
         <Input
           value={draft}
           placeholder={t('addTask')}
@@ -47,10 +49,17 @@ export function TaskList({ projectId, tasks }: { projectId: string; tasks: Proje
             }
           }}
         />
+        <Input
+          type="date"
+          value={due}
+          onChange={(event) => setDue(event.target.value)}
+          aria-label={t('taskDue')}
+          className="w-40 shrink-0"
+        />
       </div>
 
       {tasks.length === 0 ? (
-        <p className="px-1 py-2 text-sm text-text-subtle">{t('noTasks')}</p>
+        <p className="text-text-subtle px-1 py-2 text-sm">{t('noTasks')}</p>
       ) : (
         <ul className="space-y-1">
           {tasks.map((task) => {
@@ -58,7 +67,7 @@ export function TaskList({ projectId, tasks }: { projectId: string; tasks: Proje
             return (
               <li
                 key={task.id}
-                className="group flex items-center gap-2.5 rounded-[var(--radius)] px-1 py-1.5 hover:bg-surface-2"
+                className="group hover:bg-surface-2 flex items-center gap-2.5 rounded-[var(--radius)] px-1 py-1.5"
               >
                 <button
                   type="button"
@@ -74,18 +83,23 @@ export function TaskList({ projectId, tasks }: { projectId: string; tasks: Proje
                   }}
                   className={cn(
                     'flex size-5 shrink-0 items-center justify-center rounded-full border',
-                    done ? 'border-transparent bg-good text-white' : 'border-border-strong',
+                    done ? 'bg-good border-transparent text-white' : 'border-border-strong',
                   )}
                 >
                   {done ? <Check className="size-3" /> : null}
                 </button>
 
-                <span className={cn('min-w-0 flex-1 truncate text-sm', done && 'text-text-subtle line-through')}>
+                <span
+                  className={cn(
+                    'min-w-0 flex-1 truncate text-sm',
+                    done && 'text-text-subtle line-through',
+                  )}
+                >
                   {task.title}
                 </span>
 
                 {task.dueDate ? (
-                  <span className="shrink-0 text-xs tabular-nums text-text-subtle">
+                  <span className="text-text-subtle shrink-0 text-xs tabular-nums">
                     {formatDayMonth(task.dueDate)}
                   </span>
                 ) : null}
@@ -99,7 +113,7 @@ export function TaskList({ projectId, tasks }: { projectId: string; tasks: Proje
                       await removeTask(task.id)
                     })
                   }
-                  className="shrink-0 text-text-subtle opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                  className="text-text-subtle shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
                 >
                   <Trash2 className="size-3.5" />
                 </button>

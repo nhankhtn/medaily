@@ -10,7 +10,7 @@ import type { ISODate } from '@/lib/dates'
  * imports — the proxy pulls it in on the edge runtime.
  */
 
-export type CalendarView = 'week' | 'month' | 'year'
+export type CalendarView = 'day' | 'week' | 'month' | 'year'
 
 export const PATHS = {
   home: '/',

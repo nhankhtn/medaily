@@ -1,7 +1,8 @@
-import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNull, lte, ne, or, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { focusSessions, projectTasks, projects } from '@/lib/db/schema'
 import type { Project, ProjectInsert, ProjectTask, ProjectTaskInsert } from '@/lib/db/schema'
+import type { ISODate } from '@/lib/dates'
 
 export async function findProjects(
   userId: string,
@@ -59,6 +60,29 @@ export async function findTasks(userId: string, projectId?: string): Promise<Pro
         : eq(projectTasks.userId, userId),
     )
     .orderBy(asc(projectTasks.sortOrder), asc(projectTasks.createdAt))
+}
+
+/**
+ * What is open and either due by `through` or carrying no date at all. The
+ * undated ones are the point: a plan for today is not only what fell due.
+ */
+export async function findOpenTasks(
+  userId: string,
+  through: ISODate,
+  limit = 100,
+): Promise<ProjectTask[]> {
+  return db
+    .select()
+    .from(projectTasks)
+    .where(
+      and(
+        eq(projectTasks.userId, userId),
+        ne(projectTasks.status, 'done'),
+        or(isNull(projectTasks.dueDate), lte(projectTasks.dueDate, through)),
+      ),
+    )
+    .orderBy(asc(projectTasks.dueDate), asc(projectTasks.sortOrder), asc(projectTasks.createdAt))
+    .limit(limit)
 }
 
 export async function findTask(userId: string, taskId: string): Promise<ProjectTask | null> {

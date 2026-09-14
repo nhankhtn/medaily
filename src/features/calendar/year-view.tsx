@@ -17,7 +17,7 @@ export async function YearView({ data }: { data: YearCalendar }) {
             title={format.dateTime(fromISODate(month.month), 'month')}
             action={
               month.count > 0 ? (
-                <span className="text-xs text-text-subtle">
+                <span className="text-text-subtle text-xs">
                   {t('itemCount', { count: month.count })}
                 </span>
               ) : null
@@ -28,7 +28,7 @@ export async function YearView({ data }: { data: YearCalendar }) {
               {(month.weeks[0] ?? []).map((day) => (
                 <span
                   key={day.date}
-                  className="pb-1 text-center text-[10px] font-medium text-text-subtle"
+                  className="text-text-subtle pb-1 text-center text-[10px] font-medium"
                 >
                   {format.dateTime(fromISODate(day.date), 'weekdayNarrow')}
                 </span>
@@ -62,9 +62,9 @@ function Day({
     <Link
       href={PATHS.calendar({ view: 'week', at: date })}
       className={cn(
-        'relative flex aspect-square items-center justify-center rounded text-[11px] tabular-nums transition-colors hover:bg-surface-2',
-        date === today ? 'bg-accent font-semibold text-accent-text' : 'text-text-muted',
-        count > 0 && date !== today && 'font-semibold text-text',
+        'hover:bg-surface-2 relative flex aspect-square items-center justify-center rounded text-[11px] tabular-nums transition-colors',
+        date === today ? 'bg-accent text-accent-text font-semibold' : 'text-text-muted',
+        count > 0 && date !== today && 'text-text font-semibold',
       )}
     >
       {Number(date.slice(8))}

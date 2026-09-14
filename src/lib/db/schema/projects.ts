@@ -48,9 +48,9 @@ export const projectTasks = pgTable(
     userId: uuid('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    projectId: uuid('project_id')
-      .notNull()
-      .references(() => projects.id, { onDelete: 'cascade' }),
+    // Nullable: a task worth remembering is not always part of a project, and
+    // forcing one made "call mum" impossible to write down.
+    projectId: uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }),
     // One level of sub-tasks: deeper trees turn a personal tool into Jira.
     parentTaskId: uuid('parent_task_id'),
     title: text('title').notNull(),

@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardBody, CardHeader } from '@/components/ui/card'
 import { PageHeader, StatRow } from '@/components/ui/page'
 import { BlockDialog, EventDialog } from '@/features/calendar/calendar-dialogs'
+import { DayTasks } from '@/features/calendar/day-tasks'
+import { QuickTask } from '@/features/calendar/quick-task'
 import { MonthView } from '@/features/calendar/month-view'
 import { YearView } from '@/features/calendar/year-view'
 import {
@@ -18,12 +20,15 @@ import {
   type ISODate,
 } from '@/lib/dates'
 import { cn } from '@/lib/utils'
+import { getDayPlan } from '@/server/services/day-plan'
 import { getMonthCalendar, getPlanningData, getYearCalendar } from '@/server/services/planning'
 import { getProjectsView } from '@/server/services/projects'
 import { getDayContext } from '@/server/services/settings'
 import { PATHS } from '@/lib/paths'
 
-const VIEWS = ['week', 'month', 'year'] as const
+// The day comes first and is the default: a calendar you open to plan
+// today is more use than one you open to look at a grid.
+const VIEWS = ['day', 'week', 'month', 'year'] as const
 
 export default async function CalendarPage({
   searchParams,
@@ -34,7 +39,7 @@ export default async function CalendarPage({
   // `?week=` is the older link shape, and still means the week holding that date.
   const requested = params.at ?? params.week
   const anchor = requested && isISODate(requested) ? requested : undefined
-  const view = VIEWS.find((candidate) => candidate === params.view) ?? 'week'
+  const view = VIEWS.find((candidate) => candidate === params.view) ?? 'day'
 
   const [t, projectData, today] = await Promise.all([
     getTranslations('calendar'),
@@ -56,7 +61,7 @@ export default async function CalendarPage({
       />
 
       <div className="flex flex-wrap items-center gap-2">
-        <nav className="flex rounded-full border border-border-base bg-surface-2 p-0.5">
+        <nav className="border-border-base bg-surface-2 flex rounded-full border p-0.5">
           {VIEWS.map((candidate) => (
             <Link
               key={candidate}
@@ -65,7 +70,7 @@ export default async function CalendarPage({
               className={cn(
                 'rounded-full px-3 py-1 text-sm transition-colors',
                 candidate === view
-                  ? 'bg-surface font-medium text-text shadow-[var(--shadow-card)]'
+                  ? 'bg-surface text-text font-medium shadow-[var(--shadow-card)]'
                   : 'text-text-muted hover:text-text',
               )}
             >
@@ -75,7 +80,9 @@ export default async function CalendarPage({
         </nav>
 
         <div className="flex items-center gap-1.5">
-          {view === 'week' ? (
+          {view === 'day' ? (
+            <DayBar date={anchor ?? today} today={today} />
+          ) : view === 'week' ? (
             <WeekBar anchor={anchor} />
           ) : view === 'month' ? (
             <MonthBar anchor={anchor ?? today} />
@@ -92,7 +99,9 @@ export default async function CalendarPage({
         </Button>
       </div>
 
-      {view === 'week' ? (
+      {view === 'day' ? (
+        <DayView date={anchor ?? today} today={today} projects={projects} />
+      ) : view === 'week' ? (
         <WeekView anchor={anchor} />
       ) : view === 'month' ? (
         <Month anchor={anchor ?? today} />
@@ -131,7 +140,10 @@ async function WeekBar({ anchor }: { anchor?: ISODate }) {
         {format.dateTime(fromISODate(data.range.start), 'dayMonth')} –{' '}
         {format.dateTime(fromISODate(data.range.end), 'dayMonthYear')}
       </span>
-      <Step href={PATHS.calendar({ view: 'week', at: addDays(data.weekStart, 7) })} label={t('nextWeek')} />
+      <Step
+        href={PATHS.calendar({ view: 'week', at: addDays(data.weekStart, 7) })}
+        label={t('nextWeek')}
+      />
       <Button asChild variant="ghost" size="sm">
         <Link href={PATHS.calendar({ view: 'week' })}>{t('thisWeek')}</Link>
       </Button>
@@ -153,7 +165,10 @@ async function MonthBar({ anchor }: { anchor: ISODate }) {
       <span className="px-1 text-sm font-medium whitespace-nowrap">
         {format.dateTime(fromISODate(month), 'monthYear')}
       </span>
-      <Step href={PATHS.calendar({ view: 'month', at: addMonthsISO(month, 1) })} label={t('nextMonth')} />
+      <Step
+        href={PATHS.calendar({ view: 'month', at: addMonthsISO(month, 1) })}
+        label={t('nextMonth')}
+      />
       <Button asChild variant="ghost" size="sm">
         <Link href={PATHS.calendar({ view: 'month' })}>{t('thisMonth')}</Link>
       </Button>
@@ -172,7 +187,10 @@ async function YearBar({ year }: { year: number }) {
         label={t('previousYear')}
       />
       <span className="px-1 text-sm font-medium tabular-nums">{year}</span>
-      <Step href={PATHS.calendar({ view: 'year', at: `${year + 1}-01-01` })} label={t('nextYear')} />
+      <Step
+        href={PATHS.calendar({ view: 'year', at: `${year + 1}-01-01` })}
+        label={t('nextYear')}
+      />
       <Button asChild variant="ghost" size="sm">
         <Link href={PATHS.calendar({ view: 'year' })}>{t('thisYear')}</Link>
       </Button>
@@ -187,7 +205,7 @@ async function Month({ anchor }: { anchor: ISODate }) {
     <div className="space-y-4">
       <MonthView data={data} />
       {data.count === 0 ? (
-        <p className="text-sm text-text-subtle">{t('nothingThisMonth')}</p>
+        <p className="text-text-subtle text-sm">{t('nothingThisMonth')}</p>
       ) : null}
     </div>
   )
@@ -198,9 +216,7 @@ async function Year({ year }: { year: number }) {
 
   return (
     <div className="space-y-4">
-      {data.count === 0 ? (
-        <p className="text-sm text-text-subtle">{t('nothingThisYear')}</p>
-      ) : null}
+      {data.count === 0 ? <p className="text-text-subtle text-sm">{t('nothingThisYear')}</p> : null}
       <YearView data={data} />
     </div>
   )
@@ -240,29 +256,29 @@ async function WeekView({ anchor }: { anchor?: ISODate }) {
               const max = Math.max(day.plannedMinutes, day.actualMinutes, 60)
               return (
                 <li key={day.date} className="flex items-center gap-3">
-                  <span className="w-20 shrink-0 text-xs tabular-nums text-text-muted">
+                  <span className="text-text-muted w-20 shrink-0 text-xs tabular-nums">
                     {format.dateTime(fromISODate(day.date), 'weekdayDay')}
                   </span>
                   <div className="min-w-0 flex-1 space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="h-2 flex-1 overflow-hidden rounded-full bg-surface-2">
+                      <span className="bg-surface-2 h-2 flex-1 overflow-hidden rounded-full">
                         <span
-                          className="block h-full rounded-full bg-border-strong"
+                          className="bg-border-strong block h-full rounded-full"
                           style={{ width: `${(day.plannedMinutes / max) * 100}%` }}
                         />
                       </span>
-                      <span className="w-12 shrink-0 text-right text-xs tabular-nums text-text-subtle">
+                      <span className="text-text-subtle w-12 shrink-0 text-right text-xs tabular-nums">
                         {hours(day.plannedMinutes)}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="h-2 flex-1 overflow-hidden rounded-full bg-surface-2">
+                      <span className="bg-surface-2 h-2 flex-1 overflow-hidden rounded-full">
                         <span
-                          className="block h-full rounded-full bg-accent"
+                          className="bg-accent block h-full rounded-full"
                           style={{ width: `${(day.actualMinutes / max) * 100}%` }}
                         />
                       </span>
-                      <span className="w-12 shrink-0 text-right text-xs tabular-nums text-text">
+                      <span className="text-text w-12 shrink-0 text-right text-xs tabular-nums">
                         {hours(day.actualMinutes)}
                       </span>
                     </div>
@@ -279,26 +295,26 @@ async function WeekView({ anchor }: { anchor?: ISODate }) {
           <CardHeader title={t('events')} />
           <CardBody>
             {data.events.length === 0 ? (
-              <p className="text-sm text-text-subtle">{t('noEvents')}</p>
+              <p className="text-text-subtle text-sm">{t('noEvents')}</p>
             ) : (
-              <ul className="divide-y divide-border-base">
+              <ul className="divide-border-base divide-y">
                 {data.events.map((event) => (
                   <li key={event.key} className="flex items-center gap-3 py-2">
                     {event.recurrenceRule ? (
                       <Repeat
-                        className="size-4 shrink-0 text-text-subtle"
+                        className="text-text-subtle size-4 shrink-0"
                         aria-label={t(`repeats.${event.recurrenceRule}`)}
                       />
                     ) : (
-                      <CalendarDays className="size-4 shrink-0 text-text-subtle" />
+                      <CalendarDays className="text-text-subtle size-4 shrink-0" />
                     )}
                     <span className="min-w-0 flex-1 truncate text-sm">{event.title}</span>
                     {event.location ? (
-                      <span className="hidden shrink-0 text-xs text-text-subtle sm:inline">
+                      <span className="text-text-subtle hidden shrink-0 text-xs sm:inline">
                         {event.location}
                       </span>
                     ) : null}
-                    <span className="shrink-0 text-xs tabular-nums text-text-subtle">
+                    <span className="text-text-subtle shrink-0 text-xs tabular-nums">
                       {event.allDay
                         ? format.dateTime(event.startsAt, 'weekdayDayMonth')
                         : format.dateTime(event.startsAt, 'weekdayDayMonthTime')}
@@ -314,20 +330,20 @@ async function WeekView({ anchor }: { anchor?: ISODate }) {
           <CardHeader title={t('blocks')} />
           <CardBody>
             {data.days.every((day) => day.blocks.length === 0) ? (
-              <p className="text-sm text-text-subtle">{t('noBlocks')}</p>
+              <p className="text-text-subtle text-sm">{t('noBlocks')}</p>
             ) : (
-              <ul className="divide-y divide-border-base">
+              <ul className="divide-border-base divide-y">
                 {data.days.flatMap((day) =>
                   day.blocks.map((block) => (
                     <li key={block.id} className="flex items-center gap-3 py-2">
-                      <span className="w-16 shrink-0 text-xs tabular-nums text-text-subtle">
+                      <span className="text-text-subtle w-16 shrink-0 text-xs tabular-nums">
                         {format.dateTime(fromISODate(day.date), 'weekday')}
                       </span>
                       <span className="shrink-0 text-xs tabular-nums">
                         {block.startTime.slice(0, 5)}–{block.endTime.slice(0, 5)}
                       </span>
                       <Badge tone="accent">{t(`kinds.${block.kind}`)}</Badge>
-                      <span className="min-w-0 flex-1 truncate text-sm text-text-muted">
+                      <span className="text-text-muted min-w-0 flex-1 truncate text-sm">
                         {block.note ?? ''}
                       </span>
                     </li>
@@ -337,6 +353,139 @@ async function WeekView({ anchor }: { anchor?: ISODate }) {
             )}
           </CardBody>
         </Card>
+      </div>
+    </div>
+  )
+}
+
+async function DayBar({ date, today }: { date: ISODate; today: ISODate }) {
+  const [t, format] = await Promise.all([getTranslations('calendar'), getFormatter()])
+
+  return (
+    <>
+      <Step
+        back
+        href={PATHS.calendar({ view: 'day', at: addDays(date, -1) })}
+        label={t('previousDay')}
+      />
+      <span className="px-1 text-sm font-medium whitespace-nowrap">
+        {format.dateTime(fromISODate(date), 'weekdayDayMonth')}
+      </span>
+      <Step href={PATHS.calendar({ view: 'day', at: addDays(date, 1) })} label={t('nextDay')} />
+
+      {date === today ? (
+        <Button asChild variant="ghost" size="sm">
+          <Link href={PATHS.calendar({ view: 'day', at: addDays(today, 1) })}>
+            {t('planTomorrow')}
+          </Link>
+        </Button>
+      ) : (
+        <Button asChild variant="ghost" size="sm">
+          <Link href={PATHS.calendar({ view: 'day' })}>{t('backToToday')}</Link>
+        </Button>
+      )}
+    </>
+  )
+}
+
+/**
+ * One day, plan and all: what is open, what time is set aside for it, what is
+ * happening, and what yesterday said would matter.
+ */
+async function DayView({
+  date,
+  today,
+  projects,
+}: {
+  date: ISODate
+  today: ISODate
+  projects: { id: string; name: string }[]
+}) {
+  const [t, format, plan] = await Promise.all([
+    getTranslations('calendar'),
+    getFormatter(),
+    getDayPlan(date),
+  ])
+
+  return (
+    <div className="space-y-4">
+      {plan.priorityFromYesterday && date === today ? (
+        <section className="border-accent bg-accent-soft/40 rounded-[var(--radius)] border p-4">
+          <p className="text-text-muted text-xs font-medium">{t('fromYesterday')}</p>
+          <p className="mt-1 text-sm">{plan.priorityFromYesterday}</p>
+        </section>
+      ) : null}
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="space-y-4">
+          <Card>
+            <CardHeader title={t('tasks')} action={<QuickTask date={date} />} />
+            <CardBody>
+              {plan.tasks.length === 0 ? (
+                <p className="text-text-subtle text-sm">{t('noTasks')}</p>
+              ) : (
+                <DayTasks tasks={plan.tasks} />
+              )}
+            </CardBody>
+          </Card>
+
+          {plan.unscheduled.length > 0 ? (
+            <Card>
+              <CardHeader title={t('unscheduled')} />
+              <CardBody>
+                <p className="text-text-subtle mb-2 text-xs">{t('unscheduledHint')}</p>
+                <DayTasks tasks={plan.unscheduled} scheduleTo={date} />
+              </CardBody>
+            </Card>
+          ) : null}
+        </div>
+
+        <div className="space-y-4">
+          <Card>
+            <CardHeader
+              title={t('blocks')}
+              action={<BlockDialog defaultDate={date} projects={projects} />}
+            />
+            <CardBody>
+              {plan.blocks.length === 0 ? (
+                <p className="text-text-subtle text-sm">{t('noBlocks')}</p>
+              ) : (
+                <ul className="divide-border-base divide-y">
+                  {plan.blocks.map((block) => (
+                    <li key={block.id} className="flex items-center gap-3 py-2">
+                      <span className="text-text-subtle w-24 shrink-0 text-xs tabular-nums">
+                        {block.startTime.slice(0, 5)}–{block.endTime.slice(0, 5)}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-sm">
+                        {block.note ?? t(`kinds.${block.kind}`)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHeader title={t('reminders')} />
+            <CardBody>
+              {plan.reminders.length === 0 ? (
+                <p className="text-text-subtle text-sm">{t('noReminders')}</p>
+              ) : (
+                <ul className="divide-border-base divide-y">
+                  {plan.reminders.map((reminder) => (
+                    <li key={reminder.id} className="flex items-center gap-3 py-2">
+                      <span className="min-w-0 flex-1 truncate text-sm">{reminder.title}</span>
+                      <span className="text-text-subtle shrink-0 text-xs tabular-nums">
+                        {format.dateTime(fromISODate(reminder.dueOn), 'dayMonth')}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardBody>
+          </Card>
+        </div>
       </div>
     </div>
   )

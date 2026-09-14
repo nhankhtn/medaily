@@ -85,6 +85,13 @@
       "when": 1789347285258,
       "tag": "0011_shortcuts",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1789395008118,
+      "tag": "0012_standalone_tasks",
+      "breakpoints": true
     }
   ]
 }

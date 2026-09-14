@@ -578,7 +578,8 @@
     "dueDate": "Due",
     "estimate": "Estimate",
     "startTimer": "Start timer",
-    "filterAll": "All"
+    "filterAll": "All",
+    "taskDue": "Due date"
   },
   "learning": {
     "title": "Learning",
@@ -923,7 +924,8 @@
     "views": {
       "week": "Week",
       "month": "Month",
-      "year": "Year"
+      "year": "Year",
+      "day": "Day"
     },
     "thisMonth": "This month",
     "thisYear": "This year",
@@ -974,7 +976,23 @@
     "planNote": "Planned blocks are intent. Actual comes from your focus sessions, so the gap is real.",
     "saved": "Saved",
     "icsExport": "Subscribe / export .ics",
-    "hoursShort": "{hours}h"
+    "hoursShort": "{hours}h",
+    "fromYesterday": "Yesterday you wrote that today matters for",
+    "tasks": "To do",
+    "noTasks": "Nothing planned for this day",
+    "unscheduled": "Not on a day yet",
+    "unscheduledHint": "These stay out of the plan until you give them a day.",
+    "scheduleHere": "Put on this day",
+    "reminders": "Reminders",
+    "noReminders": "Nothing due",
+    "add": "Add",
+    "addPlaceholder": "What needs doing?",
+    "markDone": "Mark done",
+    "overdue": "Overdue",
+    "planTomorrow": "Plan tomorrow",
+    "backToToday": "Back to today",
+    "previousDay": "Previous day",
+    "nextDay": "Next day"
   },
   "people": {
     "title": "People",
