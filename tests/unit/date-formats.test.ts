@@ -45,8 +45,11 @@ describe('the shared format names', () => {
   })
 
   it('never asks for a twelve-hour clock', () => {
+    // `=== true` is a comparison the types rule out, and `!options.hour12`
+    // catches the formats that correctly ask for a 24-hour clock. What the
+    // test means is: nothing sets it to anything other than false.
     const twelveHour = Object.values(FORMATS.dateTime).filter(
-      (options) => 'hour12' in options && options.hour12 === true,
+      (options) => 'hour12' in options && options.hour12 !== false,
     )
     expect(twelveHour).toEqual([])
   })
