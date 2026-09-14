@@ -2,7 +2,7 @@
 
 import { CornerDownLeft, Loader2, MessageSquarePlus, Sparkles, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
+import { useEffect, useMemo, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -15,6 +15,7 @@ import {
   type CaptureModuleKey,
 } from '@/lib/capture/modules'
 import { cn } from '@/lib/utils'
+import { ReviewChat } from '@/features/capture/review-chat'
 import { FinanceDraftList } from '@/features/finance/draft-list'
 import { useShortcut } from '@/features/shortcuts/provider'
 import { parseTransactionText, type ParseTransactionsResult } from '@/server/actions/finance'
@@ -25,10 +26,10 @@ type Parsed = { module: 'finance'; result: Extract<ParseTransactionsResult, { ok
  * A launcher in the bottom-right corner that opens a panel for logging
  * anything, from any page.
  *
- * `/` lists the places a note can go and the pick decides which parser runs —
+ * `/` lists the places a note can go and the pick decides what happens to it —
  * an explicit choice rather than a guess, so a note that reads like two things
- * cannot land in the wrong one. Only finance is wired up so far; the menu is a
- * registry, so the next one is one entry.
+ * cannot land in the wrong one. The menu is a registry, so the next
+ * destination is one entry plus a branch below.
  */
 export function CaptureBox({ enabled }: { enabled: boolean }) {
   const t = useTranslations('capture')
@@ -102,15 +103,48 @@ export function CaptureBox({ enabled }: { enabled: boolean }) {
 
 function CaptureForm({ labelOf }: { labelOf: (module: CaptureModule) => string }) {
   const t = useTranslations('capture')
-  const tf = useTranslations('finance.capture')
   const [module, setModule] = useState<CaptureModuleKey | null>(null)
-  const [text, setText] = useState('')
-  const [parsed, setParsed] = useState<Parsed | null>(null)
-  const [active, setActive] = useState(0)
-  const [parsing, startParsing] = useTransition()
-  const inputRef = useRef<HTMLTextAreaElement>(null)
 
-  const query = module === null ? slashQuery(text) : null
+  const chosen = CAPTURE_MODULES.find((candidate) => candidate.key === module)
+
+  if (!chosen) return <ModulePicker labelOf={labelOf} onPick={setModule} />
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <Badge tone="accent">
+          <chosen.icon className="size-3" />
+          {labelOf(chosen)}
+        </Badge>
+        <button
+          type="button"
+          onClick={() => setModule(null)}
+          className="text-text-subtle hover:text-text inline-flex items-center gap-1 text-xs"
+        >
+          <X className="size-3" />
+          {t('changeTarget')}
+        </button>
+      </div>
+
+      {/* Each destination owns its own input: a note dumped into finance runs
+          to several lines, a question about a week is one. */}
+      {chosen.key === 'finance' ? <FinancePanel /> : <ReviewChat />}
+    </div>
+  )
+}
+
+function ModulePicker({
+  labelOf,
+  onPick,
+}: {
+  labelOf: (module: CaptureModule) => string
+  onPick: (key: CaptureModuleKey) => void
+}) {
+  const t = useTranslations('capture')
+  const [text, setText] = useState('')
+  const [active, setActive] = useState(0)
+
+  const query = slashQuery(text)
   const matches = useMemo(
     () => (query === null ? [] : matchModules(query, labelOf)),
     [query, labelOf],
@@ -120,20 +154,87 @@ function CaptureForm({ labelOf }: { labelOf: (module: CaptureModule) => string }
   // between keystrokes and a stale index would highlight nothing.
   const activeIndex = Math.min(active, Math.max(0, matches.length - 1))
 
-  const retype = (value: string) => {
-    setText(value)
-    setActive(0)
+  const onKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!menuOpen) return
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault()
+      setActive(
+        (activeIndex + (event.key === 'ArrowDown' ? 1 : -1) + matches.length) % matches.length,
+      )
+      return
+    }
+    if (event.key === 'Enter' || event.key === 'Tab') {
+      event.preventDefault()
+      const chosen = matches[activeIndex]
+      if (chosen) onPick(chosen.key)
+    }
   }
 
-  const pick = (key: CaptureModuleKey) => {
-    setModule(key)
-    retype('')
-    inputRef.current?.focus()
-  }
+  return (
+    <div className="space-y-3">
+      <div>
+        <Textarea
+          autoFocus
+          value={text}
+          onChange={(event) => {
+            setText(event.target.value)
+            setActive(0)
+          }}
+          onKeyDown={onKeyDown}
+          placeholder={t('placeholder')}
+          maxLength={200}
+          rows={2}
+          className="text-sm"
+        />
+
+        {menuOpen ? (
+          /*
+           * In the flow rather than absolutely positioned: the panel is only
+           * as tall as its content, so a floating menu hung off the bottom of
+           * a short box, outside its own border and past the screen edge.
+           * Inline, the panel grows upward to hold it.
+           */
+          <ul
+            role="listbox"
+            aria-label={t('destinations')}
+            className="border-border-strong bg-surface mt-1 overflow-hidden rounded-[var(--radius)] border"
+          >
+            {matches.map((candidate, index) => (
+              <li key={candidate.key}>
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={index === activeIndex}
+                  onMouseEnter={() => setActive(index)}
+                  onClick={() => onPick(candidate.key)}
+                  className={cn(
+                    'flex w-full items-center gap-2 px-3 py-2 text-left text-sm',
+                    index === activeIndex ? 'bg-accent-soft text-accent' : 'text-text',
+                  )}
+                >
+                  <candidate.icon className="size-4 shrink-0" />
+                  <span className="flex-1">{labelOf(candidate)}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+
+      <p className="text-text-subtle text-xs">{t('pickFirst')}</p>
+    </div>
+  )
+}
+
+function FinancePanel() {
+  const t = useTranslations('capture')
+  const tf = useTranslations('finance.capture')
+  const [text, setText] = useState('')
+  const [parsed, setParsed] = useState<Parsed | null>(null)
+  const [parsing, startParsing] = useTransition()
 
   const parse = () =>
     startParsing(async () => {
-      if (module !== 'finance') return
       const result = await parseTransactionText({ text })
       if (!result.ok) {
         toast.error(tf(result.error === 'rate_limited' ? 'rateLimited' : 'failed'))
@@ -146,98 +247,27 @@ function CaptureForm({ labelOf }: { labelOf: (module: CaptureModule) => string }
       setParsed({ module: 'finance', result })
     })
 
-  const ready = module !== null && text.trim().length >= 3
-
-  const onKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (menuOpen) {
-      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-        event.preventDefault()
-        setActive(
-          (activeIndex + (event.key === 'ArrowDown' ? 1 : -1) + matches.length) % matches.length,
-        )
-        return
-      }
-      if (event.key === 'Enter' || event.key === 'Tab') {
-        event.preventDefault()
-        const chosen = matches[activeIndex]
-        if (chosen) pick(chosen.key)
-        return
-      }
-    }
-
-    // Enter alone is a newline: these notes run to several lines.
-    if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
-      event.preventDefault()
-      if (ready) parse()
-    }
-  }
-
-  const chosen = CAPTURE_MODULES.find((candidate) => candidate.key === module)
+  const ready = text.trim().length >= 3
 
   return (
     <div className="space-y-3">
-      <div className="relative">
-        {chosen ? (
-          <div className="mb-2 flex items-center gap-2">
-            <Badge tone="accent">
-              <chosen.icon className="size-3" />
-              {labelOf(chosen)}
-            </Badge>
-            <button
-              type="button"
-              onClick={() => {
-                setModule(null)
-                setParsed(null)
-              }}
-              className="text-text-subtle hover:text-text inline-flex items-center gap-1 text-xs"
-            >
-              <X className="size-3" />
-              {t('changeTarget')}
-            </button>
-          </div>
-        ) : null}
-
-        <Textarea
-          ref={inputRef}
-          autoFocus
-          value={text}
-          onChange={(event) => retype(event.target.value)}
-          onKeyDown={onKeyDown}
-          placeholder={chosen ? t(`examples.${chosen.key}`) : t('placeholder')}
-          maxLength={2000}
-          rows={3}
-          disabled={parsing}
-          className="text-sm"
-        />
-
-        {menuOpen ? (
-          <ul
-            role="listbox"
-            aria-label={t('destinations')}
-            className="border-border-strong bg-surface absolute z-10 mt-1 w-full overflow-hidden rounded-[var(--radius)] border shadow-[var(--shadow-card)]"
-          >
-            {matches.map((candidate, index) => (
-              <li key={candidate.key}>
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={index === activeIndex}
-                  onMouseEnter={() => setActive(index)}
-                  onClick={() => pick(candidate.key)}
-                  className={cn(
-                    'flex w-full items-center gap-2 px-3 py-2 text-left text-sm',
-                    index === activeIndex ? 'bg-accent-soft text-accent' : 'text-text',
-                  )}
-                >
-                  <candidate.icon className="size-4 shrink-0" />
-                  <span className="flex-1">{labelOf(candidate)}</span>
-                  <span className="text-text-subtle text-xs">/{candidate.key}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-      </div>
+      <Textarea
+        autoFocus
+        value={text}
+        onChange={(event) => setText(event.target.value)}
+        // Enter is a newline here: a day's spending runs to several lines.
+        onKeyDown={(event) => {
+          if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+            event.preventDefault()
+            if (ready) parse()
+          }
+        }}
+        placeholder={t('examples.finance')}
+        maxLength={2000}
+        rows={3}
+        disabled={parsing}
+        className="text-sm"
+      />
 
       <div className="flex flex-wrap items-center gap-2">
         <Button type="button" size="sm" onClick={parse} disabled={parsing || !ready}>
@@ -246,7 +276,7 @@ function CaptureForm({ labelOf }: { labelOf: (module: CaptureModule) => string }
         </Button>
         <span className="text-text-subtle inline-flex items-center gap-1 text-xs">
           <CornerDownLeft className="size-3" />
-          {module === null ? t('pickFirst') : t('submitHint')}
+          {t('submitHint')}
         </span>
       </div>
 

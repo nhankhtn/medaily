@@ -1148,6 +1148,23 @@
     "changeTarget": "change",
     "examples": {
       "finance": "banh mi 30k this morning, coffee 25k, petrol 100k yesterday"
+    },
+    "review": {
+      "intro": "Pick a stretch of time, or just ask.",
+      "reviewing": "Looking at {label}",
+      "thinking": "Reading it back…",
+      "send": "Send",
+      "placeholder": "How did this week go?",
+      "placeholderMore": "Ask something else, or ask for suggestions…",
+      "askSuggestions": "Give me a few suggestions",
+      "starters": {
+        "thisWeek": "This week",
+        "lastWeek": "Last week",
+        "thisMonth": "This month"
+      },
+      "privacy": "Sent: that period's totals and the lines you wrote yourself in the daily log. Your journal, your notes and other people's names stay on this machine.",
+      "failed": "Could not put that answer together. Try again in a moment.",
+      "rateLimited": "Too many questions at once — wait a minute."
     }
   }
 }

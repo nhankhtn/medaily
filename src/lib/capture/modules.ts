@@ -1,13 +1,12 @@
-import { Wallet, type LucideIcon } from 'lucide-react'
+import { LineChart, Wallet, type LucideIcon } from 'lucide-react'
 
 /**
  * What `/` offers in the capture box.
  *
  * A registry, like `NAV_ITEMS`: adding a module is one entry here plus a branch
- * in the box's dispatch, rather than edits scattered through the UI. Only
- * finance is wired up so far.
+ * in the box's dispatch, rather than edits scattered through the UI.
  */
-export type CaptureModuleKey = 'finance'
+export type CaptureModuleKey = 'finance' | 'review'
 
 export type CaptureModule = {
   key: CaptureModuleKey
@@ -24,6 +23,22 @@ export const CAPTURE_MODULES: CaptureModule[] = [
     icon: Wallet,
     labelKey: 'finance',
     aliases: ['finance', 'money', 'chi', 'thu', 'tien', 'tài chính', 'chi tiêu'],
+  },
+  {
+    key: 'review',
+    icon: LineChart,
+    labelKey: 'reviews',
+    aliases: [
+      'review',
+      'tong ket',
+      'tổng kết',
+      'nhin lai',
+      'nhìn lại',
+      'tuan',
+      'tuần',
+      'thang',
+      'tháng',
+    ],
   },
 ]
 

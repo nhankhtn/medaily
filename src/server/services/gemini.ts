@@ -34,8 +34,13 @@ export const DEFAULT_MODELS = [
   'gemini-3.7-flash',
 ] as const
 
-/** Per attempt, not for the chain — a slow model must not eat the next one's budget. */
-const TIMEOUT_MS = 20_000
+/*
+ * Per attempt, not for the chain — a slow model must not eat the next one's
+ * budget. Extraction runs while someone waits on a form and should give up
+ * quickly; a review is a deliberate ask, reasons over a page of numbers, and
+ * routinely needs longer than twenty seconds.
+ */
+const TIMEOUT_MS = { json: 20_000, text: 60_000 } as const
 
 export function geminiEnabled(): boolean {
   return Boolean(env.GEMINI_API_KEY)
@@ -105,7 +110,34 @@ export type GenerateJsonInput = {
   schema: JsonSchema
 }
 
+/**
+ * One side of a conversation. Prior turns are replayed on every request: the
+ * app keeps no interaction open on Google's side, so the transcript is rebuilt
+ * from what we stored rather than resumed by id.
+ */
+export type Turn = { role: 'user' | 'model'; text: string }
+
+export type GenerateTextInput = {
+  systemInstruction: string
+  turns: Turn[]
+}
+
+/** Returns the model that answered too: `ai_reports` records what produced a row. */
+export async function generateText(
+  request: GenerateTextInput,
+): Promise<{ text: string; model: string }> {
+  return attemptEachModel(async (model) => ({ text: await requestText(model, request), model }))
+}
+
 export async function generateJson<T>(request: GenerateJsonInput): Promise<T> {
+  return attemptEachModel((model) => requestJson<T>(model, request))
+}
+
+/**
+ * Quota is per model, so a model that is out of it says nothing about the next
+ * one. Shared by both request shapes.
+ */
+async function attemptEachModel<T>(attempt: (model: string) => Promise<T>): Promise<T> {
   if (!env.GEMINI_API_KEY) throw new Error('GEMINI_API_KEY is not set')
 
   const models = geminiModels()
@@ -113,7 +145,7 @@ export async function generateJson<T>(request: GenerateJsonInput): Promise<T> {
 
   for (const [index, model] of models.entries()) {
     try {
-      return await requestJson<T>(model, request)
+      return await attempt(model)
     } catch (error) {
       lastError = error
       const isLast = index === models.length - 1
@@ -128,10 +160,12 @@ export async function generateJson<T>(request: GenerateJsonInput): Promise<T> {
   throw lastError
 }
 
-async function requestJson<T>(
+/** The shared round trip: send, check the envelope, hand back the parsed body. */
+async function post(
   model: string,
-  { systemInstruction, input, schema }: GenerateJsonInput,
-): Promise<T> {
+  payload: Record<string, unknown>,
+  timeoutMs: number,
+): Promise<InteractionResponse> {
   const response = await fetch(ENDPOINT, {
     method: 'POST',
     headers: {
@@ -139,17 +173,9 @@ async function requestJson<T>(
       'x-goog-api-key': env.GEMINI_API_KEY as string,
       'Api-Revision': API_REVISION,
     },
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-    body: JSON.stringify({
-      model,
-      input,
-      system_instruction: systemInstruction,
-      // Extraction, not authorship: no sampling spread and no long deliberation.
-      generation_config: { temperature: 0, thinking_level: 'low' },
-      response_format: { type: 'text', mime_type: 'application/json', schema },
-      // Nothing is kept on Google's side beyond answering this one request.
-      store: false,
-    }),
+    signal: AbortSignal.timeout(timeoutMs),
+    // Nothing is kept on Google's side beyond answering this one request.
+    body: JSON.stringify({ model, store: false, ...payload }),
   })
 
   const body = (await response.json().catch(() => null)) as InteractionResponse | null
@@ -164,6 +190,24 @@ async function requestJson<T>(
   if (body?.status && body.status !== 'completed') {
     throw new GeminiError(`gemini did not complete: ${body.status}`, null, model)
   }
+  return body ?? {}
+}
+
+async function requestJson<T>(
+  model: string,
+  { systemInstruction, input, schema }: GenerateJsonInput,
+): Promise<T> {
+  const body = await post(
+    model,
+    {
+      input,
+      system_instruction: systemInstruction,
+      // Extraction, not authorship: no sampling spread and no long deliberation.
+      generation_config: { temperature: 0, thinking_level: 'low' },
+      response_format: { type: 'text', mime_type: 'application/json', schema },
+    },
+    TIMEOUT_MS.json,
+  )
 
   const text = outputTextOf(body)
   if (!text) throw new GeminiError('gemini returned no text', null, model)
@@ -173,6 +217,36 @@ async function requestJson<T>(
   } catch {
     throw new GeminiError('gemini returned text that is not JSON', null, model)
   }
+}
+
+/**
+ * A conversation replayed in full. There is no open interaction to resume —
+ * `store: false` — so every prior turn is sent again as a step. `model_output`
+ * is the type the API returns and the only one it accepts back; `model_response`,
+ * which the docs show, is rejected.
+ */
+async function requestText(
+  model: string,
+  { systemInstruction, turns }: GenerateTextInput,
+): Promise<string> {
+  const body = await post(
+    model,
+    {
+      input: turns.map((turn) => ({
+        type: turn.role === 'user' ? 'user_input' : 'model_output',
+        content: [{ type: 'text', text: turn.text }],
+      })),
+      system_instruction: systemInstruction,
+      // Prose over numbers, not extraction: it needs room to weigh them, and a
+      // little spread stops every week reading like the same paragraph.
+      generation_config: { temperature: 0.3, thinking_level: 'medium' },
+    },
+    TIMEOUT_MS.text,
+  )
+
+  const text = outputTextOf(body)
+  if (!text) throw new GeminiError('gemini returned no text', null, model)
+  return text
 }
 
 /**

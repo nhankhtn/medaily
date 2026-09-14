@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { foldText, matchCategoryId, toDrafts, MAX_DRAFTS } from '../../src/lib/finance/drafts'
+import { matchCategoryId, toDrafts, MAX_DRAFTS } from '../../src/lib/finance/drafts'
+import { foldText } from '../../src/lib/text'
 
 const categories = [
   { id: 'cat-food', name: 'Ăn uống', kind: 'expense' },

@@ -1,4 +1,5 @@
 import { addDays, isISODate, maxDate, minDate, type ISODate } from '@/lib/dates'
+import { foldText } from '@/lib/text'
 
 /**
  * The bridge between what a language model returns and what the database will
@@ -37,19 +38,6 @@ export type TransactionDraft = {
 }
 
 export type CategoryOption = { id: string; name: string; kind: string }
-
-/**
- * Lowercase and strip accents, so "Ăn uống" matches "an uong". Vietnamese `đ`
- * has no combining form, so it is replaced before the diacritics are dropped.
- */
-export function foldText(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/đ/g, 'd')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim()
-}
 
 /**
  * A category id for the name the model produced, or null. Only names the user

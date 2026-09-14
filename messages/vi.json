@@ -1148,6 +1148,23 @@
     "changeTarget": "đổi",
     "examples": {
       "finance": "sáng ăn bánh mì 30k, cà phê 25k, hôm qua đổ xăng 100 nghìn"
+    },
+    "review": {
+      "intro": "Chọn một khoảng thời gian, hoặc cứ hỏi thẳng.",
+      "reviewing": "Đang xem {label}",
+      "thinking": "Đang đọc lại…",
+      "send": "Gửi",
+      "placeholder": "Tuần này của tôi thế nào?",
+      "placeholderMore": "Hỏi tiếp, hoặc xin vài gợi ý…",
+      "askSuggestions": "Cho tôi vài gợi ý",
+      "starters": {
+        "thisWeek": "Tuần này",
+        "lastWeek": "Tuần trước",
+        "thisMonth": "Tháng này"
+      },
+      "privacy": "Gửi đi: số liệu của kỳ đó và những dòng bạn tự viết trong phần ghi ngày. Nhật ký, ghi chú riêng và tên người khác không rời khỏi máy này.",
+      "failed": "Chưa ghép được câu trả lời. Thử lại sau một lát.",
+      "rateLimited": "Hỏi dồn quá nhanh — đợi một phút rồi hỏi tiếp."
     }
   }
 }

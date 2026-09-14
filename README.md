@@ -234,8 +234,9 @@ With `GEMINI_API_KEY` set, a launcher appears in the bottom-right corner of
 every page (**⌘/Ctrl + J** to open or close, **Esc** to close). The finance page
 carries the same box inline, above the transaction form.
 
-Type `/` to choose where the note goes — finance is the only destination wired
-up so far — then write the note the way you'd say it:
+Type `/` to choose where the note goes, then write it the way you'd say it.
+
+### Finance
 
 ```text
 sáng ăn bánh mì 30k, cà phê 25k, trưa cơm gà 55k, hôm qua đổ xăng 100 nghìn
@@ -245,8 +246,55 @@ sáng ăn bánh mì 30k, cà phê 25k, trưa cơm gà 55k, hôm qua đổ xăng 
 amount, kind, category, date — with a running total. Nothing is written until
 you press save.
 
-The destination menu is a registry in
-[`src/lib/capture/modules.ts`](src/lib/capture/modules.ts): a new module is one
+### Review
+
+`/tổng kết` opens a conversation about a week or a month. Tap **Tuần này**,
+**Tuần trước** or **Tháng này**, or type the period yourself — "tháng trước",
+"tháng 7", "tuần rồi" all resolve, accents optional. The period is worked out
+by [a regex](src/lib/reviews/period-phrase.ts), not by the model: a date range
+is arithmetic, and asking a model for one costs a round trip to be less
+reliable.
+
+You get the period's numbers read back against the one before it, with your own
+"làm được gì / vướng ở đâu" lines quoted where they matter. It offers **no
+advice** until you ask for it — an unrequested lecture attached to every number
+is what makes a tracker unpleasant to open. Ask, and you get at most three
+suggestions, each tied to a number or a line you wrote.
+
+What is sent: that period's aggregates and the lines you wrote in the daily
+log. Your journal, your notes and other people's names stay on the machine.
+The reply language follows `user_settings.locale`, not the cookie — the
+language switcher sets both.
+
+The transcript belongs to the open panel and is replayed to the model from
+there; each exchange is also written to `ai_reports` as an archive. Deliberately
+not the other way round: a thread keyed only by the period would resume a
+month-old conversation every time you asked about that week again.
+
+### What a message is asking for
+
+Every message is classified before anything is sent, by
+[`classify`](src/lib/reviews/intent.ts) — a handful of phrases, no model call,
+because a model would cost a round trip and a second chance to be wrong to
+settle what a regex already settles.
+
+`translate` matters most: "dịch sang tiếng Anh" rewrites the answer already on
+screen. Routed as an ordinary question it would rebuild the period and return a
+*different* review in another language — measured, 13.4s and a full context
+payload against 6.5s and no database work. `suggest` lifts the no-advice rule,
+`open` asks for a full review, and anything unrecognised is a plain follow-up,
+which is the safe default.
+
+No LangChain or LangGraph. Its Gemini adapter still depends on
+`@google/generative-ai@0.24`, which talks to the superseded `generateContent`
+endpoint rather than the Interactions API used here — adopting it would drop
+both the model fallback chain and the pinned `Api-Revision` in exchange for a
+graph runtime over four branches with no cycles.
+
+### Adding a destination
+
+The menu is a registry in
+[`src/lib/capture/modules.ts`](src/lib/capture/modules.ts): a new one is one
 entry there plus a branch in the box's dispatch.
 
 ### What actually leaves the machine
