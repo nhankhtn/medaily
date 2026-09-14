@@ -633,7 +633,7 @@
     "todayTotals": "Today",
     "recent": "Recent",
     "noRuns": "Nothing timed yet",
-    "tooShort": "Under a minute, so nothing was recorded",
+    "tooShort": "Under 30 seconds, so nothing was recorded",
     "capped": "The run was left going, so it was capped at 8 hours",
     "savedTo": "Saved {minutes} min to {where}",
     "savedShort": "Saved {minutes} min"

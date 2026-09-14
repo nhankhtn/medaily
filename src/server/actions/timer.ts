@@ -5,7 +5,14 @@ import { z } from 'zod'
 import { getCurrentUserId } from '@/lib/auth/current-user'
 import { logicalDateOf } from '@/lib/dates'
 import { PATHS } from '@/lib/paths'
-import { elapsedSeconds, minutesOf, pausedRun, resumedRun, wasCapped } from '@/lib/timer'
+import {
+  elapsedSeconds,
+  minutesOf,
+  pausedRun,
+  resumedRun,
+  tooShort,
+  wasCapped,
+} from '@/lib/timer'
 import {
   ACTIVITY_IDS,
   activityOf,
@@ -139,7 +146,7 @@ export async function stopTimer(input?: unknown) {
   const minutes = minutesOf(seconds)
   const date = logicalDateOf(timer.startedAt, dayContextOf(settings))
 
-  if (minutes < 1) {
+  if (tooShort(seconds)) {
     await clearTimer(settings.userId)
     revalidateTimer()
     return { ok: false as const, error: 'too_short' as const }

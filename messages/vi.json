@@ -633,7 +633,7 @@
     "todayTotals": "Hôm nay",
     "recent": "Gần đây",
     "noRuns": "Chưa bấm giờ lần nào",
-    "tooShort": "Chưa được một phút nên không ghi nhận",
+    "tooShort": "Chưa đủ 30 giây nên không ghi lại",
     "capped": "Phiên bị bỏ quên nên chỉ tính tối đa 8 tiếng",
     "savedTo": "Đã lưu {minutes} phút vào {where}",
     "savedShort": "Đã lưu {minutes} phút"

@@ -7,6 +7,7 @@ import {
   pausedRun,
   remainingSeconds,
   resumedRun,
+  tooShort,
   wasCapped,
   type TimerRun,
 } from '@/lib/timer'
@@ -120,5 +121,27 @@ describe('formatDuration', () => {
 
   it('marks an overrun with a sign', () => {
     expect(formatDuration(-65)).toBe('-01:05')
+  })
+})
+
+describe('the floor on a run', () => {
+  it('throws away a mis-tap', () => {
+    expect(minutesOf(3)).toBe(0)
+    expect(minutesOf(29)).toBe(0)
+    expect(tooShort(3)).toBe(true)
+    expect(tooShort(29)).toBe(true)
+  })
+
+  it('is worth a minute the moment it is a real run', () => {
+    // Half a minute used to round to zero and vanish without a trace.
+    expect(minutesOf(30)).toBe(1)
+    expect(minutesOf(45)).toBe(1)
+    expect(tooShort(30)).toBe(false)
+  })
+
+  it('still rounds honestly above the floor', () => {
+    expect(minutesOf(89)).toBe(1)
+    expect(minutesOf(91)).toBe(2)
+    expect(minutesOf(25 * 60)).toBe(25)
   })
 })
