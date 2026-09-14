@@ -242,6 +242,7 @@ export function DailyForm({
             name={t('fields.technicalStudy')}
             value={values.technicalStudyMinutes}
             medianHint={medians.technicalStudyMinutes}
+            derived={studyFromSessions ? effective?.effectiveStudyMinutes : null}
             onChange={(value) => set('technicalStudyMinutes', value)}
           />
         </Field>
@@ -265,6 +266,7 @@ export function DailyForm({
             name={t('fields.deepWork')}
             value={values.deepWorkMinutes}
             medianHint={medians.deepWorkMinutes}
+            derived={deepWorkFromSessions ? effective?.effectiveDeepWorkMinutes : null}
             onChange={(value) => set('deepWorkMinutes', value)}
           />
         </Field>

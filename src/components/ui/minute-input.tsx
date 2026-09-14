@@ -15,6 +15,7 @@ export function MinuteInput({
   onChange,
   name,
   medianHint,
+  derived,
   presets = PRESETS,
 }: {
   value: number | null
@@ -22,6 +23,12 @@ export function MinuteInput({
   name: string
   /** 14-day median, shown as a ghost the user can accept (spec 6.4). */
   medianHint?: number | null
+  /**
+   * Minutes already counted for this metric from somewhere else — a timed
+   * session. It is never written into this column, so the field stays empty;
+   * showing it here is what stops an empty box reading as "nothing recorded".
+   */
+  derived?: number | null
   presets?: number[]
 }) {
   const t = useTranslations('common')
@@ -38,7 +45,7 @@ export function MinuteInput({
             step={5}
             value={value ?? ''}
             aria-label={name}
-            placeholder={medianHint != null ? String(medianHint) : '0'}
+            placeholder={String(derived ?? medianHint ?? '—')}
             onChange={(event) => {
               const raw = event.target.value
               if (raw === '') return onChange(null)
@@ -48,7 +55,11 @@ export function MinuteInput({
             }}
             className={cn(
               'h-11 w-full rounded-[var(--radius)] border border-border-strong bg-surface pr-12 pl-3',
-              'text-base tabular-nums text-text placeholder:text-text-subtle focus:border-accent focus:outline-none focus:inset-ring-1 focus:inset-ring-accent',
+              'text-base tabular-nums text-text focus:border-accent focus:outline-none focus:inset-ring-1 focus:inset-ring-accent',
+              // A derived number is a real number, not a suggestion to ignore.
+              derived != null && value === null
+                ? 'border-accent/40 placeholder:font-medium placeholder:text-accent'
+                : 'placeholder:text-text-subtle',
             )}
           />
           <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-text-subtle">
