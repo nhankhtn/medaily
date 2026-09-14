@@ -25,6 +25,7 @@ import {
   stopTimer,
 } from '@/server/actions/timer'
 import type { TimerPageData } from '@/server/services/timer'
+import { useShortcut } from '@/features/shortcuts/provider'
 import { chime, useElapsedSeconds, useNow, useWakeLock } from './use-run'
 
 /** Where a stopped run lands, for the toast that says so. */
@@ -95,7 +96,7 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
 
   useChime(done)
   useTabTitle(timer ? formatDuration(countdown ? remaining : elapsed) : null)
-  useSpacebar(timer ? toggle : begin, pending)
+  useShortcut('toggleTimer', timer ? toggle : begin, !pending)
 
   return (
     <div className="space-y-4">
@@ -520,26 +521,3 @@ function useTabTitle(label: string | null): void {
   }, [label])
 }
 
-function useSpacebar(action: () => void, disabled: boolean): void {
-  const latest = useRef(action)
-
-  useEffect(() => {
-    latest.current = action
-  })
-
-  useEffect(() => {
-    if (disabled) return
-
-    const onKey = (event: KeyboardEvent) => {
-      if (event.code !== 'Space' || event.repeat || event.metaKey || event.ctrlKey) return
-      const target = event.target as HTMLElement | null
-      // Never steal the key from something the user is typing or pressing into.
-      if (target?.closest('input, textarea, select, button, [contenteditable]')) return
-      event.preventDefault()
-      latest.current()
-    }
-
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [disabled])
-}

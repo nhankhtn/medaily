@@ -1,3 +1,4 @@
+import { DEFAULT_BINDINGS, resolveBindings, type Bindings } from '@/lib/shortcuts'
 import { cookies } from 'next/headers'
 import { cache } from 'react'
 import { getCurrentUserId, UnauthenticatedError } from '@/lib/auth/current-user'
@@ -58,6 +59,7 @@ export type ResolvedSettings = {
   insightThresholds: InsightThresholds
   reminderTime: string
   dashboardCards: string[] | null
+  shortcuts: Bindings
 }
 
 /**
@@ -86,6 +88,7 @@ export const getSettings = cache(async (): Promise<ResolvedSettings> => {
     insightThresholds: { ...DEFAULT_INSIGHT_THRESHOLDS, ...(row.insightThresholds ?? {}) },
     reminderTime: row.reminderTime,
     dashboardCards: row.dashboardCards ?? null,
+    shortcuts: resolveBindings(row.shortcuts),
   }
 })
 
@@ -118,6 +121,7 @@ const FALLBACK_SETTINGS: ResolvedSettings = {
   insightThresholds: DEFAULT_INSIGHT_THRESHOLDS,
   reminderTime: '21:00',
   dashboardCards: null,
+  shortcuts: DEFAULT_BINDINGS,
 }
 
 /**

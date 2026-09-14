@@ -7,6 +7,7 @@ import { useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { addDays, fromISODate, type ISODate } from '@/lib/dates'
 import { PATHS } from '@/lib/paths'
+import { useShortcut } from '@/features/shortcuts/provider'
 
 /**
  * Arrows, a date picker, `[` / `]` and swipe — the same day-hopping affordance
@@ -24,19 +25,9 @@ export function DateNav({ date, today }: { date: ISODate; today: ISODate }) {
     router.push(target === today ? '/daily' : PATHS.dailyOn(target))
   }
 
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null
-      if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return
-      if (event.metaKey || event.ctrlKey || event.altKey) return
-      if (event.key === '[') go(addDays(date, -1))
-      if (event.key === ']') go(addDays(date, 1))
-      if (event.key === 't') go(today)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [date, today])
+  useShortcut('prevDay', () => go(addDays(date, -1)))
+  useShortcut('nextDay', () => go(addDays(date, 1)))
+  useShortcut('today', () => go(today))
 
   useEffect(() => {
     const onStart = (event: TouchEvent) => {

@@ -78,6 +78,13 @@
       "when": 1789345640533,
       "tag": "0010_timer_activity",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1789347285258,
+      "tag": "0011_shortcuts",
+      "breakpoints": true
     }
   ]
 }

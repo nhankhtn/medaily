@@ -393,24 +393,26 @@
         "everywhere": "Anywhere",
         "goto": "Jump to",
         "daily": "On the daily log",
-        "timer": "On the timer",
-        "boxes": "In search and quick capture"
+        "timer": "On the timer"
       },
       "items": {
         "palette": "Search or run a command",
         "capture": "Open or close quick capture",
-        "close": "Close whatever is open",
         "prevDay": "Previous day",
         "nextDay": "Next day",
         "today": "Back to today",
         "save": "Save the day",
-        "scale": "Score the focused 1–10 bar (0 is 10)",
-        "clearScale": "Clear that score",
         "toggleTimer": "Start or stop the running timer",
-        "move": "Move through the list",
-        "choose": "Take the highlighted one",
-        "readNote": "Read the note you typed"
-      }
+        "shortcuts": "Show this list"
+      },
+      "open": "Show shortcuts",
+      "press": "press a key…",
+      "saved": "Shortcut saved",
+      "taken": "{action} already uses that key",
+      "reset": "Back to default",
+      "resetAll": "Reset all",
+      "resetAllDone": "Every shortcut is back to its default",
+      "editHint": "Click a key to change it. Esc cancels."
     }
   },
   "analytics": {

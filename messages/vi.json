@@ -393,24 +393,26 @@
         "everywhere": "Ở bất kỳ đâu",
         "goto": "Nhảy tới",
         "daily": "Trong trang Ghi ngày",
-        "timer": "Khi bấm giờ",
-        "boxes": "Trong ô tìm kiếm và Ghi nhanh"
+        "timer": "Khi bấm giờ"
       },
       "items": {
         "palette": "Tìm kiếm hoặc chạy lệnh",
         "capture": "Mở hoặc đóng Ghi nhanh",
-        "close": "Đóng thứ đang mở",
         "prevDay": "Ngày trước",
         "nextDay": "Ngày sau",
         "today": "Về hôm nay",
         "save": "Lưu ngày",
-        "scale": "Chấm điểm nhanh cho thanh 1–10 (0 là 10)",
-        "clearScale": "Xoá điểm vừa chấm",
         "toggleTimer": "Bắt đầu hoặc dừng đồng hồ",
-        "move": "Di chuyển trong danh sách",
-        "choose": "Chọn mục đang sáng",
-        "readNote": "Đọc ghi chú vừa gõ"
-      }
+        "shortcuts": "Mở bảng này"
+      },
+      "open": "Xem phím tắt",
+      "press": "nhấn phím…",
+      "saved": "Đã lưu phím tắt",
+      "taken": "{action} đang dùng phím này rồi",
+      "reset": "Về mặc định",
+      "resetAll": "Về mặc định hết",
+      "resetAllDone": "Mọi phím tắt đã về mặc định",
+      "editHint": "Bấm vào phím để đổi. Esc để bỏ."
     }
   },
   "analytics": {

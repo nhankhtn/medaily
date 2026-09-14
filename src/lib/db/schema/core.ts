@@ -61,6 +61,8 @@ export const userSettings = pgTable('user_settings', {
   notificationPrefs: jsonb('notification_prefs').$type<Record<string, boolean>>(),
   dashboardCards: jsonb('dashboard_cards').$type<string[]>(),
   onboarding: jsonb('onboarding').$type<OnboardingState>(),
+  /** Only the keys the user changed; the rest come from the registry. */
+  shortcuts: jsonb('shortcuts').$type<Record<string, string>>(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })

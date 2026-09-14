@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { isISODate, type ISODate } from '@/lib/dates'
 import { NAV_ITEMS } from '@/lib/nav'
 import { PATHS } from '@/lib/paths'
+import { useShortcut } from '@/features/shortcuts/provider'
 import { saveDay } from '@/server/actions/daily'
 import { cn } from '@/lib/utils'
 
@@ -44,7 +45,6 @@ export function CommandPalette({ today }: { today: ISODate }) {
   const [active, setActive] = useState(0)
   const [pending, startTransition] = useTransition()
   const inputRef = useRef<HTMLInputElement>(null)
-  const chord = useRef<string | null>(null)
 
   const commands = useMemo<Command[]>(() => {
     const trimmed = query.trim()
@@ -127,50 +127,17 @@ export function CommandPalette({ today }: { today: ISODate }) {
     [router, today, tc],
   )
 
-  // ⌘K opens; `g` then a letter jumps; both ignore typing inside fields.
+  useShortcut('palette', () => setOpen((prev) => !prev))
+
+  // Escape is not in the registry: closing what is open is not a preference.
   useEffect(() => {
+    if (!open) return
     const onKey = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null
-      const inField = target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)
-
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
-        event.preventDefault()
-        setOpen((prev) => !prev)
-        return
-      }
-      if (event.key === 'Escape') {
-        setOpen(false)
-        chord.current = null
-        return
-      }
-      if (inField || event.metaKey || event.ctrlKey || event.altKey) return
-
-      if (chord.current === 'g') {
-        const map: Record<string, string> = {
-          d: '/daily',
-          h: '/habits',
-          g: '/goals',
-          a: '/analytics',
-          s: '/settings',
-          o: '/',
-        }
-        const href = map[event.key.toLowerCase()]
-        chord.current = null
-        if (href) {
-          event.preventDefault()
-          router.push(href)
-        }
-        return
-      }
-      if (event.key === 'g') {
-        chord.current = 'g'
-        setTimeout(() => (chord.current = null), 1500)
-      }
+      if (event.key === 'Escape') setOpen(false)
     }
-
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [router])
+  }, [open])
 
   useEffect(() => {
     if (open) inputRef.current?.focus()
