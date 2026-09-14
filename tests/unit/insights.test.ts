@@ -48,6 +48,8 @@ function makeSeries(
             tomorrowPriority: null,
             note: null,
             sessionCount: 0,
+  learningSessionCount: 0,
+  executionSessionCount: 0,
           }
         : null,
       score: null,

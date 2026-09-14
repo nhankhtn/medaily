@@ -14,6 +14,7 @@ import type { EffectiveDailyLog } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { copyPreviousDay, deleteDay, saveDay, undoSaveDay } from '@/server/actions/daily'
 import type { MetricMedians } from '@/server/repositories/daily'
+import { useShortcut } from '@/features/shortcuts/provider'
 import { Field, FormSection } from './section'
 import { useDraft, useUnsavedGuard } from './use-draft'
 import {
@@ -116,20 +117,15 @@ export function DailyForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date, values, initialValues, clearDraft])
 
-  // `s` saves from anywhere outside a text field (spec 22.2).
+  useShortcut('save', submit)
+
+  // ⌘S is not in the registry: it is here to stop the browser's own save
+  // dialog, whatever the user has bound the app's save key to.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null
-      const inField = target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
-        event.preventDefault()
-        submit()
-        return
-      }
-      if (!inField && event.key === 's' && !event.metaKey && !event.ctrlKey) {
-        event.preventDefault()
-        submit()
-      }
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 's') return
+      event.preventDefault()
+      submit()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -172,7 +168,9 @@ export function DailyForm({
 
   const hours = trackedHours(values)
   const overBudget = hours > 20
-  const sessionsDerived = (effective?.sessionCount ?? 0) > 0
+  // Per kind: a deep-work session must not make the study field claim sessions.
+  const studyFromSessions = (effective?.learningSessionCount ?? 0) > 0
+  const deepWorkFromSessions = (effective?.executionSessionCount ?? 0) > 0
 
   const essentialsFilled = countFilled(values, ESSENTIAL_FIELDS)
   const activityFilled = countFilled(values, ACTIVITY_FIELDS)
@@ -228,10 +226,10 @@ export function DailyForm({
         <Field
           label={t('fields.technicalStudy')}
           hint={
-            sessionsDerived
+            studyFromSessions
               ? t('sessionsDerived', {
                   minutes: effective?.effectiveStudyMinutes ?? 0,
-                  count: effective?.sessionCount ?? 0,
+                  count: effective?.learningSessionCount ?? 0,
                 })
               : medians.technicalStudyMinutes
                 ? t('medianHint', { value: medians.technicalStudyMinutes })
@@ -251,7 +249,14 @@ export function DailyForm({
         <Field
           label={t('fields.deepWork')}
           hint={
-            medians.deepWorkMinutes ? t('medianHint', { value: medians.deepWorkMinutes }) : undefined
+            deepWorkFromSessions
+              ? t('sessionsDerived', {
+                  minutes: effective?.effectiveDeepWorkMinutes ?? 0,
+                  count: effective?.executionSessionCount ?? 0,
+                })
+              : medians.deepWorkMinutes
+                ? t('medianHint', { value: medians.deepWorkMinutes })
+                : undefined
           }
           help={t('fields.deepWorkHelp')}
           copied={copied.has('deepWorkMinutes')}

@@ -1,23 +1,61 @@
 -- Idempotent SQL applied after every migration by scripts/migrate.ts.
 -- Spec 27.3: the single read path for analytics, scoring, streaks and reviews.
 
-CREATE OR REPLACE VIEW v_daily_effective AS
-SELECT
-  d.*,
-  COALESCE(fs.learning_minutes,  d.technical_study_minutes) AS effective_study_minutes,
-  COALESCE(fs.execution_minutes, d.deep_work_minutes)       AS effective_deep_work_minutes,
-  COALESCE(fs.session_count, 0)                             AS session_count
-FROM daily_logs d
-LEFT JOIN (
+-- A day exists here if anything happened on it: a log was written, or a focus
+-- session was recorded. Anchoring on daily_logs alone made a timed session
+-- invisible to the dashboard, the score and every streak until the day also
+-- had something typed into it.
+DROP VIEW IF EXISTS v_daily_effective;
+CREATE VIEW v_daily_effective AS
+WITH fs AS (
   SELECT
     user_id,
     session_date,
-    SUM(minutes) FILTER (WHERE kind = 'learning')                AS learning_minutes,
-    SUM(minutes) FILTER (WHERE kind IN ('deep_work', 'project')) AS execution_minutes,
-    COUNT(*)                                                     AS session_count
+    SUM(minutes) FILTER (WHERE kind = 'learning')                  AS learning_minutes,
+    SUM(minutes) FILTER (WHERE kind IN ('deep_work', 'project'))   AS execution_minutes,
+    COUNT(*)                                                       AS session_count,
+    COUNT(*) FILTER (WHERE kind = 'learning')                      AS learning_session_count,
+    COUNT(*) FILTER (WHERE kind IN ('deep_work', 'project'))       AS execution_session_count
   FROM focus_sessions
   GROUP BY user_id, session_date
-) fs ON fs.user_id = d.user_id AND fs.session_date = d.log_date;
+),
+days AS (
+  SELECT user_id, log_date FROM daily_logs
+  UNION
+  SELECT user_id, session_date FROM fs
+)
+SELECT
+  k.user_id,
+  k.log_date,
+  d.id,
+  d.energy,
+  d.mood,
+  d.sleep_hours,
+  d.bedtime,
+  d.wake_time,
+  d.technical_study_minutes,
+  d.deep_work_minutes,
+  d.exercise_minutes,
+  d.exercise_type,
+  d.reading_minutes,
+  d.reading_pages,
+  d.entertainment_minutes,
+  d.english_minutes,
+  d.daily_win,
+  d.daily_problem,
+  d.tomorrow_priority,
+  d.note,
+  d.source,
+  d.created_at,
+  d.updated_at,
+  COALESCE(fs.learning_minutes,  d.technical_study_minutes) AS effective_study_minutes,
+  COALESCE(fs.execution_minutes, d.deep_work_minutes)       AS effective_deep_work_minutes,
+  COALESCE(fs.session_count, 0)                             AS session_count,
+  COALESCE(fs.learning_session_count, 0)                    AS learning_session_count,
+  COALESCE(fs.execution_session_count, 0)                   AS execution_session_count
+FROM days k
+LEFT JOIN daily_logs d ON d.user_id = k.user_id AND d.log_date = k.log_date
+LEFT JOIN fs          ON fs.user_id = k.user_id AND fs.session_date = k.log_date;
 
 -- updated_at maintenance (spec 27 conventions)
 CREATE OR REPLACE FUNCTION set_updated_at() RETURNS trigger AS $$

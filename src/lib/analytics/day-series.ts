@@ -96,7 +96,9 @@ export function buildDaySeries({
     return {
       date,
       log,
-      logged: log !== null,
+      // The view now also covers a day that only has focus sessions, so the
+      // row existing no longer means the log was written. The id does.
+      logged: log?.id != null,
       score,
       habitsScheduled: scheduled,
       habitsCompleted: completed,
@@ -147,26 +149,28 @@ export type Totals = {
 }
 
 export function totalsOf(series: DaySeriesEntry[]): Totals {
+  // Averages describe the days someone rated, so they only count logged days.
+  // Minutes are minutes: a day whose time came from the timer and was never
+  // typed into the form still happened, and must not be summed away.
   const logged = series.filter((entry) => entry.logged)
   const avg = (values: (number | null)[]) => {
     const present = values.filter((v): v is number => v !== null)
     return present.length ? present.reduce((a, b) => a + b, 0) / present.length : null
   }
+  const total = (pick: (entry: DaySeriesEntry) => number | null | undefined) =>
+    series.reduce((sum, entry) => sum + (pick(entry) ?? 0), 0)
 
   return {
     daysLogged: logged.length,
     avgEnergy: avg(logged.map((e) => e.log?.energy ?? null)),
     avgMood: avg(logged.map((e) => e.log?.mood ?? null)),
     avgSleepHours: avg(logged.map((e) => e.log?.sleepHours ?? null)),
-    totalStudyMinutes: logged.reduce((sum, e) => sum + (e.studyMinutes ?? 0), 0),
-    totalDeepWorkMinutes: logged.reduce((sum, e) => sum + (e.deepWorkMinutes ?? 0), 0),
-    totalReadingMinutes: logged.reduce((sum, e) => sum + (e.log?.readingMinutes ?? 0), 0),
-    totalEntertainmentMinutes: logged.reduce(
-      (sum, e) => sum + (e.log?.entertainmentMinutes ?? 0),
-      0,
-    ),
-    totalExerciseMinutes: logged.reduce((sum, e) => sum + (e.log?.exerciseMinutes ?? 0), 0),
-    exerciseDays: logged.filter((e) => (e.log?.exerciseMinutes ?? 0) > 0).length,
+    totalStudyMinutes: total((e) => e.studyMinutes),
+    totalDeepWorkMinutes: total((e) => e.deepWorkMinutes),
+    totalReadingMinutes: total((e) => e.log?.readingMinutes),
+    totalEntertainmentMinutes: total((e) => e.log?.entertainmentMinutes),
+    totalExerciseMinutes: total((e) => e.log?.exerciseMinutes),
+    exerciseDays: series.filter((e) => (e.log?.exerciseMinutes ?? 0) > 0).length,
     habitsScheduled: series.reduce((sum, e) => sum + e.habitsScheduled, 0),
     habitsCompleted: series.reduce((sum, e) => sum + e.habitsCompleted, 0),
   }

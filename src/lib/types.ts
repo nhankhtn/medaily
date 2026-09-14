@@ -77,7 +77,8 @@ export type MetricKey = (typeof METRIC_KEYS)[number]
 
 /** A daily row with session-derived values resolved (view `v_daily_effective`). */
 export type EffectiveDailyLog = {
-  id: string
+  /** Null on a day that has focus sessions but nothing written to the log. */
+  id: string | null
   logDate: string
   energy: number | null
   mood: number | null
@@ -97,6 +98,8 @@ export type EffectiveDailyLog = {
   tomorrowPriority: string | null
   note: string | null
   sessionCount: number
+  learningSessionCount: number
+  executionSessionCount: number
 }
 
 export type ReviewMetricsSnapshot = {

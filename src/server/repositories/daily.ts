@@ -61,6 +61,8 @@ function toEffective(row: typeof dailyEffective.$inferSelect): EffectiveDailyLog
     tomorrowPriority: row.tomorrowPriority,
     note: row.note,
     sessionCount: row.sessionCount,
+    learningSessionCount: row.learningSessionCount,
+    executionSessionCount: row.executionSessionCount,
   }
 }
 
