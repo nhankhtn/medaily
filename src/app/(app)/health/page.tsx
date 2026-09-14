@@ -56,7 +56,7 @@ export default async function HealthPage() {
                 {data.nutrition.slice(0, 7).map((row) => (
                   <li key={row.id} className="flex items-center gap-3 py-1.5">
                     <span className="w-20 shrink-0 text-xs tabular-nums text-text-subtle">
-                      {format.dateTime(fromISODate(row.logDate), { day: 'numeric', month: 'short' })}
+                      {format.dateTime(fromISODate(row.logDate), 'dayMonth')}
                     </span>
                     <span className="tabular-nums">{row.calories ?? '—'} kcal</span>
                     <span className="text-text-subtle tabular-nums">
@@ -85,10 +85,7 @@ export default async function HealthPage() {
                     {workout.distanceKm ? <Badge>{Number(workout.distanceKm)} km</Badge> : null}
                     {workout.rpe ? <Badge tone="warn">RPE {workout.rpe}</Badge> : null}
                     <span className="ml-auto text-xs tabular-nums text-text-subtle">
-                      {format.dateTime(fromISODate(workout.performedOn), {
-                        day: 'numeric',
-                        month: 'short',
-                      })}
+                      {format.dateTime(fromISODate(workout.performedOn), 'dayMonth')}
                     </span>
                   </div>
                   {workout.sets.length > 0 ? (

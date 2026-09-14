@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers'
 import { getRequestConfig } from 'next-intl/server'
+import { FORMATS } from '@/lib/format/dates'
 import { DEFAULT_LOCALE, isLocale, LOCALE_COOKIE } from './config'
 
 /**
@@ -14,6 +15,7 @@ export default getRequestConfig(async () => {
   return {
     locale,
     messages: (await import(`../../messages/${locale}.json`)).default,
+    formats: FORMATS,
     timeZone: 'Asia/Ho_Chi_Minh',
     now: new Date(),
   }

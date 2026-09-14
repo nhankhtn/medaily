@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
 import { Toaster } from 'sonner'
+import { FORMATS } from '@/lib/format/dates'
 import { themeBootScript } from '@/lib/themes'
 import { getShellSettings, getShellTheme } from '@/server/services/settings'
 import './globals.css'
@@ -50,7 +51,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body>
-        <NextIntlClientProvider locale={locale} messages={messages} timeZone={settings.timezone}>
+        <NextIntlClientProvider
+          locale={locale}
+          messages={messages}
+          formats={FORMATS}
+          timeZone={settings.timezone}
+        >
           {children}
           <Toaster position="top-center" closeButton richColors />
         </NextIntlClientProvider>

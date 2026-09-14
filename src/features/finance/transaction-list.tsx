@@ -48,7 +48,7 @@ export function TransactionList({
       {transactions.map((transaction) => (
         <li key={transaction.id} className="group flex items-center gap-3 py-2">
           <span className="w-16 shrink-0 text-xs tabular-nums text-text-subtle">
-            {format.dateTime(fromISODate(transaction.occurredOn), { day: 'numeric', month: 'short' })}
+            {format.dateTime(fromISODate(transaction.occurredOn), 'dayMonth')}
           </span>
 
           <span className="min-w-0 flex-1 truncate text-sm">{label(transaction)}</span>

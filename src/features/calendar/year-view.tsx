@@ -14,7 +14,7 @@ export async function YearView({ data }: { data: YearCalendar }) {
       {data.months.map((month) => (
         <Card key={month.month}>
           <CardHeader
-            title={format.dateTime(fromISODate(month.month), { month: 'long' })}
+            title={format.dateTime(fromISODate(month.month), 'month')}
             action={
               month.count > 0 ? (
                 <span className="text-xs text-text-subtle">
@@ -30,7 +30,7 @@ export async function YearView({ data }: { data: YearCalendar }) {
                   key={day.date}
                   className="pb-1 text-center text-[10px] font-medium text-text-subtle"
                 >
-                  {format.dateTime(fromISODate(day.date), { weekday: 'narrow' })}
+                  {format.dateTime(fromISODate(day.date), 'weekdayNarrow')}
                 </span>
               ))}
 

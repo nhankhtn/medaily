@@ -95,11 +95,7 @@ export function GoalCards({ goals, today }: { goals: GoalView[]; today: string }
               )}
               {goal.targetDate ? (
                 <span>
-                  {format.dateTime(fromISODate(goal.targetDate), {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric',
-                  })}
+                  {format.dateTime(fromISODate(goal.targetDate), 'dayMonthYear')}
                 </span>
               ) : null}
             </div>

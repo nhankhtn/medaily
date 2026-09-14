@@ -62,12 +62,7 @@ export function AiReview({
             <p className="mt-3 border-t border-border-base pt-2 text-xs text-text-subtle">
               {t('generatedBy', {
                 model: meta.model,
-                date: format.dateTime(new Date(meta.createdAt), {
-                  day: 'numeric',
-                  month: 'short',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                }),
+                date: format.dateTime(new Date(meta.createdAt), 'dayMonthTime'),
               })}
             </p>
           ) : null}

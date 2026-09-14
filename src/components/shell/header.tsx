@@ -20,12 +20,7 @@ export async function Header({ today, theme }: { today: ISODate; theme: ThemePre
     <header className="border-border-base bg-bg/90 sticky top-0 z-30 flex h-14 items-center gap-3 border-b px-4 backdrop-blur">
       <div className="flex min-w-0 flex-1 items-center gap-2">
         <span className="text-text-muted truncate text-sm font-medium">
-          {format.dateTime(fromISODate(today), {
-            weekday: 'short',
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric',
-          })}
+          {format.dateTime(fromISODate(today), 'weekdayDayMonthYear')}
         </span>
       </div>
 

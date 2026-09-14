@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardBody, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
+import { formatDayMonth } from '@/lib/format/dates'
 import { formatDuration, TIMER_PRESETS_MINUTES } from '@/lib/timer'
 import {
   activityOf,
@@ -105,10 +106,10 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
           <CardHeader title={t('clock')} />
           <CardBody className="flex flex-1 flex-col items-center justify-center gap-1 py-6">
             <p className="text-5xl font-semibold tabular-nums" suppressHydrationWarning>
-              {now ? format.dateTime(now, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) : '--:--:--'}
+              {now ? format.dateTime(now, 'clock') : '--:--:--'}
             </p>
             <p className="text-sm text-text-muted" suppressHydrationWarning>
-              {now ? format.dateTime(now, { weekday: 'long', day: 'numeric', month: 'long' }) : ''}
+              {now ? format.dateTime(now, 'fullDay') : ''}
             </p>
           </CardBody>
         </Card>
@@ -334,7 +335,7 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
                     <Dumbbell className="size-4 shrink-0 text-text-subtle" />
                     <span className="min-w-0 flex-1 truncate">{workout.type}</span>
                     <span className="shrink-0 text-xs tabular-nums text-text-subtle">
-                      {workout.performedOn.slice(5)} · {t('minutesShort', { minutes: workout.durationMinutes })}
+                      {formatDayMonth(workout.performedOn)} · {t('minutesShort', { minutes: workout.durationMinutes })}
                     </span>
                   </li>
                 ))}
@@ -345,7 +346,7 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
                       {session.note ?? t(`activities.${session.kind}`)}
                     </span>
                     <span className="shrink-0 text-xs tabular-nums text-text-subtle">
-                      {session.sessionDate.slice(5)} · {t('minutesShort', { minutes: session.minutes })}
+                      {formatDayMonth(session.sessionDate)} · {t('minutesShort', { minutes: session.minutes })}
                     </span>
                   </li>
                 ))}

@@ -309,7 +309,7 @@ export function ReminderPanel({
               </button>
               <span className="min-w-0 flex-1 truncate text-sm">{reminder.title}</span>
               <span className="shrink-0 text-xs tabular-nums text-text-subtle">
-                {format.dateTime(fromISODate(reminder.dueOn), { day: 'numeric', month: 'short' })}
+                {format.dateTime(fromISODate(reminder.dueOn), 'dayMonth')}
               </span>
             </li>
           ))}

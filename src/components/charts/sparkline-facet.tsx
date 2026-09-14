@@ -71,10 +71,7 @@ export function SparklineFacet({
                   return (
                     <div className="rounded-md border border-border-base bg-surface px-2 py-1 text-xs shadow-[var(--shadow-card)]">
                       <div className="text-text-subtle">
-                        {format.dateTime(fromISODate(point.date), {
-                          day: 'numeric',
-                          month: 'short',
-                        })}
+                        {format.dateTime(fromISODate(point.date), 'dayMonth')}
                       </div>
                       <div className="font-medium tabular-nums text-text">
                         {formatValue(point.value)}

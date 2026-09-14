@@ -80,7 +80,7 @@ export function MetricChart({
                 axisLine={{ stroke: 'var(--border)' }}
                 minTickGap={32}
                 tickFormatter={(value: string) =>
-                  format.dateTime(fromISODate(value), { day: 'numeric', month: 'short' })
+                  format.dateTime(fromISODate(value), 'dayMonth')
                 }
               />
               <YAxis
@@ -98,11 +98,7 @@ export function MetricChart({
                   return (
                     <div className="rounded-md border border-border-base bg-surface px-2 py-1 text-xs shadow-[var(--shadow-card)]">
                       <div className="text-text-subtle">
-                        {format.dateTime(fromISODate(point.date), {
-                          weekday: 'short',
-                          day: 'numeric',
-                          month: 'short',
-                        })}
+                        {format.dateTime(fromISODate(point.date), 'weekdayDayMonth')}
                       </div>
                       <div className="font-medium tabular-nums">
                         {point.value === null ? '—' : point.value}

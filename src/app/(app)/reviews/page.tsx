@@ -39,11 +39,10 @@ export default async function ReviewsPage({
   const label =
     period === 'yearly'
       ? view.key
-      : format.dateTime(fromISODate(view.range.start), {
-          day: period === 'weekly' ? 'numeric' : undefined,
-          month: 'short',
-          year: 'numeric',
-        })
+      : format.dateTime(
+          fromISODate(view.range.start),
+          period === 'weekly' ? 'dayMonthYear' : 'monthYear',
+        )
 
   const minutesToHours = (minutes: number) => `${Math.floor(minutes / 60)}h ${minutes % 60}m`
 
@@ -66,10 +65,7 @@ export default async function ReviewsPage({
             view.finalized ? (
               <Badge tone="good">
                 {t('finalizedAt', {
-                  date: format.dateTime(new Date(metrics.computedAt), {
-                    day: 'numeric',
-                    month: 'short',
-                  }),
+                  date: format.dateTime(new Date(metrics.computedAt), 'dayMonth'),
                 })}
               </Badge>
             ) : (
@@ -123,20 +119,14 @@ export default async function ReviewsPage({
               {
                 label: t('bestDay'),
                 value: metrics.bestDay
-                  ? format.dateTime(fromISODate(metrics.bestDay.date), {
-                      day: 'numeric',
-                      month: 'short',
-                    })
+                  ? format.dateTime(fromISODate(metrics.bestDay.date), 'dayMonth')
                   : '—',
                 hint: metrics.bestDay ? String(Math.round(metrics.bestDay.score)) : undefined,
               },
               {
                 label: t('worstDay'),
                 value: metrics.worstDay
-                  ? format.dateTime(fromISODate(metrics.worstDay.date), {
-                      day: 'numeric',
-                      month: 'short',
-                    })
+                  ? format.dateTime(fromISODate(metrics.worstDay.date), 'dayMonth')
                   : '—',
                 hint: metrics.worstDay ? String(Math.round(metrics.worstDay.score)) : undefined,
               },
@@ -177,10 +167,7 @@ export default async function ReviewsPage({
                           {lesson.title}
                         </Link>
                         <span className="text-text-subtle shrink-0 text-xs tabular-nums">
-                          {format.dateTime(fromISODate(lesson.learnedOn), {
-                            day: 'numeric',
-                            month: 'short',
-                          })}
+                          {format.dateTime(fromISODate(lesson.learnedOn), 'dayMonth')}
                         </span>
                       </li>
                     ))}

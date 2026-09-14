@@ -95,11 +95,7 @@ export function CatchUpGrid({ dates }: { dates: ISODate[] }) {
               <tr key={row.date} className="border-t border-border-base">
                 <td className="py-2 pr-3 whitespace-nowrap">
                   <span className="text-sm font-medium">
-                    {format.dateTime(fromISODate(row.date), {
-                      weekday: 'short',
-                      day: 'numeric',
-                      month: 'short',
-                    })}
+                    {format.dateTime(fromISODate(row.date), 'weekdayDayMonth')}
                   </span>
                 </td>
                 <td className="py-2 pr-2">

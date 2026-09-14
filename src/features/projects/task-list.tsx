@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import type { ProjectTask } from '@/lib/db/schema'
 import { removeTask, saveTask, toggleTask } from '@/server/actions/projects'
 import { cn } from '@/lib/utils'
+import { formatDayMonth } from '@/lib/format/dates'
 
 /**
  * Inline add that stays focused after Enter, so a list of tasks can be typed in
@@ -85,7 +86,7 @@ export function TaskList({ projectId, tasks }: { projectId: string; tasks: Proje
 
                 {task.dueDate ? (
                   <span className="shrink-0 text-xs tabular-nums text-text-subtle">
-                    {task.dueDate.slice(5)}
+                    {formatDayMonth(task.dueDate)}
                   </span>
                 ) : null}
 

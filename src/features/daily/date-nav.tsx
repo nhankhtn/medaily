@@ -86,7 +86,7 @@ export function DateNav({ date, today }: { date: ISODate; today: ISODate }) {
           <span className="tabular-nums">
             {isToday
               ? t('today')
-              : format.dateTime(fromISODate(date), { day: 'numeric', month: 'short' })}
+              : format.dateTime(fromISODate(date), 'dayMonth')}
           </span>
         </button>
 

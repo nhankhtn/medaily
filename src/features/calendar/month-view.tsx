@@ -13,7 +13,7 @@ export async function MonthView({ data }: { data: MonthCalendar }) {
   const [t, format] = await Promise.all([getTranslations('calendar'), getFormatter()])
 
   const weekdays = (data.weeks[0] ?? []).map((day) =>
-    format.dateTime(fromISODate(day.date), { weekday: 'short' }),
+    format.dateTime(fromISODate(day.date), 'weekday'),
   )
 
   return (
@@ -108,7 +108,7 @@ function Item({ item, t, format }: { item: CalendarItem } & Localised) {
     >
       {item.at ? (
         <span className="tabular-nums text-text-subtle">
-          {format.dateTime(item.at, { hour: '2-digit', minute: '2-digit' })}{' '}
+          {format.dateTime(item.at, 'time')}{' '}
         </span>
       ) : null}
       {label}

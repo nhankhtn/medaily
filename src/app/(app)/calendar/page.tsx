@@ -128,12 +128,8 @@ async function WeekBar({ anchor }: { anchor?: ISODate }) {
         label={t('previousWeek')}
       />
       <span className="px-1 text-sm font-medium whitespace-nowrap">
-        {format.dateTime(fromISODate(data.range.start), { day: 'numeric', month: 'short' })} –{' '}
-        {format.dateTime(fromISODate(data.range.end), {
-          day: 'numeric',
-          month: 'short',
-          year: 'numeric',
-        })}
+        {format.dateTime(fromISODate(data.range.start), 'dayMonth')} –{' '}
+        {format.dateTime(fromISODate(data.range.end), 'dayMonthYear')}
       </span>
       <Step href={PATHS.calendar({ view: 'week', at: addDays(data.weekStart, 7) })} label={t('nextWeek')} />
       <Button asChild variant="ghost" size="sm">
@@ -155,7 +151,7 @@ async function MonthBar({ anchor }: { anchor: ISODate }) {
         label={t('previousMonth')}
       />
       <span className="px-1 text-sm font-medium whitespace-nowrap">
-        {format.dateTime(fromISODate(month), { month: 'long', year: 'numeric' })}
+        {format.dateTime(fromISODate(month), 'monthYear')}
       </span>
       <Step href={PATHS.calendar({ view: 'month', at: addMonthsISO(month, 1) })} label={t('nextMonth')} />
       <Button asChild variant="ghost" size="sm">
@@ -245,7 +241,7 @@ async function WeekView({ anchor }: { anchor?: ISODate }) {
               return (
                 <li key={day.date} className="flex items-center gap-3">
                   <span className="w-20 shrink-0 text-xs tabular-nums text-text-muted">
-                    {format.dateTime(fromISODate(day.date), { weekday: 'short', day: 'numeric' })}
+                    {format.dateTime(fromISODate(day.date), 'weekdayDay')}
                   </span>
                   <div className="min-w-0 flex-1 space-y-1">
                     <div className="flex items-center gap-2">
@@ -304,18 +300,8 @@ async function WeekView({ anchor }: { anchor?: ISODate }) {
                     ) : null}
                     <span className="shrink-0 text-xs tabular-nums text-text-subtle">
                       {event.allDay
-                        ? format.dateTime(event.startsAt, {
-                            weekday: 'short',
-                            day: 'numeric',
-                            month: 'short',
-                          })
-                        : format.dateTime(event.startsAt, {
-                            weekday: 'short',
-                            day: 'numeric',
-                            month: 'short',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
+                        ? format.dateTime(event.startsAt, 'weekdayDayMonth')
+                        : format.dateTime(event.startsAt, 'weekdayDayMonthTime')}
                     </span>
                   </li>
                 ))}
@@ -335,7 +321,7 @@ async function WeekView({ anchor }: { anchor?: ISODate }) {
                   day.blocks.map((block) => (
                     <li key={block.id} className="flex items-center gap-3 py-2">
                       <span className="w-16 shrink-0 text-xs tabular-nums text-text-subtle">
-                        {format.dateTime(fromISODate(day.date), { weekday: 'short' })}
+                        {format.dateTime(fromISODate(day.date), 'weekday')}
                       </span>
                       <span className="shrink-0 text-xs tabular-nums">
                         {block.startTime.slice(0, 5)}–{block.endTime.slice(0, 5)}

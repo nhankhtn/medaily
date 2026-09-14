@@ -37,20 +37,12 @@ export default async function JournalPage() {
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <h2 className="font-medium">
                   {entry.title ??
-                    format.dateTime(fromISODate(entry.entryDate), {
-                      weekday: 'long',
-                      day: 'numeric',
-                      month: 'long',
-                    })}
+                    format.dateTime(fromISODate(entry.entryDate), 'fullDay')}
                 </h2>
                 <div className="flex items-center gap-2">
                   {entry.mood ? <Badge tone="accent">{entry.mood}/10</Badge> : null}
                   <span className="text-xs tabular-nums text-text-subtle">
-                    {format.dateTime(fromISODate(entry.entryDate), {
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                    })}
+                    {format.dateTime(fromISODate(entry.entryDate), 'dayMonthYear')}
                   </span>
                   <JournalEditor
                     today={data.today}

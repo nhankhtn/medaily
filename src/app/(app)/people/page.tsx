@@ -50,10 +50,7 @@ export default async function PeoplePage() {
                         <span className="text-text-subtle shrink-0 text-xs">
                           {person.lastInteractionOn
                             ? t('lastContact', {
-                                date: format.dateTime(fromISODate(person.lastInteractionOn), {
-                                  day: 'numeric',
-                                  month: 'short',
-                                }),
+                                date: format.dateTime(fromISODate(person.lastInteractionOn), 'dayMonth'),
                               })
                             : t('neverContacted')}
                         </span>
@@ -104,10 +101,7 @@ export default async function PeoplePage() {
                       ) : null}
                       <span className="text-text-subtle text-xs tabular-nums">
                         {person.lastInteractionOn
-                          ? format.dateTime(fromISODate(person.lastInteractionOn), {
-                              day: 'numeric',
-                              month: 'short',
-                            })
+                          ? format.dateTime(fromISODate(person.lastInteractionOn), 'dayMonth')
                           : '—'}
                       </span>
                     </div>
@@ -133,10 +127,7 @@ export default async function PeoplePage() {
                   return (
                     <li key={interaction.id} className="flex items-center gap-3 py-2">
                       <span className="text-text-subtle w-16 shrink-0 text-xs tabular-nums">
-                        {format.dateTime(fromISODate(interaction.occurredOn), {
-                          day: 'numeric',
-                          month: 'short',
-                        })}
+                        {format.dateTime(fromISODate(interaction.occurredOn), 'dayMonth')}
                       </span>
                       <span className="shrink-0 text-sm font-medium">{person?.name ?? '—'}</span>
                       <Badge>{t(`channels.${interaction.channel}`)}</Badge>

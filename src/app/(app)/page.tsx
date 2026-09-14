@@ -40,11 +40,7 @@ export default async function DashboardPage() {
       <div className="flex flex-wrap items-end justify-between gap-2">
         <h1 className="text-2xl font-semibold">{t('title')}</h1>
         <p className="text-sm text-text-muted">
-          {format.dateTime(fromISODate(data.today), {
-            weekday: 'long',
-            day: 'numeric',
-            month: 'long',
-          })}
+          {format.dateTime(fromISODate(data.today), 'fullDay')}
         </p>
       </div>
 

@@ -140,10 +140,7 @@ export function SessionList({
                 ) : null}
               </div>
               <span className="shrink-0 text-xs tabular-nums text-text-subtle">
-                {format.dateTime(fromISODate(session.sessionDate), {
-                  day: 'numeric',
-                  month: 'short',
-                })}
+                {format.dateTime(fromISODate(session.sessionDate), 'dayMonth')}
               </span>
               <button
                 type="button"

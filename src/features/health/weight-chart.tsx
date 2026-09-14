@@ -43,7 +43,7 @@ export function WeightChart({
               axisLine={{ stroke: 'var(--border)' }}
               minTickGap={32}
               tickFormatter={(value: string) =>
-                format.dateTime(fromISODate(value), { day: 'numeric', month: 'short' })
+                format.dateTime(fromISODate(value), 'dayMonth')
               }
             />
             <YAxis
@@ -62,7 +62,7 @@ export function WeightChart({
                 return (
                   <div className="rounded-md border border-border-base bg-surface px-2 py-1 text-xs shadow-[var(--shadow-card)]">
                     <div className="text-text-subtle">
-                      {format.dateTime(fromISODate(point.date), { day: 'numeric', month: 'short' })}
+                      {format.dateTime(fromISODate(point.date), 'dayMonth')}
                     </div>
                     <div className="font-medium tabular-nums">{point.value ?? '—'}</div>
                   </div>
