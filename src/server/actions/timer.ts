@@ -6,6 +6,12 @@ import { getCurrentUserId } from '@/lib/auth/current-user'
 import { logicalDateOf } from '@/lib/dates'
 import { PATHS } from '@/lib/paths'
 import { elapsedSeconds, minutesOf, pausedRun, resumedRun, wasCapped } from '@/lib/timer'
+import {
+  ACTIVITY_IDS,
+  activityOf,
+  isActivityId,
+  type ActivityId,
+} from '@/lib/timer/activities'
 import { saveWorkout } from '@/server/actions/health'
 import {
   clearTimer,
@@ -13,6 +19,7 @@ import {
   startTimer as persistTimer,
   updateTimer,
 } from '@/server/repositories/timer'
+import { addDailyMinutes } from '@/server/services/daily-minutes'
 import { saveSessionAndDerive } from '@/server/services/focus'
 import { dayContextOf, getSettings } from '@/server/services/settings'
 
@@ -34,10 +41,9 @@ function revalidateTimer(date?: string) {
 }
 
 const startSchema = z.object({
-  target: z.enum(['focus', 'workout']).default('focus'),
+  activity: z.enum(ACTIVITY_IDS as [ActivityId, ...ActivityId[]]).default('learning'),
   mode: z.enum(['stopwatch', 'countdown']).default('stopwatch'),
   targetMinutes: z.number().int().min(1).max(1440).nullable().optional(),
-  kind: z.enum(['learning', 'deep_work', 'project']).default('learning'),
   workoutType: z.string().max(80).nullable().optional(),
   topicId: optionalId,
   projectId: optionalId,
@@ -48,21 +54,26 @@ export async function startTimer(input: unknown) {
   const parsed = startSchema.safeParse(input)
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
-  const { target, mode, targetMinutes, kind, workoutType, topicId, projectId, note } = parsed.data
+  const { activity: id, mode, targetMinutes, workoutType, topicId, projectId, note } = parsed.data
+  const activity = activityOf(id)
+  const isFocus = activity.sink === 'focus'
 
   await persistTimer({
     userId: await getCurrentUserId(),
     startedAt: new Date(),
     pausedAt: null,
     accumulatedSeconds: 0,
-    target,
+    activity: id,
     mode,
     // A countdown needs a target; a stopwatch must not carry a stale one.
     targetSeconds: mode === 'countdown' ? (targetMinutes ?? 25) * 60 : null,
-    kind,
-    workoutType: target === 'workout' ? (workoutType?.trim() || null) : null,
-    topicId: target === 'focus' ? (topicId ?? null) : null,
-    projectId: target === 'focus' ? (projectId ?? null) : null,
+    // `kind` and `target` are what the previous release reads. Writing them
+    // keeps a run started here legible to it until that column is dropped.
+    kind: isFocus ? activity.kind : 'learning',
+    target: activity.sink === 'workout' ? 'workout' : 'focus',
+    workoutType: activity.sink === 'workout' ? (workoutType?.trim() || null) : null,
+    topicId: isFocus ? (topicId ?? null) : null,
+    projectId: isFocus ? (projectId ?? null) : null,
     note: note ?? null,
   })
 
@@ -112,8 +123,9 @@ const stopSchema = z
 
 /**
  * Ends the run and files it where it belongs: focus time becomes a session,
- * exercise becomes a workout. Both paths recompute the day's derived habits, so
- * a habit bound to study or exercise minutes ticks itself.
+ * exercise becomes a workout, and everything else is added to its column on
+ * the daily log. Every path recomputes that day's derived habits, so a habit
+ * bound to the metric ticks itself.
  */
 export async function stopTimer(input?: unknown) {
   const parsed = stopSchema.safeParse(input)
@@ -134,8 +146,10 @@ export async function stopTimer(input?: unknown) {
   }
 
   const note = parsed.data?.note ?? timer.note
+  // A run started by the previous release has no activity; its `kind` says it.
+  const activity = activityOf(isActivityId(timer.activity) ? timer.activity : timer.kind)
 
-  if (timer.target === 'workout') {
+  if (activity.sink === 'workout') {
     await saveWorkout({
       performedOn: date,
       type: timer.workoutType?.trim() || 'other',
@@ -143,12 +157,20 @@ export async function stopTimer(input?: unknown) {
       rpe: parsed.data?.rpe ?? null,
       note,
     })
+  } else if (activity.sink === 'daily') {
+    await addDailyMinutes({
+      userId: settings.userId,
+      date,
+      column: activity.column,
+      minutes,
+      weekStart: settings.weekStart,
+    })
   } else {
     await saveSessionAndDerive({
       userId: settings.userId,
       sessionDate: date,
       minutes,
-      kind: timer.kind,
+      kind: activity.kind,
       topicId: timer.topicId,
       projectId: timer.projectId,
       note,
@@ -164,7 +186,8 @@ export async function stopTimer(input?: unknown) {
   return {
     ok: true as const,
     minutes,
-    target: timer.target,
+    activity: activity.id,
+    sink: activity.sink,
     capped: wasCapped(seconds),
   }
 }

@@ -87,11 +87,7 @@ export function TimerBadge({ timer }: { timer: RunningTimer | null }) {
               )
               return
             }
-            toast.success(
-              result.target === 'workout'
-                ? t('savedWorkout', { minutes: result.minutes })
-                : t('savedSession', { minutes: result.minutes }),
-            )
+            toast.success(t('savedShort', { minutes: result.minutes }))
           })
         }
         disabled={pending}

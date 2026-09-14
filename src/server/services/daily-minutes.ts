@@ -1,0 +1,42 @@
+import { and, eq } from 'drizzle-orm'
+import { db } from '@/lib/db'
+import { dailyLogs } from '@/lib/db/schema'
+import type { ISODate } from '@/lib/dates'
+import type { DailyMinutesColumn } from '@/lib/timer/activities'
+import { upsertLog } from '@/server/repositories/daily'
+import { recomputeDerivedHabitLogs } from '@/server/services/habit-derivation'
+
+/** The column's own check constraint; a longer total would be rejected. */
+const MAX_MINUTES_PER_DAY = 1440
+
+/**
+ * Adds a timed stretch onto a daily-log column.
+ *
+ * Adds rather than replaces: two sittings of reading in one day are 40 minutes,
+ * not the second 20. Habits bound to the metric are recomputed in the same
+ * transaction, so timing a stretch ticks the same box typing it would.
+ */
+export async function addDailyMinutes(values: {
+  userId: string
+  date: ISODate
+  column: DailyMinutesColumn
+  minutes: number
+  weekStart: 'monday' | 'sunday'
+}): Promise<number> {
+  const { userId, date, column, minutes, weekStart } = values
+
+  return db.transaction(async (tx) => {
+    const rows = await tx
+      .select()
+      .from(dailyLogs)
+      .where(and(eq(dailyLogs.userId, userId), eq(dailyLogs.logDate, date)))
+      .limit(1)
+
+    const existing = rows[0]?.[column] ?? 0
+    const total = Math.min(MAX_MINUTES_PER_DAY, existing + minutes)
+
+    await upsertLog(userId, date, { [column]: total }, tx)
+    await recomputeDerivedHabitLogs(tx, userId, date, weekStart)
+    return total
+  })
+}

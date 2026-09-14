@@ -87,6 +87,12 @@ export const timerState = pgTable(
     startedAt: timestamp('started_at', { withTimezone: true }).notNull(),
     pausedAt: timestamp('paused_at', { withTimezone: true }),
     accumulatedSeconds: integer('accumulated_seconds').notNull().default(0),
+    /** An activity id from lib/timer/activities. Text, so a new one is one file. */
+    activity: text('activity').notNull().default('learning'),
+    /**
+     * Superseded by `activity`. Kept so a migration can run ahead of the deploy
+     * without breaking the version still serving; dropped in a later pass.
+     */
     target: timerTargetEnum('target').notNull().default('focus'),
     mode: timerModeEnum('mode').notNull().default('stopwatch'),
     /** Where a countdown stops; null for an open-ended stopwatch. */

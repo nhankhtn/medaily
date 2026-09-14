@@ -3,6 +3,7 @@ import { getCurrentUserId } from '@/lib/auth/current-user'
 import type { Workout } from '@/lib/db/schema'
 import { rangeOfLastDays, today as todayOf, type ISODate } from '@/lib/dates'
 import { elapsedSeconds } from '@/lib/timer'
+import { isActivityId, type ActivityId } from '@/lib/timer/activities'
 import { findProjects } from '@/server/repositories/projects'
 import { findRecentWorkouts } from '@/server/repositories/health'
 import { findSessions, findTopics } from '@/server/repositories/learning'
@@ -16,10 +17,9 @@ export type RunningTimer = {
   accumulatedSeconds: number
   /** Elapsed at render time; the client ticks on from here. */
   elapsedSeconds: number
-  target: 'focus' | 'workout'
+  activity: ActivityId
   mode: 'stopwatch' | 'countdown'
   targetSeconds: number | null
-  kind: 'learning' | 'deep_work' | 'project'
   workoutType: string | null
   topicId: string | null
   projectId: string | null
@@ -47,10 +47,10 @@ export const getRunningTimer = cache(async (): Promise<RunningTimer | null> => {
     pausedAt: timer.pausedAt?.toISOString() ?? null,
     accumulatedSeconds: timer.accumulatedSeconds,
     elapsedSeconds: elapsedSeconds(timer),
-    target: timer.target,
+    // A run started by the previous release has no activity; its kind says it.
+    activity: isActivityId(timer.activity) ? timer.activity : timer.kind,
     mode: timer.mode,
     targetSeconds: timer.targetSeconds,
-    kind: timer.kind,
     workoutType: timer.workoutType,
     topicId: timer.topicId,
     projectId: timer.projectId,

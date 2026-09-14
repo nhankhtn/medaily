@@ -21,8 +21,8 @@
     "settings": "Cài đặt",
     "more": "Thêm",
     "log": "Ghi",
-    "collapse": "Thu gọn thanh bên",
-    "expand": "Mở rộng thanh bên",
+    "collapse": "Thu gọn",
+    "expand": "Mở rộng",
     "search": "Tìm kiếm",
     "timer": "Bấm giờ"
   },
@@ -384,7 +384,34 @@
     "scoreWeights": "Trọng số điểm",
     "scoreWeightsHelp": "Tổng phải bằng 100%.",
     "resetDefaults": "Đặt lại mặc định",
-    "savedToast": "Đã lưu cài đặt"
+    "savedToast": "Đã lưu cài đặt",
+    "shortcuts": {
+      "title": "Phím tắt",
+      "help": "Các phím này không chạy khi con trỏ đang ở trong ô nhập liệu, nên gõ chữ s sẽ không vô tình lưu mất ngày.",
+      "then": "rồi",
+      "groups": {
+        "everywhere": "Ở bất kỳ đâu",
+        "goto": "Nhảy tới",
+        "daily": "Trong trang Ghi ngày",
+        "timer": "Khi bấm giờ",
+        "boxes": "Trong ô tìm kiếm và Ghi nhanh"
+      },
+      "items": {
+        "palette": "Tìm kiếm hoặc chạy lệnh",
+        "capture": "Mở hoặc đóng Ghi nhanh",
+        "close": "Đóng thứ đang mở",
+        "prevDay": "Ngày trước",
+        "nextDay": "Ngày sau",
+        "today": "Về hôm nay",
+        "save": "Lưu ngày",
+        "scale": "Chấm điểm nhanh cho thanh 1–10 (0 là 10)",
+        "clearScale": "Xoá điểm vừa chấm",
+        "toggleTimer": "Bắt đầu hoặc dừng đồng hồ",
+        "move": "Di chuyển trong danh sách",
+        "choose": "Chọn mục đang sáng",
+        "readNote": "Đọc ghi chú vừa gõ"
+      }
+    }
   },
   "analytics": {
     "title": "Thống kê",
@@ -571,20 +598,18 @@
     "subtitle": "Bấm giờ một phiên làm việc hay buổi tập; bấm dừng là tự ghi vào đúng chỗ.",
     "clock": "Bây giờ",
     "newRun": "Phiên mới",
-    "targets": {
-      "focus": "Tập trung",
-      "workout": "Tập luyện"
-    },
     "modes": {
       "stopwatch": "Đếm lên",
       "countdown": "Đếm ngược"
     },
-    "kind": "Loại",
-    "kinds": {
-      "focus": "Tập trung",
+    "activities": {
       "learning": "Học",
       "deep_work": "Deep work",
-      "project": "Dự án"
+      "project": "Dự án",
+      "english": "Tiếng Anh",
+      "reading": "Đọc sách",
+      "exercise": "Tập luyện",
+      "entertainment": "Giải trí"
     },
     "topic": "Chủ đề",
     "project": "Dự án",
@@ -606,10 +631,10 @@
     "todayTotals": "Hôm nay",
     "recent": "Gần đây",
     "noRuns": "Chưa bấm giờ lần nào",
-    "savedSession": "Đã lưu {minutes} phút vào Học tập",
-    "savedWorkout": "Đã lưu {minutes} phút vào Sức khỏe",
     "tooShort": "Chưa được một phút nên không ghi nhận",
-    "capped": "Phiên bị bỏ quên nên chỉ tính tối đa 8 tiếng"
+    "capped": "Phiên bị bỏ quên nên chỉ tính tối đa 8 tiếng",
+    "savedTo": "Đã lưu {minutes} phút vào {where}",
+    "savedShort": "Đã lưu {minutes} phút"
   },
   "reviews": {
     "title": "Tổng kết",
@@ -766,7 +791,28 @@
     "noPriceFeed": "Giá do bạn tự nhập — ứng dụng không lấy dữ liệu thị trường.",
     "needCategoryFirst": "Ngân sách cần có danh mục — tạo một danh mục Chi trước, rồi đặt mức mỗi tháng cho nó.",
     "noCategories": "Chưa có danh mục nào",
-    "editBudget": "Sửa ngân sách"
+    "editBudget": "Sửa ngân sách",
+    "capture": {
+      "title": "Viết như bạn nói",
+      "label": "AI điền",
+      "placeholder": "sáng ăn bánh mì 30k, cà phê 25k, trưa cơm gà 55k, hôm qua đổ xăng 100 nghìn",
+      "parse": "Xem trước",
+      "parsing": "Đang đọc…",
+      "privacy": "Chỉ ghi chú ở trên và tên các danh mục của bạn được gửi đi. Số dư, lịch sử và mọi phần khác không rời khỏi máy này.",
+      "reviewHint": "Kiểm tra lại trước khi lưu — chưa có gì được ghi cả.",
+      "intoAccount": "Tài khoản",
+      "summary": "{count, plural, other {# giao dịch}}",
+      "outgoing": "chi",
+      "incoming": "thu",
+      "saveAll": "Lưu {count, plural, other {# giao dịch}}",
+      "discard": "Bỏ",
+      "removeRow": "Bỏ giao dịch này",
+      "savedToast": "Đã lưu {count, plural, other {# giao dịch}}",
+      "nothingFound": "Không thấy khoản chi tiêu nào trong ghi chú này",
+      "needAmount": "Mỗi giao dịch cần có số tiền",
+      "rateLimited": "Gửi quá nhiều lần — đợi một phút rồi thử lại",
+      "failed": "Không đọc được ghi chú này"
+    }
   },
   "journal": {
     "title": "Nhật ký",
@@ -1086,5 +1132,20 @@
     "reading_pages": "Đọc sách (trang)",
     "entertainment_minutes": "Giải trí (phút)",
     "english_minutes": "Tiếng Anh (phút)"
+  },
+  "capture": {
+    "title": "Ghi nhanh",
+    "description": "Cứ viết như bạn đang nói, app tự điền vào các ô.",
+    "open": "Ghi nhanh",
+    "openHint": "Ghi nhanh từ bất kỳ đâu (⌘J)",
+    "closeHint": "Đóng (Esc)",
+    "placeholder": "Gõ / để chọn ghi vào đâu…",
+    "destinations": "Ghi vào đâu",
+    "pickFirst": "Gõ / để chọn ghi vào đâu",
+    "submitHint": "⌘/Ctrl + Enter",
+    "changeTarget": "đổi",
+    "examples": {
+      "finance": "sáng ăn bánh mì 30k, cà phê 25k, hôm qua đổ xăng 100 nghìn"
+    }
   }
 }

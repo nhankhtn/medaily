@@ -71,6 +71,13 @@
       "when": 1789315525442,
       "tag": "0009_theme_as_text",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789345640533,
+      "tag": "0010_timer_activity",
+      "breakpoints": true
     }
   ]
 }

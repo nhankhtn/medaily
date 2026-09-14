@@ -21,8 +21,8 @@
     "settings": "Settings",
     "more": "More",
     "log": "Log",
-    "collapse": "Collapse sidebar",
-    "expand": "Expand sidebar",
+    "collapse": "Collapse",
+    "expand": "Expand",
     "search": "Search",
     "timer": "Timer"
   },
@@ -384,7 +384,34 @@
     "scoreWeights": "Score weights",
     "scoreWeightsHelp": "Must add up to 100%.",
     "resetDefaults": "Reset to defaults",
-    "savedToast": "Settings saved"
+    "savedToast": "Settings saved",
+    "shortcuts": {
+      "title": "Keyboard shortcuts",
+      "help": "These are off while the cursor is in a text field, so typing an s never saves the day out from under you.",
+      "then": "then",
+      "groups": {
+        "everywhere": "Anywhere",
+        "goto": "Jump to",
+        "daily": "On the daily log",
+        "timer": "On the timer",
+        "boxes": "In search and quick capture"
+      },
+      "items": {
+        "palette": "Search or run a command",
+        "capture": "Open or close quick capture",
+        "close": "Close whatever is open",
+        "prevDay": "Previous day",
+        "nextDay": "Next day",
+        "today": "Back to today",
+        "save": "Save the day",
+        "scale": "Score the focused 1–10 bar (0 is 10)",
+        "clearScale": "Clear that score",
+        "toggleTimer": "Start or stop the running timer",
+        "move": "Move through the list",
+        "choose": "Take the highlighted one",
+        "readNote": "Read the note you typed"
+      }
+    }
   },
   "analytics": {
     "title": "Analytics",
@@ -571,20 +598,18 @@
     "subtitle": "Time a stretch of work or a workout; stopping files it where it belongs.",
     "clock": "Now",
     "newRun": "New run",
-    "targets": {
-      "focus": "Focus",
-      "workout": "Workout"
-    },
     "modes": {
       "stopwatch": "Count up",
       "countdown": "Count down"
     },
-    "kind": "Kind",
-    "kinds": {
-      "focus": "Focus",
+    "activities": {
       "learning": "Learning",
       "deep_work": "Deep work",
-      "project": "Project"
+      "project": "Project",
+      "english": "English",
+      "reading": "Reading",
+      "exercise": "Exercise",
+      "entertainment": "Entertainment"
     },
     "topic": "Topic",
     "project": "Project",
@@ -606,10 +631,10 @@
     "todayTotals": "Today",
     "recent": "Recent",
     "noRuns": "Nothing timed yet",
-    "savedSession": "Saved {minutes} minutes to learning",
-    "savedWorkout": "Saved {minutes} minutes to health",
     "tooShort": "Under a minute, so nothing was recorded",
-    "capped": "The run was left going, so it was capped at 8 hours"
+    "capped": "The run was left going, so it was capped at 8 hours",
+    "savedTo": "Saved {minutes} min to {where}",
+    "savedShort": "Saved {minutes} min"
   },
   "reviews": {
     "title": "Reviews",
@@ -766,7 +791,28 @@
     "noPriceFeed": "Prices are entered by hand — there is no market data feed.",
     "needCategoryFirst": "Budgets need a category first — create an expense category, then set its monthly limit.",
     "noCategories": "No categories yet",
-    "editBudget": "Edit budget"
+    "editBudget": "Edit budget",
+    "capture": {
+      "title": "Write it the way you'd say it",
+      "label": "AI-filled",
+      "placeholder": "banh mi 30k this morning, coffee 25k, lunch 55k, petrol 100k yesterday",
+      "parse": "Preview",
+      "parsing": "Reading…",
+      "privacy": "Only the note above and your category names are sent. Balances, history and every other part of the app stay on this machine.",
+      "reviewHint": "Check these before saving — nothing has been recorded yet.",
+      "intoAccount": "Account",
+      "summary": "{count, plural, one {# transaction} other {# transactions}}",
+      "outgoing": "out",
+      "incoming": "in",
+      "saveAll": "Save {count, plural, one {# transaction} other {# transactions}}",
+      "discard": "Discard",
+      "removeRow": "Remove this transaction",
+      "savedToast": "Saved {count, plural, one {# transaction} other {# transactions}}",
+      "nothingFound": "No spending found in that note",
+      "needAmount": "Every transaction needs an amount",
+      "rateLimited": "Too many notes in a row — wait a minute",
+      "failed": "Could not read that note"
+    }
   },
   "journal": {
     "title": "Journal",
@@ -1086,5 +1132,20 @@
     "reading_pages": "Reading (pages)",
     "entertainment_minutes": "Entertainment (minutes)",
     "english_minutes": "English (minutes)"
+  },
+  "capture": {
+    "title": "Quick capture",
+    "description": "Write it the way you'd say it. The form fills itself.",
+    "open": "Capture",
+    "openHint": "Capture from anywhere (⌘J)",
+    "closeHint": "Close (Esc)",
+    "placeholder": "Type / to choose where this goes…",
+    "destinations": "Where it goes",
+    "pickFirst": "Type / to choose where it goes",
+    "submitHint": "⌘/Ctrl + Enter",
+    "changeTarget": "change",
+    "examples": {
+      "finance": "banh mi 30k this morning, coffee 25k, petrol 100k yesterday"
+    }
   }
 }

@@ -9,6 +9,13 @@ import { Card, CardBody, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { formatDuration, TIMER_PRESETS_MINUTES } from '@/lib/timer'
+import {
+  activityOf,
+  DEFAULT_ACTIVITY,
+  TIMED_ACTIVITIES,
+  takesTopicAndProject,
+  type ActivityId,
+} from '@/lib/timer/activities'
 import { cn } from '@/lib/utils'
 import {
   discardTimer,
@@ -20,11 +27,13 @@ import {
 import type { TimerPageData } from '@/server/services/timer'
 import { chime, useElapsedSeconds, useNow, useWakeLock } from './use-run'
 
-const FOCUS_KINDS = ['learning', 'deep_work', 'project'] as const
+/** Where a stopped run lands, for the toast that says so. */
+const MODULE_OF = { focus: 'learning', workout: 'health', daily: 'daily' } as const
 
 export function TimerConsole({ data }: { data: TimerPageData }) {
   const t = useTranslations('timer')
   const tc = useTranslations('common')
+  const tn = useTranslations('nav')
   const format = useFormatter()
   const [pending, startTransition] = useTransition()
 
@@ -39,10 +48,9 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
   const done = countdown && remaining <= 0
 
   // Setup state, only meaningful while nothing is running.
-  const [target, setTarget] = useState<'focus' | 'workout'>('focus')
+  const [activity, setActivity] = useState<ActivityId>(DEFAULT_ACTIVITY)
   const [mode, setMode] = useState<'stopwatch' | 'countdown'>('stopwatch')
   const [minutes, setMinutes] = useState(25)
-  const [kind, setKind] = useState<(typeof FOCUS_KINDS)[number]>('learning')
   const [topicId, setTopicId] = useState('')
   const [projectId, setProjectId] = useState('')
   const [workoutType, setWorkoutType] = useState('')
@@ -51,10 +59,9 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
   const begin = () =>
     startTransition(async () => {
       const result = await startTimer({
-        target,
+        activity,
         mode,
         targetMinutes: minutes,
-        kind,
         topicId: topicId || null,
         projectId: projectId || null,
         workoutType: workoutType || null,
@@ -78,9 +85,7 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
         return
       }
       toast.success(
-        result.target === 'workout'
-          ? t('savedWorkout', { minutes: result.minutes })
-          : t('savedSession', { minutes: result.minutes }),
+        t('savedTo', { minutes: result.minutes, where: tn(MODULE_OF[result.sink]) }),
       )
       if (result.capped) toast.warning(t('capped'), { duration: 8000 })
       setNote('')
@@ -109,7 +114,7 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
 
         <Card className={cn(done && 'border-accent')}>
           <CardHeader
-            title={timer ? t(`targets.${timer.target}`) : t('newRun')}
+            title={timer ? t(`activities.${timer.activity}`) : t('newRun')}
             action={
               timer ? (
                 <span
@@ -170,29 +175,27 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
               </div>
             ) : (
               <div className="space-y-3">
-                <Segmented
-                  options={[
-                    { value: 'focus', label: t('targets.focus') },
-                    { value: 'workout', label: t('targets.workout') },
-                  ]}
-                  value={target}
-                  onChange={(value) => setTarget(value as typeof target)}
-                />
+                <span className="flex flex-wrap gap-1.5">
+                  {TIMED_ACTIVITIES.map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => setActivity(option.id)}
+                      aria-pressed={activity === option.id}
+                      className={cn(
+                        'rounded-full border px-3 py-1.5 text-sm transition-colors',
+                        activity === option.id
+                          ? 'border-accent bg-accent-soft font-medium text-accent'
+                          : 'border-border-base bg-surface-2 text-text-muted hover:text-text',
+                      )}
+                    >
+                      {t(`activities.${option.id}`)}
+                    </button>
+                  ))}
+                </span>
 
-                {target === 'focus' ? (
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <Labelled label={t('kind')}>
-                      <Select
-                        value={kind}
-                        onChange={(event) => setKind(event.target.value as typeof kind)}
-                      >
-                        {FOCUS_KINDS.map((option) => (
-                          <option key={option} value={option}>
-                            {t(`kinds.${option}`)}
-                          </option>
-                        ))}
-                      </Select>
-                    </Labelled>
+                {takesTopicAndProject(activity) ? (
+                  <div className="grid gap-3 sm:grid-cols-2">
                     <Labelled label={t('topic')}>
                       <Select value={topicId} onChange={(event) => setTopicId(event.target.value)}>
                         <option value="">{tc('none')}</option>
@@ -217,7 +220,7 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
                       </Select>
                     </Labelled>
                   </div>
-                ) : (
+                ) : activity === 'exercise' ? (
                   <Labelled label={t('workoutType')}>
                     <Input
                       value={workoutType}
@@ -240,7 +243,7 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
                       </span>
                     ) : null}
                   </Labelled>
-                )}
+                ) : null}
 
                 <Segmented
                   options={[
@@ -313,8 +316,8 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
         <Card>
           <CardHeader title={t('todayTotals')} />
           <CardBody className="grid grid-cols-2 gap-2">
-            <Total label={t('kinds.focus')} minutes={data.todayFocusMinutes} t={t} />
-            <Total label={t('targets.workout')} minutes={data.todayWorkoutMinutes} t={t} />
+            <Total label={tn('learning')} minutes={data.todayFocusMinutes} t={t} />
+            <Total label={t('activities.exercise')} minutes={data.todayWorkoutMinutes} t={t} />
           </CardBody>
         </Card>
 
@@ -338,7 +341,7 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
                   <li key={session.id} className="flex items-center gap-3 py-2 text-sm">
                     <Play className="size-4 shrink-0 text-text-subtle" />
                     <span className="min-w-0 flex-1 truncate">
-                      {session.note ?? t(`kinds.${session.kind}`)}
+                      {session.note ?? t(`activities.${session.kind}`)}
                     </span>
                     <span className="shrink-0 text-xs tabular-nums text-text-subtle">
                       {session.sessionDate.slice(5)} · {t('minutesShort', { minutes: session.minutes })}
@@ -476,9 +479,12 @@ function describe(
   data: TimerPageData,
   t: ReturnType<typeof useTranslations<'timer'>>,
 ): string {
-  if (timer.target === 'workout') return timer.workoutType || t('targets.workout')
+  const activity = activityOf(timer.activity)
+  if (activity.sink === 'workout') {
+    return timer.workoutType || t(`activities.${activity.id}`)
+  }
 
-  const parts = [t(`kinds.${timer.kind}`)]
+  const parts = [t(`activities.${activity.id}`)]
   const topic = data.topics.find((item) => item.id === timer.topicId)
   const project = data.projects.find((item) => item.id === timer.projectId)
   if (topic) parts.push(topic.name)

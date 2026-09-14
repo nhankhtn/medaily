@@ -1,0 +1,1 @@
+ALTER TABLE "timer_state" ADD COLUMN "activity" text DEFAULT 'learning' NOT NULL;

@@ -72,5 +72,6 @@ export const aiReportKindEnum = pgEnum('ai_report_kind', ['weekly', 'monthly', '
 
 export const authProviderEnum = pgEnum('auth_provider', ['password', 'google'])
 
+/** Superseded by `timer_state.activity`; the column is dropped in a later pass. */
 export const timerTargetEnum = pgEnum('timer_target', ['focus', 'workout'])
 export const timerModeEnum = pgEnum('timer_mode', ['stopwatch', 'countdown'])
