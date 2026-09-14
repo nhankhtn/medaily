@@ -11,12 +11,10 @@ import {
   CategoryDialog,
   InvestmentDialog,
 } from '@/features/finance/finance-dialogs'
-import { TransactionCapture } from '@/features/finance/transaction-capture'
 import { TransactionForm } from '@/features/finance/transaction-form'
 import { TransactionList } from '@/features/finance/transaction-list'
 import { formatMoney } from '@/lib/format/money'
 import { getFinanceData } from '@/server/services/finance'
-import { geminiEnabled } from '@/server/services/gemini'
 
 export default async function FinancePage() {
   const [t, locale, data] = await Promise.all([
@@ -64,7 +62,6 @@ export default async function FinancePage() {
         <Card>
           <CardHeader title={t('transactions')} />
           <CardBody className="space-y-4">
-            <TransactionCapture enabled={geminiEnabled()} />
             <TransactionForm
               accounts={data.accounts}
               categories={data.categories}

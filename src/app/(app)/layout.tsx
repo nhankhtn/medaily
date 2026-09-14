@@ -43,7 +43,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
        */}
       <div
         className={cn(
-          'fixed right-4 z-30 md:right-6',
+          'fixed right-4 z-30 max-md:hidden md:right-6',
           geminiEnabled()
             ? 'bottom-[calc(8.25rem+env(safe-area-inset-bottom))] md:bottom-[5.25rem]'
             : 'bottom-[calc(4.5rem+env(safe-area-inset-bottom))] md:bottom-6',
