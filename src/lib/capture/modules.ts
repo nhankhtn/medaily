@@ -1,18 +1,21 @@
-import { LineChart, Wallet, type LucideIcon } from 'lucide-react'
+import { LineChart, ListChecks, Wallet, type LucideIcon } from 'lucide-react'
 
 /**
  * What `/` offers in the capture box.
  *
  * A registry, like `NAV_ITEMS`: adding a module is one entry here plus a branch
  * in the box's dispatch, rather than edits scattered through the UI.
+ *
+ * Label and example come from `capture.modules.<key>` and
+ * `capture.examples.<key>`. The box names its own destinations rather than
+ * borrowing from `nav`: not every destination is a page, and the one that
+ * files goals and tasks together answers to no single nav entry.
  */
-export type CaptureModuleKey = 'finance' | 'review'
+export type CaptureModuleKey = 'finance' | 'plan' | 'review'
 
 export type CaptureModule = {
   key: CaptureModuleKey
   icon: LucideIcon
-  /** Label and example come from `nav.<key>` and `capture.examples.<key>`. */
-  labelKey: string
   /** Extra words the slash filter should match, beyond the translated label. */
   aliases: string[]
 }
@@ -21,13 +24,29 @@ export const CAPTURE_MODULES: CaptureModule[] = [
   {
     key: 'finance',
     icon: Wallet,
-    labelKey: 'finance',
     aliases: ['finance', 'money', 'chi', 'thu', 'tien', 'tài chính', 'chi tiêu'],
+  },
+  {
+    key: 'plan',
+    icon: ListChecks,
+    aliases: [
+      'plan',
+      'goal',
+      'todo',
+      'task',
+      'muc tieu',
+      'mục tiêu',
+      'viec',
+      'việc',
+      'can lam',
+      'cần làm',
+      'ke hoach',
+      'kế hoạch',
+    ],
   },
   {
     key: 'review',
     icon: LineChart,
-    labelKey: 'reviews',
     aliases: [
       'review',
       'tong ket',

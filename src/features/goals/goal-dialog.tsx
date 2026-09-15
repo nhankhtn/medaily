@@ -9,17 +9,18 @@ import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import { Input, Textarea } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Field } from '@/features/projects/project-dialog'
+import {
+  GOAL_AGGREGATIONS as AGGREGATIONS,
+  GOAL_CATEGORIES as CATEGORIES,
+  GOAL_DIRECTIONS as DIRECTIONS,
+  GOAL_MODES as MODES,
+  GOAL_PERIODS as PERIODS,
+  GOAL_PRIORITIES as PRIORITIES,
+} from '@/lib/goals/options'
 import { METRIC_KEYS, type MetricKey } from '@/lib/types'
 import type { ISODate } from '@/lib/dates'
 import { archiveGoal, saveGoal } from '@/server/actions/goals'
 import type { GoalView } from '@/server/services/goals'
-
-const MODES = ['manual', 'metric', 'milestones'] as const
-const CATEGORIES = ['career', 'health', 'finance', 'knowledge', 'life'] as const
-const PRIORITIES = ['low', 'medium', 'high'] as const
-const AGGREGATIONS = ['sum', 'avg', 'count_days', 'latest'] as const
-const PERIODS = ['total', 'weekly', 'monthly'] as const
-const DIRECTIONS = ['at_least', 'at_most'] as const
 
 /** A starting target that matches the metric's own scale. */
 const SUGGESTED_TARGET: Partial<Record<MetricKey, number>> = {

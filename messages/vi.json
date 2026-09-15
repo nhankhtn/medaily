@@ -1207,8 +1207,38 @@
     "pickFirst": "Gõ / để chọn ghi vào đâu",
     "submitHint": "⌘/Ctrl + Enter",
     "changeTarget": "đổi",
+    "modules": {
+      "finance": "Tài chính",
+      "plan": "Mục tiêu & việc cần làm",
+      "review": "Nhìn lại"
+    },
     "examples": {
-      "finance": "sáng ăn bánh mì 30k, cà phê 25k, hôm qua đổ xăng 100 nghìn"
+      "finance": "sáng ăn bánh mì 30k, cà phê 25k, hôm qua đổ xăng 100 nghìn",
+      "plan": "tuần này nộp báo cáo quý 3, gọi thợ sửa máy lạnh, mai đặt lịch khám răng, từ giờ tới cuối năm học tiếng Anh 30 phút mỗi ngày"
+    },
+    "plan": {
+      "read": "Xem trước",
+      "reading": "Đang đọc…",
+      "reviewHint": "Bỏ tick dòng nào bạn không muốn giữ. Chưa có gì được lưu.",
+      "keep": "Giữ dòng này",
+      "kinds": {
+        "goal": "Mục tiêu",
+        "task": "Việc cần làm"
+      },
+      "makeGoal": "Đổi thành mục tiêu",
+      "makeTask": "Đổi thành việc cần làm",
+      "details": "Chi tiết",
+      "due": "Hạn {date}",
+      "noDue": "Không hạn",
+      "estimate": "Ước tính (phút)",
+      "discard": "Bỏ",
+      "save": "{count, plural, other {Lưu # mục}}",
+      "saved": "{count, plural, other {Đã lưu # mục}}",
+      "someFailed": "{count, plural, other {# dòng chưa lưu được — xem lại rồi thử lại}}",
+      "privacy": "Chỉ đoạn bạn vừa viết được gửi đi. Mục tiêu, việc và mọi thứ bạn đã ghi không rời khỏi máy này.",
+      "nothingFound": "Không thấy việc hay mục tiêu nào trong đoạn này",
+      "rateLimited": "Gửi quá nhiều lần — đợi một phút rồi thử lại",
+      "failed": "Không đọc được đoạn này"
     },
     "review": {
       "intro": "Chọn một khoảng thời gian, hoặc cứ hỏi thẳng.",

@@ -107,7 +107,13 @@ type InteractionResponse = {
 export type GenerateJsonInput = {
   systemInstruction: string
   input: string
-  schema: JsonSchema
+  /**
+   * Optional: the API rejects a schema past some undocumented complexity, and
+   * a caller with many fields per row is better off describing the shape in
+   * its prompt and validating what comes back. The mime type alone is enough
+   * to get JSON.
+   */
+  schema?: JsonSchema
 }
 
 /**
@@ -204,7 +210,11 @@ async function requestJson<T>(
       system_instruction: systemInstruction,
       // Extraction, not authorship: no sampling spread and no long deliberation.
       generation_config: { temperature: 0, thinking_level: 'low' },
-      response_format: { type: 'text', mime_type: 'application/json', schema },
+      response_format: {
+        type: 'text',
+        mime_type: 'application/json',
+        ...(schema ? { schema } : {}),
+      },
     },
     TIMEOUT_MS.json,
   )

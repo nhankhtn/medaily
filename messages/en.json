@@ -1207,8 +1207,38 @@
     "pickFirst": "Type / to choose where it goes",
     "submitHint": "⌘/Ctrl + Enter",
     "changeTarget": "change",
+    "modules": {
+      "finance": "Finance",
+      "plan": "Goals & to-dos",
+      "review": "Looking back"
+    },
     "examples": {
-      "finance": "banh mi 30k this morning, coffee 25k, petrol 100k yesterday"
+      "finance": "banh mi 30k this morning, coffee 25k, petrol 100k yesterday",
+      "plan": "file the Q3 report this week, call the aircon repair guy, book a dentist appointment tomorrow, study English 30 minutes a day until the end of the year"
+    },
+    "plan": {
+      "read": "Preview",
+      "reading": "Reading…",
+      "reviewHint": "Untick anything you don't want. Nothing is saved yet.",
+      "keep": "Keep this row",
+      "kinds": {
+        "goal": "Goal",
+        "task": "To-do"
+      },
+      "makeGoal": "Make it a goal",
+      "makeTask": "Make it a to-do",
+      "details": "Details",
+      "due": "Due {date}",
+      "noDue": "No date",
+      "estimate": "Estimate (min)",
+      "discard": "Discard",
+      "save": "{count, plural, one {Save # item} other {Save # items}}",
+      "saved": "{count, plural, one {Saved # item} other {Saved # items}}",
+      "someFailed": "{count, plural, one {# row could not be saved — check it and try again} other {# rows could not be saved — check them and try again}}",
+      "privacy": "Only the text above is sent. Your goals, to-dos and everything you have logged stay on this machine.",
+      "nothingFound": "No to-dos or goals in that text",
+      "rateLimited": "Too many in a row — wait a minute and try again",
+      "failed": "Could not read that text"
     },
     "review": {
       "intro": "Pick a stretch of time, or just ask.",

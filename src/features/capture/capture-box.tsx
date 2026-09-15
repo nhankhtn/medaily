@@ -17,8 +17,12 @@ import {
 import { cn } from '@/lib/utils'
 import { ReviewChat } from '@/features/capture/review-chat'
 import { FinanceDraftList } from '@/features/finance/draft-list'
+import { PlanReview } from '@/features/capture/plan-review'
 import { useShortcut } from '@/features/shortcuts/provider'
 import { parseTransactionText, type ParseTransactionsResult } from '@/server/actions/finance'
+import { parsePlanText } from '@/server/actions/plan-capture'
+import type { PlanItem } from '@/lib/capture/plan-items'
+import type { ISODate } from '@/lib/dates'
 
 type Parsed = { module: 'finance'; result: Extract<ParseTransactionsResult, { ok: true }> }
 
@@ -33,7 +37,6 @@ type Parsed = { module: 'finance'; result: Extract<ParseTransactionsResult, { ok
  */
 export function CaptureBox({ enabled }: { enabled: boolean }) {
   const t = useTranslations('capture')
-  const tn = useTranslations('nav')
   const tc = useTranslations('common')
   const [open, setOpen] = useState(false)
 
@@ -83,7 +86,7 @@ export function CaptureBox({ enabled }: { enabled: boolean }) {
           {/* Mounted only while open, so a dismissed panel never reopens
               holding a half-typed note and its stale drafts. */}
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">
-            <CaptureForm labelOf={(module) => tn(module.labelKey)} />
+            <CaptureForm labelOf={(module) => t(`modules.${module.key}`)} />
           </div>
         </section>
       ) : (
@@ -128,7 +131,13 @@ function CaptureForm({ labelOf }: { labelOf: (module: CaptureModule) => string }
 
       {/* Each destination owns its own input: a note dumped into finance runs
           to several lines, a question about a week is one. */}
-      {chosen.key === 'finance' ? <FinancePanel /> : <ReviewChat />}
+      {chosen.key === 'finance' ? (
+        <FinancePanel />
+      ) : chosen.key === 'plan' ? (
+        <PlanPanel />
+      ) : (
+        <ReviewChat />
+      )}
     </div>
   )
 }
@@ -222,6 +231,79 @@ function ModulePicker({
       </div>
 
       <p className="text-text-subtle text-xs">{t('pickFirst')}</p>
+    </div>
+  )
+}
+
+function PlanPanel() {
+  const t = useTranslations('capture')
+  const tp = useTranslations('capture.plan')
+  const [text, setText] = useState('')
+  const [read, setRead] = useState<{ items: PlanItem[]; today: ISODate } | null>(null)
+  const [reading, startReading] = useTransition()
+
+  const ready = text.trim().length >= 3
+
+  const parse = () =>
+    startReading(async () => {
+      const result = await parsePlanText({ text })
+      if (!result.ok) {
+        toast.error(tp(result.error === 'rate_limited' ? 'rateLimited' : 'failed'))
+        return
+      }
+      if (result.items.length === 0) {
+        toast.info(tp('nothingFound'))
+        return
+      }
+      setRead({ items: result.items, today: result.today })
+    })
+
+  if (read) {
+    return (
+      <PlanReview
+        items={read.items}
+        today={read.today}
+        onDiscard={() => setRead(null)}
+        onSaved={() => {
+          setRead(null)
+          setText('')
+        }}
+      />
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      <Textarea
+        autoFocus
+        value={text}
+        onChange={(event) => setText(event.target.value)}
+        // Enter is a newline here: a plan is usually a list, not a sentence.
+        onKeyDown={(event) => {
+          if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+            event.preventDefault()
+            if (ready) parse()
+          }
+        }}
+        placeholder={t('examples.plan')}
+        maxLength={2000}
+        rows={4}
+        disabled={reading}
+        className="text-sm"
+      />
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Button type="button" size="sm" onClick={parse} disabled={reading || !ready}>
+          {reading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+          {reading ? tp('reading') : tp('read')}
+        </Button>
+        <span className="text-text-subtle inline-flex items-center gap-1 text-xs">
+          <CornerDownLeft className="size-3" />
+          {t('submitHint')}
+        </span>
+      </div>
+
+      <p className="text-text-subtle text-xs leading-snug">{tp('privacy')}</p>
     </div>
   )
 }
