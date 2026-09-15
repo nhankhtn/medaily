@@ -63,26 +63,45 @@ export async function findTasks(userId: string, projectId?: string): Promise<Pro
 }
 
 /**
- * What is open and either due by `through` or carrying no date at all. The
- * undated ones are the point: a plan for today is not only what fell due.
+ * What one day should show: everything still open that has come due or was
+ * never dated, plus what was due that day and is already finished. A day you
+ * cleared has to read as cleared — dropping the finished rows made it look
+ * like a day you never planned, and left no way to untick a mistake.
+ *
+ * A task due earlier and ticked today is not pulled forward. `completed_at`
+ * is an instant, and which logical day it falls in depends on the rollover
+ * hour, which is the caller's business rather than this query's.
  */
-export async function findOpenTasks(
+export async function findTasksForDay(
   userId: string,
   through: ISODate,
   limit = 100,
 ): Promise<ProjectTask[]> {
-  return db
-    .select()
-    .from(projectTasks)
-    .where(
-      and(
-        eq(projectTasks.userId, userId),
-        ne(projectTasks.status, 'done'),
-        or(isNull(projectTasks.dueDate), lte(projectTasks.dueDate, through)),
-      ),
-    )
-    .orderBy(asc(projectTasks.dueDate), asc(projectTasks.sortOrder), asc(projectTasks.createdAt))
-    .limit(limit)
+  return (
+    db
+      .select()
+      .from(projectTasks)
+      .where(
+        and(
+          eq(projectTasks.userId, userId),
+          or(
+            and(
+              ne(projectTasks.status, 'done'),
+              or(isNull(projectTasks.dueDate), lte(projectTasks.dueDate, through)),
+            ),
+            and(eq(projectTasks.status, 'done'), eq(projectTasks.dueDate, through)),
+          ),
+        ),
+      )
+      // Finished ones last: the day's remaining work is what you came to read.
+      .orderBy(
+        asc(sql`${projectTasks.status} = 'done'`),
+        asc(projectTasks.dueDate),
+        asc(projectTasks.sortOrder),
+        asc(projectTasks.createdAt),
+      )
+      .limit(limit)
+  )
 }
 
 export async function findTask(userId: string, taskId: string): Promise<ProjectTask | null> {
@@ -142,5 +161,7 @@ export async function sumProjectMinutes(
     .where(and(eq(focusSessions.userId, userId), inArray(focusSessions.projectId, projectIds)))
     .groupBy(focusSessions.projectId)
 
-  return new Map(rows.filter((row) => row.projectId).map((row) => [row.projectId as string, row.minutes]))
+  return new Map(
+    rows.filter((row) => row.projectId).map((row) => [row.projectId as string, row.minutes]),
+  )
 }

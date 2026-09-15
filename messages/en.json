@@ -1013,6 +1013,7 @@
     "add": "Add",
     "addPlaceholder": "What needs doing?",
     "markDone": "Mark done",
+    "markNotDone": "Mark not done",
     "overdue": "Overdue",
     "planTomorrow": "Plan tomorrow",
     "backToToday": "Back to today",

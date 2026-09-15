@@ -3,7 +3,7 @@ import { addDays, today as todayOf, type ISODate } from '@/lib/dates'
 import type { PlannedBlock, ProjectTask, Reminder } from '@/lib/db/schema'
 import { findLatestLogBefore } from '@/server/repositories/daily'
 import { findPlannedBlocks } from '@/server/repositories/planning'
-import { findOpenTasks, findProjects } from '@/server/repositories/projects'
+import { findProjects, findTasksForDay } from '@/server/repositories/projects'
 import { findReminders } from '@/server/repositories/people'
 import { dayContextOf, getSettings } from '@/server/services/settings'
 
@@ -13,7 +13,7 @@ export type DayPlan = {
   date: ISODate
   /** The real today, so the view can say whether it is looking ahead. */
   today: ISODate
-  /** Due on the day being looked at, or overdue and still open. */
+  /** The day's list: due then, overdue and still open, or done that day. */
   tasks: DayTask[]
   /** Open, but never given a day. A backlog, not part of the day's plan. */
   unscheduled: DayTask[]
@@ -34,7 +34,7 @@ export const getDayPlan = cache(async (requested?: ISODate): Promise<DayPlan> =>
   const date = requested ?? today
 
   const [tasks, projects, blocks, reminders, previousLog] = await Promise.all([
-    findOpenTasks(settings.userId, date),
+    findTasksForDay(settings.userId, date),
     findProjects(settings.userId),
     findPlannedBlocks(settings.userId, { start: date, end: date }),
     findReminders(settings.userId, date),
@@ -45,7 +45,7 @@ export const getDayPlan = cache(async (requested?: ISODate): Promise<DayPlan> =>
   const expand = (task: ProjectTask): DayTask => ({
     ...task,
     projectName: task.projectId ? (nameOf.get(task.projectId) ?? null) : null,
-    overdue: task.dueDate !== null && task.dueDate < date,
+    overdue: task.status !== 'done' && task.dueDate !== null && task.dueDate < date,
   })
 
   return {
