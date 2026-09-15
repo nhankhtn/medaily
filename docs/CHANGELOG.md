@@ -8,8 +8,25 @@ than the code.
 
 ## 2026-09-15
 
+**Added**
+
+- Quick capture reads a paragraph of intentions and splits it into goals and
+  to-dos. Documented under *Getting around*, with the rule that decides which
+  is which and what leaves the machine.
+- The goal form can be filled from a sentence, with the same draft-then-confirm
+  shape finance capture uses.
+- Topics can finally be created. The action existed since the first release but
+  nothing called it, so the topic picker on the timer was always empty. A
+  **Manage** button on *Time by topic* now adds, renames and archives them.
+- A fifth custom-metric kind, `duration`, measured in minutes (`0013`). The
+  timer can run one, which is how an activity the app never heard of gets
+  timed rather than typed.
+
 **Changed**
 
+- `features.md` — the `/search` page is gone; the command palette is now the
+  search, over every text-bearing module. The features doc was updated with
+  that commit but the changelog line was missed, so it is recorded here.
 - `features.md` — the Today page is gone; its content is now the Calendar's
   **Day** view, which the Calendar opens on. Rewrote the section and the table
   of what shows on a day.

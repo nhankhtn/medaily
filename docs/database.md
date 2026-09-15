@@ -139,7 +139,7 @@ ceiling.
 | --- | --- | --- |
 | `key` | text, not null | What a habit or a goal binds to. Lowercase slug, proposed from the English name but editable, and never one of the built-in metric names |
 | `label_en`, `label_vi` | text, not null | Shown per locale |
-| `type` | enum | `number`, `boolean`, `scale`, `text` — decides which input the daily log renders |
+| `type` | enum | `number`, `duration`, `boolean`, `scale`, `text` — decides which input the daily log renders. `duration` is minutes, and is the only kind the timer offers to run |
 | `unit` | text | Display only. No conversion, no maths |
 | `min`, `max` | numeric | Bounds for the stepper |
 | `aggregation` | enum | How a goal totals it: `sum`, `avg`, `count_days`, `latest` |

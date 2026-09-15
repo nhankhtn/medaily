@@ -44,7 +44,10 @@ The built-in fields are not the ceiling.
 
 **Settings → Your own activities → New activity.** Give it a name in both
 languages; the key fills itself from the English name and stays editable. Pick
-a kind — number, scale 1–10, yes/no, or text — and a unit if it helps.
+a kind — number, minutes, scale 1–10, yes/no, or text — and a unit if it helps.
+**Minutes** is the one that earns more than an input box: the timer offers it
+alongside the built-in activities, so an activity you invented can be timed
+like any other.
 
 It then appears on the daily log under **Your own**, and **a habit or a goal
 can bind to it exactly like a built-in metric**. Removing one hides it from
@@ -109,6 +112,11 @@ Longer arcs, in one of three shapes:
 
 A project can be attached to a goal, which is how work connects to intent.
 
+Goals can also arrive from quick capture: describe what you want in a
+sentence and the draft lands in the goal form for you to check. A metric it
+invented, or a deadline in the wrong century, is dropped before the form ever
+sees it.
+
 ---
 
 ## Projects — `/projects`
@@ -129,7 +137,8 @@ around the app, and the tab title carries the clock so another tab still shows
 the run.
 
 On finishing, a focus run becomes a `focus_session` and lands in the day's
-study or deep-work minutes; a workout run becomes a workout. Runs under the
+study or deep-work minutes; a workout run becomes a workout; one of your own
+minute-measured activities is added onto that day's value for it. Runs under the
 minimum are discarded rather than recorded. The screen is kept awake while a
 run is going.
 
@@ -157,6 +166,12 @@ calendar app.
 
 **Learning** (`/learning`) tracks topics, resources (books, courses, videos)
 with status and progress, and sessions.
+
+**Topics** are the areas you put hours into — Postgres, English, system
+design. **Manage** on the *Time by topic* card opens them: add one, rename it,
+or put it away. Pick a topic when you start a timed run and the chart fills
+itself; putting one away hides it from the pickers and leaves the sessions
+already filed under it alone.
 
 **Knowledge** (`/knowledge`) holds notes in Markdown. `[[Wiki links]]` connect
 them, and a link to a note that does not exist yet is kept rather than
@@ -248,7 +263,26 @@ what it is. The same box jumps to any page, logs a metric without leaving the
 screen (`sleep 7.5`, `study 45`, `energy 8`), and opens a bare date like
 `2026-09-01`.
 
-**Quick capture** — `⌘J`, from anywhere.
+**Quick capture** — `⌘J`, from anywhere. Type `/` and the box lists where a
+note can go; you pick, rather than it guessing, so a note that reads like two
+things cannot land in the wrong one.
+
+| `/` | What it reads |
+| --- | --- |
+| **Goals & to-dos** | A paragraph of intentions, split into goals to pursue and tasks to tick off |
+| **Finance** | A day's spending from one sentence — *"banh mi 30k, coffee 25k"* |
+| **Reviews** | A question about how a week or a month went |
+
+**Nothing is written until you confirm.** Goals and to-dos land as a list you
+untick, edit and retype — including switching a row between goal and to-do,
+which is the call the split gets wrong most often. Only the text you typed
+leaves the machine: not your existing goals, not your tasks, not a number you
+have logged.
+
+The split follows one rule. **A to-do is finished once and ticked off; a goal
+is pursued over time and has a sense of progress.** Where it could honestly be
+either, it comes back as a to-do — a to-do is one line to delete, a goal is a
+record to unpick.
 
 **Keyboard shortcuts** — press `?`, or use the button beside the capture
 launcher, or open it from Settings. **Every shortcut is editable**: click a
@@ -297,5 +331,5 @@ Everything below is off unless configured, and the UI hides rather than breaks.
 | --- | --- | --- |
 | Google sign-in | `NEXT_PUBLIC_FIREBASE_*` | The Google button does not appear |
 | AI narrative | `ANTHROPIC_API_KEY` | Reviews offer no narrative |
-| Quick capture | Gemini key | Capture launcher hidden |
+| Quick capture | Gemini key | Capture launcher hidden — finance, goals and to-dos all go through it |
 | Photos | `CLOUDINARY_*` | Photo UI hidden |
