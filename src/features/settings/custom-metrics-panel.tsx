@@ -14,7 +14,7 @@ import { metricKeyFrom } from '@/lib/metrics/key'
 import { METRIC_KEYS } from '@/lib/types'
 import { archiveCustomMetric, saveCustomMetric } from '@/server/actions/custom-metrics'
 
-const TYPES = ['number', 'scale', 'boolean', 'text'] as const
+const TYPES = ['number', 'duration', 'scale', 'boolean', 'text'] as const
 const AGGREGATIONS = ['sum', 'avg', 'count_days', 'latest'] as const
 
 /**

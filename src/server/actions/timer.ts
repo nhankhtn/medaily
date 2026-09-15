@@ -5,28 +5,17 @@ import { z } from 'zod'
 import { getCurrentUserId } from '@/lib/auth/current-user'
 import { logicalDateOf } from '@/lib/dates'
 import { PATHS } from '@/lib/paths'
-import {
-  elapsedSeconds,
-  minutesOf,
-  pausedRun,
-  resumedRun,
-  tooShort,
-  wasCapped,
-} from '@/lib/timer'
-import {
-  ACTIVITY_IDS,
-  activityOf,
-  isActivityId,
-  type ActivityId,
-} from '@/lib/timer/activities'
+import { elapsedSeconds, minutesOf, pausedRun, resumedRun, tooShort, wasCapped } from '@/lib/timer'
+import { activityOf, isActivityId, type ActivityId } from '@/lib/timer/activities'
 import { saveWorkout } from '@/server/actions/health'
+import { findCustomMetric } from '@/server/repositories/custom-metrics'
 import {
   clearTimer,
   findTimer,
   startTimer as persistTimer,
   updateTimer,
 } from '@/server/repositories/timer'
-import { addDailyMinutes } from '@/server/services/daily-minutes'
+import { addCustomMinutes, addDailyMinutes } from '@/server/services/daily-minutes'
 import { saveSessionAndDerive } from '@/server/services/focus'
 import { dayContextOf, getSettings } from '@/server/services/settings'
 
@@ -48,7 +37,7 @@ function revalidateTimer(date?: string) {
 }
 
 const startSchema = z.object({
-  activity: z.enum(ACTIVITY_IDS as [ActivityId, ...ActivityId[]]).default('learning'),
+  activity: z.custom<ActivityId>(isActivityId).default('learning'),
   mode: z.enum(['stopwatch', 'countdown']).default('stopwatch'),
   targetMinutes: z.number().int().min(1).max(1440).nullable().optional(),
   workoutType: z.string().max(80).nullable().optional(),
@@ -64,9 +53,19 @@ export async function startTimer(input: unknown) {
   const { activity: id, mode, targetMinutes, workoutType, topicId, projectId, note } = parsed.data
   const activity = activityOf(id)
   const isFocus = activity.sink === 'focus'
+  const userId = await getCurrentUserId()
+
+  // Refuse an activity pointing at a metric that is gone: the run would count
+  // an hour and then have nowhere to put it.
+  if (activity.sink === 'custom') {
+    const metric = await findCustomMetric(userId, activity.metricId)
+    if (!metric || metric.archivedAt || metric.type !== 'duration') {
+      return { ok: false as const, error: 'invalid_input' as const }
+    }
+  }
 
   await persistTimer({
-    userId: await getCurrentUserId(),
+    userId,
     startedAt: new Date(),
     pausedAt: null,
     accumulatedSeconds: 0,
@@ -78,7 +77,7 @@ export async function startTimer(input: unknown) {
     // keeps a run started here legible to it until that column is dropped.
     kind: isFocus ? activity.kind : 'learning',
     target: activity.sink === 'workout' ? 'workout' : 'focus',
-    workoutType: activity.sink === 'workout' ? (workoutType?.trim() || null) : null,
+    workoutType: activity.sink === 'workout' ? workoutType?.trim() || null : null,
     topicId: isFocus ? (topicId ?? null) : null,
     projectId: isFocus ? (projectId ?? null) : null,
     note: note ?? null,
@@ -169,6 +168,14 @@ export async function stopTimer(input?: unknown) {
       userId: settings.userId,
       date,
       column: activity.column,
+      minutes,
+      weekStart: settings.weekStart,
+    })
+  } else if (activity.sink === 'custom') {
+    await addCustomMinutes({
+      userId: settings.userId,
+      date,
+      metricId: activity.metricId,
       minutes,
       weekStart: settings.weekStart,
     })

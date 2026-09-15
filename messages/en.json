@@ -439,6 +439,7 @@
       "max": "Highest",
       "types": {
         "number": "Number",
+        "duration": "Minutes (can be timed)",
         "scale": "Scale 1-10",
         "boolean": "Yes / no",
         "text": "Text"
@@ -651,7 +652,8 @@
       "english": "English",
       "reading": "Reading",
       "exercise": "Exercise",
-      "entertainment": "Entertainment"
+      "entertainment": "Entertainment",
+      "customGone": "Removed activity"
     },
     "topic": "Topic",
     "project": "Project",

@@ -30,7 +30,7 @@ const metricSchema = z.object({
   key: KEY,
   labelEn: z.string().min(1).max(60),
   labelVi: z.string().min(1).max(60),
-  type: z.enum(['number', 'boolean', 'scale', 'text']),
+  type: z.enum(['number', 'boolean', 'scale', 'text', 'duration']),
   unit: z.string().max(20).nullable().optional(),
   min: z.number().finite().nullable().optional(),
   max: z.number().finite().nullable().optional(),

@@ -35,6 +35,9 @@ export const customMetricTypeEnum = pgEnum('custom_metric_type', [
   'boolean',
   'scale',
   'text',
+  // Minutes. Its own type rather than a number with a unit, so the form can
+  // offer minute entry and the timer can offer to run it.
+  'duration',
 ])
 
 export const insightSeverityEnum = pgEnum('insight_severity', ['low', 'medium', 'high', 'win'])

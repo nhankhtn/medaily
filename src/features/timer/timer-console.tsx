@@ -13,6 +13,7 @@ import { formatDuration, TIMER_PRESETS_MINUTES } from '@/lib/timer'
 import {
   activityOf,
   DEFAULT_ACTIVITY,
+  isCustomActivityId,
   TIMED_ACTIVITIES,
   takesTopicAndProject,
   type ActivityId,
@@ -30,7 +31,7 @@ import { useShortcut } from '@/features/shortcuts/provider'
 import { chime, useElapsedSeconds, useNow, useWakeLock } from './use-run'
 
 /** Where a stopped run lands, for the toast that says so. */
-const MODULE_OF = { focus: 'learning', workout: 'health', daily: 'daily' } as const
+const MODULE_OF = { focus: 'learning', workout: 'health', daily: 'daily', custom: 'daily' } as const
 
 export function TimerConsole({ data }: { data: TimerPageData }) {
   const t = useTranslations('timer')
@@ -48,6 +49,14 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
   const countdown = timer?.mode === 'countdown' && timer.targetSeconds !== null
   const remaining = countdown ? (timer?.targetSeconds ?? 0) - elapsed : 0
   const done = countdown && remaining <= 0
+
+  /**
+   * An activity the user invented carries no translation — its name is the one
+   * they typed, and it arrives with the page.
+   */
+  const labelOf = (id: ActivityId): string =>
+    data.customActivities.find((option) => option.id === id)?.label ??
+    (isCustomActivityId(id) ? t('activities.customGone') : t(`activities.${id}`))
 
   // Setup state, only meaningful while nothing is running.
   const [activity, setActivity] = useState<ActivityId>(DEFAULT_ACTIVITY)
@@ -86,9 +95,7 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
         )
         return
       }
-      toast.success(
-        t('savedTo', { minutes: result.minutes, where: tn(MODULE_OF[result.sink]) }),
-      )
+      toast.success(t('savedTo', { minutes: result.minutes, where: tn(MODULE_OF[result.sink]) }))
       if (result.capped) toast.warning(t('capped'), { duration: 8000 })
       setNote('')
     })
@@ -108,7 +115,7 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
             <p className="text-5xl font-semibold tabular-nums" suppressHydrationWarning>
               {now ? format.dateTime(now, 'clock') : '--:--:--'}
             </p>
-            <p className="text-sm text-text-muted" suppressHydrationWarning>
+            <p className="text-text-muted text-sm" suppressHydrationWarning>
               {now ? format.dateTime(now, 'fullDay') : ''}
             </p>
           </CardBody>
@@ -116,7 +123,7 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
 
         <Card className={cn(done && 'border-accent')}>
           <CardHeader
-            title={timer ? t(`activities.${timer.activity}`) : t('newRun')}
+            title={timer ? labelOf(timer.activity) : t('newRun')}
             action={
               timer ? (
                 <span
@@ -128,7 +135,7 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
                   <span
                     className={cn(
                       'size-2 rounded-full',
-                      running ? 'animate-pulse bg-accent' : 'bg-text-subtle',
+                      running ? 'bg-accent animate-pulse' : 'bg-text-subtle',
                     )}
                   />
                   {t(running ? 'running' : 'paused')}
@@ -150,9 +157,11 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
                   done={done}
                 />
 
-                <p className="text-center text-sm text-text-muted">
-                  {describe(timer, data, t)}
-                  {done ? <span className="ml-2 font-medium text-accent">{t('reached')}</span> : null}
+                <p className="text-text-muted text-center text-sm">
+                  {describe(timer, data, t, labelOf)}
+                  {done ? (
+                    <span className="text-accent ml-2 font-medium">{t('reached')}</span>
+                  ) : null}
                 </p>
 
                 <div className="flex flex-wrap justify-center gap-2">
@@ -173,25 +182,28 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
                     {t('discard')}
                   </Button>
                 </div>
-                <p className="hidden text-xs text-text-subtle sm:block">{t('spaceHint')}</p>
+                <p className="text-text-subtle hidden text-xs sm:block">{t('spaceHint')}</p>
               </div>
             ) : (
               <div className="space-y-3">
                 <span className="flex flex-wrap gap-1.5">
-                  {TIMED_ACTIVITIES.map((option) => (
+                  {[
+                    ...TIMED_ACTIVITIES.map((option) => option.id),
+                    ...data.customActivities.map((option) => option.id),
+                  ].map((id) => (
                     <button
-                      key={option.id}
+                      key={id}
                       type="button"
-                      onClick={() => setActivity(option.id)}
-                      aria-pressed={activity === option.id}
+                      onClick={() => setActivity(id)}
+                      aria-pressed={activity === id}
                       className={cn(
                         'rounded-full border px-3 py-1.5 text-sm transition-colors',
-                        activity === option.id
-                          ? 'border-accent bg-accent-soft font-medium text-accent'
+                        activity === id
+                          ? 'border-accent bg-accent-soft text-accent font-medium'
                           : 'border-border-base bg-surface-2 text-text-muted hover:text-text',
                       )}
                     >
-                      {t(`activities.${option.id}`)}
+                      {labelOf(id)}
                     </button>
                   ))}
                 </span>
@@ -237,7 +249,7 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
                             key={type}
                             type="button"
                             onClick={() => setWorkoutType(type)}
-                            className="rounded-full border border-border-base bg-surface-2 px-2.5 py-1 text-xs text-text-muted hover:text-text"
+                            className="border-border-base bg-surface-2 text-text-muted hover:text-text rounded-full border px-2.5 py-1 text-xs"
                           >
                             {type}
                           </button>
@@ -267,7 +279,7 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
                         className={cn(
                           'rounded-full border px-3 py-1 text-sm',
                           minutes === preset
-                            ? 'border-accent bg-accent-soft font-medium text-accent'
+                            ? 'border-accent bg-accent-soft text-accent font-medium'
                             : 'border-border-base bg-surface-2 text-text-muted hover:text-text',
                         )}
                       >
@@ -304,7 +316,7 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
                     )}
                     <span className="hidden sm:inline">{t('start')}</span>
                   </Button>
-                  <span className="hidden text-xs text-text-subtle sm:inline">
+                  <span className="text-text-subtle hidden text-xs sm:inline">
                     {t('spaceHint')}
                   </span>
                 </div>
@@ -327,26 +339,28 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
           <CardHeader title={t('recent')} />
           <CardBody>
             {data.recentSessions.length === 0 && data.recentWorkouts.length === 0 ? (
-              <p className="text-sm text-text-subtle">{t('noRuns')}</p>
+              <p className="text-text-subtle text-sm">{t('noRuns')}</p>
             ) : (
-              <ul className="divide-y divide-border-base">
+              <ul className="divide-border-base divide-y">
                 {data.recentWorkouts.map((workout) => (
                   <li key={workout.id} className="flex items-center gap-3 py-2 text-sm">
-                    <Dumbbell className="size-4 shrink-0 text-text-subtle" />
+                    <Dumbbell className="text-text-subtle size-4 shrink-0" />
                     <span className="min-w-0 flex-1 truncate">{workout.type}</span>
-                    <span className="shrink-0 text-xs tabular-nums text-text-subtle">
-                      {formatDayMonth(workout.performedOn)} · {t('minutesShort', { minutes: workout.durationMinutes })}
+                    <span className="text-text-subtle shrink-0 text-xs tabular-nums">
+                      {formatDayMonth(workout.performedOn)} ·{' '}
+                      {t('minutesShort', { minutes: workout.durationMinutes })}
                     </span>
                   </li>
                 ))}
                 {data.recentSessions.map((session) => (
                   <li key={session.id} className="flex items-center gap-3 py-2 text-sm">
-                    <Play className="size-4 shrink-0 text-text-subtle" />
+                    <Play className="text-text-subtle size-4 shrink-0" />
                     <span className="min-w-0 flex-1 truncate">
                       {session.note ?? t(`activities.${session.kind}`)}
                     </span>
-                    <span className="shrink-0 text-xs tabular-nums text-text-subtle">
-                      {formatDayMonth(session.sessionDate)} · {t('minutesShort', { minutes: session.minutes })}
+                    <span className="text-text-subtle shrink-0 text-xs tabular-nums">
+                      {formatDayMonth(session.sessionDate)} ·{' '}
+                      {t('minutesShort', { minutes: session.minutes })}
                     </span>
                   </li>
                 ))}
@@ -369,11 +383,9 @@ function Total({
   t: ReturnType<typeof useTranslations<'timer'>>
 }) {
   return (
-    <div className="rounded-[var(--radius)] border border-border-base bg-surface-2 px-3 py-2.5">
-      <p className="truncate text-xs text-text-muted">{label}</p>
-      <p className="mt-0.5 text-xl font-semibold tabular-nums">
-        {t('minutesShort', { minutes })}
-      </p>
+    <div className="border-border-base bg-surface-2 rounded-[var(--radius)] border px-3 py-2.5">
+      <p className="text-text-muted truncate text-xs">{label}</p>
+      <p className="mt-0.5 text-xl font-semibold tabular-nums">{t('minutesShort', { minutes })}</p>
     </div>
   )
 }
@@ -414,11 +426,14 @@ function Dial({
             strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={circumference * (1 - progress)}
-            className={cn('transition-[stroke-dashoffset] duration-1000 ease-linear', done ? 'stroke-good' : 'stroke-accent')}
+            className={cn(
+              'transition-[stroke-dashoffset] duration-1000 ease-linear',
+              done ? 'stroke-good' : 'stroke-accent',
+            )}
           />
         </svg>
       ) : (
-        <span className="absolute inset-0 rounded-full border-[10px] border-surface-2" />
+        <span className="border-surface-2 absolute inset-0 rounded-full border-[10px]" />
       )}
 
       <span
@@ -446,7 +461,7 @@ function Segmented({
   onChange: (value: string) => void
 }) {
   return (
-    <div className="inline-flex rounded-full border border-border-base bg-surface-2 p-0.5">
+    <div className="border-border-base bg-surface-2 inline-flex rounded-full border p-0.5">
       {options.map((option) => (
         <button
           key={option.value}
@@ -456,7 +471,7 @@ function Segmented({
           className={cn(
             'rounded-full px-4 py-1.5 text-sm transition-colors',
             value === option.value
-              ? 'bg-surface font-medium text-text shadow-[var(--shadow-card)]'
+              ? 'bg-surface text-text font-medium shadow-[var(--shadow-card)]'
               : 'text-text-muted hover:text-text',
           )}
         >
@@ -470,7 +485,7 @@ function Segmented({
 function Labelled({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block space-y-1.5">
-      <span className="text-xs font-medium text-text-muted">{label}</span>
+      <span className="text-text-muted text-xs font-medium">{label}</span>
       {children}
     </label>
   )
@@ -480,13 +495,14 @@ function describe(
   timer: NonNullable<TimerPageData['timer']>,
   data: TimerPageData,
   t: ReturnType<typeof useTranslations<'timer'>>,
+  labelOf: (id: ActivityId) => string,
 ): string {
   const activity = activityOf(timer.activity)
   if (activity.sink === 'workout') {
-    return timer.workoutType || t(`activities.${activity.id}`)
+    return timer.workoutType || labelOf(activity.id)
   }
 
-  const parts = [t(`activities.${activity.id}`)]
+  const parts = [labelOf(activity.id)]
   const topic = data.topics.find((item) => item.id === timer.topicId)
   const project = data.projects.find((item) => item.id === timer.projectId)
   if (topic) parts.push(topic.name)
@@ -521,4 +537,3 @@ function useTabTitle(label: string | null): void {
     }
   }, [label])
 }
-

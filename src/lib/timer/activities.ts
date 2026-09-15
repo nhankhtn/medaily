@@ -9,6 +9,7 @@
  *   focus   → a focus session, which `v_daily_effective` resolves into the day
  *   workout → a workouts row, which back-fills the day's exercise minutes
  *   daily   → added straight onto that day's column
+ *   custom  → added onto a metric the user invented, by its id
  */
 
 /** Daily-log columns that hold minutes and have no table of their own. */
@@ -16,10 +17,20 @@ export type DailyMinutesColumn = 'readingMinutes' | 'entertainmentMinutes' | 'en
 
 export type FocusKind = 'learning' | 'deep_work' | 'project'
 
+/**
+ * A metric the user invented, addressed by its own id. The id travels inside
+ * the activity id, so resolving one needs no lookup and `activityOf` can stay
+ * a pure function the client calls too.
+ */
+export const CUSTOM_PREFIX = 'custom:'
+
+export type CustomActivityId = `${typeof CUSTOM_PREFIX}${string}`
+
 export type TimedActivity =
   | { id: FocusKind; sink: 'focus'; kind: FocusKind }
   | { id: 'exercise'; sink: 'workout' }
   | { id: 'reading' | 'entertainment' | 'english'; sink: 'daily'; column: DailyMinutesColumn }
+  | { id: CustomActivityId; sink: 'custom'; metricId: string }
 
 export const TIMED_ACTIVITIES: readonly TimedActivity[] = [
   { id: 'learning', sink: 'focus', kind: 'learning' },
@@ -34,15 +45,29 @@ export const TIMED_ACTIVITIES: readonly TimedActivity[] = [
 
 export type ActivityId = TimedActivity['id']
 
+/** The built-in ids only; a custom one is not in any list. */
 export const ACTIVITY_IDS = TIMED_ACTIVITIES.map((activity) => activity.id)
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+export const customActivityId = (metricId: string): CustomActivityId =>
+  `${CUSTOM_PREFIX}${metricId}`
+
+export const isCustomActivityId = (value: string): value is CustomActivityId =>
+  value.startsWith(CUSTOM_PREFIX) && UUID.test(value.slice(CUSTOM_PREFIX.length))
 
 export const DEFAULT_ACTIVITY: ActivityId = 'learning'
 
 export const isActivityId = (value: unknown): value is ActivityId =>
-  typeof value === 'string' && (ACTIVITY_IDS as readonly string[]).includes(value)
+  typeof value === 'string' &&
+  ((ACTIVITY_IDS as readonly string[]).includes(value) || isCustomActivityId(value))
 
-export const activityOf = (id: ActivityId): TimedActivity =>
-  TIMED_ACTIVITIES.find((activity) => activity.id === id) ?? TIMED_ACTIVITIES[0]!
+export function activityOf(id: ActivityId): TimedActivity {
+  if (isCustomActivityId(id)) {
+    return { id, sink: 'custom', metricId: id.slice(CUSTOM_PREFIX.length) }
+  }
+  return TIMED_ACTIVITIES.find((activity) => activity.id === id) ?? TIMED_ACTIVITIES[0]!
+}
 
 /** Only a focus run can be attributed to a topic or a project. */
 export const takesTopicAndProject = (id: ActivityId): boolean => activityOf(id).sink === 'focus'

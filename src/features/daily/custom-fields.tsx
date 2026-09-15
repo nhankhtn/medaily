@@ -2,6 +2,7 @@
 
 import { useLocale, useTranslations } from 'next-intl'
 import { Input } from '@/components/ui/input'
+import { MinuteInput } from '@/components/ui/minute-input'
 import { ScaleInput } from '@/components/ui/scale-input'
 import { Stepper } from '@/components/ui/stepper'
 import type { CustomMetric } from '@/lib/db/schema'
@@ -40,7 +41,13 @@ export function CustomFields({
 
         return (
           <Field key={metric.id} label={label} hint={metric.unit ?? undefined}>
-            {metric.type === 'scale' ? (
+            {metric.type === 'duration' ? (
+              <MinuteInput
+                name={label}
+                value={typeof value === 'number' ? value : null}
+                onChange={(next) => onChange(metric.id, next)}
+              />
+            ) : metric.type === 'scale' ? (
               <ScaleInput
                 name={label}
                 value={typeof value === 'number' ? value : null}

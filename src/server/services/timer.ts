@@ -1,9 +1,11 @@
 import { cache } from 'react'
+import { getLocale } from 'next-intl/server'
 import { getCurrentUserId } from '@/lib/auth/current-user'
 import type { Workout } from '@/lib/db/schema'
 import { rangeOfLastDays, today as todayOf, type ISODate } from '@/lib/dates'
 import { elapsedSeconds } from '@/lib/timer'
-import { isActivityId, type ActivityId } from '@/lib/timer/activities'
+import { customActivityId, isActivityId, type ActivityId } from '@/lib/timer/activities'
+import { findCustomMetrics } from '@/server/repositories/custom-metrics'
 import { findProjects } from '@/server/repositories/projects'
 import { findRecentWorkouts } from '@/server/repositories/health'
 import { findSessions, findTopics } from '@/server/repositories/learning'
@@ -26,16 +28,26 @@ export type RunningTimer = {
   note: string | null
 }
 
+/** One of the user's own activities, ready to be offered by the clock. */
+export type CustomActivity = { id: ActivityId; label: string }
+
 export type TimerPageData = {
   today: ISODate
   timer: RunningTimer | null
+  customActivities: CustomActivity[]
   topics: { id: string; name: string }[]
   projects: { id: string; name: string }[]
   workoutTypes: string[]
   todayFocusMinutes: number
   todayWorkoutMinutes: number
   recentWorkouts: Workout[]
-  recentSessions: { id: string; minutes: number; kind: string; sessionDate: ISODate; note: string | null }[]
+  recentSessions: {
+    id: string
+    minutes: number
+    kind: string
+    sessionDate: ISODate
+    note: string | null
+  }[]
 }
 
 export const getRunningTimer = cache(async (): Promise<RunningTimer | null> => {
@@ -63,26 +75,43 @@ export const getTimerPageData = cache(async (): Promise<TimerPageData> => {
   const userId = await getCurrentUserId()
   const today = todayOf(dayContextOf(settings))
 
-  const [timer, topics, projects, sessions, workouts] = await Promise.all([
+  const [timer, topics, projects, sessions, workouts, metrics, locale] = await Promise.all([
     getRunningTimer(),
     findTopics(userId),
     findProjects(userId),
     findSessions(userId, rangeOfLastDays(today, 7), 100),
     findRecentWorkouts(userId, 8),
+    findCustomMetrics(userId),
+    getLocale(),
   ])
 
-  const sumToday = <T,>(rows: T[], date: (row: T) => ISODate, minutes: (row: T) => number) =>
+  const sumToday = <T>(rows: T[], date: (row: T) => ISODate, minutes: (row: T) => number) =>
     rows.filter((row) => date(row) === today).reduce((sum, row) => sum + minutes(row), 0)
 
   return {
     today,
     timer,
+    // Only the ones measured in minutes: timing a 1-10 score means nothing.
+    customActivities: metrics
+      .filter((metric) => metric.type === 'duration')
+      .map((metric) => ({
+        id: customActivityId(metric.id),
+        label: locale === 'vi' ? metric.labelVi : metric.labelEn,
+      })),
     topics: topics.map((topic) => ({ id: topic.id, name: topic.name })),
     projects: projects.map((project) => ({ id: project.id, name: project.name })),
     // Past types, so a regular session is one tap rather than retyping.
     workoutTypes: [...new Set(workouts.map((workout) => workout.type))].slice(0, 8),
-    todayFocusMinutes: sumToday(sessions, (s) => s.sessionDate, (s) => s.minutes),
-    todayWorkoutMinutes: sumToday(workouts, (w) => w.performedOn, (w) => w.durationMinutes),
+    todayFocusMinutes: sumToday(
+      sessions,
+      (s) => s.sessionDate,
+      (s) => s.minutes,
+    ),
+    todayWorkoutMinutes: sumToday(
+      workouts,
+      (w) => w.performedOn,
+      (w) => w.durationMinutes,
+    ),
     recentWorkouts: workouts.slice(0, 5),
     recentSessions: sessions.slice(0, 5).map((session) => ({
       id: session.id,

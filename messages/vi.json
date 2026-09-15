@@ -439,6 +439,7 @@
       "max": "Cao nhất",
       "types": {
         "number": "Con số",
+        "duration": "Thời lượng (bấm giờ được)",
         "scale": "Thang 1-10",
         "boolean": "Có / không",
         "text": "Chữ"
@@ -651,7 +652,8 @@
       "english": "Tiếng Anh",
       "reading": "Đọc sách",
       "exercise": "Tập luyện",
-      "entertainment": "Giải trí"
+      "entertainment": "Giải trí",
+      "customGone": "Hoạt động đã gỡ"
     },
     "topic": "Chủ đề",
     "project": "Dự án",

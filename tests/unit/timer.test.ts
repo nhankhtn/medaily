@@ -11,6 +11,12 @@ import {
   wasCapped,
   type TimerRun,
 } from '@/lib/timer'
+import {
+  activityOf,
+  customActivityId,
+  isActivityId,
+  takesTopicAndProject,
+} from '@/lib/timer/activities'
 
 const at = (iso: string) => new Date(iso)
 const run = (over: Partial<TimerRun> = {}): TimerRun => ({
@@ -143,5 +149,30 @@ describe('the floor on a run', () => {
     expect(minutesOf(89)).toBe(1)
     expect(minutesOf(91)).toBe(2)
     expect(minutesOf(25 * 60)).toBe(25)
+  })
+})
+
+describe('a custom activity', () => {
+  const metricId = '6f3a9c1e-2b4d-4f88-9c10-7d5e8a2b3c4d'
+  const id = customActivityId(metricId)
+
+  it('carries the metric id, so resolving one needs no lookup', () => {
+    expect(activityOf(id)).toEqual({ id, sink: 'custom', metricId })
+  })
+
+  it('is an activity id, and a built-in one still is too', () => {
+    expect(isActivityId(id)).toBe(true)
+    expect(isActivityId('english')).toBe(true)
+  })
+
+  it('refuses a prefix with nothing usable behind it', () => {
+    expect(isActivityId('custom:')).toBe(false)
+    expect(isActivityId('custom:not-a-uuid')).toBe(false)
+    expect(isActivityId('custom')).toBe(false)
+  })
+
+  it('takes no topic or project — only a focus run is attributed', () => {
+    expect(takesTopicAndProject(id)).toBe(false)
+    expect(takesTopicAndProject('deep_work')).toBe(true)
   })
 })

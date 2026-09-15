@@ -1,0 +1,1 @@
+ALTER TYPE "public"."custom_metric_type" ADD VALUE 'duration';
