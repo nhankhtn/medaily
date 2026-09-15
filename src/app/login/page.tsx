@@ -1,4 +1,5 @@
 import { getTranslations } from 'next-intl/server'
+import { Logo } from '@/components/brand/logo'
 import { LocaleSwitcher } from '@/components/shell/locale-switcher'
 import { GoogleButton } from '@/features/auth/google-button'
 import { LoginForm } from '@/features/auth/login-form'
@@ -14,9 +15,7 @@ export default async function LoginPage({
     <div className="flex min-h-dvh items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm space-y-6">
         <div className="flex items-center justify-between">
-          <span className="flex size-10 items-center justify-center rounded-xl bg-accent text-sm font-semibold text-accent-text">
-            OS
-          </span>
+          <Logo size={40} className="rounded-xl" />
           <LocaleSwitcher />
         </div>
 
