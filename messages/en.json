@@ -296,6 +296,7 @@
   },
   "goals": {
     "title": "Goals",
+    "reorder": "Move {name}, {position} of {total}. Drag, or use the arrow keys",
     "noneYet": "No goals yet",
     "noneYetBody": "Goals can track themselves from the metrics you already log.",
     "create": "New goal",

@@ -4,14 +4,30 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { getCurrentUserId } from '@/lib/auth/current-user'
 import { PATHS } from '@/lib/paths'
-import { METRIC_KEYS } from '@/lib/types'
 import { isoDateSchema } from '@/lib/validation/daily'
 import {
   findMilestonesFor,
   insertGoal,
+  reorderGoals,
   updateGoal,
   upsertMilestone,
 } from '@/server/repositories/goals'
+import { canBindMetric } from '@/server/services/metrics'
+
+/** At most this many in one move; a longer list is not a reorder. */
+const MAX_REORDER = 500
+
+export async function reorderGoalsAction(input: unknown) {
+  const parsed = z
+    .object({ ids: z.array(z.string().uuid()).min(1).max(MAX_REORDER) })
+    .safeParse(input)
+  if (!parsed.success) return { ok: false as const }
+
+  await reorderGoals(await getCurrentUserId(), parsed.data.ids)
+  revalidatePath(PATHS.goals)
+  revalidatePath(PATHS.home)
+  return { ok: true as const }
+}
 
 export async function setManualProgress(input: unknown) {
   const { goalId, percent } = z
@@ -47,9 +63,8 @@ export async function toggleMilestone(input: unknown) {
     dueDate: target.dueDate,
   })
 
-  const remaining = milestones.filter(
-    (milestone) =>
-      milestone.id !== target.id ? milestone.completedAt === null : target.completedAt !== null,
+  const remaining = milestones.filter((milestone) =>
+    milestone.id !== target.id ? milestone.completedAt === null : target.completedAt !== null,
   )
 
   revalidatePath(PATHS.goals)
@@ -74,7 +89,6 @@ export async function updateGoalStatus(input: unknown) {
   return { ok: true }
 }
 
-
 const goalSchema = z
   .object({
     id: z.string().uuid().optional(),
@@ -92,7 +106,11 @@ const goalSchema = z
     targetDate: isoDateSchema.nullable().optional(),
     progressMode: z.enum(['manual', 'metric', 'milestones']).default('manual'),
     progressManual: z.number().min(0).max(100).nullable().optional(),
-    metricKey: z.enum(METRIC_KEYS).nullable().optional(),
+    /*
+     * Not an enum of the built-in keys: a goal may also track a metric this
+     * person added themselves. The shape is checked here, the ownership below.
+     */
+    metricKey: z.string().min(1).max(40).nullable().optional(),
     metricAggregation: z.enum(['sum', 'avg', 'count_days', 'latest']).nullable().optional(),
     metricPeriod: z.enum(['total', 'weekly', 'monthly']).nullable().optional(),
     metricTarget: z.number().positive().nullable().optional(),
@@ -104,7 +122,10 @@ const goalSchema = z
     (value) =>
       value.progressMode !== 'metric' ||
       (value.metricKey && value.metricAggregation && value.metricPeriod && value.metricTarget),
-    { message: 'a metric goal needs a metric, an aggregation, a period and a target', path: ['metricTarget'] },
+    {
+      message: 'a metric goal needs a metric, an aggregation, a period and a target',
+      path: ['metricTarget'],
+    },
   )
   .refine((value) => !value.targetDate || value.targetDate >= value.startDate, {
     message: 'the target date cannot be before the start date',
@@ -112,8 +133,7 @@ const goalSchema = z
   })
 
 export type SaveGoalResult =
-  | { ok: true; id: string }
-  | { ok: false; error: 'invalid_input'; detail?: string }
+  { ok: true; id: string } | { ok: false; error: 'invalid_input'; detail?: string }
 
 export async function saveGoal(input: unknown): Promise<SaveGoalResult> {
   const parsed = goalSchema.safeParse(input)
@@ -125,6 +145,14 @@ export async function saveGoal(input: unknown): Promise<SaveGoalResult> {
   const { id, milestoneTitles, ...values } = parsed.data
   const isMetric = values.progressMode === 'metric'
 
+  // A key that is not a built-in has to name one of this person's own metrics,
+  // still tracked and holding a number (spec 29 — never trust the client).
+  // No detail: the select only ever offers keys that pass, so reaching this
+  // means a tampered request, and `detail` goes straight into a toast.
+  if (isMetric && values.metricKey && !(await canBindMetric(userId, values.metricKey))) {
+    return { ok: false, error: 'invalid_input' }
+  }
+
   const row = {
     ...values,
     description: values.description ?? null,
@@ -132,7 +160,9 @@ export async function saveGoal(input: unknown): Promise<SaveGoalResult> {
     // Only the chosen mode's columns are written, so a mode switch cannot leave
     // stale configuration behind that the CHECK constraint would then reject.
     progressManual:
-      values.progressMode === 'manual' && values.progressManual !== null && values.progressManual !== undefined
+      values.progressMode === 'manual' &&
+      values.progressManual !== null &&
+      values.progressManual !== undefined
         ? String(values.progressManual)
         : null,
     progressUpdatedAt: values.progressMode === 'manual' ? new Date() : null,

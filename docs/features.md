@@ -110,6 +110,11 @@ Longer arcs, in one of three shapes:
   target is a floor or a ceiling. Progress then keeps itself
 - **Milestones** — weighted steps; heavier ones move the bar further
 
+The list is yours to arrange: drag a card by the handle on its left, or focus
+the handle and use the arrow keys. The order is saved and follows you to
+another device. Completed goals still sink below active ones — status comes
+first, and the arrangement applies within it.
+
 A project can be attached to a goal, which is how work connects to intent.
 
 Goals can also arrive from quick capture: describe what you want in a

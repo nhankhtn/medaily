@@ -17,7 +17,7 @@ export async function findGoals(
         ? eq(goals.userId, userId)
         : and(eq(goals.userId, userId), isNull(goals.archivedAt)),
     )
-    .orderBy(asc(goals.status), asc(goals.createdAt))
+    .orderBy(asc(goals.status), asc(goals.sortOrder), asc(goals.createdAt))
 }
 
 export async function findGoal(userId: string, goalId: string): Promise<Goal | null> {
@@ -164,4 +164,26 @@ function sanitizeUuid(value: string): string {
 function sanitizeDate(value: string): string {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new Error('invalid date')
   return value
+}
+
+/**
+ * Writes a hand-arranged order in one statement: a list of ids becomes a list
+ * of positions, and anything not in it is left alone. Scoped to the user, so
+ * an id from somewhere else moves nothing.
+ */
+export async function reorderGoals(userId: string, ids: string[]): Promise<void> {
+  if (ids.length === 0) return
+
+  const positions = sql.join(
+    // Both casts are load-bearing: parameters arrive as text, and `VALUES`
+    // has no column to infer a type from.
+    ids.map((id, index) => sql`(${id}::uuid, ${index}::int)`),
+    sql`, `,
+  )
+
+  await db.execute(sql`
+    UPDATE goals SET sort_order = ordering.position, updated_at = now()
+    FROM (VALUES ${positions}) AS ordering(id, position)
+    WHERE goals.id = ordering.id AND goals.user_id = ${userId}::uuid
+  `)
 }

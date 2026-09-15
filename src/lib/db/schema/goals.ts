@@ -47,6 +47,8 @@ export const goals = pgTable(
     metricDirection: metricDirectionEnum('metric_direction').default('at_least'),
 
     recurrence: recurrenceEnum('recurrence'),
+    /** Hand-arranged order within a status, lowest first. */
+    sortOrder: integer('sort_order').notNull().default(0),
     notes: text('notes'),
     completedAt: timestamp('completed_at', { withTimezone: true }),
     archivedAt: timestamp('archived_at', { withTimezone: true }),

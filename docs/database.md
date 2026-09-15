@@ -196,6 +196,7 @@ completion-rate maths.
 | `metric_period` | enum | The window the target applies to |
 | `metric_target` | numeric | |
 | `metric_direction` | enum | `at_least` or `at_most` |
+| `sort_order` | integer | Hand-arranged order within a status (`0014`), written by dragging a card |
 | `goal_milestones.weight` | numeric | Milestones contribute proportionally, not equally |
 
 ## Work and time

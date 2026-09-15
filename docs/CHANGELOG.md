@@ -6,6 +6,14 @@ Dates are the day the document was written, not the day the code shipped. A
 line here is the cheapest way to know whether what you are reading is older
 than the code.
 
+## 2026-09-16
+
+**Added**
+
+- Goals can be dragged into an order of your own (`0014` adds
+  `goals.sort_order`). Documented in `features.md` under Goals and in the
+  schema table.
+
 ## 2026-09-15
 
 **Added**

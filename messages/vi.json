@@ -296,6 +296,7 @@
   },
   "goals": {
     "title": "Mục tiêu",
+    "reorder": "Đổi chỗ {name}, vị trí {position}/{total}. Kéo, hoặc dùng phím mũi tên",
     "noneYet": "Chưa có mục tiêu nào",
     "noneYetBody": "Mục tiêu có thể tự cập nhật từ những chỉ số bạn đã ghi.",
     "create": "Mục tiêu mới",
