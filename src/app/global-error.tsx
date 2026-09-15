@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { reportClientError } from '@/server/actions/alerts'
 
 /**
  * Last resort: when the root layout itself throws, React cannot render the
@@ -23,6 +24,11 @@ export default function GlobalError({
       'open /api/health for the cause:',
       error,
     )
+    void reportClientError({
+      message: error.message,
+      digest: error.digest ?? null,
+      path: window.location.pathname,
+    }).catch(() => {})
   }, [error])
 
   return (

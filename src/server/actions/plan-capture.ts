@@ -1,6 +1,7 @@
 'use server'
 
 import { z } from 'zod'
+import { log } from '@/lib/log'
 import { MAX_PLAN_ITEMS, type PlanItem } from '@/lib/capture/plan-items'
 import { today as todayOf, type ISODate } from '@/lib/dates'
 import { MAX_MILESTONES } from '@/lib/goals/draft'
@@ -64,7 +65,7 @@ export async function parsePlanText(input: unknown): Promise<ParsePlanResult> {
   try {
     return { ok: true, items: await parsePlan({ text: parsed.data.text, today }), today }
   } catch (error) {
-    console.error('[capture] could not read that note:', error)
+    await log.error('capture', 'could not read that note', error)
     return { ok: false, error: 'failed' }
   }
 }

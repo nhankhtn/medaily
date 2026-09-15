@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { log } from '@/lib/log'
 import { z } from 'zod'
 import { getCurrentUserId } from '@/lib/auth/current-user'
 import { today } from '@/lib/dates'
@@ -184,7 +185,7 @@ export async function parseTransactionText(input: unknown): Promise<ParseTransac
       },
     }
   } catch (error) {
-    console.error('[finance] could not parse the note:', error)
+    await log.error('finance', 'could not parse the note', error)
     return { ok: false, error: 'failed' }
   }
 }

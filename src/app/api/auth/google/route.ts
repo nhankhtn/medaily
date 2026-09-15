@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { log } from '@/lib/log'
 import { z } from 'zod'
 import { readAuthConfig, readGoogleConfig } from '@/lib/auth/config'
 import { FirebaseVerifyError, verifyFirebaseIdToken } from '@/lib/auth/firebase-verify'
@@ -94,7 +95,7 @@ export async function POST(request: Request) {
     if (error instanceof FirebaseVerifyError) {
       return fail(error.reason === 'not_configured' ? 'not_configured' : 'invalid_token', 401)
     }
-    console.error('[auth/google] sign-in failed:', error)
+    await log.error('auth/google', 'sign-in failed', error)
     return fail('server_error', 500)
   }
 }

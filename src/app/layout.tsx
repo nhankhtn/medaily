@@ -1,8 +1,11 @@
 import type { Metadata, Viewport } from 'next'
+import { headers } from 'next/headers'
 import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
 import { Toaster } from 'sonner'
+import { RequestIdProvider } from '@/components/shell/request-id'
 import { FORMATS } from '@/lib/format/dates'
+import { REQUEST_ID_HEADER } from '@/lib/request-id'
 import { themeBootScript } from '@/lib/themes'
 import { getShellSettings, getShellTheme } from '@/server/services/settings'
 import './globals.css'
@@ -33,11 +36,12 @@ export const viewport: Viewport = {
 const themeScript = themeBootScript()
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const [locale, messages, settings, theme] = await Promise.all([
+  const [locale, messages, settings, theme, requestHeaders] = await Promise.all([
     getLocale(),
     getMessages(),
     getShellSettings(),
     getShellTheme(),
+    headers(),
   ])
 
   return (
@@ -57,7 +61,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           formats={FORMATS}
           timeZone={settings.timezone}
         >
-          {children}
+          <RequestIdProvider value={requestHeaders.get(REQUEST_ID_HEADER)}>
+            {children}
+          </RequestIdProvider>
           <Toaster position="top-center" closeButton richColors />
         </NextIntlClientProvider>
       </body>

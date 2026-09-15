@@ -6,6 +6,8 @@ import { useTranslations } from 'next-intl'
 import { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { PATHS } from '@/lib/paths'
+import { useRequestId } from '@/components/shell/request-id'
+import { reportClientError } from '@/server/actions/alerts'
 
 /**
  * What a person sees when a page fails. Diagnostics — the digest, the endpoint
@@ -20,14 +22,24 @@ export default function AppError({
   reset: () => void
 }) {
   const t = useTranslations('common')
+  const requestId = useRequestId()
 
   useEffect(() => {
+    const marks = [requestId ? `req ${requestId}` : null, error.digest ? `digest ${error.digest}` : null]
+      .filter(Boolean)
+      .join(', ')
     console.error(
-      `[app] this route failed to render${error.digest ? ` (digest ${error.digest})` : ''};`,
+      `[app] this route failed to render${marks ? ` (${marks})` : ''};`,
       'open /api/health for the cause:',
       error,
     )
-  }, [error])
+    void reportClientError({
+      message: error.message,
+      digest: error.digest ?? null,
+      requestId,
+      path: window.location.pathname,
+    })
+  }, [error, requestId])
 
   return (
     <section className="flex flex-col items-start gap-4 py-12">

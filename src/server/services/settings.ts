@@ -1,4 +1,5 @@
 import { DEFAULT_BINDINGS, resolveBindings, type Bindings } from '@/lib/shortcuts'
+import { log } from '@/lib/log'
 import { cookies } from 'next/headers'
 import { cache } from 'react'
 import { getCurrentUserId, UnauthenticatedError } from '@/lib/auth/current-user'
@@ -146,7 +147,7 @@ export const getShellSettings = cache(async (): Promise<ResolvedSettings> => {
     // The sign-in page renders inside this same root layout, so "no session"
     // is the normal case here, not a fault worth logging on every visit.
     if (!(error instanceof UnauthenticatedError)) {
-      console.error('[settings] falling back to defaults:', error)
+      await log.error('settings', 'falling back to defaults', error)
     }
     return FALLBACK_SETTINGS
   }

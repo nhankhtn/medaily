@@ -346,3 +346,4 @@ Everything below is off unless configured, and the UI hides rather than breaks.
 | AI narrative | `ANTHROPIC_API_KEY` | Reviews offer no narrative |
 | Quick capture | Gemini key | Capture launcher hidden — finance, goals and to-dos all go through it |
 | Photos | `CLOUDINARY_*` | Photo UI hidden |
+| Crash alerts | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Errors go to the console only |

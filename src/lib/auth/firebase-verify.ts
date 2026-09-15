@@ -1,4 +1,5 @@
 import { createRemoteJWKSet, jwtVerify, type JWTPayload } from 'jose'
+import { log } from '@/lib/log'
 
 /**
  * Verifies a Firebase ID token without the Admin SDK.
@@ -93,8 +94,9 @@ export async function verifyFirebaseIdToken(
     // right — a stranger learns nothing from a failed sign-in. But an
     // operator needs to tell "expired token" from "key endpoint unreachable"
     // from "wrong project", so the real cause is logged here, server side.
-    console.error(
-      `[auth/firebase] token rejected: ${code}`,
+    await log.error(
+      'auth/firebase',
+      `token rejected: ${code}`,
       error instanceof Error ? error.message : error,
     )
 

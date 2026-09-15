@@ -20,6 +20,10 @@ than the code.
   reachable only by seeding or import — no screen wrote them and none showed
   them. Both pickers now sit in the note form, and the card shows what a note
   is filed under. No migration: the columns were already there.
+- Crash alerts to Telegram, off unless `TELEGRAM_BOT_TOKEN` and
+  `TELEGRAM_CHAT_ID` are set. Written up in the README rather than in
+  `features.md`: it is a deployment concern, not something a person using the
+  app can see.
 - Quick capture reads a paragraph of intentions and splits it into goals and
   to-dos. Documented under *Getting around*, with the rule that decides which
   is which and what leaves the machine.

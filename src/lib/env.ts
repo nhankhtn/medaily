@@ -46,6 +46,11 @@ const envSchema = z.object({
   AUTH_ALLOWED_DOMAINS: z.string().optional(),
   AUTH_ALLOW_SIGNUP: z.string().optional(),
 
+  // Where a crash is announced. Absent, nothing is sent and the error still
+  // reaches the console, which is where it always went.
+  TELEGRAM_BOT_TOKEN: z.string().optional(),
+  TELEGRAM_CHAT_ID: z.string().optional(),
+
   // Photo storage. Absent means the photo UI is simply not offered.
   CLOUDINARY_CLOUD_NAME: z.string().optional(),
   CLOUDINARY_API_KEY: z.string().optional(),

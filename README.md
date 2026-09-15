@@ -123,6 +123,7 @@ except `/api/health` until all four are present:
 | `GEMINI_API_KEY` | optional — only to enable the finance quick capture |
 | `GEMINI_MODEL` / `GEMINI_MODELS` | optional — override the model fallback chain |
 | `NEXT_PUBLIC_FIREBASE_*`, `AUTH_OWNER_EMAIL` | optional — only to enable Google sign-in (see [Sign-in](#sign-in)) |
+| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | optional — send crashes to a Telegram chat (see [Crash alerts](#crash-alerts)) |
 
 Migrations do not run on build, by design. Run them from your machine against
 the same database whenever the schema changes:
@@ -401,3 +402,60 @@ Adding a key means adding a row there.
 ## License
 
 Private personal project.
+
+## Crash alerts
+
+Set `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` and every server error Next
+catches — a render, a route handler, a server action, the proxy — arrives as a
+message, along with anything the browser's error boundary catches. Without both
+variables nothing is sent and errors go to the console exactly as before.
+
+```
+⚠️ medaily (production)
+render · GET /calendar
+
+Cannot read properties of null (reading 'id')
+req 3f9a1c07  ·  digest 2894013755
+
+at CalendarPage (.next/server/app/(app)/calendar/page.js:1:4021)
+```
+
+To set it up: make a bot with [@BotFather](https://t.me/botfather), send it any
+message, then read your chat id from
+`https://api.telegram.org/bot<token>/getUpdates`.
+
+**Set these on the deploy, not in `.env.local`** — otherwise every typo on your
+own machine buzzes your phone.
+
+### Request ids
+
+Every request is stamped with a short id by the proxy, and it travels three
+ways at once so one failure can be found from any of them:
+
+| Where | Looks like |
+|---|---|
+| Server console | `[finance] [req 3f9a1c07] could not parse the note: …` |
+| Telegram alert | `req 3f9a1c07 · digest 2894013755` |
+| Response header | `x-request-id: 3f9a1c07`, readable in devtools |
+
+An id the request already carries is kept rather than replaced, and Vercel's
+own `x-vercel-id` is adopted when there is one, so a trace does not split in
+two between their logs and ours.
+
+One thing to know about the browser: a server action is its own request with
+its own id. `useRequestId()` gives a client component the id of the **page
+load**, which is what a browser-side error belongs to — for a failed action,
+the id to quote is the one in the server's log line and in its alert.
+
+Two things the sender does that are worth knowing:
+
+- **Credentials are stripped before anything is sent.** A bad `DATABASE_URL`
+  makes Next throw `Invalid URL` with the whole connection string, password
+  and all, inside `error.message`. Passwords in URLs, anything named like a
+  token or a key, `Bearer` values, and bare strings long enough to be a secret
+  are all replaced first. Request headers are never read at all, since they
+  carry the session cookie.
+- **A failing route cannot flood the chat.** The same failure on the same route
+  is sent at most once every five minutes, and no more than twenty messages go
+  out in an hour. The counter is per server instance, so treat it as a limit on
+  the flood rather than an exact count.

@@ -1,4 +1,5 @@
 import { env } from '@/lib/env'
+import { log } from '@/lib/log'
 
 /**
  * A thin client over the Gemini Interactions API, for the one thing this app
@@ -157,8 +158,9 @@ async function attemptEachModel<T>(attempt: (model: string) => Promise<T>): Prom
       const isLast = index === models.length - 1
       if (isLast || !worthAnotherModel(error)) throw error
 
-      console.warn(
-        `[gemini] ${model} unavailable (${(error as GeminiError).status}), falling back to ${models[index + 1]}`,
+      await log.warn(
+        'gemini',
+        `${model} unavailable (${(error as GeminiError).status}), falling back to ${models[index + 1]}`,
       )
     }
   }

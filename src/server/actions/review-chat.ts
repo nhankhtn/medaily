@@ -1,6 +1,7 @@
 'use server'
 
 import { z } from 'zod'
+import { log } from '@/lib/log'
 import { today as todayOf, type ISODate } from '@/lib/dates'
 import { classify } from '@/lib/reviews/intent'
 import { parsePeriodPhrase } from '@/lib/reviews/period-phrase'
@@ -134,7 +135,7 @@ export async function askReview(input: unknown): Promise<ReviewChatResult> {
       opened: history.length === 0,
     }
   } catch (error) {
-    console.error('[reviews] could not answer:', error)
+    await log.error('reviews', 'could not answer', error)
     return { ok: false, error: 'failed' }
   }
 }

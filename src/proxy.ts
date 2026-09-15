@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { readAuthConfig, readGoogleConfig } from '@/lib/auth/config'
 import { PATHS, PUBLIC_PATHS } from '@/lib/paths'
+import { REQUEST_ID_HEADER, requestIdFrom } from '@/lib/request-id'
 import { SESSION_COOKIE, verifySession } from '@/lib/auth/session'
 
 /**
@@ -16,8 +17,20 @@ import { SESSION_COOKIE, verifySession } from '@/lib/auth/session'
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // Stamped before anything else can fail, so even a rejected request has an
+  // id to quote. It goes onto the request for the app and onto the response
+  // for whoever is looking at devtools.
+  const requestId = requestIdFrom(request.headers)
+  const forward = () => {
+    const headers = new Headers(request.headers)
+    headers.set(REQUEST_ID_HEADER, requestId)
+    const response = NextResponse.next({ request: { headers } })
+    response.headers.set(REQUEST_ID_HEADER, requestId)
+    return response
+  }
+
   if (PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))) {
-    return NextResponse.next()
+    return forward()
   }
 
   const auth = readAuthConfig()
@@ -28,13 +41,15 @@ export async function proxy(request: NextRequest) {
     ? await verifySession(request.cookies.get(SESSION_COOKIE)?.value, auth.secret)
     : null
 
-  if (session) return NextResponse.next()
+  if (session) return forward()
 
   const url = request.nextUrl.clone()
   url.pathname = PATHS.login
   // Come back to where the user was heading once they are signed in.
   url.search = pathname === PATHS.home ? '' : `?next=${encodeURIComponent(pathname + request.nextUrl.search)}`
-  return NextResponse.redirect(url)
+  const redirect = NextResponse.redirect(url)
+  redirect.headers.set(REQUEST_ID_HEADER, requestId)
+  return redirect
 }
 
 export const config = {
