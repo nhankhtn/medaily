@@ -1018,7 +1018,30 @@
     "planTomorrow": "Lên plan mai",
     "backToToday": "Về hôm nay",
     "previousDay": "Ngày trước",
-    "nextDay": "Ngày sau"
+    "nextDay": "Ngày sau",
+    "dayOff": "nghỉ",
+    "holidays": {
+      "newYear": "Tết Dương lịch",
+      "tetEve": "Giao thừa",
+      "tet1": "Mùng 1 Tết",
+      "tet2": "Mùng 2 Tết",
+      "tet3": "Mùng 3 Tết",
+      "hungKings": "Giỗ Tổ Hùng Vương",
+      "reunification": "Ngày Thống nhất",
+      "labour": "Quốc tế Lao động",
+      "nationalDay": "Quốc khánh",
+      "cultureDay": "Ngày Văn hóa Việt Nam",
+      "kitchenGods": "Ông Công Ông Táo",
+      "lanternFestival": "Rằm tháng Giêng",
+      "womensDay": "Quốc tế Phụ nữ",
+      "doubleFifth": "Tết Đoan Ngọ",
+      "martyrsDay": "Thương binh Liệt sĩ",
+      "ghostFestival": "Rằm tháng Bảy",
+      "midAutumn": "Tết Trung thu",
+      "vietnameseWomensDay": "Phụ nữ Việt Nam",
+      "teachersDay": "Nhà giáo Việt Nam",
+      "christmas": "Giáng sinh"
+    }
   },
   "people": {
     "title": "Quan hệ",

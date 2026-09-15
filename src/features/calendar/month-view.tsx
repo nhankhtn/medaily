@@ -71,7 +71,11 @@ function DayCell({ day, today, t, format }: { day: CalendarDay; today: ISODate }
             key={item.key}
             className={cn(
               'size-1.5 rounded-full',
-              item.kind === 'event' ? 'bg-accent' : 'bg-border-strong',
+              item.kind === 'holiday'
+                ? 'bg-bad'
+                : item.kind === 'event'
+                  ? 'bg-accent'
+                  : 'bg-border-strong',
             )}
           />
         ))}
@@ -90,15 +94,20 @@ function DayCell({ day, today, t, format }: { day: CalendarDay; today: ISODate }
 }
 
 function Item({ item, t, format }: { item: CalendarItem } & Localised) {
-  const label = item.title ?? (item.blockKind ? t(`kinds.${item.blockKind}`) : t('events'))
+  const label = item.holidayKey
+    ? t(`holidays.${item.holidayKey}`)
+    : (item.title ?? (item.blockKind ? t(`kinds.${item.blockKind}`) : t('events')))
 
   return (
     <span
       className={cn(
         'truncate rounded px-1 text-[11px] leading-5',
-        item.kind === 'event'
-          ? 'bg-accent/15 text-text'
-          : 'bg-surface-2 text-text-muted ring-border-base ring-1 ring-inset',
+        // Red, the way a Vietnamese calendar marks a day off — not a warning.
+        item.kind === 'holiday'
+          ? 'bg-bad-soft text-text'
+          : item.kind === 'event'
+            ? 'bg-accent/15 text-text'
+            : 'bg-surface-2 text-text-muted ring-border-base ring-1 ring-inset',
       )}
       title={label}
     >

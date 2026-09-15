@@ -4,7 +4,12 @@ import { Card, CardBody, CardHeader } from '@/components/ui/card'
 import { fromISODate, type ISODate } from '@/lib/dates'
 import { PATHS } from '@/lib/paths'
 import { cn } from '@/lib/utils'
-import type { YearCalendar } from '@/server/services/planning'
+import type { CalendarItem, YearCalendar, YearDay } from '@/server/services/planning'
+
+type Localised = {
+  t: Awaited<ReturnType<typeof getTranslations<'calendar'>>>
+  format: Awaited<ReturnType<typeof getFormatter>>
+}
 
 export async function YearView({ data }: { data: YearCalendar }) {
   const [t, format] = await Promise.all([getTranslations('calendar'), getFormatter()])
@@ -34,8 +39,15 @@ export async function YearView({ data }: { data: YearCalendar }) {
                 </span>
               ))}
 
-              {month.weeks.flat().map((day) => (
-                <Day key={day.date} {...day} today={data.today} />
+              {month.weeks.flat().map((day, index) => (
+                <Day
+                  key={day.date}
+                  day={day}
+                  column={index % 7}
+                  today={data.today}
+                  t={t}
+                  format={format}
+                />
               ))}
             </div>
           </CardBody>
@@ -45,37 +57,88 @@ export async function YearView({ data }: { data: YearCalendar }) {
   )
 }
 
+/**
+ * A hover card hanging off a cell in the last column of the rightmost month
+ * would run off the page, so the two columns at each edge anchor to their own
+ * side instead of centring.
+ */
+function anchorOf(column: number): string {
+  if (column <= 1) return 'left-0'
+  if (column >= 5) return 'right-0'
+  return 'left-1/2 -translate-x-1/2'
+}
+
 function Day({
-  date,
-  inMonth,
-  count,
+  day,
+  column,
   today,
-}: {
-  date: ISODate
-  inMonth: boolean
-  count: number
-  today: ISODate
-}) {
-  if (!inMonth) return <span aria-hidden />
+  t,
+  format,
+}: { day: YearDay; column: number; today: ISODate } & Localised) {
+  if (!day.inMonth) return <span aria-hidden />
+
+  const holiday = day.items.some((item) => item.kind === 'holiday')
+  const hidden = day.count - day.items.length
 
   return (
-    <Link
-      href={PATHS.calendar({ view: 'week', at: date })}
-      className={cn(
-        'hover:bg-surface-2 relative flex aspect-square items-center justify-center rounded text-[11px] tabular-nums transition-colors',
-        date === today ? 'bg-accent text-accent-text font-semibold' : 'text-text-muted',
-        count > 0 && date !== today && 'text-text font-semibold',
-      )}
-    >
-      {Number(date.slice(8))}
-      {count > 0 ? (
+    // The same wrapper whether or not there is anything to show, so every cell
+    // in the grid measures the same.
+    <span className="group relative">
+      <Link
+        href={PATHS.calendar({ view: 'week', at: day.date })}
+        className={cn(
+          'hover:bg-surface-2 relative flex aspect-square items-center justify-center rounded text-[11px] tabular-nums transition-colors',
+          day.date === today ? 'bg-accent text-accent-text font-semibold' : 'text-text-muted',
+          day.count > 0 && day.date !== today && 'text-text font-semibold',
+        )}
+      >
+        {Number(day.date.slice(8))}
+        {day.count > 0 ? (
+          <span
+            className={cn(
+              'absolute bottom-0.5 size-1 rounded-full',
+              day.date === today ? 'bg-accent-text' : holiday ? 'bg-bad' : 'bg-accent',
+            )}
+          />
+        ) : null}
+      </Link>
+
+      {/*
+       * Hover only, and CSS only. A year is 365 cells; anything that mounted a
+       * listener per cell would cost more than the affordance is worth, and a
+       * tap already opens the week.
+       */}
+      {day.count === 0 ? null : (
         <span
+          role="tooltip"
           className={cn(
-            'absolute bottom-0.5 size-1 rounded-full',
-            date === today ? 'bg-accent-text' : 'bg-accent',
+            'border-border-strong bg-surface pointer-events-none absolute bottom-full z-20 mb-1 hidden w-max max-w-44 flex-col gap-0.5 rounded-[var(--radius)] border p-2 text-left shadow-lg group-hover:flex',
+            anchorOf(column),
           )}
-        />
-      ) : null}
-    </Link>
+        >
+          <span className="text-text-subtle text-[10px] font-medium">
+            {format.dateTime(fromISODate(day.date), 'dayMonth')}
+          </span>
+          {day.items.map((item) => (
+            <span key={item.key} className="text-text truncate text-[11px] leading-4">
+              {item.at ? (
+                <span className="text-text-subtle tabular-nums">
+                  {format.dateTime(item.at, 'time')}{' '}
+                </span>
+              ) : null}
+              {labelOf(item, t)}
+            </span>
+          ))}
+          {hidden > 0 ? (
+            <span className="text-text-subtle text-[10px]">{t('more', { count: hidden })}</span>
+          ) : null}
+        </span>
+      )}
+    </span>
   )
+}
+
+function labelOf(item: CalendarItem, t: Localised['t']): string {
+  if (item.holidayKey) return t(`holidays.${item.holidayKey}`)
+  return item.title ?? (item.blockKind ? t(`kinds.${item.blockKind}`) : t('events'))
 }

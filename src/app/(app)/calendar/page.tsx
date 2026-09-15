@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardBody, CardHeader } from '@/components/ui/card'
 import { PageHeader, StatRow } from '@/components/ui/page'
 import { BlockDialog, EventDialog } from '@/features/calendar/calendar-dialogs'
+import { Markdown } from '@/components/ui/markdown'
 import { DayTasks } from '@/features/calendar/day-tasks'
 import { QuickTask } from '@/features/calendar/quick-task'
 import { MonthView } from '@/features/calendar/month-view'
@@ -20,6 +21,7 @@ import {
   type ISODate,
 } from '@/lib/dates'
 import { cn } from '@/lib/utils'
+import { holidaysIn, type Holiday } from '@/lib/planning/holidays'
 import { getDayPlan } from '@/server/services/day-plan'
 import { getMonthCalendar, getPlanningData, getYearCalendar } from '@/server/services/planning'
 import { getProjectsView } from '@/server/services/projects'
@@ -109,6 +111,33 @@ export default async function CalendarPage({
         <Year year={Number((anchor ?? today).slice(0, 4))} />
       )}
     </div>
+  )
+}
+
+/**
+ * The days the country keeps, when the window on screen holds any. Computed
+ * from the date, so there is nothing to add and nothing to keep up to date.
+ */
+async function Holidays({ holidays }: { holidays: Holiday[] }) {
+  if (holidays.length === 0) return null
+
+  const [t, format] = await Promise.all([getTranslations('calendar'), getFormatter()])
+
+  return (
+    <ul className="flex flex-wrap gap-2">
+      {holidays.map((holiday) => (
+        <li
+          key={`${holiday.key}:${holiday.date}`}
+          className="bg-bad-soft flex items-center gap-2 rounded-full px-3 py-1 text-xs"
+        >
+          <span className="font-medium">{t(`holidays.${holiday.key}`)}</span>
+          <span className="text-text-muted tabular-nums">
+            {format.dateTime(fromISODate(holiday.date), 'dayMonth')}
+          </span>
+          {holiday.off ? <span className="text-text-muted">· {t('dayOff')}</span> : null}
+        </li>
+      ))}
+    </ul>
   )
 }
 
@@ -233,6 +262,8 @@ async function WeekView({ anchor }: { anchor?: ISODate }) {
 
   return (
     <div className="space-y-4">
+      <Holidays holidays={data.holidays} />
+
       <StatRow
         items={[
           { label: t('planned'), value: hours(data.totals.planned) },
@@ -410,10 +441,14 @@ async function DayView({
 
   return (
     <div className="space-y-4">
+      <Holidays holidays={holidaysIn({ start: date, end: date })} />
+
       {plan.priorityFromYesterday && date === today ? (
         <section className="border-accent bg-accent-soft/40 rounded-[var(--radius)] border p-4">
           <p className="text-text-muted text-xs font-medium">{t('fromYesterday')}</p>
-          <p className="mt-1 text-sm">{plan.priorityFromYesterday}</p>
+          <div className="mt-1">
+            <Markdown>{plan.priorityFromYesterday}</Markdown>
+          </div>
         </section>
       ) : null}
 

@@ -1018,7 +1018,30 @@
     "planTomorrow": "Plan tomorrow",
     "backToToday": "Back to today",
     "previousDay": "Previous day",
-    "nextDay": "Next day"
+    "nextDay": "Next day",
+    "dayOff": "day off",
+    "holidays": {
+      "newYear": "New Year's Day",
+      "tetEve": "Lunar New Year's Eve",
+      "tet1": "Tết, day 1",
+      "tet2": "Tết, day 2",
+      "tet3": "Tết, day 3",
+      "hungKings": "Hùng Kings' Festival",
+      "reunification": "Reunification Day",
+      "labour": "Labour Day",
+      "nationalDay": "National Day",
+      "cultureDay": "Vietnam Culture Day",
+      "kitchenGods": "Kitchen Gods",
+      "lanternFestival": "Lantern Festival",
+      "womensDay": "International Women's Day",
+      "doubleFifth": "Double Fifth Festival",
+      "martyrsDay": "Martyrs and Wounded Soldiers Day",
+      "ghostFestival": "Ghost Festival",
+      "midAutumn": "Mid-Autumn Festival",
+      "vietnameseWomensDay": "Vietnamese Women's Day",
+      "teachersDay": "Teachers' Day",
+      "christmas": "Christmas"
+    }
   },
   "people": {
     "title": "People",
