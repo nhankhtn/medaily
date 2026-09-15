@@ -1,3 +1,4 @@
+import net from 'node:net'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import { env, isProduction } from '@/lib/env'
@@ -6,6 +7,8 @@ import * as schema from './schema'
 declare global {
   var __medailySql: ReturnType<typeof postgres> | undefined
 }
+
+net.setDefaultAutoSelectFamilyAttemptTimeout?.(2000)
 
 function createClient() {
   // An unset URL cannot throw here (see lib/env): the connection then fails at
