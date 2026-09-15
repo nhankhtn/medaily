@@ -88,6 +88,36 @@ export async function saveTask(input: unknown) {
   return { ok: true as const, id: task.id }
 }
 
+const editSchema = z.object({
+  id: z.uuid(),
+  title: z.string().min(1).max(300),
+  dueDate: optionalDate,
+  priority: z.enum(['low', 'medium', 'high']),
+  estimateMinutes: z.number().int().min(0).max(10080).nullable().optional(),
+})
+
+/**
+ * Changes what a task says, and nothing else. Like `scheduleTask` this is
+ * narrow on purpose: `saveTask`'s schema defaults status to `todo`, so reusing
+ * it to fix a typo would quietly un-finish a task that was done.
+ */
+export async function editTask(input: unknown) {
+  const parsed = editSchema.safeParse(input)
+  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+
+  const userId = await getCurrentUserId()
+  const { id, ...patch } = parsed.data
+  const task = await findTask(userId, id)
+  if (!task) return { ok: false as const, error: 'not_found' as const }
+
+  await updateTask(userId, id, patch)
+
+  revalidatePath(PATHS.projects)
+  revalidatePath(PATHS.calendar())
+  if (task.projectId) revalidatePath(PATHS.project(task.projectId))
+  return { ok: true as const }
+}
+
 const scheduleSchema = z.object({ id: z.string().uuid(), dueDate: z.string().date() })
 
 /**

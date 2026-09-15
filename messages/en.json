@@ -561,6 +561,7 @@
     "noneYetBody": "Tasks and hours behind a goal. Time spent is summed from your focus sessions.",
     "tasks": "Tasks",
     "addTask": "Add a task and press Enter",
+    "markDone": "Mark done",
     "noTasks": "No tasks yet",
     "timeSpent": "Time spent",
     "openTasks": "{count} open",

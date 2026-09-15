@@ -561,6 +561,7 @@
     "noneYetBody": "Việc và số giờ đứng sau một mục tiêu. Thời gian được cộng từ các phiên tập trung.",
     "tasks": "Công việc",
     "addTask": "Nhập việc rồi nhấn Enter",
+    "markDone": "Đánh dấu xong",
     "noTasks": "Chưa có việc nào",
     "timeSpent": "Thời gian đã bỏ ra",
     "openTasks": "Còn {count}",
