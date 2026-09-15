@@ -371,6 +371,15 @@
   },
   "settings": {
     "title": "Cài đặt",
+    "profile": {
+      "signedInWith": "Đăng nhập bằng",
+      "since": "Dùng app từ",
+      "username": "Đang đăng nhập là {name}",
+      "providers": {
+        "google": "Google",
+        "password": "Tên đăng nhập và mật khẩu"
+      }
+    },
     "language": "Ngôn ngữ",
     "languageHelp": "Áp dụng ngay lập tức, ở mọi nơi.",
     "appearance": "Hiển thị",

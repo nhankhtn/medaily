@@ -371,6 +371,15 @@
   },
   "settings": {
     "title": "Settings",
+    "profile": {
+      "signedInWith": "Signed in with",
+      "since": "Here since",
+      "username": "Signed in as {name}",
+      "providers": {
+        "google": "Google",
+        "password": "Username and password"
+      }
+    },
     "language": "Language",
     "languageHelp": "Applies immediately, everywhere.",
     "appearance": "Appearance",
