@@ -122,9 +122,11 @@ export function SettingsForm({ settings }: { settings: ResolvedSettings }) {
         <div className="space-y-2">
           {SCORE_COMPONENTS.map((component) => (
             <div key={component} className="flex items-center gap-3">
-              <span className="w-40 shrink-0 text-sm text-text-muted">
+              <span className="w-28 shrink-0 text-sm text-text-muted sm:w-40">
                 {ts(`components.${component}`)}
               </span>
+              {/* `min-w-0`: a range input has an intrinsic width that `flex-1`
+                  alone will not shrink past, which pushed this row off a phone. */}
               <input
                 type="range"
                 min={0}
@@ -135,7 +137,7 @@ export function SettingsForm({ settings }: { settings: ResolvedSettings }) {
                 onChange={(event) =>
                   setWeights((prev) => ({ ...prev, [component]: Number(event.target.value) }))
                 }
-                className="flex-1 accent-[var(--accent)]"
+                className="min-w-0 flex-1 accent-[var(--accent)]"
               />
               <span className="w-12 shrink-0 text-right text-sm tabular-nums">
                 {weights[component]}%

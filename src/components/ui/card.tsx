@@ -5,7 +5,7 @@ export function Card({ className, ...props }: React.ComponentProps<'section'>) {
   return (
     <section
       className={cn(
-        'rounded-[var(--radius)] border border-border-base bg-surface shadow-[var(--shadow-card)]',
+        'border-border-base bg-surface rounded-[var(--radius)] border shadow-[var(--shadow-card)]',
         className,
       )}
       {...props}
@@ -21,10 +21,15 @@ export function CardHeader({
 }: React.ComponentProps<'header'> & { title: React.ReactNode; action?: React.ReactNode }) {
   return (
     <header
-      className={cn('flex items-center justify-between gap-3 px-4 pt-4 pb-2', className)}
+      className={cn(
+        'flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 pt-4 pb-2',
+        className,
+      )}
       {...props}
     >
-      <h2 className="text-sm font-semibold tracking-wide text-text-muted uppercase">{title}</h2>
+      <h2 className="text-text-muted min-w-0 text-sm font-semibold tracking-wide uppercase">
+        {title}
+      </h2>
       {action}
     </header>
   )

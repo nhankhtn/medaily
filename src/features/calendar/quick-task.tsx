@@ -44,7 +44,7 @@ export function QuickTask({ date }: { date: ISODate }) {
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex w-full items-center gap-2 sm:w-auto">
       <Input
         value={title}
         onChange={(event) => setTitle(event.target.value)}
@@ -56,7 +56,7 @@ export function QuickTask({ date }: { date: ISODate }) {
         }}
         placeholder={t('addPlaceholder')}
         aria-label={t('add')}
-        className="h-9 w-56"
+        className="h-9 min-w-0 flex-1 sm:w-56 sm:flex-none"
       />
       <Button size="sm" disabled={pending || title.trim().length === 0} onClick={add}>
         <Plus className="size-4" />
