@@ -53,6 +53,10 @@ export async function GET() {
     allowedEmailCount: policy.allowedEmails.length,
     allowedDomainCount: policy.allowedDomains.length,
     signupOpen: policy.allowSignup,
+    // Whether crashes reach a phone. A boolean, like everything else here —
+    // the token and the chat id never leave the deploy.
+    alertsConfigured:
+      Boolean(process.env.TELEGRAM_BOT_TOKEN) && Boolean(process.env.TELEGRAM_CHAT_ID),
   }
 
   if (!process.env.DATABASE_URL) {

@@ -24,7 +24,13 @@ describe('every path points at a page that exists', () => {
     expect(existsSync(join(folder, 'page.tsx'))).toBe(true)
   })
 
-  it.each([PATHS.api.health, PATHS.api.googleAuth, PATHS.api.calendarIcs, PATHS.api.exportJson])(
+  it.each([
+    PATHS.api.health,
+    PATHS.api.googleAuth,
+    PATHS.api.calendarIcs,
+    PATHS.api.exportJson,
+    PATHS.api.alertTest,
+  ])(
     '%s',
     (path) => {
       expect(existsSync(join(APP, withoutQuery(path), 'route.ts'))).toBe(true)
