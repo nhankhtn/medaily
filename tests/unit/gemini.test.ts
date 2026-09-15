@@ -5,7 +5,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
  * so it is worth pinning: a `steps` array whose last `model_output` carries the
  * JSON, and a request that does not quietly stop asking for it.
  */
-process.env.GEMINI_API_KEY ??= 'test-key'
+/*
+ * `||=`, not `??=`: a `GEMINI_API_KEY=` line with nothing after it is loaded as
+ * an empty string, which `??=` leaves alone — and every test here then fails on
+ * a key that is present but blank. Any truthy value does, since fetch is mocked.
+ */
+process.env.GEMINI_API_KEY ||= 'test-key'
 /*
  * Forced, not defaulted: `.env.local` is loaded before tests run, so a chain
  * configured on this machine would otherwise decide how many attempts these
