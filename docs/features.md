@@ -237,16 +237,16 @@ seven-hour nights versus shorter ones. Nothing appears until there is enough
 data to mean anything, and everything is stated as an association, never a
 cause. A test enforces that wording in both languages.
 
-**Search** (`/search`) covers notes, journal entries, daily logs, tasks,
-projects, goals and people in one query, accent-insensitively.
-
 ---
 
 ## Getting around
 
-**Command palette** — `⌘K`. Jump to any page, or log a metric without leaving
-the screen: type `sleep 7.5`, `study 45`, `energy 8`. A bare date like
-`2026-09-01` opens that day.
+**Command palette** — `⌘K`. It is also the search: two characters or more and
+it looks through notes, journal entries, daily logs, tasks, projects, goals
+and people in one accent-insensitive query, each result carrying the icon of
+what it is. The same box jumps to any page, logs a metric without leaving the
+screen (`sleep 7.5`, `study 45`, `energy 8`), and opens a bare date like
+`2026-09-01`.
 
 **Quick capture** — `⌘J`, from anywhere.
 

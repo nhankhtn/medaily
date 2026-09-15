@@ -49,7 +49,6 @@ export const PATHS = {
   people: '/people',
   career: '/career',
 
-  search: (query?: string) => (query ? `/search?q=${encodeURIComponent(query)}` : '/search'),
   analytics: '/analytics',
   reviews: '/reviews',
   settings: '/settings',
@@ -87,7 +86,6 @@ export const STATIC_PAGE_PATHS = [
   PATHS.analytics,
   PATHS.reviews,
   PATHS.settings,
-  PATHS.search(),
 ] as const
 
 /** Reachable without a session; the proxy lets these through untouched. */

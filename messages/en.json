@@ -23,7 +23,6 @@
     "log": "Log",
     "collapse": "Collapse",
     "expand": "Expand",
-    "search": "Search",
     "timer": "Timer"
   },
   "common": {
@@ -507,14 +506,17 @@
   },
   "palette": {
     "open": "Search or run a command",
-    "placeholder": "Jump to a page, or type: energy 7 · sleep 7.5 · study 45 · 2026-09-01",
+    "placeholder": "Search anything, or type: sleep 7.5 · study 45 · 2026-09-01",
     "navigation": "Go to",
     "actions": "Log",
     "noResults": "Nothing matches",
     "hint": "⌘K",
     "setMetric": "Set {metric} to {value}",
     "gotoDate": "Open {date}",
-    "saved": "{metric} set to {value}"
+    "saved": "{metric} set to {value}",
+    "searching": "Searching…",
+    "inYourData": "In your notes and logs",
+    "nothingInData": "Nothing written about “{query}” yet"
   },
   "auth": {
     "title": "Sign in",
@@ -894,17 +896,11 @@
     "saved": "Note saved",
     "deleted": "Note deleted",
     "open": "Open",
-    "search": "Search notes",
     "learnedOn": "Learned on",
     "close": "Close",
     "edit": "Edit"
   },
   "search": {
-    "title": "Search",
-    "placeholder": "Search notes, journal, logs, tasks, people…",
-    "results": "{count} results",
-    "noResults": "Nothing found",
-    "minLength": "Type at least two characters",
     "types": {
       "note": "Note",
       "journal": "Journal",

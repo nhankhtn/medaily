@@ -99,11 +99,6 @@ describe('the built paths', () => {
     expect(PATHS.journalEntry('j1')).toBe('/journal?entry=j1')
   })
 
-  it('escapes a search term', () => {
-    expect(PATHS.search('deep work & rest')).toBe('/search?q=deep%20work%20%26%20rest')
-    expect(PATHS.search()).toBe('/search')
-  })
-
   it('builds the calendar with only the parts it was given', () => {
     expect(PATHS.calendar()).toBe('/calendar')
     expect(PATHS.calendar({ view: 'month' })).toBe('/calendar?view=month')

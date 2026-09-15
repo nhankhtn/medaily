@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { PATHS } from '@/lib/paths'
+import { MIN_QUERY_LENGTH, SEARCH_LIMIT } from '@/lib/search'
 
 export type SearchHit = {
   type: 'note' | 'journal' | 'daily' | 'task' | 'project' | 'goal' | 'person'
@@ -19,10 +20,10 @@ export type SearchHit = {
 export async function searchEverything(
   userId: string,
   query: string,
-  limit = 40,
+  limit = SEARCH_LIMIT,
 ): Promise<SearchHit[]> {
   const trimmed = query.trim()
-  if (trimmed.length < 2) return []
+  if (trimmed.length < MIN_QUERY_LENGTH) return []
 
   const rows = await db.execute<{
     type: SearchHit['type']

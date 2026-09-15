@@ -23,7 +23,6 @@
     "log": "Ghi",
     "collapse": "Thu gọn",
     "expand": "Mở rộng",
-    "search": "Tìm kiếm",
     "timer": "Bấm giờ"
   },
   "common": {
@@ -507,14 +506,17 @@
   },
   "palette": {
     "open": "Tìm kiếm hoặc chạy lệnh",
-    "placeholder": "Mở trang, hoặc gõ: energy 7 · sleep 7.5 · study 45 · 2026-09-01",
+    "placeholder": "Tìm mọi thứ, hoặc gõ: sleep 7.5 · study 45 · 2026-09-01",
     "navigation": "Đi tới",
     "actions": "Ghi nhanh",
     "noResults": "Không có kết quả",
     "hint": "⌘K",
     "setMetric": "Đặt {metric} = {value}",
     "gotoDate": "Mở ngày {date}",
-    "saved": "Đã đặt {metric} = {value}"
+    "saved": "Đã đặt {metric} = {value}",
+    "searching": "Đang tìm…",
+    "inYourData": "Trong ghi chú & bản ghi",
+    "nothingInData": "Chưa có gì viết về “{query}”"
   },
   "auth": {
     "title": "Đăng nhập",
@@ -894,17 +896,11 @@
     "saved": "Đã lưu ghi chú",
     "deleted": "Đã xóa ghi chú",
     "open": "Mở",
-    "search": "Tìm trong ghi chú",
     "learnedOn": "Học được ngày",
     "close": "Đóng",
     "edit": "Sửa"
   },
   "search": {
-    "title": "Tìm kiếm",
-    "placeholder": "Tìm trong ghi chú, nhật ký, bản ghi, việc, người…",
-    "results": "{count} kết quả",
-    "noResults": "Không tìm thấy gì",
-    "minLength": "Nhập ít nhất hai ký tự",
     "types": {
       "note": "Ghi chú",
       "journal": "Nhật ký",
