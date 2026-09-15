@@ -99,18 +99,34 @@ export function bindingKeyCaps(binding: string): string[] {
 
 const EVENT_KEY_ALIASES: Record<string, string> = { ' ': 'space', spacebar: 'space' }
 
-/** What the user just pressed, as a binding step — or null if it cannot be one. */
-export function chordFromEvent(event: {
-  key: string
+/**
+ * What a keyboard handler actually receives.
+ *
+ * `key` is typed loosely on purpose. The DOM says it is always a string, but
+ * these functions run inside a window-level `keydown` listener, which also
+ * receives whatever a password manager, a browser extension or an automation
+ * tool dispatches — and a plain `new Event('keydown')` carries no `key` at
+ * all. There, a throw does not lose a keystroke, it takes the page down.
+ */
+export type KeyEventLike = {
+  key?: unknown
   metaKey: boolean
   ctrlKey: boolean
   shiftKey: boolean
   altKey: boolean
-}): string | null {
-  const raw = event.key.toLowerCase()
-  const key = EVENT_KEY_ALIASES[raw] ?? raw
+}
 
-  if (key.length === 0 || ['meta', 'control', 'shift', 'alt'].includes(key)) return null
+/** The pressed key as a binding step's name, or null when the event has none. */
+function eventKey(event: KeyEventLike): string | null {
+  if (typeof event.key !== 'string' || event.key.length === 0) return null
+  const raw = event.key.toLowerCase()
+  return EVENT_KEY_ALIASES[raw] ?? raw
+}
+
+/** What the user just pressed, as a binding step — or null if it cannot be one. */
+export function chordFromEvent(event: KeyEventLike): string | null {
+  const key = eventKey(event)
+  if (key === null || ['meta', 'control', 'shift', 'alt'].includes(key)) return null
 
   const mod = event.metaKey || event.ctrlKey
   // A reserved key can still be bound once a modifier makes it unambiguous.
@@ -125,15 +141,10 @@ export function chordFromEvent(event: {
   return parts.join('+')
 }
 
-export function chordMatches(chord: Chord, event: {
-  key: string
-  metaKey: boolean
-  ctrlKey: boolean
-  shiftKey: boolean
-  altKey: boolean
-}): boolean {
-  const raw = event.key.toLowerCase()
-  const key = EVENT_KEY_ALIASES[raw] ?? raw
+export function chordMatches(chord: Chord, event: KeyEventLike): boolean {
+  const key = eventKey(event)
+  if (key === null) return false
+
   const mod = event.metaKey || event.ctrlKey
 
   if (key !== chord.key) return false

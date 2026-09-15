@@ -104,6 +104,27 @@ describe('matching a keypress', () => {
   it('does not fire on a different key', () => {
     expect(chordMatches(modK!, press('j', { meta: true }))).toBe(false)
   })
+
+  /**
+   * These run in a window-level keydown listener, which also receives events
+   * dispatched by password managers and browser extensions — and a plain
+   * `new Event('keydown')` has no `key` at all. Reading it blindly threw
+   * `Cannot read properties of undefined (reading 'toLowerCase')` and took the
+   * page down with it, so an event that cannot name a key must simply not match.
+   */
+  it('ignores an event carrying no key instead of throwing', () => {
+    const mods = { metaKey: true, ctrlKey: false, shiftKey: false, altKey: false }
+
+    expect(chordMatches(modK!, { ...mods })).toBe(false)
+    expect(chordMatches(modK!, { ...mods, key: undefined })).toBe(false)
+    expect(chordMatches(modK!, { ...mods, key: null })).toBe(false)
+    expect(chordMatches(modK!, { ...mods, key: '' })).toBe(false)
+    expect(chordMatches(modK!, { ...mods, key: 42 })).toBe(false)
+
+    expect(chordFromEvent({ ...mods })).toBeNull()
+    expect(chordFromEvent({ ...mods, key: undefined })).toBeNull()
+    expect(chordFromEvent({ ...mods, key: '' })).toBeNull()
+  })
 })
 
 describe('resolving stored bindings', () => {

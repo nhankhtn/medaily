@@ -130,6 +130,9 @@ export function DailyForm({
   // dialog, whatever the user has bound the app's save key to.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      // `key` can be missing on a keydown an extension dispatched; this is a
+      // window listener, so reading it blindly would take the page down.
+      if (typeof event.key !== 'string') return
       if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 's') return
       event.preventDefault()
       submit()
