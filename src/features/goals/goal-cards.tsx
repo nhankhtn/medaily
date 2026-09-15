@@ -95,8 +95,13 @@ export function GoalCards({
                   }
                 }}
                 aria-label={t('reorder', { name: goal.name, position: index + 1, total: order.length })}
-                // `touch-action: none` or the browser scrolls instead of dragging.
-                className="text-text-subtle hover:text-text -mt-1 -ml-1 shrink-0 cursor-grab touch-none p-1 active:cursor-grabbing"
+                // 44px of target on a phone — the icon is 16px, the rest is
+                // reach. Negative margin keeps the card looking the same.
+                // `touch-action: none` or the browser scrolls instead of
+                // dragging; the callout rule stops iOS opening its long-press
+                // menu over the drag.
+                style={{ WebkitTouchCallout: 'none' }}
+                className="text-text-subtle hover:text-text -m-2 flex size-11 shrink-0 cursor-grab touch-none items-center justify-center select-none active:cursor-grabbing sm:-m-1 sm:size-7"
               >
                 <GripVertical className="size-4" />
               </button>
