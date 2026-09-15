@@ -11,6 +11,7 @@ import {
   deletePlannedBlock,
   insertEvent,
   insertPlannedBlock,
+  updateEvent,
 } from '@/server/repositories/planning'
 
 const timeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/)
@@ -26,9 +27,18 @@ function revalidatePlanning() {
   revalidatePath(PATHS.home)
 }
 
-export async function createEvent(input: unknown) {
+/**
+ * Create or edit one event.
+ *
+ * A repeating event is stored as a single row, so editing it moves the whole
+ * series — there is nowhere to record "just this Friday", and pretending
+ * otherwise would silently drop the change on every other occurrence. The
+ * dialog says so before it saves.
+ */
+export async function saveEvent(input: unknown) {
   const parsed = z
     .object({
+      id: z.string().uuid().optional(),
       title: z.string().min(1).max(200),
       date: isoDateSchema,
       startTime: timeSchema.optional(),
@@ -39,19 +49,18 @@ export async function createEvent(input: unknown) {
       recurrenceRule: z.enum(RECURRENCE_RULES).nullable().optional(),
       recurrenceUntil: isoDateSchema.nullable().optional(),
     })
-    .refine(
-      (value) => !value.recurrenceUntil || value.recurrenceUntil >= value.date,
-      { message: 'the series cannot end before it starts', path: ['recurrenceUntil'] },
-    )
+    .refine((value) => !value.recurrenceUntil || value.recurrenceUntil >= value.date, {
+      message: 'the series cannot end before it starts',
+      path: ['recurrenceUntil'],
+    })
     .safeParse(input)
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
-  const { date, startTime, endTime, allDay, recurrenceRule } = parsed.data
+  const { id, date, startTime, endTime, allDay, recurrenceRule } = parsed.data
   const startsAt = new Date(`${date}T${allDay ? '00:00' : (startTime ?? '09:00')}:00`)
   const endsAt = allDay ? null : endTime ? new Date(`${date}T${endTime}:00`) : null
 
-  await insertEvent({
-    userId: await getCurrentUserId(),
+  const row = {
     title: parsed.data.title,
     startsAt,
     endsAt,
@@ -61,7 +70,17 @@ export async function createEvent(input: unknown) {
     recurrenceRule: recurrenceRule ?? null,
     // An end date without a rule would be a bound on nothing.
     recurrenceUntil: recurrenceRule ? (parsed.data.recurrenceUntil ?? null) : null,
-  })
+  }
+
+  const userId = await getCurrentUserId()
+
+  if (id) {
+    // A well-formed uuid still has to name a row this user owns.
+    const updated = await updateEvent(userId, id, row)
+    if (!updated) return { ok: false as const, error: 'not_found' as const }
+  } else {
+    await insertEvent({ ...row, userId })
+  }
 
   revalidatePlanning()
   return { ok: true as const }

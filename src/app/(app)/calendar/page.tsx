@@ -319,6 +319,7 @@ async function WeekView({ anchor }: { anchor?: ISODate }) {
                         ? format.dateTime(event.startsAt, 'weekdayDayMonth')
                         : format.dateTime(event.startsAt, 'weekdayDayMonthTime')}
                     </span>
+                    <EventDialog defaultDate={event.series.date} event={event.series} />
                   </li>
                 ))}
               </ul>

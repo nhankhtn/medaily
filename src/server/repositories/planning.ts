@@ -9,11 +9,7 @@ import { toISODate, type DateRange } from '@/lib/dates'
  * once, at its first occurrence, so it qualifies whenever the series has begun
  * and has not run out — the occurrences themselves come from `expandAll`.
  */
-export async function findEvents(
-  userId: string,
-  from: Date,
-  to: Date,
-): Promise<CalendarEvent[]> {
+export async function findEvents(userId: string, from: Date, to: Date): Promise<CalendarEvent[]> {
   return db
     .select()
     .from(events)
@@ -25,10 +21,7 @@ export async function findEvents(
           and(isNull(events.recurrenceRule), gte(events.startsAt, from)),
           and(
             isNotNull(events.recurrenceRule),
-            or(
-              isNull(events.recurrenceUntil),
-              gte(events.recurrenceUntil, toISODate(from)),
-            ),
+            or(isNull(events.recurrenceUntil), gte(events.recurrenceUntil, toISODate(from))),
           ),
         ),
       ),
@@ -43,14 +36,24 @@ export async function insertEvent(values: typeof events.$inferInsert): Promise<C
   return row
 }
 
+export async function updateEvent(
+  userId: string,
+  id: string,
+  patch: Partial<typeof events.$inferInsert>,
+): Promise<CalendarEvent | null> {
+  const rows = await db
+    .update(events)
+    .set(patch)
+    .where(and(eq(events.userId, userId), eq(events.id, id)))
+    .returning()
+  return rows[0] ?? null
+}
+
 export async function deleteEvent(userId: string, id: string): Promise<void> {
   await db.delete(events).where(and(eq(events.userId, userId), eq(events.id, id)))
 }
 
-export async function findPlannedBlocks(
-  userId: string,
-  range: DateRange,
-): Promise<PlannedBlock[]> {
+export async function findPlannedBlocks(userId: string, range: DateRange): Promise<PlannedBlock[]> {
   return db
     .select()
     .from(plannedBlocks)

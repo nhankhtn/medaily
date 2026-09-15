@@ -15,6 +15,7 @@ import {
   type ISODate,
 } from '@/lib/dates'
 import { monthGrid, monthsOfYear } from '@/lib/planning/month-grid'
+import { toEventForm, type EventForm } from '@/lib/planning/event-form'
 import { expandAll } from '@/lib/planning/recurrence'
 import { findSessions } from '@/server/repositories/learning'
 import { findEvents, findPlannedBlocks } from '@/server/repositories/planning'
@@ -24,7 +25,7 @@ import { dayContextOf, getSettings } from '@/server/services/settings'
  * One dated instance of an event. A repeating event yields several, all sharing
  * the stored row's `id`, so `key` is what a list can be keyed and linked by.
  */
-export type EventOccurrence = CalendarEvent & { key: string }
+export type EventOccurrence = CalendarEvent & { key: string; series: EventForm }
 
 export type PlanVsActualDay = {
   date: ISODate
@@ -62,9 +63,14 @@ export const getPlanningData = cache(async (weekOf?: ISODate): Promise<PlanningD
     findSessions(userId, range, 500),
   ])
 
+  const seriesById = new Map(eventRows.map((row) => [row.id, toEventForm(row)]))
+
   const days = eachDay(range).map((date) => {
     const dayBlocks = blocks.filter((block) => block.blockDate === date)
-    const plannedMinutes = dayBlocks.reduce((sum, block) => sum + minutesBetween(block.startTime, block.endTime), 0)
+    const plannedMinutes = dayBlocks.reduce(
+      (sum, block) => sum + minutesBetween(block.startTime, block.endTime),
+      0,
+    )
     const actualMinutes = sessions
       .filter((session) => session.sessionDate === date)
       .reduce((sum, session) => sum + session.minutes, 0)
@@ -79,6 +85,7 @@ export const getPlanningData = cache(async (weekOf?: ISODate): Promise<PlanningD
     events: expandAll(eventRows, window).map((event) => ({
       ...event,
       key: `${event.id}:${toISODate(event.startsAt)}`,
+      series: seriesById.get(event.id) ?? toEventForm(event),
     })),
     days,
     totals: {
@@ -116,7 +123,11 @@ export type MonthCalendar = {
 export type YearCalendar = {
   today: ISODate
   year: number
-  months: { month: ISODate; weeks: { date: ISODate; inMonth: boolean; count: number }[][]; count: number }[]
+  months: {
+    month: ISODate
+    weeks: { date: ISODate; inMonth: boolean; count: number }[][]
+    count: number
+  }[]
   count: number
 }
 
@@ -157,8 +168,7 @@ async function collectItems(userId: string, range: DateRange): Promise<CalendarI
 
   // All-day first, then by clock time; events before blocks at the same minute.
   return items.sort(
-    (a, b) =>
-      (a.at?.getTime() ?? -1) - (b.at?.getTime() ?? -1) || a.kind.localeCompare(b.kind),
+    (a, b) => (a.at?.getTime() ?? -1) - (b.at?.getTime() ?? -1) || a.kind.localeCompare(b.kind),
   )
 }
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { Plus } from 'lucide-react'
+import { Pencil, Plus } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
@@ -11,39 +11,65 @@ import { Select } from '@/components/ui/select'
 import { Field } from '@/features/projects/project-dialog'
 import type { ISODate } from '@/lib/dates'
 import { RECURRENCE_RULES, type RecurrenceRule } from '@/lib/planning/recurrence'
-import { createEvent, createPlannedBlock } from '@/server/actions/planning'
+import { createPlannedBlock, removeEvent, saveEvent } from '@/server/actions/planning'
+import type { EventForm } from '@/lib/planning/event-form'
 
 const BLOCK_KINDS = ['deep_work', 'learning', 'project', 'exercise', 'other'] as const
 
-export function EventDialog({ defaultDate }: { defaultDate: ISODate }) {
+/**
+ * One event, new or already there.
+ *
+ * Editing a repeating one moves the whole series: the event is stored as a
+ * single row with a rule, so there is nowhere to keep "just this Friday". The
+ * form says so rather than letting the change look narrower than it is.
+ */
+export function EventDialog({ defaultDate, event }: { defaultDate: ISODate; event?: EventForm }) {
   const t = useTranslations('calendar')
   const tc = useTranslations('common')
   const [open, setOpen] = useState(false)
-  const [allDay, setAllDay] = useState(false)
-  const [date, setDate] = useState<ISODate>(defaultDate)
-  const [repeat, setRepeat] = useState<RecurrenceRule | ''>('')
+  const [allDay, setAllDay] = useState(event?.allDay ?? false)
+  const [date, setDate] = useState<ISODate>(event?.date ?? defaultDate)
+  const [repeat, setRepeat] = useState<RecurrenceRule | ''>(event?.recurrenceRule ?? '')
+  const [confirming, setConfirming] = useState(false)
   const [pending, startTransition] = useTransition()
 
   const close = () => {
     setOpen(false)
-    setAllDay(false)
-    setDate(defaultDate)
-    setRepeat('')
+    setAllDay(event?.allDay ?? false)
+    setDate(event?.date ?? defaultDate)
+    setRepeat(event?.recurrenceRule ?? '')
+    setConfirming(false)
   }
+
+  const title = event ? t('editEvent') : t('addEvent')
 
   return (
     <Dialog open={open} onOpenChange={(next) => (next ? setOpen(true) : close())}>
       <DialogTrigger asChild>
-        <Button size="sm">
-          <Plus className="size-4" />
-          {t('addEvent')}
-        </Button>
+        {event ? (
+          <button
+            type="button"
+            aria-label={t('editEvent')}
+            className="text-text-subtle hover:bg-surface-2 hover:text-text flex size-7 shrink-0 items-center justify-center rounded-full"
+          >
+            <Pencil className="size-3.5" />
+          </button>
+        ) : (
+          <Button size="sm">
+            <Plus className="size-4" />
+            {t('addEvent')}
+          </Button>
+        )}
       </DialogTrigger>
-      <DialogContent title={t('addEvent')}>
+      <DialogContent
+        title={title}
+        description={event && repeat ? t('editsWholeSeries') : undefined}
+      >
         <form
           action={(formData) =>
             startTransition(async () => {
-              const result = await createEvent({
+              const result = await saveEvent({
+                ...(event ? { id: event.id } : {}),
                 title: String(formData.get('title') ?? ''),
                 date,
                 startTime: allDay ? undefined : String(formData.get('startTime') ?? '09:00'),
@@ -65,7 +91,13 @@ export function EventDialog({ defaultDate }: { defaultDate: ISODate }) {
           className="space-y-3"
         >
           <Field label={t('eventTitle')}>
-            <Input name="title" required autoFocus maxLength={200} />
+            <Input
+              name="title"
+              required
+              autoFocus
+              maxLength={200}
+              defaultValue={event?.title ?? ''}
+            />
           </Field>
 
           <div className="grid grid-cols-3 gap-3">
@@ -74,14 +106,24 @@ export function EventDialog({ defaultDate }: { defaultDate: ISODate }) {
                 type="date"
                 name="date"
                 value={date}
-                onChange={(event) => setDate(event.target.value)}
+                onChange={(field) => setDate(field.target.value)}
               />
             </Field>
             <Field label={t('startTime')}>
-              <Input type="time" name="startTime" defaultValue="09:00" disabled={allDay} />
+              <Input
+                type="time"
+                name="startTime"
+                defaultValue={event?.startTime ?? '09:00'}
+                disabled={allDay}
+              />
             </Field>
             <Field label={t('endTime')}>
-              <Input type="time" name="endTime" disabled={allDay} />
+              <Input
+                type="time"
+                name="endTime"
+                defaultValue={event?.endTime ?? ''}
+                disabled={allDay}
+              />
             </Field>
           </div>
 
@@ -89,7 +131,7 @@ export function EventDialog({ defaultDate }: { defaultDate: ISODate }) {
             <input
               type="checkbox"
               checked={allDay}
-              onChange={(event) => setAllDay(event.target.checked)}
+              onChange={(field) => setAllDay(field.target.checked)}
               className="size-4 accent-[var(--accent)]"
             />
             {t('allDay')}
@@ -100,7 +142,7 @@ export function EventDialog({ defaultDate }: { defaultDate: ISODate }) {
               <Select
                 name="recurrenceRule"
                 value={repeat}
-                onChange={(event) => setRepeat(event.target.value as RecurrenceRule | '')}
+                onChange={(field) => setRepeat(field.target.value as RecurrenceRule | '')}
               >
                 <option value="">{t('repeats.none')}</option>
                 {RECURRENCE_RULES.map((rule) => (
@@ -112,22 +154,54 @@ export function EventDialog({ defaultDate }: { defaultDate: ISODate }) {
             </Field>
             {repeat ? (
               <Field label={t('repeatUntil')}>
-                <Input type="date" name="recurrenceUntil" min={date} />
+                <Input
+                  type="date"
+                  name="recurrenceUntil"
+                  min={date}
+                  defaultValue={event?.recurrenceUntil ?? ''}
+                />
               </Field>
             ) : null}
           </div>
 
           <Field label={t('location')}>
-            <Input name="location" maxLength={200} />
+            <Input name="location" maxLength={200} defaultValue={event?.location ?? ''} />
           </Field>
 
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="ghost" onClick={() => close()}>
-              {tc('cancel')}
-            </Button>
-            <Button type="submit" disabled={pending}>
-              {tc('save')}
-            </Button>
+          <div className="flex items-center justify-between gap-2">
+            {event ? (
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={pending}
+                // Two taps, because a repeating event goes in one go and there
+                // is no undo.
+                onClick={() => {
+                  if (!confirming) {
+                    setConfirming(true)
+                    return
+                  }
+                  startTransition(async () => {
+                    await removeEvent(event.id)
+                    toast.success(t('deleted'))
+                    close()
+                  })
+                }}
+              >
+                {confirming ? t('confirmDelete') : tc('delete')}
+              </Button>
+            ) : (
+              <span />
+            )}
+
+            <div className="flex gap-2">
+              <Button type="button" variant="ghost" onClick={() => close()}>
+                {tc('cancel')}
+              </Button>
+              <Button type="submit" disabled={pending}>
+                {tc('save')}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>
