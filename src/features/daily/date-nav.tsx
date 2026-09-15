@@ -80,13 +80,11 @@ export function DateNav({ date, today }: { date: ISODate; today: ISODate }) {
               input.focus()
             }
           }}
-          className="border-border-strong hover:bg-surface-2 flex h-9 cursor-pointer items-center gap-2 rounded-[var(--radius)] border px-3 text-sm"
+          className="border-border-strong hover:bg-surface-2 flex h-9 items-center gap-2 rounded-[var(--radius)] border px-3 text-sm"
         >
           <CalendarDays className="text-text-subtle size-4" />
           <span className="tabular-nums">
-            {isToday
-              ? t('today')
-              : format.dateTime(fromISODate(date), 'dayMonth')}
+            {isToday ? t('today') : format.dateTime(fromISODate(date), 'dayMonth')}
           </span>
         </button>
 
