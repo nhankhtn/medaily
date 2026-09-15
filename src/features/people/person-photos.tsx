@@ -164,6 +164,7 @@ export function PersonPhotos({
                 onClick={() => setViewing(photo)}
                 className="border-border-base hover:border-accent block aspect-square w-full overflow-hidden rounded-[var(--radius)] border"
               >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={photo.thumbUrl}
                   alt={photo.caption ?? t('photoOf', { name: personName })}
@@ -183,6 +184,7 @@ export function PersonPhotos({
             className="sm:max-w-3xl"
           >
             <div className="space-y-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={viewing.fullUrl}
                 alt={viewing.caption ?? t('photoOf', { name: personName })}

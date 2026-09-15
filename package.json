@@ -23,7 +23,8 @@
     "smoke": "tsx scripts/smoke.ts",
     "capture:check": "tsx scripts/capture-check.ts",
     "db:baseline": "tsx scripts/baseline.ts",
-    "clean": "rm -rf .next node_modules"
+    "clean": "rm -rf .next node_modules",
+    "clean:cache": "rm -rf .next"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.124.0",
