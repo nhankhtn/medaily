@@ -75,7 +75,7 @@ export function PersonDialog({ person, trigger }: { person?: PersonView; trigger
             </Field>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <Field label={t('company')}>
               <Input name="company" defaultValue={person?.company ?? ''} maxLength={200} />
             </Field>
@@ -84,7 +84,7 @@ export function PersonDialog({ person, trigger }: { person?: PersonView; trigger
             </Field>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid gap-3 sm:grid-cols-3">
             <Field label={t('birthday')}>
               <Input type="date" name="birthday" defaultValue={person?.birthday ?? ''} />
             </Field>
@@ -186,7 +186,7 @@ export function InteractionDialog({
             </Select>
           </Field>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <Field label={t('channel')}>
               <Select name="channel" defaultValue="message">
                 {CHANNELS.map((channel) => (
@@ -265,7 +265,7 @@ export function ReminderPanel({
             <Field label={t('reminderTitle')}>
               <Input name="title" required autoFocus maxLength={200} />
             </Field>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-3 sm:grid-cols-2">
               <Field label={t('dueOn')}>
                 <Input type="date" name="dueOn" defaultValue={today} />
               </Field>

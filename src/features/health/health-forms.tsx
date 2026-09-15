@@ -68,7 +68,7 @@ export function WorkoutDialog({ today }: { today: ISODate }) {
       </DialogTrigger>
       <DialogContent title={t('addWorkout')} description={t('noteHint')}>
         <form action={submit} className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <Field label={t('type')}>
               <Input name="type" required autoFocus maxLength={80} />
             </Field>
@@ -193,7 +193,7 @@ export function MeasurementForm({ today }: { today: ISODate }) {
 
   return (
     <form action={submit} className="flex flex-wrap items-end gap-2">
-      <label className="w-36 space-y-1.5">
+      <label className="w-full space-y-1.5 sm:w-44">
         <span className="text-xs font-medium text-text-muted">{tc('today')}</span>
         <Input type="date" name="measuredOn" max={today} defaultValue={today} />
       </label>
@@ -248,7 +248,7 @@ export function NutritionForm({
 
   return (
     <form action={submit} className="flex flex-wrap items-end gap-2">
-      <label className="w-36 space-y-1.5">
+      <label className="w-full space-y-1.5 sm:w-44">
         <span className="text-xs font-medium text-text-muted">{tc('today')}</span>
         <Input type="date" name="logDate" max={today} defaultValue={today} />
       </label>

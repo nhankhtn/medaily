@@ -76,7 +76,7 @@ export function NoteEditor({
             <Input name="title" defaultValue={note?.title} required autoFocus maxLength={300} />
           </Field>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <Field label={t('type')}>
               <Select name="type" value={type} onChange={(event) => setType(event.target.value)}>
                 {TYPES.map((option) => (

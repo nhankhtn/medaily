@@ -133,7 +133,7 @@ export function GoalDialog({
             <Textarea name="description" defaultValue={goal?.description ?? ''} rows={2} />
           </Field>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <Field label={t('category')}>
               <Select name="category" defaultValue={goal?.category ?? 'knowledge'}>
                 {CATEGORIES.map((category) => (
@@ -154,7 +154,7 @@ export function GoalDialog({
             </Field>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <Field label={t('startDate')}>
               <Input type="date" name="startDate" defaultValue={goal?.startDate ?? today} />
             </Field>

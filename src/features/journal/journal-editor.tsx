@@ -67,7 +67,7 @@ export function JournalEditor({
 
       <DialogContent title={entry ? t('edit') : t('newEntry')}>
         <form action={submit} className="space-y-3">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid gap-3 sm:grid-cols-3">
             <Field label={t('date')}>
               <Input
                 type="date"

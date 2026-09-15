@@ -93,7 +93,7 @@ export function GoalFields({
         </Field>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid gap-2 sm:grid-cols-2">
         <Field label={t('startDate')}>
           <Input
             type="date"

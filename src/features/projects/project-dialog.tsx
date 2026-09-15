@@ -72,7 +72,7 @@ export function ProjectDialog({
             <Textarea name="description" defaultValue={project?.description ?? ''} rows={2} />
           </Field>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <Field label={t('status')}>
               <Select name="status" defaultValue={project?.status ?? 'active'}>
                 {STATUSES.map((status) => (
@@ -93,7 +93,7 @@ export function ProjectDialog({
             </Field>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <Field label={t('startDate')}>
               <Input type="date" name="startDate" defaultValue={project?.startDate ?? ''} />
             </Field>
@@ -129,7 +129,9 @@ export function ProjectDialog({
 
 export function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="block space-y-1.5">
+    // `min-w-0`: a native date input reports a wide intrinsic size, and a grid
+    // item that cannot shrink below it pushes the whole row off the screen.
+    <label className="block min-w-0 space-y-1.5">
       <span className="text-sm font-medium">{label}</span>
       {children}
     </label>

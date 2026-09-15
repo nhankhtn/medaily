@@ -76,7 +76,7 @@ export function Field({
   return (
     <div
       className={cn(
-        '-mx-2 space-y-2 rounded-[var(--radius)] px-2 py-1 transition-colors',
+        '-mx-2 min-w-0 space-y-2 rounded-[var(--radius)] px-2 py-1 transition-colors',
         copied && 'bg-accent-soft/60',
       )}
     >

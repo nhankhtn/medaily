@@ -100,7 +100,7 @@ export function EventDialog({ defaultDate, event }: { defaultDate: ISODate; even
             />
           </Field>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid gap-3 sm:grid-cols-3">
             <Field label={t('date')}>
               <Input
                 type="date"
@@ -137,7 +137,7 @@ export function EventDialog({ defaultDate, event }: { defaultDate: ISODate; even
             {t('allDay')}
           </label>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <Field label={t('repeat')}>
               <Select
                 name="recurrenceRule"
@@ -251,7 +251,7 @@ export function BlockDialog({
           }
           className="space-y-3"
         >
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid gap-3 sm:grid-cols-3">
             <Field label={t('date')}>
               <Input type="date" name="blockDate" defaultValue={defaultDate} />
             </Field>

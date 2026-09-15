@@ -324,7 +324,7 @@ export function AssetDialog({ today }: { today: ISODate }) {
           <Field label={t('accountName')}>
             <Input name="name" required autoFocus maxLength={120} />
           </Field>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <Field label={t('kind')}>
               <Select name="kind" defaultValue="asset">
                 <option value="asset">{t('asset')}</option>
