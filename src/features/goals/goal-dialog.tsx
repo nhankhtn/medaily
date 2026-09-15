@@ -17,6 +17,8 @@ import {
   GOAL_PERIODS as PERIODS,
   GOAL_PRIORITIES as PRIORITIES,
 } from '@/lib/goals/options'
+import type { BindableMetric } from '@/lib/metrics/bindable'
+import { MetricOptions } from '@/features/metrics/metric-options'
 import { METRIC_KEYS, type MetricKey } from '@/lib/types'
 import type { ISODate } from '@/lib/dates'
 import { archiveGoal, saveGoal } from '@/server/actions/goals'
@@ -40,10 +42,13 @@ const SUGGESTED_TARGET: Partial<Record<MetricKey, number>> = {
 export function GoalDialog({
   goal,
   today,
+  metrics,
   trigger,
 }: {
   goal?: GoalView
   today: ISODate
+  /** The person's own metrics, offered alongside the built-in ones. */
+  metrics: BindableMetric[]
   trigger?: React.ReactNode
 }) {
   const t = useTranslations('goals')
@@ -53,9 +58,7 @@ export function GoalDialog({
   const [pending, startTransition] = useTransition()
 
   const [mode, setMode] = useState<(typeof MODES)[number]>(goal?.progressMode ?? 'metric')
-  const [metric, setMetric] = useState<MetricKey>(
-    (goal?.metricKey as MetricKey) ?? 'technical_study_minutes',
-  )
+  const [metric, setMetric] = useState<string>(goal?.metricKey ?? 'technical_study_minutes')
   const [aggregation, setAggregation] = useState<(typeof AGGREGATIONS)[number]>('sum')
   const [period, setPeriod] = useState<(typeof PERIODS)[number]>(
     (goal?.metricPeriod as (typeof PERIODS)[number]) ?? 'weekly',
@@ -69,9 +72,18 @@ export function GoalDialog({
       : String(SUGGESTED_TARGET.technical_study_minutes),
   )
 
-  const pickMetric = (next: MetricKey) => {
+  const builtIn: BindableMetric[] = METRIC_KEYS.map((key) => ({
+    key,
+    label: tm(key),
+    suggested: SUGGESTED_TARGET[key] ?? 1,
+  }))
+  const chosen = [...builtIn, ...metrics].find((option) => option.key === metric)
+
+  const pickMetric = (next: string) => {
     setMetric(next)
-    setTarget(String(SUGGESTED_TARGET[next] ?? 1))
+    setTarget(
+      String([...builtIn, ...metrics].find((option) => option.key === next)?.suggested ?? 1),
+    )
     // Entertainment is the metric people cap rather than chase.
     setDirection(next === 'entertainment_minutes' ? 'at_most' : 'at_least')
     setAggregation(next === 'sleep_hours' || next === 'energy' || next === 'mood' ? 'avg' : 'sum')
@@ -186,17 +198,10 @@ export function GoalDialog({
               />
             </Field>
           ) : mode === 'metric' ? (
-            <div className="space-y-2 rounded-[var(--radius)] border border-border-base bg-surface-2 p-3">
+            <div className="border-border-base bg-surface-2 space-y-2 rounded-[var(--radius)] border p-3">
               <Field label={t('metric')}>
-                <Select
-                  value={metric}
-                  onChange={(event) => pickMetric(event.target.value as MetricKey)}
-                >
-                  {METRIC_KEYS.map((key) => (
-                    <option key={key} value={key}>
-                      {tm(key)}
-                    </option>
-                  ))}
+                <Select value={metric} onChange={(event) => pickMetric(event.target.value)}>
+                  <MetricOptions builtIn={builtIn} own={metrics} t={t} />
                 </Select>
               </Field>
 
@@ -249,10 +254,10 @@ export function GoalDialog({
                 </Field>
               </div>
 
-              <p className="text-xs text-accent">
+              <p className="text-accent text-xs">
                 {t('metricPreview', {
                   aggregation: t(`aggregations.${aggregation}`),
-                  metric: tm(metric),
+                  metric: chosen?.label ?? metric,
                   period: t(`periods.${period}`),
                   target,
                 })}

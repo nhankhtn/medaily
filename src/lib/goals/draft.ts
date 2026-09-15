@@ -48,7 +48,12 @@ export type ParsedGoal = {
 }
 
 export type GoalMetricPlan = {
-  key: MetricKey
+  /*
+   * Not `MetricKey`: a goal may also track a metric this person added
+   * themselves. The model only ever proposes a built-in one, which is why the
+   * parsing below still checks against that list.
+   */
+  key: string
   aggregation: GoalAggregation
   period: GoalPeriod
   target: number

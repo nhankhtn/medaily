@@ -2,6 +2,9 @@ import { isMetricKey } from '@/server/repositories/goals'
 import { aggregateMetric } from '@/server/repositories/goals'
 import { aggregateCustomMetric } from '@/server/repositories/custom-metrics'
 import type { DateRange } from '@/lib/dates'
+import { bindableCustomMetrics, type BindableMetric } from '@/lib/metrics/bindable'
+import { findCustomMetrics } from '@/server/repositories/custom-metrics'
+import { getSettings } from '@/server/services/settings'
 
 export type MetricAggregation = 'sum' | 'avg' | 'count_days' | 'latest'
 
@@ -19,4 +22,25 @@ export async function aggregateAnyMetric(
   return isMetricKey(key)
     ? aggregateMetric(userId, key, aggregation, range)
     : aggregateCustomMetric(userId, key, aggregation, range)
+}
+
+/**
+ * The metrics this person can point a habit or a goal at: the built-in ones,
+ * plus their own that carry a number. Labelled in the language they read, so
+ * the form can render a select without a second lookup.
+ */
+export async function bindableMetrics(userId: string): Promise<BindableMetric[]> {
+  const settings = await getSettings()
+  return bindableCustomMetrics(await findCustomMetrics(userId), settings.locale)
+}
+
+/**
+ * Whether a key is one this person may bind to. A built-in always is; a custom
+ * one has to be theirs, still tracked, and hold a number — which is the same
+ * question the select answers, asked again on the way in.
+ */
+export async function canBindMetric(userId: string, key: string): Promise<boolean> {
+  if (isMetricKey(key)) return true
+  const own = await bindableMetrics(userId)
+  return own.some((metric) => metric.key === key)
 }

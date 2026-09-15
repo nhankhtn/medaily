@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { HabitDialog } from '@/features/habits/habit-dialog'
 import type { ISODate } from '@/lib/dates'
 import { toggleHabit } from '@/server/actions/habits'
+import type { BindableMetric } from '@/lib/metrics/bindable'
 import type { HabitView } from '@/server/services/habits'
 import { cn } from '@/lib/utils'
 
@@ -19,18 +20,26 @@ const CELL_TONE = {
   not_scheduled: 'bg-surface-2',
 } as const
 
-export function HabitList({ habits, today }: { habits: HabitView[]; today: ISODate }) {
+export function HabitList({
+  habits,
+  today,
+  metrics,
+}: {
+  habits: HabitView[]
+  today: ISODate
+  metrics: BindableMetric[]
+}) {
   const t = useTranslations('habits')
   const [optimistic, setOptimistic] = useState<Record<string, boolean>>({})
   const [pending, startTransition] = useTransition()
 
   if (habits.length === 0) {
     return (
-      <div className="rounded-[var(--radius)] border border-dashed border-border-strong bg-surface p-6 text-center">
+      <div className="border-border-strong bg-surface rounded-[var(--radius)] border border-dashed p-6 text-center">
         <p className="font-medium">{t('noneYet')}</p>
-        <p className="mx-auto mt-1 max-w-prose text-sm text-text-subtle">{t('noneYetBody')}</p>
+        <p className="text-text-subtle mx-auto mt-1 max-w-prose text-sm">{t('noneYetBody')}</p>
         <div className="mt-4 flex justify-center">
-          <HabitDialog today={today} />
+          <HabitDialog today={today} metrics={metrics} />
         </div>
       </div>
     )
@@ -58,7 +67,7 @@ export function HabitList({ habits, today }: { habits: HabitView[]; today: ISODa
         return (
           <li
             key={habit.id}
-            className="rounded-[var(--radius)] border border-border-base bg-surface p-3"
+            className="border-border-base bg-surface rounded-[var(--radius)] border p-3"
           >
             <div className="flex items-start gap-3">
               <button
@@ -70,7 +79,7 @@ export function HabitList({ habits, today }: { habits: HabitView[]; today: ISODa
                 className={cn(
                   'flex size-9 shrink-0 items-center justify-center rounded-full border transition-colors',
                   done
-                    ? 'border-transparent bg-good text-white'
+                    ? 'bg-good border-transparent text-white'
                     : habit.scheduledToday || weekly
                       ? 'border-border-strong hover:bg-surface-2'
                       : 'border-border-base opacity-40',
@@ -95,11 +104,11 @@ export function HabitList({ habits, today }: { habits: HabitView[]; today: ISODa
                   ) : null}
                 </div>
 
-                <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-text-subtle">
+                <div className="text-text-subtle mt-1 flex flex-wrap items-center gap-3 text-xs">
                   <span className="flex items-center gap-1">
                     <Flame className={cn('size-3.5', habit.currentStreak > 0 && 'text-warn')} />
                     <span className="tabular-nums">{habit.currentStreak}</span>
-                    {habit.frozen ? <Snowflake className="size-3 text-accent" /> : null}
+                    {habit.frozen ? <Snowflake className="text-accent size-3" /> : null}
                   </span>
                   {habit.monthlyRate !== null ? (
                     <span className="tabular-nums">
@@ -109,6 +118,7 @@ export function HabitList({ habits, today }: { habits: HabitView[]; today: ISODa
                   <HabitDialog
                     habit={habit}
                     today={today}
+                    metrics={metrics}
                     trigger={
                       <Button variant="ghost" size="sm" className="ml-auto h-6 px-1.5">
                         <Pencil className="size-3" />

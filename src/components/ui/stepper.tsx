@@ -3,7 +3,11 @@
 import { Minus, Plus } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
-/** Half-hour stepper for sleep: wide targets, no keyboard needed (spec 6.2). */
+/**
+ * Wide targets, no keyboard needed (spec 6.2). The defaults are sleep's: half
+ * an hour a step, and `+` on an empty field starts from a night's sleep rather
+ * than from zero. Anything counted rather than slept passes its own.
+ */
 export function Stepper({
   value,
   onChange,
@@ -11,6 +15,7 @@ export function Stepper({
   step = 0.5,
   min = 0,
   max = 24,
+  start = 7,
   suffix,
 }: {
   value: number | null
@@ -19,13 +24,15 @@ export function Stepper({
   step?: number
   min?: number
   max?: number
+  /** What `+` counts up from when the field is empty. */
+  start?: number
   suffix?: string
 }) {
   const t = useTranslations('common')
   const round = (n: number) => Math.round(n / step) * step
 
   const bump = (delta: number) => {
-    const base = value ?? 7
+    const base = value ?? start
     onChange(Math.min(max, Math.max(min, round(base + delta))))
   }
 
@@ -35,7 +42,7 @@ export function Stepper({
         type="button"
         onClick={() => bump(-step)}
         aria-label={`${name} -${step}`}
-        className="flex size-11 items-center justify-center rounded-[var(--radius)] border border-border-strong text-text-muted hover:bg-surface-2"
+        className="border-border-strong text-text-muted hover:bg-surface-2 flex size-11 items-center justify-center rounded-[var(--radius)] border"
       >
         <Minus className="size-4" />
       </button>
@@ -56,10 +63,10 @@ export function Stepper({
             if (Number.isNaN(parsed)) return
             onChange(Math.min(max, Math.max(min, parsed)))
           }}
-          className="h-11 w-full rounded-[var(--radius)] border border-border-strong bg-surface px-3 text-center text-base tabular-nums text-text focus:border-accent focus:outline-none focus:inset-ring-1 focus:inset-ring-accent"
+          className="border-border-strong bg-surface text-text focus:border-accent focus:inset-ring-accent h-11 w-full rounded-[var(--radius)] border px-3 text-center text-base tabular-nums focus:inset-ring-1 focus:outline-none"
         />
         {suffix ? (
-          <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-text-subtle">
+          <span className="text-text-subtle pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs">
             {suffix}
           </span>
         ) : null}
@@ -68,7 +75,7 @@ export function Stepper({
         type="button"
         onClick={() => bump(step)}
         aria-label={`${name} +${step}`}
-        className="flex size-11 items-center justify-center rounded-[var(--radius)] border border-border-strong text-text-muted hover:bg-surface-2"
+        className="border-border-strong text-text-muted hover:bg-surface-2 flex size-11 items-center justify-center rounded-[var(--radius)] border"
       >
         <Plus className="size-4" />
       </button>
@@ -76,7 +83,7 @@ export function Stepper({
         <button
           type="button"
           onClick={() => onChange(null)}
-          className="shrink-0 px-1 text-xs text-text-subtle hover:text-text"
+          className="text-text-subtle hover:text-text shrink-0 px-1 text-xs"
         >
           {t('none')}
         </button>

@@ -9,8 +9,8 @@ export default async function GoalsPage() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title={t('title')} action={<GoalDialog today={data.today} />} />
-      <GoalCards goals={data.goals} today={data.today} />
+      <PageHeader title={t('title')} action={<GoalDialog today={data.today} metrics={data.metrics} />} />
+      <GoalCards goals={data.goals} today={data.today} metrics={data.metrics} />
     </div>
   )
 }

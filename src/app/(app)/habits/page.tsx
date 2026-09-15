@@ -9,8 +9,8 @@ export default async function HabitsPage() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title={t('title')} action={<HabitDialog today={data.today} />} />
-      <HabitList habits={data.habits} today={data.today} />
+      <PageHeader title={t('title')} action={<HabitDialog today={data.today} metrics={data.metrics} />} />
+      <HabitList habits={data.habits} today={data.today} metrics={data.metrics} />
     </div>
   )
 }

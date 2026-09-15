@@ -23,6 +23,7 @@ import { parseTransactionText, type ParseTransactionsResult } from '@/server/act
 import { parsePlanText } from '@/server/actions/plan-capture'
 import type { PlanItem } from '@/lib/capture/plan-items'
 import type { ISODate } from '@/lib/dates'
+import type { BindableMetric } from '@/lib/metrics/bindable'
 
 type Parsed = { module: 'finance'; result: Extract<ParseTransactionsResult, { ok: true }> }
 
@@ -239,7 +240,11 @@ function PlanPanel() {
   const t = useTranslations('capture')
   const tp = useTranslations('capture.plan')
   const [text, setText] = useState('')
-  const [read, setRead] = useState<{ items: PlanItem[]; today: ISODate } | null>(null)
+  const [read, setRead] = useState<{
+    items: PlanItem[]
+    today: ISODate
+    metrics: BindableMetric[]
+  } | null>(null)
   const [reading, startReading] = useTransition()
 
   const ready = text.trim().length >= 3
@@ -255,7 +260,7 @@ function PlanPanel() {
         toast.info(tp('nothingFound'))
         return
       }
-      setRead({ items: result.items, today: result.today })
+      setRead({ items: result.items, today: result.today, metrics: result.metrics })
     })
 
   if (read) {
@@ -263,6 +268,7 @@ function PlanPanel() {
       <PlanReview
         items={read.items}
         today={read.today}
+        metrics={read.metrics}
         onDiscard={() => setRead(null)}
         onSaved={() => {
           setRead(null)

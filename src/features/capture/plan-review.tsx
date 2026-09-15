@@ -12,6 +12,7 @@ import { GoalFields } from '@/features/goals/goal-fields'
 import type { PlanItem, PlanTask } from '@/lib/capture/plan-items'
 import { fromISODate, type ISODate } from '@/lib/dates'
 import type { GoalDraft } from '@/lib/goals/draft'
+import type { BindableMetric } from '@/lib/metrics/bindable'
 import { GOAL_PRIORITIES, type GoalPriority } from '@/lib/goals/options'
 import { cn } from '@/lib/utils'
 import { savePlan } from '@/server/actions/plan-capture'
@@ -28,11 +29,13 @@ type Row = { id: string; checked: boolean } & (
 export function PlanReview({
   items,
   today,
+  metrics,
   onSaved,
   onDiscard,
 }: {
   items: PlanItem[]
   today: ISODate
+  metrics: BindableMetric[]
   onSaved: () => void
   onDiscard: () => void
 }) {
@@ -183,6 +186,7 @@ export function PlanReview({
                 {row.kind === 'goal' ? (
                   <GoalFields
                     value={row.goal}
+                    metrics={metrics}
                     onChange={(goal) => patch(row.id, { kind: 'goal', goal })}
                   />
                 ) : (

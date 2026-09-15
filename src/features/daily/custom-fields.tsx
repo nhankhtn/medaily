@@ -76,6 +76,10 @@ export function CustomFields({
               <Stepper
                 name={label}
                 value={typeof value === 'number' ? value : null}
+                // Whole units counting up from nothing: these are things you
+                // did, not hours you slept.
+                step={1}
+                start={0}
                 min={metric.min === null ? 0 : Number(metric.min)}
                 max={metric.max === null ? 100_000 : Number(metric.max)}
                 onChange={(next) => onChange(metric.id, next)}

@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { log } from '@/lib/log'
 import { MAX_PLAN_ITEMS, type PlanItem } from '@/lib/capture/plan-items'
 import { today as todayOf, type ISODate } from '@/lib/dates'
+import type { BindableMetric } from '@/lib/metrics/bindable'
 import { MAX_MILESTONES } from '@/lib/goals/draft'
 import {
   GOAL_AGGREGATIONS,
@@ -13,11 +14,11 @@ import {
   GOAL_PERIODS,
   GOAL_PRIORITIES,
 } from '@/lib/goals/options'
-import { METRIC_KEYS } from '@/lib/types'
 import { isoDateSchema } from '@/lib/validation/daily'
 import { saveGoal } from '@/server/actions/goals'
 import { saveTask } from '@/server/actions/projects'
 import { geminiEnabled } from '@/server/services/gemini'
+import { bindableMetrics, canBindMetric } from '@/server/services/metrics'
 import { parsePlan } from '@/server/services/plan-capture'
 import { dayContextOf, getSettings } from '@/server/services/settings'
 
@@ -47,8 +48,12 @@ function captureAllowed(userId: string): boolean {
 }
 
 export type ParsePlanResult =
-  /** `today` travels with the rows: the list needs it to turn one into a goal. */
-  | { ok: true; items: PlanItem[]; today: ISODate }
+  /**
+   * `today` travels with the rows: the list needs it to turn one into a goal.
+   * `metrics` travels with them so a goal row can be pointed at a metric this
+   * person added themselves, which the model never proposes.
+   */
+  | { ok: true; items: PlanItem[]; today: ISODate; metrics: BindableMetric[] }
   | { ok: false; error: 'disabled' | 'invalid_input' | 'rate_limited' | 'failed' }
 
 export async function parsePlanText(input: unknown): Promise<ParsePlanResult> {
@@ -63,7 +68,11 @@ export async function parsePlanText(input: unknown): Promise<ParsePlanResult> {
   const today = todayOf(dayContextOf(settings))
 
   try {
-    return { ok: true, items: await parsePlan({ text: parsed.data.text, today }), today }
+    const [items, metrics] = await Promise.all([
+      parsePlan({ text: parsed.data.text, today }),
+      bindableMetrics(settings.userId),
+    ])
+    return { ok: true, items, today, metrics }
   } catch (error) {
     await log.error('capture', 'could not read that note', error)
     return { ok: false, error: 'failed' }
@@ -81,7 +90,7 @@ const goalRow = z.object({
   progressMode: z.enum(GOAL_MODES),
   metric: z
     .object({
-      key: z.enum(METRIC_KEYS),
+      key: z.string().min(1).max(40),
       aggregation: z.enum(GOAL_AGGREGATIONS),
       period: z.enum(GOAL_PERIODS),
       target: z.number().positive(),
@@ -113,6 +122,8 @@ export async function savePlan(input: unknown): Promise<SavePlanResult> {
     .safeParse(input)
   if (!parsed.success) return { ok: false, error: 'invalid_input' }
 
+  const settings = await getSettings()
+
   let goals = 0
   let tasks = 0
   let failed = 0
@@ -122,6 +133,13 @@ export async function savePlan(input: unknown): Promise<SavePlanResult> {
   for (const row of parsed.data.rows) {
     if (row.kind === 'goal') {
       const isMetric = row.progressMode === 'metric'
+
+      // `saveGoal` checks this too; doing it here keeps the row on the list as
+      // a failure the user can fix rather than a silent drop.
+      if (isMetric && row.metric && !(await canBindMetric(settings.userId, row.metric.key))) {
+        failed += 1
+        continue
+      }
       const result = await saveGoal({
         name: row.name,
         description: row.description ?? '',

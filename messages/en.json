@@ -264,6 +264,8 @@
     "autoTickHint": "Tie this habit to a number you already log, and it marks itself — no second entry.",
     "noLink": "Tick it myself",
     "metric": "When",
+    "builtInMetrics": "What the app measures",
+    "ownMetrics": "Your own",
     "operator": "is",
     "operators": {
       "gte": "at least",
@@ -333,6 +335,8 @@
     },
     "manualValue": "Progress now (%)",
     "metric": "Metric",
+    "builtInMetrics": "What the app measures",
+    "ownMetrics": "Your own",
     "aggregation": "Combine how",
     "aggregations": {
       "sum": "Total",

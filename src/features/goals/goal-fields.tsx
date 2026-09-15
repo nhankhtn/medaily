@@ -19,6 +19,8 @@ import {
   type GoalPeriod,
   type GoalPriority,
 } from '@/lib/goals/options'
+import { MetricOptions } from '@/features/metrics/metric-options'
+import type { BindableMetric } from '@/lib/metrics/bindable'
 import { METRIC_KEYS, type MetricKey } from '@/lib/types'
 
 /** What the metric block opens on when the note never described one. */
@@ -39,9 +41,12 @@ const FALLBACK_METRIC: GoalMetricPlan = {
  */
 export function GoalFields({
   value,
+  metrics,
   onChange,
 }: {
   value: GoalDraft
+  /** The person's own metrics, offered alongside the built-in ones. */
+  metrics: BindableMetric[]
   onChange: (next: GoalDraft) => void
 }) {
   const t = useTranslations('goals')
@@ -134,15 +139,12 @@ export function GoalFields({
       {value.progressMode === 'metric' ? (
         <div className="border-border-base bg-surface-2 space-y-2 rounded-[var(--radius)] border p-2">
           <Field label={t('metric')}>
-            <Select
-              value={metric.key}
-              onChange={(event) => setMetric({ key: event.target.value as MetricKey })}
-            >
-              {METRIC_KEYS.map((key) => (
-                <option key={key} value={key}>
-                  {tm(key)}
-                </option>
-              ))}
+            <Select value={metric.key} onChange={(event) => setMetric({ key: event.target.value })}>
+              <MetricOptions
+                builtIn={METRIC_KEYS.map((key) => ({ key, label: tm(key), suggested: 1 }))}
+                own={metrics}
+                t={t}
+              />
             </Select>
           </Field>
 
@@ -200,7 +202,9 @@ export function GoalFields({
           <p className="text-accent text-xs">
             {t('metricPreview', {
               aggregation: t(`aggregations.${metric.aggregation}`),
-              metric: tm(metric.key),
+              metric:
+                metrics.find((option) => option.key === metric.key)?.label ??
+                tm(metric.key as MetricKey),
               period: t(`periods.${metric.period}`),
               target: metric.target,
             })}

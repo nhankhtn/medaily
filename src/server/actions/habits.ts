@@ -5,7 +5,6 @@ import { z } from 'zod'
 import { db } from '@/lib/db'
 import { getCurrentUserId } from '@/lib/auth/current-user'
 import { PATHS } from '@/lib/paths'
-import { METRIC_KEYS } from '@/lib/types'
 import { isoDateSchema } from '@/lib/validation/daily'
 import {
   deleteHabitLog,
@@ -16,6 +15,7 @@ import {
   upsertHabitLog,
 } from '@/server/repositories/habits'
 import { backfillDerivedHabitLogs } from '@/server/services/habit-derivation'
+import { canBindMetric } from '@/server/services/metrics'
 import { getSettings } from '@/server/services/settings'
 
 const toggleSchema = z.object({
@@ -69,7 +69,6 @@ export async function toggleHabit(input: unknown): Promise<ToggleHabitResult> {
   return { ok: true, completed: saved.completed, count: saved.count }
 }
 
-
 const habitSchema = z
   .object({
     id: z.string().uuid().optional(),
@@ -79,7 +78,12 @@ const habitSchema = z
     targetCount: z.number().int().min(1).max(50).default(1),
     weekdays: z.array(z.number().int().min(1).max(7)).max(7).nullable().optional(),
     intervalDays: z.number().int().min(1).max(365).nullable().optional(),
-    linkedMetric: z.enum(METRIC_KEYS).nullable().optional(),
+    /*
+     * Not an enum of the built-in keys: a habit may also bind to a metric this
+     * person added themselves. Which keys those are is a question for the
+     * database, so the shape is checked here and the ownership below.
+     */
+    linkedMetric: z.string().min(1).max(40).nullable().optional(),
     linkedOperator: z.enum(['gte', 'lte', 'eq']).nullable().optional(),
     linkedThreshold: z.number().nullable().optional(),
     startDate: isoDateSchema,
@@ -91,10 +95,10 @@ const habitSchema = z
       .optional(),
   })
   // The database enforces these too; failing here gives a usable message first.
-  .refine(
-    (value) => value.frequencyType !== 'specific_days' || (value.weekdays?.length ?? 0) > 0,
-    { message: 'pick at least one weekday', path: ['weekdays'] },
-  )
+  .refine((value) => value.frequencyType !== 'specific_days' || (value.weekdays?.length ?? 0) > 0, {
+    message: 'pick at least one weekday',
+    path: ['weekdays'],
+  })
   .refine((value) => value.frequencyType !== 'interval' || (value.intervalDays ?? 0) >= 1, {
     message: 'interval must be at least one day',
     path: ['intervalDays'],
@@ -126,6 +130,14 @@ export async function saveHabit(input: unknown): Promise<SaveHabitResult> {
 
   const settings = await getSettings()
   const { id, ...values } = parsed.data
+
+  // A key that is not a built-in has to name one of this person's own metrics,
+  // still tracked and holding a number (spec 29 — never trust the client).
+  // No detail: the select only ever offers keys that pass, so reaching this
+  // means a tampered request, and `detail` goes straight into a toast.
+  if (values.linkedMetric && !(await canBindMetric(settings.userId, values.linkedMetric))) {
+    return { ok: false, error: 'invalid_input' }
+  }
 
   const row = {
     ...values,

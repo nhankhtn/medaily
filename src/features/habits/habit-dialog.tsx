@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import { Input, Textarea } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Field } from '@/features/projects/project-dialog'
+import { MetricOptions } from '@/features/metrics/metric-options'
+import type { BindableMetric } from '@/lib/metrics/bindable'
 import { METRIC_KEYS, type MetricKey } from '@/lib/types'
 import type { ISODate } from '@/lib/dates'
 import { archiveHabit, saveHabit } from '@/server/actions/habits'
@@ -38,10 +40,13 @@ const SUGGESTED_THRESHOLD: Partial<Record<MetricKey, number>> = {
 export function HabitDialog({
   habit,
   today,
+  metrics,
   trigger,
 }: {
   habit?: HabitView
   today: ISODate
+  /** The person's own metrics, offered alongside the built-in ones. */
+  metrics: BindableMetric[]
   trigger?: React.ReactNode
 }) {
   const t = useTranslations('habits')
@@ -55,7 +60,7 @@ export function HabitDialog({
   )
   const [weekdays, setWeekdays] = useState<number[]>([1, 3, 5])
   const [linked, setLinked] = useState(Boolean(habit?.linkedMetric))
-  const [metric, setMetric] = useState<MetricKey>((habit?.linkedMetric as MetricKey) ?? 'sleep_hours')
+  const [metric, setMetric] = useState<string>(habit?.linkedMetric ?? 'sleep_hours')
   const [operator, setOperator] = useState<(typeof OPERATORS)[number]>(
     (habit?.linkedOperator as (typeof OPERATORS)[number]) ?? 'gte',
   )
@@ -65,11 +70,20 @@ export function HabitDialog({
       : String(SUGGESTED_THRESHOLD.sleep_hours),
   )
 
+  const builtIn: BindableMetric[] = METRIC_KEYS.map((key) => ({
+    key,
+    label: tm(key),
+    suggested: SUGGESTED_THRESHOLD[key] ?? 1,
+  }))
+  const chosen = [...builtIn, ...metrics].find((option) => option.key === metric)
+
   // Changing the metric moves the threshold to that metric's own scale, so
   // "sleep ≥ 30" cannot happen by leaving a minutes value behind.
-  const pickMetric = (next: MetricKey) => {
+  const pickMetric = (next: string) => {
     setMetric(next)
-    setThreshold(String(SUGGESTED_THRESHOLD[next] ?? 1))
+    setThreshold(
+      String([...builtIn, ...metrics].find((option) => option.key === next)?.suggested ?? 1),
+    )
     if (next === 'entertainment_minutes') setOperator('lte')
     else setOperator('gte')
   }
@@ -171,13 +185,15 @@ export function HabitDialog({
                       aria-pressed={active}
                       onClick={() =>
                         setWeekdays((prev) =>
-                          prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day].sort(),
+                          prev.includes(day)
+                            ? prev.filter((d) => d !== day)
+                            : [...prev, day].sort(),
                         )
                       }
                       className={cn(
                         'h-9 min-w-11 rounded-full border px-2 text-xs font-medium',
                         active
-                          ? 'border-transparent bg-accent text-accent-text'
+                          ? 'bg-accent text-accent-text border-transparent'
                           : 'border-border-base bg-surface-2 text-text-muted',
                       )}
                     >
@@ -214,7 +230,7 @@ export function HabitDialog({
           )}
 
           {/* The feature that makes habits worth having (spec 7.3). */}
-          <div className="space-y-2 rounded-[var(--radius)] border border-border-base bg-surface-2 p-3">
+          <div className="border-border-base bg-surface-2 space-y-2 rounded-[var(--radius)] border p-3">
             <label className="flex items-start gap-2.5">
               <input
                 type="checkbox"
@@ -224,10 +240,10 @@ export function HabitDialog({
               />
               <span>
                 <span className="flex items-center gap-1.5 text-sm font-medium">
-                  <Link2 className="size-3.5 text-accent" />
+                  <Link2 className="text-accent size-3.5" />
                   {t('autoTick')}
                 </span>
-                <span className="mt-0.5 block text-xs leading-snug text-text-subtle">
+                <span className="text-text-subtle mt-0.5 block text-xs leading-snug">
                   {t('autoTickHint')}
                 </span>
               </span>
@@ -237,15 +253,8 @@ export function HabitDialog({
               <div className="space-y-2 pt-1">
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto_auto] sm:items-end">
                   <Field label={t('metric')}>
-                    <Select
-                      value={metric}
-                      onChange={(event) => pickMetric(event.target.value as MetricKey)}
-                    >
-                      {METRIC_KEYS.map((key) => (
-                        <option key={key} value={key}>
-                          {tm(key)}
-                        </option>
-                      ))}
+                    <Select value={metric} onChange={(event) => pickMetric(event.target.value)}>
+                      <MetricOptions builtIn={builtIn} own={metrics} t={t} />
                     </Select>
                   </Field>
 
@@ -274,16 +283,16 @@ export function HabitDialog({
                   </Field>
                 </div>
 
-                <p className="text-xs text-accent">
+                <p className="text-accent text-xs">
                   {t('linkPreview', {
-                    metric: tm(metric),
+                    metric: chosen?.label ?? metric,
                     operator: t(`operators.${operator}`),
                     threshold,
                   })}
                 </p>
               </div>
             ) : (
-              <p className="text-xs text-text-subtle">{t('noLink')}</p>
+              <p className="text-text-subtle text-xs">{t('noLink')}</p>
             )}
           </div>
 

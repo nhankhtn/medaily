@@ -26,6 +26,13 @@ The difference that decides everything:
 
 "kind" is "task" or "goal". One record per thing mentioned, in the order written, at most ${MAX_PLAN_ITEMS}. A line listing three errands is three tasks. Never invent one the text does not mention, and never split a single action into steps it does not name.
 
+There is one exception to inventing nothing. When the text asks you to draw up a plan rather than listing what is already in it — "lên kế hoạch", "xây dựng plan", "build me a plan", "giúp tôi ôn lại X trong 6 tháng" — the plan is the thing being asked for, so propose it:
+- A separate goal for each subject the text names. Three subjects are three goals, never one goal with the three as milestones.
+- After each goal, the first tasks that actually begin it — two at the very least, three where the subject has three obvious opening moves — each dated within the coming weeks and on a different week. Concrete enough to sit on a day: "Ôn mảng và chuỗi, làm 10 bài" beats "Bắt đầu học DSA".
+- Give the goals a target_date from the horizon the text names, and milestones for the parts of that subject.
+- Propose nothing outside the subjects the text names, and keep the whole plan within ${MAX_PLAN_ITEMS} records.
+A text that merely lists things to do is not this. Then you invent nothing, as above.
+
 If the text is not about things to do — a remark about their day, a feeling, a question, a list of what they spent — return an empty list. Never turn a sentence into a plan it was not.
 
 Dates resolve against today's date given below and are returned as YYYY-MM-DD. "thứ 6" is the coming Friday, "cuối tuần" the coming Sunday, "mai" tomorrow, "trong năm nay" 31 December of this year, "trước Tết" the coming Lunar New Year. Use "" when the text gives no date — do not invent one.

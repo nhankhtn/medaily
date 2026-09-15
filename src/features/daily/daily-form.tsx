@@ -122,8 +122,11 @@ export function DailyForm({
         toast.warning(t('sanityWarning'), { duration: 8000 })
       }
     })
+    // `custom` belongs here: left out, the callback kept the empty object it
+    // closed over on the first render and every save posted `custom: {}`,
+    // however many of your own activities you had filled in.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [date, values, initialValues, clearDraft])
+  }, [date, values, custom, initialValues, clearDraft])
 
   useShortcut('save', submit)
 
@@ -201,9 +204,9 @@ export function DailyForm({
           </Button>
         ) : null}
         {savedAt && !dirty ? (
-          <span className="text-xs text-good">{tc('saved')}</span>
+          <span className="text-good text-xs">{tc('saved')}</span>
         ) : dirty ? (
-          <span className="text-xs text-text-subtle">•</span>
+          <span className="text-text-subtle text-xs">•</span>
         ) : null}
       </div>
 
@@ -212,7 +215,11 @@ export function DailyForm({
         filled={essentialsFilled}
         total={ESSENTIAL_FIELDS.length}
       >
-        <Field label={t('fields.energy')} help={t('fields.energyHelp')} copied={copied.has('energy')}>
+        <Field
+          label={t('fields.energy')}
+          help={t('fields.energyHelp')}
+          copied={copied.has('energy')}
+        >
           <ScaleInput
             name={t('fields.energy')}
             value={values.energy}
@@ -285,7 +292,7 @@ export function DailyForm({
         {/* Only worth saying once both fields are in play — that is when
             double-counting becomes possible. */}
         {(values.technicalStudyMinutes ?? 0) > 0 && (values.deepWorkMinutes ?? 0) > 0 ? (
-          <p className="flex items-start gap-2 rounded-[var(--radius)] bg-surface-2 p-2.5 text-xs leading-snug text-text-muted">
+          <p className="bg-surface-2 text-text-muted flex items-start gap-2 rounded-[var(--radius)] p-2.5 text-xs leading-snug">
             <Info className="mt-0.5 size-3.5 shrink-0" />
             {t('disjointHint')}
           </p>
@@ -325,7 +332,7 @@ export function DailyForm({
                         className={cn(
                           'h-8 shrink-0 rounded-full border px-3 text-xs',
                           values.exerciseType === type
-                            ? 'border-transparent bg-accent text-accent-text'
+                            ? 'bg-accent text-accent-text border-transparent'
                             : 'border-border-base bg-surface-2 text-text-muted',
                         )}
                       >
@@ -349,7 +356,7 @@ export function DailyForm({
               onChange={(value) => set('readingMinutes', value)}
             />
             <div className="flex items-center gap-2">
-              <span className="text-xs text-text-subtle">{t('fields.readingPages')}</span>
+              <span className="text-text-subtle text-xs">{t('fields.readingPages')}</span>
               <Input
                 type="number"
                 inputMode="numeric"
@@ -445,14 +452,14 @@ export function DailyForm({
       </FormSection>
 
       {overBudget ? (
-        <p className="flex items-start gap-2 rounded-[var(--radius)] bg-warn-soft p-3 text-sm text-warn">
+        <p className="bg-warn-soft text-warn flex items-start gap-2 rounded-[var(--radius)] p-3 text-sm">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
           {t('sanityWarning')}
         </p>
       ) : null}
 
       {/* Sticky on mobile so Save is always in thumb reach (spec 22.3) */}
-      <div className="fixed inset-x-0 bottom-14 z-20 border-t border-border-base bg-surface/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur md:static md:z-auto md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
+      <div className="border-border-base bg-surface/95 fixed inset-x-0 bottom-14 z-20 border-t p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur md:static md:z-auto md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
         <Button size="lg" className="w-full md:w-auto" onClick={submit} disabled={pending}>
           {pending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
           {pending ? tc('saving') : t('saveDay')}

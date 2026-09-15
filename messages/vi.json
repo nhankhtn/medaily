@@ -264,6 +264,8 @@
     "autoTickHint": "Gắn thói quen này với một con số bạn vẫn ghi, nó sẽ tự tích — không phải nhập lần hai.",
     "noLink": "Tôi tự tích tay",
     "metric": "Khi",
+    "builtInMetrics": "App tự đo",
+    "ownMetrics": "Của bạn",
     "operator": "ở mức",
     "operators": {
       "gte": "từ trở lên",
@@ -333,6 +335,8 @@
     },
     "manualValue": "Tiến độ hiện tại (%)",
     "metric": "Chỉ số",
+    "builtInMetrics": "App tự đo",
+    "ownMetrics": "Của bạn",
     "aggregation": "Cách gộp",
     "aggregations": {
       "sum": "Tổng",
