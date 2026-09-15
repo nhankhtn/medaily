@@ -3,6 +3,7 @@ import { Card, CardBody, CardHeader } from '@/components/ui/card'
 import { PageHeader } from '@/components/ui/page'
 import { ResourceList } from '@/features/learning/resource-list'
 import { SessionList } from '@/features/learning/session-list'
+import { TopicManager } from '@/features/learning/topic-manager'
 import { TimerWidget } from '@/features/learning/timer-widget'
 import { getLearningData } from '@/server/services/learning'
 
@@ -40,7 +41,7 @@ export default async function LearningPage() {
 
         <div className="space-y-4">
           <Card>
-            <CardHeader title={t('byTopic')} />
+            <CardHeader title={t('byTopic')} action={<TopicManager topics={data.topics} />} />
             <CardBody>
               {data.byTopic.length === 0 ? (
                 <p className="text-sm text-text-subtle">{t('noSessionsBody')}</p>

@@ -9,8 +9,10 @@ import { isoDateSchema } from '@/lib/validation/daily'
 import {
   deleteSession,
   findSessionDate,
+  findTopic,
   insertTopic,
   updateSession,
+  updateTopic,
   upsertResource,
 } from '@/server/repositories/learning'
 import { saveSessionAndDerive } from '@/server/services/focus'
@@ -103,19 +105,52 @@ export async function editSession(input: unknown) {
   return { ok: true as const }
 }
 
-export async function createTopic(input: unknown) {
-  const parsed = z
-    .object({ name: z.string().min(1).max(120), category: optionalNote })
-    .safeParse(input)
-  if (!parsed.success) return { ok: false as const }
+const topicSchema = z.object({
+  id: z.string().uuid().optional(),
+  name: z.string().min(1).max(120),
+  category: z
+    .string()
+    .max(60)
+    .transform((value) => value.trim() || null)
+    .nullable()
+    .optional(),
+})
 
-  const topic = await insertTopic({
-    userId: await getCurrentUserId(),
-    name: parsed.data.name,
-    category: parsed.data.category ?? null,
-  })
+export async function saveTopic(input: unknown) {
+  const parsed = topicSchema.safeParse(input)
+  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+
+  const userId = await getCurrentUserId()
+  const { id, name, category } = parsed.data
+
+  if (id) {
+    if (!(await findTopic(userId, id))) return { ok: false as const, error: 'not_found' as const }
+    await updateTopic(userId, id, { name, category: category ?? null })
+    revalidateLearning()
+    return { ok: true as const, id }
+  }
+
+  const topic = await insertTopic({ userId, name, category: category ?? null })
   revalidateLearning()
   return { ok: true as const, id: topic.id }
+}
+
+/**
+ * Archived, never deleted: the sessions filed under it keep their attribution,
+ * so last month's "12 hours on Postgres" does not become 12 hours on nothing.
+ */
+export async function archiveTopic(input: unknown) {
+  const parsed = z.object({ id: z.string().uuid() }).safeParse(input)
+  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+
+  const userId = await getCurrentUserId()
+  if (!(await findTopic(userId, parsed.data.id))) {
+    return { ok: false as const, error: 'not_found' as const }
+  }
+
+  await updateTopic(userId, parsed.data.id, { archivedAt: new Date() })
+  revalidateLearning()
+  return { ok: true as const }
 }
 
 const resourceSchema = z.object({

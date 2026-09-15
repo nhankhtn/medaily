@@ -24,6 +24,26 @@ export async function insertTopic(values: {
   return row
 }
 
+export async function findTopic(userId: string, id: string): Promise<Topic | null> {
+  const rows = await db
+    .select()
+    .from(topics)
+    .where(and(eq(topics.userId, userId), eq(topics.id, id)))
+    .limit(1)
+  return rows[0] ?? null
+}
+
+export async function updateTopic(
+  userId: string,
+  id: string,
+  values: Partial<{ name: string; category: string | null; archivedAt: Date | null }>,
+): Promise<void> {
+  await db
+    .update(topics)
+    .set({ ...values, updatedAt: new Date() })
+    .where(and(eq(topics.userId, userId), eq(topics.id, id)))
+}
+
 export async function findSessions(
   userId: string,
   range: DateRange,
