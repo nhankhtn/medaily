@@ -1,11 +1,12 @@
 'use client'
 
 import { AlertTriangle, Copy, Info, Loader2, Save, Trash2 } from 'lucide-react'
+import { MarkdownField } from './markdown-field'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Input, Textarea } from '@/components/ui/input'
+import { Input } from '@/components/ui/input'
 import { MinuteInput } from '@/components/ui/minute-input'
 import { ScaleInput } from '@/components/ui/scale-input'
 import { Stepper } from '@/components/ui/stepper'
@@ -410,37 +411,37 @@ export function DailyForm({
         total={REFLECTION_FIELDS.length}
         defaultOpen={false}
       >
-        <Field label={t('fields.dailyWin')} copied={copied.has('dailyWin')}>
-          <Textarea
-            className="min-h-16"
-            value={values.dailyWin ?? ''}
-            placeholder={t('fields.dailyWinPlaceholder')}
-            onChange={(event) => set('dailyWin', event.target.value || null)}
-          />
-        </Field>
-        <Field label={t('fields.dailyProblem')} copied={copied.has('dailyProblem')}>
-          <Textarea
-            className="min-h-16"
-            value={values.dailyProblem ?? ''}
-            placeholder={t('fields.dailyProblemPlaceholder')}
-            onChange={(event) => set('dailyProblem', event.target.value || null)}
-          />
-        </Field>
-        <Field label={t('fields.tomorrowPriority')} copied={copied.has('tomorrowPriority')}>
-          <Textarea
-            className="min-h-16"
-            value={values.tomorrowPriority ?? ''}
-            placeholder={t('fields.tomorrowPriorityPlaceholder')}
-            onChange={(event) => set('tomorrowPriority', event.target.value || null)}
-          />
-        </Field>
-        <Field label={t('fields.note')} copied={copied.has('note')}>
-          <Textarea
-            value={values.note ?? ''}
-            placeholder={t('fields.notePlaceholder')}
-            onChange={(event) => set('note', event.target.value || null)}
-          />
-        </Field>
+        <MarkdownField
+          label={t('fields.dailyWin')}
+          copied={copied.has('dailyWin')}
+          className="min-h-16"
+          value={values.dailyWin}
+          placeholder={t('fields.dailyWinPlaceholder')}
+          onChange={(value) => set('dailyWin', value)}
+        />
+        <MarkdownField
+          label={t('fields.dailyProblem')}
+          copied={copied.has('dailyProblem')}
+          className="min-h-16"
+          value={values.dailyProblem}
+          placeholder={t('fields.dailyProblemPlaceholder')}
+          onChange={(value) => set('dailyProblem', value)}
+        />
+        <MarkdownField
+          label={t('fields.tomorrowPriority')}
+          copied={copied.has('tomorrowPriority')}
+          className="min-h-16"
+          value={values.tomorrowPriority}
+          placeholder={t('fields.tomorrowPriorityPlaceholder')}
+          onChange={(value) => set('tomorrowPriority', value)}
+        />
+        <MarkdownField
+          label={t('fields.note')}
+          copied={copied.has('note')}
+          value={values.note}
+          placeholder={t('fields.notePlaceholder')}
+          onChange={(value) => set('note', value)}
+        />
       </FormSection>
 
       {overBudget ? (
