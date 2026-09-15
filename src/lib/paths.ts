@@ -63,8 +63,6 @@ export const PATHS = {
     calendarIcs: '/api/calendar.ics',
     exportJson: '/api/export?format=json',
     exportCsv: (table: string) => `/api/export?format=csv&table=${table}`,
-    /** Fails on purpose, to prove crash alerts reach a phone. */
-    alertTest: '/api/alert-test',
   },
 } as const
 
