@@ -132,6 +132,20 @@ the same database whenever the schema changes:
 DATABASE_URL="<the same connection string>" pnpm db:migrate
 ```
 
+**Check you are migrating the database the deploy actually uses.** The command
+prints a fingerprint of the host and database name; `/api/health` prints the
+same one for the deploy. Equal means the same database:
+
+```bash
+pnpm db:migrate                  # → … (fingerprint 312dffd3)
+curl -s https://<your-app>/api/health | grep databaseFingerprint
+```
+
+Getting this wrong is quiet and expensive: the migration reports success, the
+push deploys, and the pages that need the new column go down while the
+fingerprints sit there disagreeing. `pendingMigrations` on the deploy's health
+endpoint is the other half of the same answer.
+
 **Use `pnpm db:migrate`, not `drizzle-kit push`.** `push` creates the tables and
 nothing else — no views, no triggers, no `unaccent`, no owner row — and the app
 then fails on every page that reads settings. If a database is already in that

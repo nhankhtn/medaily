@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 import { readAccessPolicy, readAuthConfig, readGoogleConfig } from '@/lib/auth/config'
+import { databaseFingerprint } from '@/lib/db/fingerprint'
 // Imported, not read from disk: this has to travel with the deployed bundle,
 // and it is the only record of what migrations *this* build expects.
 import journal from '../../../../drizzle/meta/_journal.json'
@@ -40,6 +41,10 @@ export async function GET() {
 
   const config = {
     missingEnv: missing,
+    // Which database, without saying where it is: `pnpm db:migrate` prints the
+    // same eight characters, so "am I migrating the one the deploy uses?" is a
+    // comparison rather than a belief.
+    databaseFingerprint: databaseFingerprint(process.env.DATABASE_URL),
     authConfigured: auth.configured,
     // A set-but-too-short secret is a common and otherwise silent mistake.
     authSecretTooShort: Boolean(process.env.AUTH_SECRET) && process.env.AUTH_SECRET!.length < 16,

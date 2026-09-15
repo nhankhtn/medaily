@@ -1,6 +1,7 @@
 import './load-env'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { databaseFingerprint } from '../src/lib/db/fingerprint'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import { migrate } from 'drizzle-orm/postgres-js/migrator'
 import postgres from 'postgres'
@@ -18,7 +19,8 @@ async function main() {
   if (!url) throw new Error('DATABASE_URL is required')
 
   // Say which database, so migrating the wrong one is a visible mistake.
-  console.log(`→ ${describe(url)}`)
+  console.log(`→ ${describe(url)}  (fingerprint ${databaseFingerprint(url) ?? 'unknown'})`)
+  console.log('  compare it with databaseFingerprint on the deploy\'s /api/health')
 
   const client = postgres(url, { max: 1 })
   const db = drizzle(client)
