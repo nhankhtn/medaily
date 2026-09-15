@@ -75,7 +75,11 @@ function DayCell({ day, today, t, format }: { day: CalendarDay; today: ISODate }
                 ? 'bg-bad'
                 : item.kind === 'event'
                   ? 'bg-accent'
-                  : 'bg-border-strong',
+                  : item.kind === 'task'
+                    ? item.done
+                      ? 'bg-good'
+                      : 'bg-warn'
+                    : 'bg-border-strong',
             )}
           />
         ))}
@@ -107,7 +111,12 @@ function Item({ item, t, format }: { item: CalendarItem } & Localised) {
           ? 'bg-bad-soft text-text'
           : item.kind === 'event'
             ? 'bg-accent/15 text-text'
-            : 'bg-surface-2 text-text-muted ring-border-base ring-1 ring-inset',
+            : item.kind === 'task'
+              ? 'bg-warn-soft text-text'
+              : 'bg-surface-2 text-text-muted ring-border-base ring-1 ring-inset',
+        // Done is worth seeing on the grid: a month of struck-through lines is
+        // the month you actually had.
+        item.done && 'text-text-subtle line-through',
       )}
       title={label}
     >

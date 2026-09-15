@@ -34,7 +34,7 @@ export const getDayPlan = cache(async (requested?: ISODate): Promise<DayPlan> =>
   const date = requested ?? today
 
   const [tasks, projects, blocks, reminders, previousLog] = await Promise.all([
-    findTasksForDay(settings.userId, date),
+    findTasksForDay(settings.userId, date, today),
     findProjects(settings.userId),
     findPlannedBlocks(settings.userId, { start: date, end: date }),
     findReminders(settings.userId, date),
@@ -45,7 +45,9 @@ export const getDayPlan = cache(async (requested?: ISODate): Promise<DayPlan> =>
   const expand = (task: ProjectTask): DayTask => ({
     ...task,
     projectName: task.projectId ? (nameOf.get(task.projectId) ?? null) : null,
-    overdue: task.status !== 'done' && task.dueDate !== null && task.dueDate < date,
+    // Late as of now, not as of the day being looked at: a task due next
+    // week is not overdue because you opened the week after.
+    overdue: task.status !== 'done' && task.dueDate !== null && task.dueDate < today,
   })
 
   return {

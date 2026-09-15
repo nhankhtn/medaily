@@ -321,6 +321,31 @@ async function WeekView({ anchor }: { anchor?: ISODate }) {
         </CardBody>
       </Card>
 
+      <Card>
+        <CardHeader title={t('tasks')} />
+        <CardBody>
+          {data.days.every((day) => day.tasks.length === 0) ? (
+            <p className="text-text-subtle text-sm">{t('noTasksThisWeek')}</p>
+          ) : (
+            <ul className="divide-border-base divide-y">
+              {data.days
+                .filter((day) => day.tasks.length > 0)
+                .map((day) => (
+                  <li key={day.date} className="py-2 first:pt-0 last:pb-0">
+                    <Link
+                      href={PATHS.calendar({ view: 'day', at: day.date })}
+                      className="text-text-subtle hover:text-text text-xs font-medium"
+                    >
+                      {format.dateTime(fromISODate(day.date), 'weekdayDay')}
+                    </Link>
+                    <DayTasks tasks={day.tasks} />
+                  </li>
+                ))}
+            </ul>
+          )}
+        </CardBody>
+      </Card>
+
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader title={t('events')} />

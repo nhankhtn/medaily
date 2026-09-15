@@ -78,6 +78,9 @@ function Day({
   if (!day.inMonth) return <span aria-hidden />
 
   const holiday = day.items.some((item) => item.kind === 'holiday')
+  // A day of nothing but things to do is worth telling apart from a day with
+  // something booked in it.
+  const onlyTasks = day.items.length > 0 && day.items.every((item) => item.kind === 'task')
   const hidden = day.count - day.items.length
 
   return (
@@ -97,7 +100,13 @@ function Day({
           <span
             className={cn(
               'absolute bottom-0.5 size-1 rounded-full',
-              day.date === today ? 'bg-accent-text' : holiday ? 'bg-bad' : 'bg-accent',
+              day.date === today
+                ? 'bg-accent-text'
+                : holiday
+                  ? 'bg-bad'
+                  : onlyTasks
+                    ? 'bg-warn'
+                    : 'bg-accent',
             )}
           />
         ) : null}
@@ -120,7 +129,13 @@ function Day({
             {format.dateTime(fromISODate(day.date), 'dayMonth')}
           </span>
           {day.items.map((item) => (
-            <span key={item.key} className="text-text truncate text-[11px] leading-4">
+            <span
+              key={item.key}
+              className={cn(
+                'truncate text-[11px] leading-4',
+                item.done ? 'text-text-subtle line-through' : 'text-text',
+              )}
+            >
               {item.at ? (
                 <span className="text-text-subtle tabular-nums">
                   {format.dateTime(item.at, 'time')}{' '}

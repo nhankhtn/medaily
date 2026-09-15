@@ -1010,6 +1010,7 @@
     "fromYesterday": "Hôm qua bạn viết hôm nay cần làm",
     "tasks": "Cần làm",
     "noTasks": "Ngày này chưa có việc nào",
+    "noTasksThisWeek": "Tuần này không có việc nào đến hạn",
     "unscheduled": "Chưa xếp ngày",
     "unscheduledHint": "Mấy việc này nằm ngoài kế hoạch, xếp vào một ngày thì nó mới hiện ở ngày đó.",
     "scheduleHere": "Xếp vào ngày này",

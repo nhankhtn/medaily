@@ -1010,6 +1010,7 @@
     "fromYesterday": "Yesterday you wrote that today matters for",
     "tasks": "To do",
     "noTasks": "Nothing planned for this day",
+    "noTasksThisWeek": "Nothing due this week",
     "unscheduled": "Not on a day yet",
     "unscheduledHint": "These stay out of the plan until you give them a day.",
     "scheduleHere": "Put on this day",

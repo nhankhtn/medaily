@@ -20,6 +20,8 @@ import { holidaysIn, type Holiday, type HolidayKey } from '@/lib/planning/holida
 import { expandAll } from '@/lib/planning/recurrence'
 import { findSessions } from '@/server/repositories/learning'
 import { findEvents, findPlannedBlocks } from '@/server/repositories/planning'
+import { findProjects, findTasksInRange } from '@/server/repositories/projects'
+import type { DayTask } from '@/server/services/day-plan'
 import { dayContextOf, getSettings } from '@/server/services/settings'
 
 /**
@@ -33,6 +35,8 @@ export type PlanVsActualDay = {
   plannedMinutes: number
   actualMinutes: number
   blocks: PlannedBlock[]
+  /** Due that day, finished or not — the week has to show what it is for. */
+  tasks: DayTask[]
 }
 
 export type PlanningData = {
@@ -58,12 +62,22 @@ export const getPlanningData = cache(async (weekOf?: ISODate): Promise<PlanningD
 
   const window = { from: fromISODate(range.start), to: fromISODate(addDays(range.end, 1)) }
 
-  const [eventRows, blocks, sessions] = await Promise.all([
+  const [eventRows, blocks, sessions, tasks, projects] = await Promise.all([
     // The window is [start of the first day, start of the day after the last).
     findEvents(userId, window.from, window.to),
     findPlannedBlocks(userId, range),
     findSessions(userId, range, 500),
+    findTasksInRange(userId, range),
+    findProjects(userId),
   ])
+
+  const projectNameOf = new Map(projects.map((project) => [project.id, project.name]))
+  const asDayTask = (task: (typeof tasks)[number]): DayTask => ({
+    ...task,
+    projectName: task.projectId ? (projectNameOf.get(task.projectId) ?? null) : null,
+    // Late as of now, not as of the day it sits on.
+    overdue: task.status !== 'done' && task.dueDate !== null && task.dueDate < today,
+  })
 
   const seriesById = new Map(eventRows.map((row) => [row.id, toEventForm(row)]))
 
@@ -77,7 +91,13 @@ export const getPlanningData = cache(async (weekOf?: ISODate): Promise<PlanningD
       .filter((session) => session.sessionDate === date)
       .reduce((sum, session) => sum + session.minutes, 0)
 
-    return { date, plannedMinutes, actualMinutes, blocks: dayBlocks }
+    return {
+      date,
+      plannedMinutes,
+      actualMinutes,
+      blocks: dayBlocks,
+      tasks: tasks.filter((task) => task.dueDate === date).map(asDayTask),
+    }
   })
 
   return {
@@ -105,11 +125,13 @@ export type CalendarItem = {
   /** The instant it starts, or null for an all-day event. */
   at: Date | null
   title: string | null
-  kind: 'event' | 'block' | 'holiday'
+  kind: 'event' | 'block' | 'holiday' | 'task'
   blockKind: PlannedBlock['kind'] | null
   /** Set on a holiday, whose name is translated rather than stored. */
   holidayKey: HolidayKey | null
   repeating: boolean
+  /** Only a task can be finished; everything else is `false`. */
+  done: boolean
 }
 
 export type CalendarDay = {
@@ -155,9 +177,10 @@ const windowOf = (range: DateRange) => ({
 
 async function collectItems(userId: string, range: DateRange): Promise<CalendarItem[]> {
   const window = windowOf(range)
-  const [eventRows, blocks] = await Promise.all([
+  const [eventRows, blocks, tasks] = await Promise.all([
     findEvents(userId, window.from, window.to),
     findPlannedBlocks(userId, range),
+    findTasksInRange(userId, range),
   ])
 
   const items: CalendarItem[] = expandAll(eventRows, window).map((event) => ({
@@ -169,6 +192,7 @@ async function collectItems(userId: string, range: DateRange): Promise<CalendarI
     blockKind: null,
     holidayKey: null,
     repeating: event.recurrenceRule !== null,
+    done: false,
   }))
 
   for (const block of blocks) {
@@ -181,6 +205,23 @@ async function collectItems(userId: string, range: DateRange): Promise<CalendarI
       blockKind: block.kind,
       holidayKey: null,
       repeating: false,
+      done: false,
+    })
+  }
+
+  for (const task of tasks) {
+    if (!task.dueDate) continue
+    items.push({
+      key: `task:${task.id}`,
+      date: task.dueDate,
+      // A task is owed on a day, not at a time, so it sits with the all-day row.
+      at: null,
+      title: task.title,
+      kind: 'task',
+      blockKind: null,
+      holidayKey: null,
+      repeating: false,
+      done: task.status === 'done',
     })
   }
 
@@ -194,12 +235,13 @@ async function collectItems(userId: string, range: DateRange): Promise<CalendarI
       blockKind: null,
       holidayKey: holiday.key,
       repeating: false,
+      done: false,
     })
   }
 
-  // All-day first, then by clock time. A holiday heads its day — it is what the
-  // day is — and an event comes before a block at the same minute.
-  const rank = { holiday: 0, event: 1, block: 2 } as const
+  // All-day first, then by clock time. A holiday heads its day — it is what
+  // the day is — then what you owe the day, then what is booked into it.
+  const rank = { holiday: 0, task: 1, event: 2, block: 3 } as const
 
   return items.sort(
     (a, b) => (a.at?.getTime() ?? -1) - (b.at?.getTime() ?? -1) || rank[a.kind] - rank[b.kind],

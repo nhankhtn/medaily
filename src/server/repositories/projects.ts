@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNull, lte, ne, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, inArray, isNull, lt, lte, ne, or, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { focusSessions, projectTasks, projects } from '@/lib/db/schema'
 import type { Project, ProjectInsert, ProjectTask, ProjectTaskInsert } from '@/lib/db/schema'
@@ -63,18 +63,24 @@ export async function findTasks(userId: string, projectId?: string): Promise<Pro
 }
 
 /**
- * What one day should show: everything still open that has come due or was
- * never dated, plus what was due that day and is already finished. A day you
- * cleared has to read as cleared — dropping the finished rows made it look
- * like a day you never planned, and left no way to untick a mistake.
+ * What one day should show: what was due that day, finished or not, plus the
+ * undated backlog. A day you cleared has to read as cleared — dropping the
+ * finished rows made it look like a day you never planned, and left no way to
+ * untick a mistake.
  *
- * A task due earlier and ticked today is not pulled forward. `completed_at`
- * is an instant, and which logical day it falls in depends on the rollover
- * hour, which is the caller's business rather than this query's.
+ * Arrears are carried forward onto today and no further. Carrying them onto
+ * whatever day you happened to open put a task due next week on a screen for
+ * the week after, labelled overdue, on the day it was created. A day ahead of
+ * now shows what it is for; only today collects what is late.
+ *
+ * A task due earlier and ticked today is not pulled forward either.
+ * `completed_at` is an instant, and which logical day it falls in depends on
+ * the rollover hour, which is the caller's business rather than this query's.
  */
 export async function findTasksForDay(
   userId: string,
-  through: ISODate,
+  date: ISODate,
+  today: ISODate,
   limit = 100,
 ): Promise<ProjectTask[]> {
   return (
@@ -85,11 +91,13 @@ export async function findTasksForDay(
         and(
           eq(projectTasks.userId, userId),
           or(
+            eq(projectTasks.dueDate, date),
+            and(ne(projectTasks.status, 'done'), isNull(projectTasks.dueDate)),
             and(
+              sql`${date} = ${today}`,
               ne(projectTasks.status, 'done'),
-              or(isNull(projectTasks.dueDate), lte(projectTasks.dueDate, through)),
+              lt(projectTasks.dueDate, today),
             ),
-            and(eq(projectTasks.status, 'done'), eq(projectTasks.dueDate, through)),
           ),
         ),
       )
@@ -102,6 +110,30 @@ export async function findTasksForDay(
       )
       .limit(limit)
   )
+}
+
+/**
+ * Every dated task falling inside a range, finished or not, for the week,
+ * month and year grids. Undated ones are left out on purpose: a calendar is
+ * made of days, and a task with no day belongs to the backlog.
+ */
+export async function findTasksInRange(
+  userId: string,
+  range: { start: ISODate; end: ISODate },
+  limit = 500,
+): Promise<ProjectTask[]> {
+  return db
+    .select()
+    .from(projectTasks)
+    .where(
+      and(
+        eq(projectTasks.userId, userId),
+        gte(projectTasks.dueDate, range.start),
+        lte(projectTasks.dueDate, range.end),
+      ),
+    )
+    .orderBy(asc(projectTasks.dueDate), asc(projectTasks.sortOrder), asc(projectTasks.createdAt))
+    .limit(limit)
 }
 
 export async function findTask(userId: string, taskId: string): Promise<ProjectTask | null> {
