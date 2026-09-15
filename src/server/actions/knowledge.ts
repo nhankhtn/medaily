@@ -13,6 +13,7 @@ import {
   upsertJournalEntry,
   upsertNote,
 } from '@/server/repositories/knowledge'
+import { findResource, findTopic } from '@/server/repositories/learning'
 import { extractWikiLinks } from '@/lib/knowledge/links'
 import { today } from '@/lib/dates'
 import { PATHS } from '@/lib/paths'
@@ -32,8 +33,26 @@ const noteSchema = z.object({
   type: z.enum(['note', 'concept', 'bookmark', 'lesson']).default('note'),
   url: optionalText,
   learnedOn: isoDateSchema.nullable().optional(),
+  topicId: z.uuid().nullable().optional(),
+  resourceId: z.uuid().nullable().optional(),
   tags: z.array(z.string().min(1).max(60)).max(20).optional(),
 })
+
+/**
+ * A topic or resource id arrives from a `<select>`, which means it arrives
+ * from the client and cannot be trusted. Zod proves it is a uuid; only the
+ * database proves it is *yours*. An id belonging to someone else is dropped
+ * rather than refused — telling a stranger which ids exist is a free
+ * directory, and the note itself is still worth saving.
+ */
+async function ownedOrNull(
+  userId: string,
+  id: string | null | undefined,
+  owns: (userId: string, id: string) => Promise<unknown | null>,
+): Promise<string | null> {
+  if (!id) return null
+  return (await owns(userId, id)) ? id : null
+}
 
 export async function saveNote(input: unknown) {
   const parsed = noteSchema.safeParse(input)
@@ -49,11 +68,18 @@ export async function saveNote(input: unknown) {
       ? (values.learnedOn ?? today(await getDayContext()))
       : (values.learnedOn ?? null)
 
+  const [topicId, resourceId] = await Promise.all([
+    ownedOrNull(userId, values.topicId, findTopic),
+    ownedOrNull(userId, values.resourceId, findResource),
+  ])
+
   const note = await upsertNote(userId, {
     ...values,
     bodyMd: values.bodyMd ?? null,
     url: values.url ?? null,
     learnedOn,
+    topicId,
+    resourceId,
   })
 
   // Tags and wiki-links are derived from the note itself, so saving keeps the

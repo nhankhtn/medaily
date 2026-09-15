@@ -907,6 +907,10 @@
     "deleted": "Note deleted",
     "open": "Open",
     "learnedOn": "Learned on",
+    "topic": "Topic",
+    "noTopic": "No topic",
+    "resource": "Book or course",
+    "noResource": "None",
     "close": "Close",
     "edit": "Edit"
   },

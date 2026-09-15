@@ -907,6 +907,10 @@
     "deleted": "Đã xóa ghi chú",
     "open": "Mở",
     "learnedOn": "Học được ngày",
+    "topic": "Chủ đề",
+    "noTopic": "Không có chủ đề",
+    "resource": "Sách hoặc khóa học",
+    "noResource": "Không có",
     "close": "Đóng",
     "edit": "Sửa"
   },

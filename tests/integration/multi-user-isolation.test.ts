@@ -97,11 +97,13 @@ describeDb('multi-user isolation', () => {
         .values({ userId: alice, provider: 'google', providerUid: uid })
 
       // Bob cannot claim Alice's Google account, whatever the app layer does.
-      await expect(
-        db
-          .insert(schema.authIdentities)
-          .values({ userId: bob, provider: 'google', providerUid: uid }),
-      ).rejects.toThrow(/auth_identities_provider_uid_uniq/)
+      await failsWithConstraint(
+        () =>
+          db
+            .insert(schema.authIdentities)
+            .values({ userId: bob, provider: 'google', providerUid: uid }),
+        /auth_identities_provider_uid_uniq/i,
+      )
     })
 
     it('allows the same person two identities', async () => {
@@ -156,6 +158,31 @@ describeDb('multi-user isolation', () => {
       expect(after[0]?.userId).toBe(alice)
     })
 
+    /**
+     * The note form's topic and resource pickers send an id from the browser.
+     * `saveNote` keeps one only when this lookup finds it, so the lookup being
+     * owner-scoped is the whole guard — otherwise a note could be filed under
+     * someone else's topic, which also reveals that the topic exists.
+     */
+    it('will not find another user\'s topic or resource by id', async () => {
+      const { findResource, findTopic } = await import('@/server/repositories/learning')
+
+      const [topic] = await db
+        .insert(schema.topics)
+        .values({ userId: alice, name: 'alice topic' })
+        .returning()
+      const [resource] = await db
+        .insert(schema.resources)
+        .values({ userId: alice, title: 'alice book' })
+        .returning()
+
+      expect(await findTopic(alice, topic!.id)).not.toBeNull()
+      expect(await findResource(alice, resource!.id)).not.toBeNull()
+
+      expect(await findTopic(bob, topic!.id)).toBeNull()
+      expect(await findResource(bob, resource!.id)).toBeNull()
+    })
+
     it('only ever collects milestones for goals the caller already owns', async () => {
       const { findGoals, findMilestonesFor } = await import('@/server/repositories/goals')
 
@@ -194,11 +221,13 @@ describeDb('multi-user isolation', () => {
     await db.insert(schema.users).values({ id: first, displayName: 'First', email: address })
 
     try {
-      await expect(
-        db
-          .insert(schema.users)
-          .values({ id: randomUUID(), displayName: 'Second', email: address.toUpperCase() }),
-      ).rejects.toThrow(/users_email_uniq/)
+      await failsWithConstraint(
+        () =>
+          db
+            .insert(schema.users)
+            .values({ id: randomUUID(), displayName: 'Second', email: address.toUpperCase() }),
+        /users_email_uniq/i,
+      )
     } finally {
       await db.delete(schema.users).where(eq(schema.users.id, first))
     }
@@ -208,4 +237,23 @@ describeDb('multi-user isolation', () => {
 /** Short random suffix, so repeated local runs never collide on a unique index. */
 function id0(): string {
   return randomUUID().slice(0, 8)
+}
+
+/**
+ * Drizzle wraps driver errors, so the constraint name lives on `cause`, not on
+ * the message. Asserting on it is what proves the *database* refused the row,
+ * and refused it for the right reason — the same helper `db.test.ts` uses.
+ */
+async function failsWithConstraint(run: () => Promise<unknown>, constraint: RegExp) {
+  let caught: unknown
+  try {
+    await run()
+  } catch (error) {
+    caught = error
+  }
+
+  expect(caught, 'expected the query to be rejected').toBeDefined()
+  const cause = (caught as { cause?: { constraint_name?: string; message?: string } }).cause
+  const detail = cause?.constraint_name ?? cause?.message ?? (caught as Error)?.message ?? ''
+  expect(detail).toMatch(constraint)
 }

@@ -173,10 +173,23 @@ or put it away. Pick a topic when you start a timed run and the chart fills
 itself; putting one away hides it from the pickers and leaves the sessions
 already filed under it alone.
 
-**Knowledge** (`/knowledge`) holds notes in Markdown. `[[Wiki links]]` connect
-them, and a link to a note that does not exist yet is kept rather than
-dropped — an unwritten note is a note worth writing. Backlinks are shown on
-each note.
+**Knowledge** (`/knowledge`) holds notes in Markdown.
+
+**Wiki links.** Write `[[Title of another note]]` in the body. On save the
+link is recorded, matching the title whatever the casing. Click a note's title
+to open it: the body renders resolved links as real links, and **Linked from**
+at the bottom lists every note pointing here — which is where the payoff shows
+up, on the note being pointed at rather than the one you typed in.
+
+A link to a note that does not exist yet is kept rather than dropped — an
+unwritten note is a note worth writing. It reads as bold brackets until then,
+and starts linking on its own the day you create that note.
+
+**Filing a note.** A note can be put under a **topic** and against a **book or
+course**, both optional and both chosen from what Learning already knows — the
+same topics the timer offers. The card then shows what it is filed under. Put
+a topic away and notes filed under it keep the link but stop showing the name,
+exactly as a focus session does.
 
 **Lessons.** A note typed as a *lesson* carries the day it was learned, not
 the day it was typed, and its **place** is a tag — `#office`, `#home`. The

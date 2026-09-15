@@ -12,11 +12,19 @@ import { Markdown } from '@/components/ui/markdown'
 import { Select } from '@/components/ui/select'
 import { Field } from '@/features/projects/project-dialog'
 import { removeNote, saveNote } from '@/server/actions/knowledge'
-import type { NoteView } from '@/server/services/knowledge'
+import Link from 'next/link'
+import type { NoteLinkTargets } from '@/lib/knowledge/links'
+import { PATHS } from '@/lib/paths'
+import type { NoteFilingOptions, NoteView } from '@/server/services/knowledge'
 
 const TYPES = ['note', 'concept', 'bookmark', 'lesson'] as const
 
-export function NoteEditor({ note, trigger }: { note?: NoteView; trigger?: React.ReactNode }) {
+export function NoteEditor({
+  note,
+  trigger,
+  topics,
+  resources,
+}: { note?: NoteView; trigger?: React.ReactNode } & NoteFilingOptions) {
   const t = useTranslations('knowledge')
   const tc = useTranslations('common')
   const [open, setOpen] = useState(false)
@@ -34,6 +42,8 @@ export function NoteEditor({ note, trigger }: { note?: NoteView; trigger?: React
         type: formData.get('type'),
         url: String(formData.get('url') ?? ''),
         learnedOn: String(formData.get('learnedOn') ?? '') || null,
+        topicId: String(formData.get('topicId') ?? '') || null,
+        resourceId: String(formData.get('resourceId') ?? '') || null,
         tags: String(formData.get('tags') ?? '')
           .split(',')
           .map((tag) => tag.trim())
@@ -85,6 +95,29 @@ export function NoteEditor({ note, trigger }: { note?: NoteView; trigger?: React
                 <Input name="url" type="url" defaultValue={note?.url ?? ''} maxLength={500} />
               </Field>
             )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label={t('topic')}>
+              <Select name="topicId" defaultValue={note?.topicId ?? ''}>
+                <option value="">{t('noTopic')}</option>
+                {topics.map((topic) => (
+                  <option key={topic.id} value={topic.id}>
+                    {topic.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label={t('resource')}>
+              <Select name="resourceId" defaultValue={note?.resourceId ?? ''}>
+                <option value="">{t('noResource')}</option>
+                {resources.map((resource) => (
+                  <option key={resource.id} value={resource.id}>
+                    {resource.title}
+                  </option>
+                ))}
+              </Select>
+            </Field>
           </div>
 
           <div className="space-y-1.5">
@@ -157,13 +190,22 @@ export function NoteEditor({ note, trigger }: { note?: NoteView; trigger?: React
   )
 }
 
-export function NoteCard({ note }: { note: NoteView }) {
+export function NoteCard({
+  note,
+  topics,
+  resources,
+  targets,
+}: { note: NoteView; targets: NoteLinkTargets } & NoteFilingOptions) {
   const t = useTranslations('knowledge')
 
   return (
-    <div className="border-border-base bg-surface rounded-[var(--radius)] border p-4">
+    <div className="border-border-base bg-surface flex h-full flex-col rounded-[var(--radius)] border p-4">
       <div className="flex items-start justify-between gap-2">
-        <h3 className="min-w-0 truncate font-medium">{note.title}</h3>
+        <h3 className="min-w-0 truncate font-medium">
+          <Link href={PATHS.note(note.id)} className="hover:text-accent hover:underline">
+            {note.title}
+          </Link>
+        </h3>
         <Badge tone={note.type === 'bookmark' ? 'accent' : 'neutral'}>
           {t(`types.${note.type}`)}
         </Badge>
@@ -171,7 +213,7 @@ export function NoteCard({ note }: { note: NoteView }) {
 
       {note.bodyMd ? (
         <div className="text-text-subtle mt-1 max-h-16 overflow-hidden">
-          <Markdown>{note.bodyMd}</Markdown>
+          <Markdown targets={targets}>{note.bodyMd}</Markdown>
         </div>
       ) : null}
 
@@ -186,12 +228,24 @@ export function NoteCard({ note }: { note: NoteView }) {
         </a>
       ) : null}
 
-      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+      {note.topicName || note.resourceTitle ? (
+        <p className="text-text-subtle mt-2 flex flex-wrap items-center gap-x-2 text-xs">
+          {note.topicName ? <span>{note.topicName}</span> : null}
+          {note.topicName && note.resourceTitle ? <span aria-hidden>·</span> : null}
+          {note.resourceTitle ? <span className="truncate">{note.resourceTitle}</span> : null}
+        </p>
+      ) : null}
+
+      {/* `mt-auto` pins this to the bottom, so cards of different content
+          length still line their tags and edit button up across a row. */}
+      <div className="mt-auto flex flex-wrap items-center gap-1.5 pt-3">
         {note.tagNames.map((tag) => (
           <Badge key={tag}>#{tag}</Badge>
         ))}
         <div className="ml-auto">
           <NoteEditor
+            topics={topics}
+            resources={resources}
             note={note}
             trigger={
               <Button variant="ghost" size="sm" className="h-7 px-2">

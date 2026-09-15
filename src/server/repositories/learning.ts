@@ -145,6 +145,16 @@ export async function findResources(userId: string): Promise<Resource[]> {
     .orderBy(asc(resources.status), desc(resources.updatedAt))
 }
 
+/** Owner-scoped, so a caller can check an id it was handed actually belongs here. */
+export async function findResource(userId: string, id: string): Promise<Resource | null> {
+  const rows = await db
+    .select()
+    .from(resources)
+    .where(and(eq(resources.userId, userId), eq(resources.id, id)))
+    .limit(1)
+  return rows[0] ?? null
+}
+
 export async function upsertResource(
   userId: string,
   values: Omit<ResourceInsert, 'userId'> & { id?: string },

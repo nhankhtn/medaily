@@ -10,6 +10,16 @@ than the code.
 
 **Added**
 
+- Wiki links are links. `[[Another note]]` rendered as bold brackets and a
+  note could not be opened from the Knowledge page at all, so **Linked from**
+  was reachable only by search or a pasted URL — the whole feature was
+  invisible while working correctly underneath. Note titles now open the note,
+  and a resolved link is a real link.
+- A note can be filed under a topic and against a book or course. The columns
+  `notes.topic_id` and `notes.resource_id` have existed since `0001` but were
+  reachable only by seeding or import — no screen wrote them and none showed
+  them. Both pickers now sit in the note form, and the card shows what a note
+  is filed under. No migration: the columns were already there.
 - Quick capture reads a paragraph of intentions and splits it into goals and
   to-dos. Documented under *Getting around*, with the rule that decides which
   is which and what leaves the machine.
