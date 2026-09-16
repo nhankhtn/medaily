@@ -1,0 +1,47 @@
+import { NextRequest } from 'next/server'
+import { beforeAll, describe, expect, it } from 'vitest'
+import { SESSION_COOKIE, signSession } from '@/lib/auth/session'
+import { proxy } from '@/proxy'
+
+const SECRET = 'a-secret-long-enough-to-pass'
+let token = ''
+
+beforeAll(async () => {
+  process.env.AUTH_SECRET = SECRET
+  process.env.AUTH_USERNAME = 'someone'
+  process.env.AUTH_PASSWORD = 'something'
+  token = await signSession(
+    { uid: '11111111-1111-4111-8111-111111111111', sub: 'someone', provider: 'password' },
+    SECRET,
+  )
+})
+
+const visit = (path: string, signedIn: boolean) =>
+  proxy(
+    new NextRequest(`http://localhost${path}`, {
+      headers: signedIn ? { cookie: `${SESSION_COOKIE}=${token}` } : {},
+    }),
+  )
+
+describe('the sign-in page turns away someone who is already signed in', () => {
+  it('sends them home', async () => {
+    const response = await visit('/login', true)
+    expect(response.status).toBe(307)
+    expect(response.headers.get('location')).toBe('http://localhost/')
+  })
+
+  it('sends them where they were headed', async () => {
+    const response = await visit('/login?next=%2Fcalendar%3Fview%3Dweek', true)
+    expect(response.headers.get('location')).toBe('http://localhost/calendar?view=week')
+  })
+
+  it('will not be talked into another site', async () => {
+    const response = await visit('/login?next=%2F%2Fevil.example', true)
+    expect(response.headers.get('location')).toBe('http://localhost/')
+  })
+
+  it('still shows the page to someone who is not', async () => {
+    const response = await visit('/login', false)
+    expect(response.status).toBe(200)
+  })
+})

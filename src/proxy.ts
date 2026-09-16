@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { readAuthConfig, readGoogleConfig } from '@/lib/auth/config'
-import { PATHS, PUBLIC_PATHS } from '@/lib/paths'
+import { PATHS, PUBLIC_PATHS, safeNextPath } from '@/lib/paths'
 import { REQUEST_ID_HEADER, requestIdFrom } from '@/lib/request-id'
 import { SESSION_COOKIE, verifySession } from '@/lib/auth/session'
 
@@ -29,7 +29,11 @@ export async function proxy(request: NextRequest) {
     return response
   }
 
-  if (PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))) {
+  const signingIn = pathname === PATHS.login
+  if (
+    !signingIn &&
+    PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))
+  ) {
     return forward()
   }
 
@@ -40,6 +44,16 @@ export async function proxy(request: NextRequest) {
   const session = usable
     ? await verifySession(request.cookies.get(SESSION_COOKIE)?.value, auth.secret)
     : null
+
+  // The sign-in page has nothing to offer someone who is already signed in.
+  if (signingIn) {
+    if (!session) return forward()
+    const onwards = NextResponse.redirect(
+      new URL(safeNextPath(request.nextUrl.searchParams.get('next')), request.url),
+    )
+    onwards.headers.set(REQUEST_ID_HEADER, requestId)
+    return onwards
+  }
 
   if (session) return forward()
 

@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { PATHS, PUBLIC_PATHS, STATIC_PAGE_PATHS } from '@/lib/paths'
+import { PATHS, PUBLIC_PATHS, STATIC_PAGE_PATHS, safeNextPath } from '@/lib/paths'
 
 const APP = join(process.cwd(), 'src/app')
 const PAGES = join(APP, '(app)')
@@ -110,5 +110,29 @@ describe('the built paths', () => {
   it('keeps the public list to routes that really are public', () => {
     expect(PUBLIC_PATHS).toContain(PATHS.login)
     expect(PUBLIC_PATHS).not.toContain(PATHS.daily)
+  })
+})
+
+describe('safeNextPath', () => {
+  it('keeps a path on this site, query and all', () => {
+    expect(safeNextPath('/daily')).toBe('/daily')
+    expect(safeNextPath('/calendar?view=week')).toBe('/calendar?view=week')
+  })
+
+  it('refuses anything that is really another origin', () => {
+    expect(safeNextPath('//evil.example')).toBe(PATHS.home)
+    expect(safeNextPath('/\\evil.example')).toBe(PATHS.home)
+    expect(safeNextPath('https://evil.example')).toBe(PATHS.home)
+    expect(safeNextPath('javascript:alert(1)')).toBe(PATHS.home)
+  })
+
+  it('refuses the sign-in page, which would be a loop', () => {
+    expect(safeNextPath(PATHS.login)).toBe(PATHS.home)
+    expect(safeNextPath('/login?next=%2Flogin')).toBe(PATHS.home)
+  })
+
+  it('falls back when there is nothing to go back to', () => {
+    expect(safeNextPath(null)).toBe(PATHS.home)
+    expect(safeNextPath('')).toBe(PATHS.home)
   })
 })

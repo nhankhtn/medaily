@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { readAuthConfig } from '@/lib/auth/config'
 import { safeEqual, SESSION_COOKIE, sessionCookieOptions, signSession } from '@/lib/auth/session'
 import { resolvePasswordIdentity } from '@/server/services/auth'
-import { PATHS } from '@/lib/paths'
+import { PATHS, safeNextPath } from '@/lib/paths'
 
 const credentialsSchema = z.object({
   username: z.string().min(1).max(200),
@@ -70,8 +70,7 @@ export async function login(_previous: LoginState, formData: FormData): Promise<
   const cookieStore = await cookies()
   cookieStore.set(SESSION_COOKIE, token, sessionCookieOptions())
 
-  const target = parsed.data.next
-  redirect(target && target.startsWith('/') && !target.startsWith('//') ? target : '/')
+  redirect(safeNextPath(parsed.data.next))
 }
 
 export async function logout() {

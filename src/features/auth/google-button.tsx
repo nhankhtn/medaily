@@ -11,6 +11,7 @@ import {
   signInWithGoogle,
   signOutFirebase,
 } from '@/lib/auth/firebase-client'
+import { safeNextPath } from '@/lib/paths'
 
 /** Google's mark, inlined: an external image would be blocked and would leak a request. */
 function GoogleMark() {
@@ -64,8 +65,7 @@ export function GoogleButton({ next }: { next?: string }) {
         return
       }
 
-      const target = next && next.startsWith('/') && !next.startsWith('//') ? next : '/'
-      router.replace(target)
+      router.replace(safeNextPath(next))
       router.refresh()
     } catch (cause) {
       if (cause instanceof GoogleSignInError) {

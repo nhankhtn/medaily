@@ -88,6 +88,19 @@ export const STATIC_PAGE_PATHS = [
   PATHS.settings,
 ] as const
 
+/**
+ * Where to land after signing in. `next` arrives in the URL, so it is whatever
+ * the sender wrote: a browser reads `//host` and `/\host` as another origin
+ * rather than as a path, and the sign-in page itself would bounce someone who
+ * is already signed in straight back here. All three fall back to the home page.
+ */
+export function safeNextPath(value: string | null | undefined): string {
+  if (!value?.startsWith('/') || value.startsWith('//') || value.startsWith('/\\')) {
+    return PATHS.home
+  }
+  return value.split(/[?#]/)[0] === PATHS.login ? PATHS.home : value
+}
+
 /** Reachable without a session; the proxy lets these through untouched. */
 export const PUBLIC_PATHS = [
   PATHS.login,
