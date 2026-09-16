@@ -7,7 +7,8 @@ import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
-import { Input, Textarea } from '@/components/ui/input'
+import { Input } from '@/components/ui/input'
+import { MarkdownEditor } from '@/components/ui/markdown-editor'
 import { Markdown } from '@/components/ui/markdown'
 import { Select } from '@/components/ui/select'
 import { Field } from '@/features/projects/project-dialog'
@@ -138,11 +139,11 @@ export function NoteEditor({
                 <Markdown>{body || '—'}</Markdown>
               </div>
             ) : (
-              <Textarea
+              <MarkdownEditor
+                label={t('body')}
                 value={body}
-                onChange={(event) => setBody(event.target.value)}
-                rows={10}
-                className="font-mono text-sm"
+                onChange={setBody}
+                className="min-h-56"
               />
             )}
           </div>

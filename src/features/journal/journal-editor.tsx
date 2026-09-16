@@ -6,7 +6,8 @@ import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
-import { Input, Textarea } from '@/components/ui/input'
+import { Input } from '@/components/ui/input'
+import { MarkdownEditor } from '@/components/ui/markdown-editor'
 import { Markdown } from '@/components/ui/markdown'
 import { Field } from '@/features/projects/project-dialog'
 import type { JournalEntry } from '@/lib/db/schema'
@@ -32,6 +33,13 @@ export function JournalEditor({
   const [pending, startTransition] = useTransition()
 
   const submit = (formData: FormData) => {
+    // The box used to carry `required`; a contenteditable cannot, so the rule
+    // that an entry has something in it lives here now.
+    if (body.trim() === '') {
+      toast.error(t('bodyRequired'))
+      return
+    }
+
     startTransition(async () => {
       const result = await saveJournalEntry({
         id: entry?.id,
@@ -89,7 +97,7 @@ export function JournalEditor({
               <button
                 type="button"
                 onClick={() => setPreview((prev) => !prev)}
-                className="flex items-center gap-1 text-xs text-accent hover:underline"
+                className="text-accent flex items-center gap-1 text-xs hover:underline"
               >
                 {preview ? <Pencil className="size-3" /> : <Eye className="size-3" />}
                 {preview ? tc('edit') : t('preview')}
@@ -97,16 +105,15 @@ export function JournalEditor({
             </div>
 
             {preview ? (
-              <div className="min-h-48 rounded-[var(--radius)] border border-border-base bg-surface-2 p-3">
+              <div className="border-border-base bg-surface-2 min-h-48 rounded-[var(--radius)] border p-3">
                 <Markdown>{body || '—'}</Markdown>
               </div>
             ) : (
-              <Textarea
+              <MarkdownEditor
+                label={t('body')}
                 value={body}
-                onChange={(event) => setBody(event.target.value)}
-                rows={12}
-                required
-                autoFocus
+                onChange={setBody}
+                className="min-h-64"
               />
             )}
           </div>

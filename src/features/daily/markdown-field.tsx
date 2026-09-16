@@ -1,19 +1,20 @@
 'use client'
 
-import { Eye, Pencil } from 'lucide-react'
+import { Eye, EyeOff } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
-import { Textarea } from '@/components/ui/input'
 import { Markdown } from '@/components/ui/markdown'
-import { cn } from '@/lib/utils'
+import { MarkdownEditor } from '@/components/ui/markdown-editor'
+import { hasInlineMarkdown } from '@/lib/markdown'
 import { Field } from './section'
 
 /**
- * A written field that accepts Markdown, with a preview beside the label.
+ * A written field that accepts Markdown and shows it as it is written: a line
+ * starting `# ` is a heading in the box, a `- ` line is a bullet.
  *
- * Editing stays the default. These four are answered in a hurry at the end of
- * a day, and most days the answer is one sentence that needs no formatting —
- * the preview is there for the day it is a list of three things.
+ * The preview below is only for the marks the box cannot show in place —
+ * `**bold**`, a link, a table. Repeating a heading underneath the heading you
+ * can already see would be the same words twice.
  */
 export function MarkdownField({
   label,
@@ -31,38 +32,42 @@ export function MarkdownField({
   onChange: (value: string | null) => void
 }) {
   const t = useTranslations('common')
-  const [preview, setPreview] = useState(false)
+  const [hidden, setHidden] = useState(false)
   const text = value ?? ''
+  const inline = hasInlineMarkdown(text)
 
   return (
     <Field
       label={label}
       copied={copied}
       hint={
-        <button
-          type="button"
-          onClick={() => setPreview((previous) => !previous)}
-          // Nothing to preview yet, and a button that shows a dash is noise.
-          disabled={text.trim() === ''}
-          className="text-accent flex items-center gap-1 text-xs hover:underline disabled:opacity-40 disabled:hover:no-underline"
-        >
-          {preview ? <Pencil className="size-3" /> : <Eye className="size-3" />}
-          {preview ? t('edit') : t('preview')}
-        </button>
+        inline ? (
+          <button
+            type="button"
+            onClick={() => setHidden((previous) => !previous)}
+            className="text-accent flex items-center gap-1 text-xs hover:underline"
+          >
+            {hidden ? <Eye className="size-3" /> : <EyeOff className="size-3" />}
+            {t('preview')}
+          </button>
+        ) : undefined
       }
     >
-      {preview ? (
-        <div className={cn('border-border-base bg-surface-2 rounded-[var(--radius)] border p-3', className)}>
-          <Markdown>{text}</Markdown>
-        </div>
-      ) : (
-        <Textarea
+      <div className="space-y-1.5">
+        <MarkdownEditor
+          label={label}
           className={className}
           value={text}
           placeholder={placeholder}
-          onChange={(event) => onChange(event.target.value || null)}
+          onChange={(next) => onChange(next || null)}
         />
-      )}
+
+        {inline && !hidden ? (
+          <div className="border-border-base bg-surface-2 rounded-[var(--radius)] border p-3">
+            <Markdown>{text}</Markdown>
+          </div>
+        ) : null}
+      </div>
     </Field>
   )
 }

@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl'
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/input'
+import { MarkdownEditor } from '@/components/ui/markdown-editor'
 import {
   finalizeReview,
   recomputeReviewSnapshot,
@@ -54,9 +54,9 @@ export function ReviewEditor({ view }: { view: ReviewView }) {
   return (
     <div className="space-y-4">
       {view.previousPriority ? (
-        <div className="rounded-[var(--radius)] border border-border-base bg-accent-soft px-4 py-3">
+        <div className="border-border-base bg-accent-soft rounded-[var(--radius)] border px-4 py-3">
           <p className="text-sm">{t('previousPriority', { priority: view.previousPriority })}</p>
-          <p className="mt-0.5 text-xs text-text-muted">{t('previousPriorityAsk')}</p>
+          <p className="text-text-muted mt-0.5 text-xs">{t('previousPriorityAsk')}</p>
         </div>
       ) : null}
 
@@ -181,18 +181,19 @@ function FieldBlock({
           <button
             type="button"
             onClick={onSeed}
-            className="text-xs text-accent hover:underline"
+            className="text-accent text-xs hover:underline"
             title={seeds.slice(0, 5).join(' · ')}
           >
             {seedLabel} · {seedAction} ({seeds.length})
           </button>
         ) : null}
       </div>
-      <Textarea
-        rows={rows}
+      <MarkdownEditor
+        label={label}
         value={value}
         disabled={disabled}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={onChange}
+        className={rows > 3 ? 'min-h-40' : undefined}
       />
     </div>
   )

@@ -892,6 +892,7 @@
     "edit": "Edit entry",
     "entryTitle": "Title",
     "body": "Write",
+    "bodyRequired": "Write something before saving",
     "preview": "Preview",
     "date": "Date",
     "mood": "Mood",
