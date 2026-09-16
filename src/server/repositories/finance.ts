@@ -17,6 +17,7 @@ import type {
   Transaction,
 } from '@/lib/db/schema'
 import type { DateRange, ISODate } from '@/lib/dates'
+import { toAccountType, type AccountType } from '@/lib/finance/account-types'
 
 export async function findAccounts(userId: string): Promise<Account[]> {
   return db
@@ -26,17 +27,24 @@ export async function findAccounts(userId: string): Promise<Account[]> {
     .orderBy(asc(accounts.name))
 }
 
-export type AccountBalance = { accountId: string; name: string; currency: string; balance: number }
+export type AccountBalance = {
+  accountId: string
+  name: string
+  type: AccountType
+  currency: string
+  balance: number
+}
 
 /** Reads `v_account_balances`, so the arithmetic lives in one place (spec 27.3). */
 export async function findAccountBalances(userId: string): Promise<AccountBalance[]> {
   const rows = await db.execute<{
     account_id: string
     name: string
+    type: string
     currency: string
     balance: string
   }>(sql`
-    SELECT account_id, name, currency, balance
+    SELECT account_id, name, type, currency, balance
     FROM v_account_balances
     WHERE user_id = ${userId}
     ORDER BY name
@@ -45,6 +53,7 @@ export async function findAccountBalances(userId: string): Promise<AccountBalanc
   return rows.map((row) => ({
     accountId: row.account_id,
     name: row.name,
+    type: toAccountType(row.type),
     currency: row.currency,
     balance: Number(row.balance),
   }))

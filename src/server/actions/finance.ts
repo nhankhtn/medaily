@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { getCurrentUserId } from '@/lib/auth/current-user'
 import { today } from '@/lib/dates'
 import type { FinanceCategory } from '@/lib/db/schema'
+import { ACCOUNT_TYPES } from '@/lib/finance/account-types'
 import { MAX_DRAFTS, type TransactionDraft } from '@/lib/finance/drafts'
 import { PATHS } from '@/lib/paths'
 import { isoDateSchema } from '@/lib/validation/daily'
@@ -42,7 +43,7 @@ export async function createAccount(input: unknown) {
   const parsed = z
     .object({
       name: z.string().min(1).max(120),
-      type: z.enum(['cash', 'bank', 'credit_card', 'e_wallet', 'investment', 'loan']),
+      type: z.enum(ACCOUNT_TYPES),
       currency: z.string().length(3),
       openingBalance: z.number().min(-999_999_999_999).max(999_999_999_999).default(0),
     })

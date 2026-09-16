@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardBody, CardHeader } from '@/components/ui/card'
 import { EmptyState, PageHeader, StatRow } from '@/components/ui/page'
 import { Progress } from '@/components/ui/progress'
+import { AccountIcon } from '@/features/finance/account-icon'
 import {
   AccountDialog,
   AssetDialog,
@@ -83,8 +84,9 @@ export default async function FinancePage() {
             <CardBody>
               <ul className="divide-border-base divide-y">
                 {data.balances.map((account) => (
-                  <li key={account.accountId} className="flex items-center justify-between py-2">
-                    <span className="truncate text-sm">{account.name}</span>
+                  <li key={account.accountId} className="flex items-center gap-3 py-2">
+                    <AccountIcon type={account.type} />
+                    <span className="min-w-0 flex-1 truncate text-sm">{account.name}</span>
                     <span className="shrink-0 text-sm font-medium tabular-nums">
                       {formatMoney(account.balance, account.currency, locale)}
                     </span>

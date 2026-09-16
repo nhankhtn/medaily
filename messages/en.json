@@ -810,9 +810,13 @@
     "openingBalance": "Opening balance",
     "accountTypes": {
       "cash": "Cash",
-      "bank": "Bank",
+      "bidv": "BIDV",
+      "vcb": "Vietcombank",
+      "vib": "VIB",
+      "bank": "Other bank",
+      "momo": "Momo",
+      "e_wallet": "Other e-wallet",
       "credit_card": "Credit card",
-      "e_wallet": "E-wallet",
       "investment": "Investment",
       "loan": "Loan"
     },

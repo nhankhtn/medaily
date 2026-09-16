@@ -31,6 +31,10 @@ export const accountTypeEnum = pgEnum('account_type', [
   'e_wallet',
   'investment',
   'loan',
+  'bidv',
+  'vcb',
+  'vib',
+  'momo',
 ])
 export const categoryKindEnum = pgEnum('category_kind', ['income', 'expense'])
 export const transactionKindEnum = pgEnum('transaction_kind', ['income', 'expense', 'transfer'])

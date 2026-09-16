@@ -9,9 +9,11 @@ import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { MoneyInput } from '@/components/ui/money-input'
 import { Select } from '@/components/ui/select'
+import { AccountIcon } from '@/features/finance/account-icon'
 import { Field } from '@/features/projects/project-dialog'
 import type { FinanceCategory } from '@/lib/db/schema'
 import type { ISODate } from '@/lib/dates'
+import { ACCOUNT_TYPES, type AccountType } from '@/lib/finance/account-types'
 import {
   createAccount,
   createAsset,
@@ -19,8 +21,6 @@ import {
   createInvestment,
   saveBudget,
 } from '@/server/actions/finance'
-
-const ACCOUNT_TYPES = ['cash', 'bank', 'credit_card', 'e_wallet', 'investment', 'loan'] as const
 
 function useDialogAction(onDone: () => void) {
   const tc = useTranslations('common')
@@ -48,6 +48,7 @@ export function AccountDialog({ defaultCurrency }: { defaultCurrency: string }) 
   const t = useTranslations('finance')
   const tc = useTranslations('common')
   const [open, setOpen] = useState(false)
+  const [type, setType] = useState<AccountType>('bidv')
   const { pending, run } = useDialogAction(() => {
     toast.success(t('saved'))
     setOpen(false)
@@ -78,15 +79,23 @@ export function AccountDialog({ defaultCurrency }: { defaultCurrency: string }) 
           <Field label={t('accountName')}>
             <Input name="name" required autoFocus maxLength={120} />
           </Field>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <Field label={t('accountType')}>
-              <Select name="type" defaultValue="bank">
-                {ACCOUNT_TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {t(`accountTypes.${type}`)}
-                  </option>
-                ))}
-              </Select>
+              <div className="flex min-w-0 items-center gap-2">
+                <AccountIcon type={type} />
+                <Select
+                  name="type"
+                  value={type}
+                  onChange={(event) => setType(event.target.value as AccountType)}
+                  className="min-w-0"
+                >
+                  {ACCOUNT_TYPES.map((option) => (
+                    <option key={option} value={option}>
+                      {t(`accountTypes.${option}`)}
+                    </option>
+                  ))}
+                </Select>
+              </div>
             </Field>
             <Field label={t('currency')}>
               <Input name="currency" defaultValue={defaultCurrency} maxLength={3} minLength={3} />

@@ -618,7 +618,7 @@ async function main() {
   const accountRows = await db
     .insert(accounts)
     .values([
-      { userId: SINGLE_USER_ID, name: 'Bank', type: 'bank', currency: 'VND', openingBalance: '45000000' },
+      { userId: SINGLE_USER_ID, name: 'BIDV', type: 'bidv', currency: 'VND', openingBalance: '45000000' },
       { userId: SINGLE_USER_ID, name: 'Cash', type: 'cash', currency: 'VND', openingBalance: '2000000' },
     ])
     .returning()

@@ -810,9 +810,13 @@
     "openingBalance": "Số dư ban đầu",
     "accountTypes": {
       "cash": "Tiền mặt",
-      "bank": "Ngân hàng",
+      "bidv": "BIDV",
+      "vcb": "Vietcombank",
+      "vib": "VIB",
+      "bank": "Ngân hàng khác",
+      "momo": "Momo",
+      "e_wallet": "Ví điện tử khác",
       "credit_card": "Thẻ tín dụng",
-      "e_wallet": "Ví điện tử",
       "investment": "Đầu tư",
       "loan": "Khoản vay"
     },
