@@ -8,6 +8,7 @@ import {
   today as todayOf,
   type ISODate,
 } from '@/lib/dates'
+import type { AccountType } from '@/lib/finance/account-types'
 import {
   findAccountBalances,
   findAccounts,
@@ -29,7 +30,13 @@ export type FinanceData = {
   monthStart: ISODate
   monthEnd: ISODate
   currency: string
-  accounts: { id: string; name: string; currency: string }[]
+  accounts: {
+    id: string
+    name: string
+    type: AccountType
+    currency: string
+    openingBalance: string
+  }[]
   balances: AccountBalance[]
   categories: FinanceCategory[]
   transactions: Transaction[]
@@ -101,7 +108,13 @@ export const getFinanceData = cache(async (): Promise<FinanceData> => {
     monthStart,
     monthEnd,
     currency: settings.defaultCurrency,
-    accounts: accountRows.map((row) => ({ id: row.id, name: row.name, currency: row.currency })),
+    accounts: accountRows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      type: row.type,
+      currency: row.currency,
+      openingBalance: row.openingBalance,
+    })),
     balances,
     categories,
     transactions: monthTransactions,

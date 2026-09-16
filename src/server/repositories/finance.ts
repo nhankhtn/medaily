@@ -66,6 +66,21 @@ export async function insertAccount(values: typeof accounts.$inferInsert): Promi
   return row
 }
 
+export async function updateAccount(
+  userId: string,
+  accountId: string,
+  patch: Partial<typeof accounts.$inferInsert>,
+): Promise<Account> {
+  const rows = await db
+    .update(accounts)
+    .set({ ...patch, updatedAt: new Date() })
+    .where(and(eq(accounts.userId, userId), eq(accounts.id, accountId)))
+    .returning()
+  const row = rows[0]
+  if (!row) throw new Error('account not found')
+  return row
+}
+
 export async function findCategories(userId: string): Promise<FinanceCategory[]> {
   return db
     .select()

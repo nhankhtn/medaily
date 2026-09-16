@@ -19,6 +19,7 @@ import {
   createAsset,
   createCategory,
   createInvestment,
+  saveAccount,
   saveBudget,
 } from '@/server/actions/finance'
 
@@ -105,6 +106,98 @@ export function AccountDialog({ defaultCurrency }: { defaultCurrency: string }) 
             <MoneyInput
               name="openingBalance"
               defaultValue={0}
+              allowNegative
+              className="text-right tabular-nums"
+            />
+          </Field>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+              {tc('cancel')}
+            </Button>
+            <Button type="submit" disabled={pending}>
+              {tc('save')}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+export function AccountEditDialog({
+  account,
+}: {
+  account: { id: string; name: string; type: AccountType; currency: string; openingBalance: string }
+}) {
+  const t = useTranslations('finance')
+  const tc = useTranslations('common')
+  const [open, setOpen] = useState(false)
+  const [type, setType] = useState<AccountType>(account.type)
+  const { pending, run } = useDialogAction(() => {
+    toast.success(t('saved'))
+    setOpen(false)
+  })
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <button type="button" className="group flex min-w-0 flex-1 items-center gap-1.5 text-left">
+          <span className="group-hover:text-accent truncate text-sm">{account.name}</span>
+          <Pencil className="text-text-subtle group-hover:text-accent size-3 shrink-0" />
+        </button>
+      </DialogTrigger>
+      <DialogContent title={t('editAccount')} description={account.name}>
+        <form
+          action={(formData) =>
+            run(() =>
+              saveAccount({
+                id: account.id,
+                name: String(formData.get('name') ?? ''),
+                type: formData.get('type'),
+                currency: String(formData.get('currency') ?? account.currency),
+                openingBalance: Number(formData.get('openingBalance') ?? 0),
+              }),
+            )
+          }
+          className="space-y-3"
+        >
+          <Field label={t('accountName')}>
+            <Input name="name" required autoFocus maxLength={120} defaultValue={account.name} />
+          </Field>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label={t('accountType')}>
+              <div className="flex min-w-0 items-center gap-2">
+                <AccountIcon type={type} />
+                <Select
+                  name="type"
+                  value={type}
+                  onChange={(event) => setType(event.target.value as AccountType)}
+                  className="min-w-0"
+                >
+                  {ACCOUNT_TYPES.map((option) => (
+                    <option key={option} value={option}>
+                      {t(`accountTypes.${option}`)}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            </Field>
+            <Field label={t('currency')}>
+              <Input
+                name="currency"
+                defaultValue={account.currency}
+                maxLength={3}
+                minLength={3}
+                required
+              />
+            </Field>
+          </div>
+          {/* The balance on the page is this plus every transaction, so this is
+              the only part of it a person can correct. */}
+          <Field label={t('openingBalance')}>
+            <MoneyInput
+              name="openingBalance"
+              defaultValue={Number(account.openingBalance)}
               allowNegative
               className="text-right tabular-nums"
             />

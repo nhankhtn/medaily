@@ -805,6 +805,7 @@
     "noAccounts": "No accounts yet",
     "noAccountsBody": "An account is where money sits. Transactions need one.",
     "accountName": "Name",
+    "editAccount": "Edit account",
     "accountType": "Type",
     "currency": "Currency",
     "openingBalance": "Opening balance",

@@ -805,6 +805,7 @@
     "noAccounts": "Chưa có tài khoản nào",
     "noAccountsBody": "Tài khoản là nơi tiền nằm. Giao dịch cần có nó.",
     "accountName": "Tên",
+    "editAccount": "Sửa tài khoản",
     "accountType": "Loại",
     "currency": "Tiền tệ",
     "openingBalance": "Số dư ban đầu",

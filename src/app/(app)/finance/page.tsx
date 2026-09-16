@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress'
 import { AccountIcon } from '@/features/finance/account-icon'
 import {
   AccountDialog,
+  AccountEditDialog,
   AssetDialog,
   BudgetDialog,
   BudgetEditDialog,
@@ -109,15 +110,22 @@ export default async function FinancePage({
             <CardHeader title={t('accounts')} />
             <CardBody>
               <ul className="divide-border-base divide-y">
-                {data.balances.map((account) => (
-                  <li key={account.accountId} className="flex items-center gap-3 py-2">
-                    <AccountIcon type={account.type} />
-                    <span className="min-w-0 flex-1 truncate text-sm">{account.name}</span>
-                    <span className="shrink-0 text-sm font-medium tabular-nums">
-                      {formatMoney(account.balance, account.currency, locale)}
-                    </span>
-                  </li>
-                ))}
+                {data.balances.map((balance) => {
+                  const account = data.accounts.find((row) => row.id === balance.accountId)
+                  return (
+                    <li key={balance.accountId} className="flex items-center gap-3 py-2">
+                      <AccountIcon type={balance.type} />
+                      {account ? (
+                        <AccountEditDialog account={account} />
+                      ) : (
+                        <span className="min-w-0 flex-1 truncate text-sm">{balance.name}</span>
+                      )}
+                      <span className="shrink-0 text-sm font-medium tabular-nums">
+                        {formatMoney(balance.balance, balance.currency, locale)}
+                      </span>
+                    </li>
+                  )
+                })}
               </ul>
             </CardBody>
           </Card>

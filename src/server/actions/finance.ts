@@ -20,6 +20,7 @@ import {
   insertInvestment,
   insertTransaction,
   insertTransactions,
+  updateAccount,
   upsertBudget,
 } from '@/server/repositories/finance'
 import { parseTransactions } from '@/server/services/finance-capture'
@@ -52,6 +53,29 @@ export async function createAccount(input: unknown) {
 
   await insertAccount({
     userId: await getCurrentUserId(),
+    name: parsed.data.name,
+    type: parsed.data.type,
+    currency: parsed.data.currency.toUpperCase(),
+    openingBalance: String(parsed.data.openingBalance),
+  })
+
+  revalidateFinance()
+  return { ok: true as const }
+}
+
+export async function saveAccount(input: unknown) {
+  const parsed = z
+    .object({
+      id: z.string().uuid(),
+      name: z.string().min(1).max(120),
+      type: z.enum(ACCOUNT_TYPES),
+      currency: z.string().length(3),
+      openingBalance: z.number().min(-999_999_999_999).max(999_999_999_999),
+    })
+    .safeParse(input)
+  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+
+  await updateAccount(await getCurrentUserId(), parsed.data.id, {
     name: parsed.data.name,
     type: parsed.data.type,
     currency: parsed.data.currency.toUpperCase(),
