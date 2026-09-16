@@ -12,7 +12,6 @@
     "health": "Sức khỏe",
     "finance": "Tài chính",
     "journal": "Nhật ký",
-    "knowledge": "Kiến thức",
     "calendar": "Lịch",
     "people": "Quan hệ",
     "career": "Sự nghiệp",
@@ -602,6 +601,10 @@
   },
   "learning": {
     "title": "Học tập",
+    "tabs": {
+      "sessions": "Phiên học",
+      "notes": "Ghi chú"
+    },
     "timer": "Bấm giờ",
     "start": "Bắt đầu",
     "stop": "Dừng",

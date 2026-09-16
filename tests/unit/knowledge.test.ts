@@ -35,15 +35,15 @@ describe('resolving wiki links for display', () => {
     { id: 'id-vacuum', title: 'Postgres vacuum' },
   ]
   const targets = noteLinkTargets(notes)
-  const href = (id: string) => `/knowledge?note=${id}`
+  const href = (id: string) => `/learning?tab=notes&note=${id}`
   const render = (body: string) => withResolvedWikiLinks(body, targets, href)
 
   it('turns a link to an existing note into a real link', () => {
-    expect(render('See [[MVCC]].')).toBe('See [MVCC](/knowledge?note=id-mvcc).')
+    expect(render('See [[MVCC]].')).toBe('See [MVCC](/learning?tab=notes&note=id-mvcc).')
   })
 
   it('matches the title whatever the casing or spacing', () => {
-    expect(render('[[  mvcc  ]]')).toBe('[mvcc](/knowledge?note=id-mvcc)')
+    expect(render('[[  mvcc  ]]')).toBe('[mvcc](/learning?tab=notes&note=id-mvcc)')
   })
 
   /**

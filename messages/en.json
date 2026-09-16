@@ -12,7 +12,6 @@
     "health": "Health",
     "finance": "Finance",
     "journal": "Journal",
-    "knowledge": "Knowledge",
     "calendar": "Calendar",
     "people": "People",
     "career": "Career",
@@ -602,6 +601,10 @@
   },
   "learning": {
     "title": "Learning",
+    "tabs": {
+      "sessions": "Sessions",
+      "notes": "Notes"
+    },
     "timer": "Timer",
     "start": "Start",
     "stop": "Stop",

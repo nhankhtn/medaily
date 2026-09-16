@@ -29,6 +29,18 @@ export async function proxy(request: NextRequest) {
     return response
   }
 
+  // The notes live on the learning page now. This is here rather than in a
+  // page of its own because `redirect()` while rendering only reaches the
+  // client as a meta tag; a link from before the move deserves a real 307.
+  if (pathname === PATHS.knowledge) {
+    const note = request.nextUrl.searchParams.get('note')
+    const moved = NextResponse.redirect(
+      new URL(note ? PATHS.note(note) : PATHS.learningTab('notes'), request.url),
+    )
+    moved.headers.set(REQUEST_ID_HEADER, requestId)
+    return moved
+  }
+
   const signingIn = pathname === PATHS.login
   if (
     !signingIn &&
@@ -60,7 +72,8 @@ export async function proxy(request: NextRequest) {
   const url = request.nextUrl.clone()
   url.pathname = PATHS.login
   // Come back to where the user was heading once they are signed in.
-  url.search = pathname === PATHS.home ? '' : `?next=${encodeURIComponent(pathname + request.nextUrl.search)}`
+  url.search =
+    pathname === PATHS.home ? '' : `?next=${encodeURIComponent(pathname + request.nextUrl.search)}`
   const redirect = NextResponse.redirect(url)
   redirect.headers.set(REQUEST_ID_HEADER, requestId)
   return redirect

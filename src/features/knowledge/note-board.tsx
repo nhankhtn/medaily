@@ -5,35 +5,26 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardBody, CardHeader } from '@/components/ui/card'
 import { Markdown } from '@/components/ui/markdown'
-import { EmptyState, PageHeader } from '@/components/ui/page'
+import { EmptyState } from '@/components/ui/page'
 import { NoteCard, NoteEditor } from '@/features/knowledge/note-editor'
-import { getKnowledgeData, getNoteDetail, type NoteView } from '@/server/services/knowledge'
 import { noteLinkTargets } from '@/lib/knowledge/links'
 import { PATHS } from '@/lib/paths'
+import { getKnowledgeData, getNoteDetail, type NoteView } from '@/server/services/knowledge'
 
-export default async function KnowledgePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ note?: string }>
-}) {
-  const [t, params, data] = await Promise.all([
-    getTranslations('knowledge'),
-    searchParams,
-    getKnowledgeData(),
-  ])
-
-  const opened = params.note ? await getNoteDetail(params.note) : null
+/**
+ * Every note, and one of them opened when the address says so. It lives beside
+ * the sessions rather than on a page of its own: what you read and what you
+ * wrote down about it are the same subject.
+ */
+export async function NoteBoard({ openedId }: { openedId?: string }) {
+  const [t, data] = await Promise.all([getTranslations('knowledge'), getKnowledgeData()])
+  const opened = openedId ? await getNoteDetail(openedId) : null
 
   // Every note on the page, so a [[link]] in any body can resolve to its id.
   const targets = noteLinkTargets(data.notes)
 
   return (
     <div className="space-y-4">
-      <PageHeader
-        title={t('title')}
-        action={<NoteEditor topics={data.topics} resources={data.resources} />}
-      />
-
       {opened ? (
         <Card>
           <CardHeader
@@ -54,7 +45,7 @@ export default async function KnowledgePage({
                   }
                 />
                 <Button asChild variant="ghost" size="iconSm">
-                  <Link href={PATHS.knowledge} aria-label={t('close')}>
+                  <Link href={PATHS.learningTab('notes')} aria-label={t('close')}>
                     <X className="size-4" />
                   </Link>
                 </Button>
@@ -128,6 +119,12 @@ export default async function KnowledgePage({
       )}
     </div>
   )
+}
+
+/** The button that makes a new note, for whoever is drawing the page header. */
+export async function NewNoteButton() {
+  const data = await getKnowledgeData()
+  return <NoteEditor topics={data.topics} resources={data.resources} />
 }
 
 /**

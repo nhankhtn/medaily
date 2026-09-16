@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { SESSION_COOKIE, signSession } from '@/lib/auth/session'
+import { PATHS } from '@/lib/paths'
 import { config, proxy } from '@/proxy'
 
 const SECRET = 'a-secret-long-enough-to-pass'
@@ -57,5 +58,24 @@ describe('the matcher', () => {
   it('still guards a page', () => {
     expect(matches('/daily')).toBe(true)
     expect(matches('/brands')).toBe(true)
+  })
+})
+
+describe('the old notes address', () => {
+  it('sends a bare link to the notes tab', async () => {
+    const response = await visit(PATHS.knowledge, true)
+    expect(response.status).toBe(307)
+    expect(response.headers.get('location')).toBe(`http://localhost${PATHS.learningTab('notes')}`)
+  })
+
+  it('keeps the note that link was opening', async () => {
+    const response = await visit(`${PATHS.knowledge}?note=n1`, true)
+    expect(response.headers.get('location')).toBe(`http://localhost${PATHS.note('n1')}`)
+  })
+
+  it('moves a visitor with no session too, who then meets the sign-in page', async () => {
+    const response = await visit(PATHS.knowledge, false)
+    expect(response.status).toBe(307)
+    expect(response.headers.get('location')).toContain('/learning')
   })
 })

@@ -14,6 +14,8 @@ export type CalendarView = 'day' | 'week' | 'month' | 'year'
 
 export type FinanceTab = 'overview' | 'report'
 
+export type LearningTab = 'sessions' | 'notes'
+
 export const PATHS = {
   home: '/',
   login: '/login',
@@ -29,6 +31,8 @@ export const PATHS = {
   project: (id: string) => `/projects/${id}`,
 
   learning: '/learning',
+  /** Learning on one of its tabs; `sessions` is the plain address. */
+  learningTab: (tab: LearningTab) => (tab === 'sessions' ? '/learning' : `/learning?tab=${tab}`),
   timer: '/timer',
   health: '/health',
   finance: '/finance',
@@ -47,9 +51,10 @@ export const PATHS = {
   /** The journal with one entry opened. */
   journalEntry: (id: string) => `/journal?entry=${id}`,
 
+  /** No page of its own any more; the proxy sends it to the notes tab. */
   knowledge: '/knowledge',
-  /** The knowledge page with one note opened. */
-  note: (id: string) => `/knowledge?note=${id}`,
+  /** Learning's notes tab with one note opened. */
+  note: (id: string) => `/learning?tab=notes&note=${id}`,
 
   calendar: (options?: { view?: CalendarView; at?: ISODate }) => {
     const query = new URLSearchParams()
@@ -92,12 +97,12 @@ export const STATIC_PAGE_PATHS = [
   PATHS.goals,
   PATHS.projects,
   PATHS.learning,
+  PATHS.learningTab('notes'),
   PATHS.timer,
   PATHS.health,
   PATHS.finance,
   PATHS.financeTab('report'),
   PATHS.journal,
-  PATHS.knowledge,
   PATHS.calendar(),
   PATHS.people,
   PATHS.career,

@@ -92,7 +92,7 @@ describe('the built paths', () => {
   it('puts an id where it belongs', () => {
     expect(PATHS.dailyOn('2026-09-13')).toBe('/daily/2026-09-13')
     expect(PATHS.project('abc')).toBe('/projects/abc')
-    expect(PATHS.note('n1')).toBe('/knowledge?note=n1')
+    expect(PATHS.note('n1')).toBe('/learning?tab=notes&note=n1')
   })
 
   it('opens one record in its module', () => {

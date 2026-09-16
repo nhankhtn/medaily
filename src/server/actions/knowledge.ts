@@ -91,7 +91,7 @@ export async function saveNote(input: unknown) {
   )
   await replaceNoteLinks(userId, note.id, extractWikiLinks(values.bodyMd ?? ''))
 
-  revalidatePath(PATHS.knowledge)
+  revalidatePath(PATHS.learning)
   revalidatePath(PATHS.reviews)
   return { ok: true as const, id: note.id }
 }
@@ -99,7 +99,7 @@ export async function saveNote(input: unknown) {
 export async function removeNote(input: unknown) {
   const id = z.string().uuid().parse(input)
   await deleteNote(await getCurrentUserId(), id)
-  revalidatePath(PATHS.knowledge)
+  revalidatePath(PATHS.learning)
   return { ok: true }
 }
 
