@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { SESSION_COOKIE, signSession } from '@/lib/auth/session'
-import { proxy } from '@/proxy'
+import { config, proxy } from '@/proxy'
 
 const SECRET = 'a-secret-long-enough-to-pass'
 let token = ''
@@ -43,5 +43,19 @@ describe('the sign-in page turns away someone who is already signed in', () => {
   it('still shows the page to someone who is not', async () => {
     const response = await visit('/login', false)
     expect(response.status).toBe(200)
+  })
+})
+
+describe('the matcher', () => {
+  const matches = (path: string) => new RegExp(`^${config.matcher[0]}$`).test(path)
+
+  it('lets the brand marks past without a session check', () => {
+    expect(matches('/brands/momo.png')).toBe(false)
+    expect(matches('/brands/bidv.svg')).toBe(false)
+  })
+
+  it('still guards a page', () => {
+    expect(matches('/daily')).toBe(true)
+    expect(matches('/brands')).toBe(true)
   })
 })

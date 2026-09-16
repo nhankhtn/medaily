@@ -67,5 +67,8 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|icon.svg|apple-icon).*)'],
+  // Static files under `public/` reach the proxy like any other path, so the
+  // ones that are nobody's personal data are named here — otherwise every
+  // brand mark costs a session check and can never be cached at the edge.
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|icon.svg|apple-icon|brands/).*)'],
 }
