@@ -36,6 +36,8 @@ export const FORMATS = {
     monthYear: { month: 'long', year: 'numeric' },
     /** September. */
     month: { month: 'long' },
+    /** Sep — a chart axis with a bar per month. */
+    monthShort: { month: 'short' },
     /** Sun 14 — a row label inside a week that is already named. */
     weekdayDay: { weekday: 'short', day: 'numeric' },
     /** Sun — a column head. */

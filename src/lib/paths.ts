@@ -12,6 +12,8 @@ import type { ISODate } from '@/lib/dates'
 
 export type CalendarView = 'day' | 'week' | 'month' | 'year'
 
+export type FinanceTab = 'overview' | 'report'
+
 export const PATHS = {
   home: '/',
   login: '/login',
@@ -30,6 +32,17 @@ export const PATHS = {
   timer: '/timer',
   health: '/health',
   finance: '/finance',
+  /**
+   * The finance page on one of its tabs; `overview` is the plain address. The
+   * report carries the stretch it is reporting on — `2026-09` or `2026` — so
+   * a period can be linked to and the back button returns to the last one.
+   */
+  financeTab: (tab: FinanceTab, period?: string) => {
+    if (tab === 'overview') return '/finance'
+    const query = new URLSearchParams({ tab })
+    if (period) query.set('period', period)
+    return `/finance?${query.toString()}`
+  },
   journal: '/journal',
   /** The journal with one entry opened. */
   journalEntry: (id: string) => `/journal?entry=${id}`,
@@ -66,7 +79,11 @@ export const PATHS = {
   },
 } as const
 
-/** Every page with a fixed address, for the smoke test and the nav registry. */
+/**
+ * Every page with a fixed address, for the smoke test and the nav registry.
+ * The finance report is in here as well: it is a tab rather than a page, but
+ * it runs its own queries, and nothing else would notice if one of them broke.
+ */
 export const STATIC_PAGE_PATHS = [
   PATHS.home,
   PATHS.daily,
@@ -78,6 +95,7 @@ export const STATIC_PAGE_PATHS = [
   PATHS.timer,
   PATHS.health,
   PATHS.finance,
+  PATHS.financeTab('report'),
   PATHS.journal,
   PATHS.knowledge,
   PATHS.calendar(),

@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import type * as React from 'react'
 import { cn } from '@/lib/utils'
 
@@ -61,5 +62,34 @@ export function StatRow({ items }: { items: { label: string; value: string; hint
         </div>
       ))}
     </dl>
+  )
+}
+
+export type Tab = { key: string; label: string; href: string }
+
+/**
+ * The pill row a page switches views with. Links, not buttons: a tab is an
+ * address, so it can be bookmarked, opened in a new tab, and come back from
+ * the back button already on the right one.
+ */
+export function TabNav({ tabs, current }: { tabs: Tab[]; current: string }) {
+  return (
+    <nav className="flex w-fit rounded-full border border-border-base bg-surface-2 p-0.5">
+      {tabs.map((tab) => (
+        <Link
+          key={tab.key}
+          href={tab.href}
+          aria-current={tab.key === current ? 'page' : undefined}
+          className={cn(
+            'rounded-full px-3 py-1 text-sm transition-colors',
+            tab.key === current
+              ? 'bg-surface font-medium text-text shadow-[var(--shadow-card)]'
+              : 'text-text-muted hover:text-text',
+          )}
+        >
+          {tab.label}
+        </Link>
+      ))}
+    </nav>
   )
 }

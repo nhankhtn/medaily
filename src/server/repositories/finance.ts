@@ -196,3 +196,62 @@ export async function insertInvestment(
   if (!row) throw new Error('failed to insert investment')
   return row
 }
+
+export type MonthKindRow = { month: string; kind: string; total: number }
+
+/**
+ * Income and spending grouped by the month they fell in. Grouping in the
+ * database rather than pulling a year of rows back to add them up here.
+ */
+export async function sumByMonth(userId: string, range: DateRange): Promise<MonthKindRow[]> {
+  const month = sql<string>`to_char(date_trunc('month', ${transactions.occurredOn}), 'YYYY-MM-DD')`
+
+  const rows = await db
+    .select({
+      month,
+      kind: transactions.kind,
+      total: sql<string>`COALESCE(SUM(${transactions.amount}), 0)`,
+    })
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.userId, userId),
+        between(transactions.occurredOn, range.start, range.end),
+      ),
+    )
+    .groupBy(sql`date_trunc('month', ${transactions.occurredOn})`, transactions.kind)
+
+  return rows.map((row) => ({ month: row.month, kind: row.kind, total: Number(row.total) }))
+}
+
+/** The heaviest single expenses in the range, biggest first. */
+export async function findLargestExpenses(
+  userId: string,
+  range: DateRange,
+  limit = 5,
+): Promise<Transaction[]> {
+  return db
+    .select()
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.userId, userId),
+        eq(transactions.kind, 'expense'),
+        between(transactions.occurredOn, range.start, range.end),
+      ),
+    )
+    .orderBy(desc(transactions.amount))
+    .limit(limit)
+}
+
+/** The oldest transaction's date, for working out which years to offer. */
+export async function findEarliestTransactionDate(userId: string): Promise<ISODate | null> {
+  const rows = await db
+    .select({ occurredOn: transactions.occurredOn })
+    .from(transactions)
+    .where(eq(transactions.userId, userId))
+    .orderBy(asc(transactions.occurredOn))
+    .limit(1)
+
+  return rows[0]?.occurredOn ?? null
+}

@@ -237,6 +237,34 @@ prices are typed by hand — the app fetches no market data.
 25k, lunch 55k"* and propose the transactions; nothing is saved until you
 confirm.
 
+**Two tabs.** *Overview* is the ledger above. *Report* is what the numbers add
+up to.
+
+Pick the stretch with the two selects at the top: a year, and a month within it
+or *Whole year*. The choice lives in the address (`/finance?tab=report&period=2026-09`,
+or `&period=2026`), so a period can be linked to and the back button walks back
+through the ones you looked at. A month is drawn with the five months before it
+for context; a whole year is drawn as its twelve months.
+
+Spending by category is a ring, biggest slice first, with the total in the hole
+and a ranking beside it in the same colours — the dot on each row is its slice.
+Past eight categories the tail is folded into one *Other* slice, because a pie
+of twenty slivers answers nothing. Spending with no category at all and the
+folded *Other* are different rows and say so.
+
+A month is compared against what a normal month costs, counting only months
+that have something recorded. The chosen month is left out of its own average,
+and so is the month now running, since it is not over yet; a month from before
+you started recording is not a month you spent nothing in. A whole year is
+compared against the year before instead, because a year has no monthly average
+of its own to be held up against. With nothing to compare against, the report
+says so rather than showing a figure.
+
+"Kept" is the share of income left over. With no income recorded there is no
+share to give, so it shows `—` rather than 0%, which would read as breaking
+even. A period with nothing in it says so and leaves the selects in place,
+since picking another one is the way out.
+
 ---
 
 ## Health — `/health`

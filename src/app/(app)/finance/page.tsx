@@ -1,7 +1,7 @@
 import { getLocale, getTranslations } from 'next-intl/server'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardBody, CardHeader } from '@/components/ui/card'
-import { EmptyState, PageHeader, StatRow } from '@/components/ui/page'
+import { EmptyState, PageHeader, StatRow, TabNav } from '@/components/ui/page'
 import { Progress } from '@/components/ui/progress'
 import { AccountIcon } from '@/features/finance/account-icon'
 import {
@@ -12,17 +12,42 @@ import {
   CategoryDialog,
   InvestmentDialog,
 } from '@/features/finance/finance-dialogs'
+import { Report } from '@/features/finance/report'
 import { TransactionForm } from '@/features/finance/transaction-form'
 import { TransactionList } from '@/features/finance/transaction-list'
 import { formatMoney } from '@/lib/format/money'
+import { PATHS, type FinanceTab } from '@/lib/paths'
 import { getFinanceData } from '@/server/services/finance'
+import { getFinanceReport } from '@/server/services/finance-report'
 
-export default async function FinancePage() {
-  const [t, locale, data] = await Promise.all([
-    getTranslations('finance'),
-    getLocale(),
-    getFinanceData(),
-  ])
+export default async function FinancePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string; period?: string }>
+}) {
+  const [params, t] = await Promise.all([searchParams, getTranslations('finance')])
+  const tab: FinanceTab = params.tab === 'report' ? 'report' : 'overview'
+
+  const tabs = (['overview', 'report'] satisfies FinanceTab[]).map((key) => ({
+    key,
+    label: t(`tabs.${key}`),
+    href: PATHS.financeTab(key),
+  }))
+
+  // The two tabs read different things, so each one asks for only its own.
+  if (tab === 'report') {
+    const report = await getFinanceReport(params.period)
+
+    return (
+      <div className="space-y-4">
+        <PageHeader title={t('title')} />
+        <TabNav tabs={tabs} current={tab} />
+        <Report report={report} />
+      </div>
+    )
+  }
+
+  const [locale, data] = await Promise.all([getLocale(), getFinanceData()])
 
   const money = (amount: number) => formatMoney(amount, data.currency, locale)
   const hasExpenseCategory = data.categories.some((category) => category.kind === 'expense')
@@ -38,6 +63,7 @@ export default async function FinancePage() {
           </div>
         }
       />
+      <TabNav tabs={tabs} current={tab} />
       <StatRow
         items={[
           { label: t('netWorth'), value: money(data.totals.netWorth) },
