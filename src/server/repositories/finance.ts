@@ -134,6 +134,22 @@ export async function insertTransactions(
   return rows.length
 }
 
+/** Scoped by user, so a well-formed id cannot reach another person's row. */
+export async function updateTransaction(
+  userId: string,
+  id: string,
+  patch: Partial<typeof transactions.$inferInsert>,
+): Promise<Transaction> {
+  const rows = await db
+    .update(transactions)
+    .set({ ...patch, updatedAt: new Date() })
+    .where(and(eq(transactions.userId, userId), eq(transactions.id, id)))
+    .returning()
+  const row = rows[0]
+  if (!row) throw new Error('transaction not found')
+  return row
+}
+
 export async function deleteTransaction(userId: string, id: string): Promise<void> {
   await db.delete(transactions).where(and(eq(transactions.userId, userId), eq(transactions.id, id)))
 }

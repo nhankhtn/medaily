@@ -21,6 +21,7 @@ import {
   insertTransaction,
   insertTransactions,
   updateAccount,
+  updateTransaction,
   upsertBudget,
 } from '@/server/repositories/finance'
 import { parseTransactions } from '@/server/services/finance-capture'
@@ -97,25 +98,35 @@ export async function createCategory(input: unknown) {
   return { ok: true as const }
 }
 
-const transactionSchema = z
-  .object({
-    occurredOn: isoDateSchema,
-    amount: money,
-    kind: z.enum(['income', 'expense', 'transfer']),
-    accountId: z.string().uuid(),
-    counterAccountId: z.string().uuid().nullable().optional(),
-    categoryId: z.string().uuid().nullable().optional(),
-    merchant: optionalText,
-    note: optionalText,
-  })
-  // A transfer moves money between two different accounts; enforced here and
-  // again by a CHECK constraint in the database (spec 26.1).
-  .refine(
-    (value) =>
-      value.kind !== 'transfer' ||
-      (value.counterAccountId && value.counterAccountId !== value.accountId),
-    { message: 'transfer needs a different counter account', path: ['counterAccountId'] },
-  )
+const transactionFields = {
+  occurredOn: isoDateSchema,
+  amount: money,
+  kind: z.enum(['income', 'expense', 'transfer']),
+  accountId: z.string().uuid(),
+  counterAccountId: z.string().uuid().nullable().optional(),
+  categoryId: z.string().uuid().nullable().optional(),
+  merchant: optionalText,
+  note: optionalText,
+} as const
+
+type TransactionInput = {
+  kind: 'income' | 'expense' | 'transfer'
+  accountId: string
+  counterAccountId?: string | null
+}
+
+// A transfer moves money between two different accounts; enforced here and
+// again by a CHECK constraint in the database (spec 26.1). Shared, so saving
+// an edit cannot be the one path that forgets it.
+const transferRule = (value: TransactionInput) =>
+  value.kind !== 'transfer' ||
+  Boolean(value.counterAccountId && value.counterAccountId !== value.accountId)
+const transferMessage = {
+  message: 'transfer needs a different counter account',
+  path: ['counterAccountId'],
+}
+
+const transactionSchema = z.object(transactionFields).refine(transferRule, transferMessage)
 
 export async function createTransaction(input: unknown) {
   const parsed = transactionSchema.safeParse(input)
@@ -132,6 +143,57 @@ export async function createTransaction(input: unknown) {
     counterAccountId:
       parsed.data.kind === 'transfer' ? (parsed.data.counterAccountId ?? null) : null,
     categoryId: parsed.data.kind === 'transfer' ? null : (parsed.data.categoryId ?? null),
+    merchant: parsed.data.merchant ?? null,
+    note: parsed.data.note ?? null,
+  })
+
+  revalidateFinance()
+  return { ok: true as const }
+}
+
+/**
+ * Editing a row that is already in the ledger.
+ *
+ * A schema of its own rather than `transactionSchema` plus an id: that one is
+ * built for a new row, and reusing it would let a patch silently reset the
+ * currency the row was recorded in to whatever the default is today.
+ *
+ * Every id is checked against this user's own accounts and categories. A
+ * well-formed uuid still has to name a row this user owns (spec 29).
+ */
+export async function saveTransaction(input: unknown) {
+  const parsed = z
+    .object({ id: z.string().uuid(), ...transactionFields })
+    .refine(transferRule, transferMessage)
+    .safeParse(input)
+  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+
+  const settings = await getSettings()
+  const [accounts, categories] = await Promise.all([
+    findAccounts(settings.userId),
+    findCategories(settings.userId),
+  ])
+
+  const owned = (id: string | null | undefined, rows: { id: string }[]) =>
+    id && rows.some((row) => row.id === id) ? id : null
+
+  if (owned(parsed.data.accountId, accounts) === null) {
+    return { ok: false as const, error: 'invalid_input' as const }
+  }
+
+  const transfer = parsed.data.kind === 'transfer'
+  const counter = transfer ? owned(parsed.data.counterAccountId, accounts) : null
+  if (transfer && counter === null) {
+    return { ok: false as const, error: 'invalid_input' as const }
+  }
+
+  await updateTransaction(settings.userId, parsed.data.id, {
+    occurredOn: parsed.data.occurredOn,
+    amount: String(parsed.data.amount),
+    kind: parsed.data.kind,
+    accountId: parsed.data.accountId,
+    counterAccountId: counter,
+    categoryId: transfer ? null : owned(parsed.data.categoryId, categories),
     merchant: parsed.data.merchant ?? null,
     note: parsed.data.note ?? null,
   })
