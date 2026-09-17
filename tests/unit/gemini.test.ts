@@ -35,6 +35,19 @@ const errorResponse =
   () =>
     new Response(JSON.stringify({ error: { message } }), { status })
 
+/*
+ * A 200 that carries no answer: the model reasoned and then said nothing. This
+ * is the shape that took `/reviews` down — the chain used to stop dead on it.
+ */
+const emptyResponse = () =>
+  new Response(
+    JSON.stringify({
+      status: 'completed',
+      steps: [{ type: 'thought', content: [{ type: 'text', text: 'weighing the numbers' }] }],
+    }),
+    { status: 200, headers: { 'content-type': 'application/json' } },
+  )
+
 const okResponse = (payload: unknown) =>
   new Response(
     JSON.stringify({
@@ -128,6 +141,22 @@ describe('generateJson', () => {
     )
     await expect(call()).rejects.toThrow(/not JSON/)
   })
+
+  it('does not put a reply that is not JSON to another model', async () => {
+    fetchMock.mockImplementation(
+      () =>
+        new Response(
+          JSON.stringify({
+            status: 'completed',
+            steps: [{ type: 'model_output', content: [{ type: 'text', text: 'sorry, no' }] }],
+          }),
+          { status: 200 },
+        ),
+    )
+    await expect(call()).rejects.toThrow(/not JSON/)
+    // The prompt asked for the wrong thing; every model gets that equally wrong.
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe('resolveModels', () => {
@@ -196,6 +225,32 @@ describe('the model fallback chain', () => {
     await expect(call()).resolves.toEqual({ transactions: [{ amount: 1 }] })
     expect(fetchMock).toHaveBeenCalledTimes(3)
     expect(modelOf(fetchMock.mock.calls[2]!)).toBe(CHAIN[2])
+  })
+
+  it('moves to the next model when one answers with no text at all', async () => {
+    fetchMock
+      .mockImplementationOnce(emptyResponse)
+      .mockResolvedValueOnce(okResponse({ transactions: [] }))
+
+    await expect(call()).resolves.toEqual({ transactions: [] })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(modelOf(fetchMock.mock.calls[1]!)).toBe(CHAIN[1])
+  })
+
+  it('gives up only after every model has said nothing', async () => {
+    fetchMock.mockImplementation(emptyResponse)
+    await expect(call()).rejects.toThrow(/returned no text/)
+    expect(fetchMock).toHaveBeenCalledTimes(CHAIN.length)
+  })
+
+  it('says what came back instead of text, so an empty answer is diagnosable', async () => {
+    fetchMock.mockImplementation(emptyResponse)
+    await expect(call()).rejects.toThrow(/status completed, steps thought\(text\)/)
+  })
+
+  it('keeps the blocks themselves out of the message, which reaches a chat', async () => {
+    fetchMock.mockImplementation(emptyResponse)
+    await expect(call()).rejects.not.toThrow(/weighing the numbers/)
   })
 
   it('does not retry a bad request on another model', async () => {

@@ -83,6 +83,11 @@ export class GeminiError extends Error {
     message: string,
     readonly status: number | null,
     readonly model: string,
+    /**
+     * An answer that came back empty rather than refused: the request was
+     * accepted, the model simply said nothing.
+     */
+    readonly emptyAnswer = false,
   ) {
     super(message)
     this.name = 'GeminiError'
@@ -92,14 +97,43 @@ export class GeminiError extends Error {
 /**
  * Whether another model is worth trying. Quota (429) and overload (503) are
  * per model, and a 404 means this project cannot reach that id at all — the
- * next one in the chain may well answer. Anything else is about the request
- * itself, so repeating it elsewhere would only waste the user's time.
+ * next one in the chain may well answer.
+ *
+ * An empty answer belongs here for the same reason: nothing about the request
+ * was refused, so another model usually does speak. A reply that is not JSON
+ * does not — there the prompt asked for the wrong thing, and every model will
+ * get it equally wrong.
  */
 function worthAnotherModel(error: unknown): boolean {
-  return error instanceof GeminiError && [404, 429, 503].includes(error.status ?? 0)
+  if (!(error instanceof GeminiError)) return false
+  return error.emptyAnswer || [404, 429, 503].includes(error.status ?? 0)
 }
 
-type InteractionResponse = {
+/**
+ * Why an answer was empty cannot be in the text, because there is none. The
+ * shape of what did arrive goes in the message instead: the envelope status,
+ * and each step with the kinds of content block it carried.
+ *
+ * Kinds only, never the blocks themselves. This message reaches a console and
+ * a chat window, and the blocks hold whatever the user wrote.
+ */
+export function emptyAnswerError(model: string, body: InteractionResponse): GeminiError {
+  const steps = (body.steps ?? [])
+    .map((step) => {
+      const kinds = (step.content ?? []).map((block) => block.type ?? 'unknown').join('+')
+      return `${step.type ?? 'unknown'}(${kinds})`
+    })
+    .join(', ')
+
+  return new GeminiError(
+    `gemini returned no text (status ${body.status ?? 'absent'}, steps ${steps || 'none'})`,
+    null,
+    model,
+    true,
+  )
+}
+
+export type InteractionResponse = {
   status?: string
   steps?: { type?: string; content?: { type?: string; text?: string }[] }[]
   error?: { message?: string }
@@ -158,10 +192,14 @@ async function attemptEachModel<T>(attempt: (model: string) => Promise<T>): Prom
       const isLast = index === models.length - 1
       if (isLast || !worthAnotherModel(error)) throw error
 
-      await log.warn(
-        'gemini',
-        `${model} unavailable (${(error as GeminiError).status}), falling back to ${models[index + 1]}`,
-      )
+      // "said nothing" and "responded 429" are different problems and the log
+      // is where you find out which; the old line printed `(null)` for the one
+      // that had no status.
+      const reason =
+        error instanceof GeminiError && error.emptyAnswer
+          ? 'said nothing'
+          : `was unavailable (${(error as GeminiError).status})`
+      await log.warn('gemini', `${model} ${reason}, falling back to ${models[index + 1]}`)
     }
   }
 
@@ -222,7 +260,7 @@ async function requestJson<T>(
   )
 
   const text = outputTextOf(body)
-  if (!text) throw new GeminiError('gemini returned no text', null, model)
+  if (!text) throw emptyAnswerError(model, body)
 
   try {
     return JSON.parse(text) as T
@@ -257,7 +295,7 @@ async function requestText(
   )
 
   const text = outputTextOf(body)
-  if (!text) throw new GeminiError('gemini returned no text', null, model)
+  if (!text) throw emptyAnswerError(model, body)
   return text
 }
 

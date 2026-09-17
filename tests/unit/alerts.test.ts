@@ -95,6 +95,29 @@ describe('the rate gate', () => {
   })
 })
 
+describe('a handled failure', () => {
+  const handled = report({
+    source: 'handled',
+    scope: 'reviews',
+    path: null,
+    method: null,
+    message: 'could not answer: gemini returned no text',
+  })
+
+  it('says which part of the app it came from, having no route to name', () => {
+    expect(reportText(handled)).toContain('handled · reviews')
+  })
+
+  it('is a different incident per scope, so one noisy area cannot mask another', () => {
+    const elsewhere = { ...handled, scope: 'finance' }
+    expect(reportKey(handled)).not.toBe(reportKey(elsewhere))
+  })
+
+  it('still groups repeats of itself, so a loop sends once', () => {
+    expect(reportKey(handled)).toBe(reportKey({ ...handled }))
+  })
+})
+
 describe('reportKey', () => {
   it('separates the same message on two routes', () => {
     expect(reportKey(report({ path: '/a' }))).not.toBe(reportKey(report({ path: '/b' })))

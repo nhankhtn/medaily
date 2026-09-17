@@ -6,8 +6,14 @@ export const TELEGRAM_LIMIT = 4096
 const STACK_LINES = 6
 
 export type ErrorReport = {
-  /** Where it was caught: a render, a server action, the browser. */
-  source: 'render' | 'route' | 'action' | 'proxy' | 'browser'
+  /**
+   * Where it was caught: a render, a server action, the browser. `handled` is
+   * the odd one out — a failure the code caught and dealt with itself, which
+   * never reaches Next's error hook and so has to report itself.
+   */
+  source: 'render' | 'route' | 'action' | 'proxy' | 'browser' | 'handled'
+  /** For a handled failure, the part of the app that logged it. */
+  scope?: string | null
   message: string
   /** Which deploy — so a local run is never mistaken for production. */
   environment: string
@@ -25,7 +31,7 @@ export type ErrorReport = {
  * the same failure fifty times in a minute is one.
  */
 export function reportKey(report: ErrorReport): string {
-  return [report.source, report.path ?? '-', report.message].join('|')
+  return [report.source, report.scope ?? report.path ?? '-', report.message].join('|')
 }
 
 /**
@@ -33,7 +39,9 @@ export function reportKey(report: ErrorReport): string {
  * characters escaped, and an exception message is exactly where they turn up.
  */
 export function reportText(report: ErrorReport): string {
-  const where = [report.method, report.path].filter(Boolean).join(' ')
+  // A handled failure knows its scope and not its route; an uncaught one is
+  // the other way round.
+  const where = [report.scope, report.method, report.path].filter(Boolean).join(' ')
   const head = `⚠️ medaily (${report.environment})`
 
   const lines = [
