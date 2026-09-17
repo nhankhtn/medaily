@@ -1,4 +1,4 @@
-import { and, asc, between, desc, eq, isNull, sql } from 'drizzle-orm'
+import { and, asc, between, desc, eq, isNull, or, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import {
   accounts,
@@ -44,10 +44,11 @@ export async function findAccountBalances(userId: string): Promise<AccountBalanc
     currency: string
     balance: string
   }>(sql`
-    SELECT account_id, name, type, currency, balance
-    FROM v_account_balances
-    WHERE user_id = ${userId}
-    ORDER BY name
+    SELECT b.account_id, b.name, b.type, b.currency, b.balance
+    FROM v_account_balances b
+    JOIN accounts a ON a.id = b.account_id
+    WHERE b.user_id = ${userId} AND a.archived_at IS NULL
+    ORDER BY b.name
   `)
 
   return rows.map((row) => ({
@@ -57,6 +58,24 @@ export async function findAccountBalances(userId: string): Promise<AccountBalanc
     currency: row.currency,
     balance: Number(row.balance),
   }))
+}
+
+/** From either side: a transfer names one account as the counterparty. */
+export async function countAccountTransactions(userId: string, accountId: string): Promise<number> {
+  const rows = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.userId, userId),
+        or(eq(transactions.accountId, accountId), eq(transactions.counterAccountId, accountId)),
+      ),
+    )
+  return rows[0]?.n ?? 0
+}
+
+export async function deleteAccount(userId: string, accountId: string): Promise<void> {
+  await db.delete(accounts).where(and(eq(accounts.userId, userId), eq(accounts.id, accountId)))
 }
 
 export async function insertAccount(values: typeof accounts.$inferInsert): Promise<Account> {

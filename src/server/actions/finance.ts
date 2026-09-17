@@ -11,6 +11,8 @@ import { MAX_DRAFTS, type TransactionDraft } from '@/lib/finance/drafts'
 import { PATHS } from '@/lib/paths'
 import { isoDateSchema } from '@/lib/validation/daily'
 import {
+  countAccountTransactions,
+  deleteAccount,
   deleteTransaction,
   findAccounts,
   findCategories,
@@ -85,6 +87,26 @@ export async function saveAccount(input: unknown) {
 
   revalidateFinance()
   return { ok: true as const }
+}
+
+/**
+ * Removing an account means two different things, and the ledger decides which.
+ * `transactions.account_id` cascades, so deleting one that has been used would
+ * take its history with it — that account is hidden instead, and every row it
+ * is part of stays where it is. An account nobody ever used is simply gone.
+ */
+export async function removeAccount(input: unknown) {
+  const parsed = z.object({ id: z.string().uuid() }).safeParse(input)
+  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+
+  const userId = await getCurrentUserId()
+  const used = await countAccountTransactions(userId, parsed.data.id)
+
+  if (used > 0) await updateAccount(userId, parsed.data.id, { archivedAt: new Date() })
+  else await deleteAccount(userId, parsed.data.id)
+
+  revalidateFinance()
+  return { ok: true as const, hidden: used > 0, transactions: used }
 }
 
 export async function createCategory(input: unknown) {

@@ -1,6 +1,6 @@
 'use client'
 
-import { Pencil, Plus } from 'lucide-react'
+import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
@@ -19,6 +19,7 @@ import {
   createAsset,
   createCategory,
   createInvestment,
+  removeAccount,
   saveAccount,
   saveBudget,
 } from '@/server/actions/finance'
@@ -137,6 +138,20 @@ export function AccountEditDialog({
     toast.success(t('saved'))
     setOpen(false)
   })
+  const [removing, startRemoving] = useTransition()
+
+  const remove = () =>
+    startRemoving(async () => {
+      const result = await removeAccount({ id: account.id })
+      if (!result.ok) {
+        toast.error(tc('error'))
+        return
+      }
+      toast.success(
+        result.hidden ? t('accountHidden', { count: result.transactions }) : t('accountDeleted'),
+      )
+      setOpen(false)
+    })
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -202,11 +217,21 @@ export function AccountEditDialog({
               className="text-right tabular-nums"
             />
           </Field>
-          <div className="flex justify-end gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <Button
+              type="button"
+              variant="danger"
+              className="mr-auto"
+              disabled={removing || pending}
+              onClick={remove}
+            >
+              <Trash2 className="size-4" />
+              {t('removeAccount')}
+            </Button>
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
               {tc('cancel')}
             </Button>
-            <Button type="submit" disabled={pending}>
+            <Button type="submit" disabled={pending || removing}>
               {tc('save')}
             </Button>
           </div>
