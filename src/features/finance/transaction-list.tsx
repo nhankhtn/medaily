@@ -88,7 +88,9 @@ export function TransactionList({
               <ArrowRightLeft className="size-3" />
             </Badge>
           ) : (
-            <Badge tone={row.kind === 'income' ? 'good' : 'neutral'}>{t(`kinds.${row.kind}`)}</Badge>
+            <Badge tone={row.kind === 'income' ? 'good' : 'neutral'}>
+              {t(`kinds.${row.kind}`)}
+            </Badge>
           )}
           <span className="shrink-0 text-sm font-medium tabular-nums">
             {row.kind === 'income' ? '+' : row.kind === 'expense' ? '−' : ''}
@@ -128,41 +130,23 @@ export function TransactionList({
         }
 
         return (
-          <li key={transaction.id} className="group flex items-center gap-3 py-2">
-            <span className="text-text-subtle w-16 shrink-0 text-xs tabular-nums">
-              {format.dateTime(fromISODate(transaction.occurredOn), 'dayMonth')}
-            </span>
-
+          <li
+            key={transaction.id}
+            className="group grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 py-2 sm:flex sm:gap-3"
+          >
             {/* Tapping the row is how you change it; the pencil is for whoever
                 looks for a button instead. */}
             <button
               type="button"
               onClick={() => setEditingId(transaction.id)}
-              className="min-w-0 flex-1 truncate text-left text-sm"
+              className="min-w-0 truncate text-left text-sm sm:order-2 sm:flex-1"
             >
               {label(transaction)}
             </button>
 
-            {transaction.personId ? (
-              <Badge tone="accent">
-                <User className="size-3" />
-                {people.find((person) => person.id === transaction.personId)?.name ?? '—'}
-              </Badge>
-            ) : null}
-
-            {transaction.kind === 'transfer' ? (
-              <Badge>
-                <ArrowRightLeft className="size-3" />
-              </Badge>
-            ) : (
-              <Badge tone={transaction.kind === 'income' ? 'good' : 'neutral'}>
-                {t(`kinds.${transaction.kind}`)}
-              </Badge>
-            )}
-
             <span
               className={cn(
-                'shrink-0 text-sm font-medium tabular-nums',
+                'text-right text-sm font-medium tabular-nums sm:order-4 sm:shrink-0',
                 transaction.kind === 'income' ? 'text-good' : 'text-text',
               )}
             >
@@ -170,8 +154,36 @@ export function TransactionList({
               {formatMoney(Number(transaction.amount), transaction.currency || currency, locale)}
             </span>
 
+            <span className="flex min-w-0 items-center gap-2 sm:contents">
+              <span className="text-text-subtle shrink-0 text-xs tabular-nums sm:order-1 sm:w-16">
+                {format.dateTime(fromISODate(transaction.occurredOn), 'dayMonth')}
+              </span>
+
+              {transaction.personId ? (
+                <Badge tone="accent" className="min-w-0 sm:order-3">
+                  <User className="size-3 shrink-0" />
+                  <span className="truncate">
+                    {people.find((person) => person.id === transaction.personId)?.name ?? '—'}
+                  </span>
+                </Badge>
+              ) : null}
+
+              {transaction.kind === 'transfer' ? (
+                <Badge className="sm:order-3">
+                  <ArrowRightLeft className="size-3" />
+                </Badge>
+              ) : (
+                <Badge
+                  tone={transaction.kind === 'income' ? 'good' : 'neutral'}
+                  className="sm:order-3"
+                >
+                  {t(`kinds.${transaction.kind}`)}
+                </Badge>
+              )}
+            </span>
+
             {/* Visible on a phone, where there is no hover to reveal them. */}
-            <span className="flex shrink-0 items-center gap-1 sm:opacity-0 sm:transition-opacity sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
+            <span className="flex shrink-0 items-center justify-end gap-1 sm:order-5 sm:opacity-0 sm:transition-opacity sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
               <button
                 type="button"
                 disabled={busyId === transaction.id}

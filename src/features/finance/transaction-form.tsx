@@ -94,8 +94,8 @@ export function TransactionForm({
 
   return (
     <form id="transaction-form" ref={formRef} action={submit} className="space-y-2">
-      <div className="flex flex-wrap items-end gap-2">
-        <label className="w-28 space-y-1.5">
+      <div className="grid grid-cols-2 items-end gap-2 sm:flex sm:flex-wrap">
+        <label className="space-y-1.5 sm:w-28">
           <span className="text-text-muted text-xs font-medium">{t('kind')}</span>
           <Select value={kind} onChange={(event) => setKind(event.target.value as typeof kind)}>
             {(['expense', 'income', 'transfer'] as const).map((option) => (
@@ -106,12 +106,12 @@ export function TransactionForm({
           </Select>
         </label>
 
-        <label className="w-32 space-y-1.5">
+        <label className="space-y-1.5 sm:w-32">
           <span className="text-text-muted text-xs font-medium">{t('amount')}</span>
           <MoneyInput name="amount" required className="text-right tabular-nums" />
         </label>
 
-        <label className="min-w-36 flex-1 space-y-1.5">
+        <label className="space-y-1.5 sm:min-w-36 sm:flex-1">
           <span className="text-text-muted text-xs font-medium">{t('account')}</span>
           <Select name="accountId" required>
             {accounts.map((account) => (
@@ -123,7 +123,7 @@ export function TransactionForm({
         </label>
 
         {kind === 'transfer' ? (
-          <label className="min-w-36 flex-1 space-y-1.5">
+          <label className="space-y-1.5 sm:min-w-36 sm:flex-1">
             <span className="text-text-muted text-xs font-medium">{t('toAccount')}</span>
             <Select name="counterAccountId" required>
               {accounts.map((account) => (
@@ -134,7 +134,7 @@ export function TransactionForm({
             </Select>
           </label>
         ) : (
-          <label className="min-w-36 flex-1 space-y-1.5">
+          <label className="space-y-1.5 sm:min-w-36 sm:flex-1">
             <span className="text-text-muted text-xs font-medium">{t('category')}</span>
             <Select name="categoryId">
               <option value="">{t('noCategory')}</option>
@@ -149,7 +149,7 @@ export function TransactionForm({
 
         {/* A transfer is between your own accounts, so there is nobody to owe. */}
         {kind === 'transfer' ? null : people.length === 0 ? null : (
-          <label className="min-w-36 flex-1 space-y-1.5">
+          <label className="space-y-1.5 sm:min-w-36 sm:flex-1">
             <span className="text-text-muted text-xs font-medium">{t('debt')}</span>
             <Select name="personId">
               <option value="">{t('notDebt')}</option>
@@ -162,17 +162,17 @@ export function TransactionForm({
           </label>
         )}
 
-        <label className="min-w-32 flex-1 space-y-1.5">
+        <label className="space-y-1.5 sm:min-w-32 sm:flex-1">
           <span className="text-text-muted text-xs font-medium">{t('merchant')}</span>
           <Input name="merchant" maxLength={200} />
         </label>
 
-        <label className="w-36 space-y-1.5">
+        <label className="col-span-2 space-y-1.5 sm:w-36">
           <span className="text-text-muted text-xs font-medium">{t('date')}</span>
           <Input type="date" name="occurredOn" defaultValue={today} />
         </label>
 
-        <Button type="submit">
+        <Button type="submit" className="col-span-2 w-full sm:w-auto">
           <Plus className="size-4" />
           {t('addTransaction')}
         </Button>

@@ -141,7 +141,12 @@ export function FinanceDraftList({
         ))}
       </ul>
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      {/*
+       * Pinned to the bottom of whatever is scrolling: in the capture panel the
+       * rows can run past the fold, and a save button you have to go looking
+       * for is the reason a review step gets skipped.
+       */}
+      <div className="bg-surface sticky bottom-0 -mx-4 -mb-4 flex flex-wrap items-center justify-between gap-2 px-4 pt-2 pb-4">
         <p className="text-text-muted text-xs tabular-nums">
           {t('summary', { count: rows.length })}
           {totals.expense > 0 ? ` · ${t('outgoing')} ${money(totals.expense)}` : ''}

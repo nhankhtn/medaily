@@ -919,6 +919,7 @@
       "parsing": "Reading…",
       "privacy": "Only the note above and your category names are sent. Balances, history and every other part of the app stay on this machine.",
       "reviewHint": "Check these before saving — nothing has been recorded yet.",
+      "rewrite": "Edit note",
       "intoAccount": "Account",
       "summary": "{count, plural, one {# transaction} other {# transactions}}",
       "outgoing": "out",

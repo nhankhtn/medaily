@@ -1,6 +1,6 @@
 'use client'
 
-import { CornerDownLeft, Loader2, MessageSquarePlus, Sparkles, X } from 'lucide-react'
+import { CornerDownLeft, Loader2, MessageSquarePlus, Pencil, Sparkles, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState, useTransition } from 'react'
 import { toast } from 'sonner'
@@ -66,7 +66,7 @@ export function CaptureBox({ enabled }: { enabled: boolean }) {
       {open ? (
         <section
           aria-label={t('title')}
-          className="border-border-strong bg-surface flex max-h-[min(34rem,calc(100dvh-10rem))] w-[min(26rem,calc(100vw-2rem))] flex-col rounded-2xl border shadow-2xl"
+          className="border-border-strong bg-surface flex max-h-[min(42rem,calc(100dvh-7rem))] w-[min(26rem,calc(100vw-2rem))] flex-col rounded-2xl border shadow-2xl"
         >
           <header className="flex shrink-0 items-start justify-between gap-3 px-4 pt-3 pb-2">
             <div className="min-w-0">
@@ -337,6 +337,42 @@ function FinancePanel() {
 
   const ready = text.trim().length >= 3
 
+  /*
+   * Once the rows are here the note has done its job. It folds away to one
+   * line, because the panel is small — on a phone the box you already typed
+   * into pushed the rows, and the save button under them, off the bottom, and
+   * a review step you have to scroll to find is one you will not do.
+   */
+  if (parsed) {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-start gap-2">
+          <p className="text-text-subtle min-w-0 flex-1 truncate text-xs">{text}</p>
+          <button
+            type="button"
+            onClick={() => setParsed(null)}
+            className="text-text-subtle hover:text-text inline-flex shrink-0 items-center gap-1 text-xs"
+          >
+            <Pencil className="size-3" />
+            {tf('rewrite')}
+          </button>
+        </div>
+
+        <FinanceDraftList
+          drafts={parsed.result.drafts}
+          accounts={parsed.result.context.accounts}
+          categories={parsed.result.context.categories}
+          currency={parsed.result.context.currency}
+          onDiscard={() => setParsed(null)}
+          onSaved={() => {
+            setParsed(null)
+            setText('')
+          }}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-3">
       <Textarea
@@ -368,21 +404,7 @@ function FinancePanel() {
         </span>
       </div>
 
-      {parsed ? (
-        <FinanceDraftList
-          drafts={parsed.result.drafts}
-          accounts={parsed.result.context.accounts}
-          categories={parsed.result.context.categories}
-          currency={parsed.result.context.currency}
-          onDiscard={() => setParsed(null)}
-          onSaved={() => {
-            setParsed(null)
-            setText('')
-          }}
-        />
-      ) : (
-        <p className="text-text-subtle text-xs leading-snug">{tf('privacy')}</p>
-      )}
+      <p className="text-text-subtle text-xs leading-snug">{tf('privacy')}</p>
     </div>
   )
 }

@@ -919,6 +919,7 @@
       "parsing": "Đang đọc…",
       "privacy": "Chỉ ghi chú ở trên và tên các danh mục của bạn được gửi đi. Số dư, lịch sử và mọi phần khác không rời khỏi máy này.",
       "reviewHint": "Kiểm tra lại trước khi lưu — chưa có gì được ghi cả.",
+      "rewrite": "Sửa ghi chú",
       "intoAccount": "Tài khoản",
       "summary": "{count, plural, other {# giao dịch}}",
       "outgoing": "chi",
