@@ -62,11 +62,20 @@ export function MoneyInput({
   /*
    * The field is controlled, so `form.reset()` alone would leave the typed
    * amount on screen after a save. Clear it when its form resets.
+   *
+   * The clearing is queued rather than done on the spot. A form action runs
+   * inside a transition, and React holds an ordinary state update made inside
+   * one until the transition ends — which here is when the saved page comes
+   * back from the server, leaving the amount on screen for the whole round
+   * trip while every other field had already cleared. A microtask runs after
+   * React has left that transition, so the update is an ordinary one again and
+   * paints on the next frame. (`flushSync` is the other way out, and React
+   * rejects it here: the reset arrives while React is already rendering.)
    */
   React.useEffect(() => {
     const form = inputRef.current?.form
     if (!form) return
-    const onReset = () => setText(initialText)
+    const onReset = () => queueMicrotask(() => setText(initialText))
     form.addEventListener('reset', onReset)
     return () => form.removeEventListener('reset', onReset)
   }, [initialText])

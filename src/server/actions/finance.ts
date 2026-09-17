@@ -174,11 +174,15 @@ export async function createTransaction(input: unknown) {
   const parsed = transactionSchema.safeParse(input)
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
-  const settings = await getSettings()
-  const [accounts, categories, people] = await Promise.all([
-    findAccounts(settings.userId),
-    findCategories(settings.userId),
-    findPeople(settings.userId),
+  // The session cookie names the user without touching the database, so the
+  // settings row is read alongside the ownership lists rather than ahead of
+  // them. One wave of queries instead of two.
+  const userId = await getCurrentUserId()
+  const [settings, accounts, categories, people] = await Promise.all([
+    getSettings(),
+    findAccounts(userId),
+    findCategories(userId),
+    findPeople(userId),
   ])
 
   const transfer = parsed.data.kind === 'transfer'
@@ -224,11 +228,12 @@ export async function saveTransaction(input: unknown) {
     .safeParse(input)
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
-  const settings = await getSettings()
-  const [accounts, categories, people] = await Promise.all([
-    findAccounts(settings.userId),
-    findCategories(settings.userId),
-    findPeople(settings.userId),
+  const userId = await getCurrentUserId()
+  const [settings, accounts, categories, people] = await Promise.all([
+    getSettings(),
+    findAccounts(userId),
+    findCategories(userId),
+    findPeople(userId),
   ])
 
   const transfer = parsed.data.kind === 'transfer'
@@ -299,12 +304,15 @@ export async function parseTransactionText(input: unknown): Promise<ParseTransac
   const parsed = z.object({ text: z.string().trim().min(3).max(2000) }).safeParse(input)
   if (!parsed.success) return { ok: false, error: 'invalid_input' }
 
-  const settings = await getSettings()
-  if (!captureAllowed(settings.userId)) return { ok: false, error: 'rate_limited' }
+  // The cookie names the user, so the rate limit is checked before any read
+  // rather than after one.
+  const userId = await getCurrentUserId()
+  if (!captureAllowed(userId)) return { ok: false, error: 'rate_limited' }
 
-  const [accounts, categories] = await Promise.all([
-    findAccounts(settings.userId),
-    findCategories(settings.userId),
+  const [settings, accounts, categories] = await Promise.all([
+    getSettings(),
+    findAccounts(userId),
+    findCategories(userId),
   ])
 
   try {
@@ -350,10 +358,11 @@ export async function createTransactions(input: unknown) {
     .safeParse(input)
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
-  const settings = await getSettings()
-  const [accounts, categories] = await Promise.all([
-    findAccounts(settings.userId),
-    findCategories(settings.userId),
+  const userId = await getCurrentUserId()
+  const [settings, accounts, categories] = await Promise.all([
+    getSettings(),
+    findAccounts(userId),
+    findCategories(userId),
   ])
 
   // A well-formed uuid still has to name a row this user owns (spec 29).

@@ -2,7 +2,7 @@
 
 import { ArrowRightLeft, Check, Pencil, Trash2, User, X } from 'lucide-react'
 import { useFormatter, useLocale, useTranslations } from 'next-intl'
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -13,18 +13,27 @@ import { fromISODate } from '@/lib/dates'
 import { formatMoney } from '@/lib/format/money'
 import { removeTransaction, saveTransaction } from '@/server/actions/finance'
 import { cn } from '@/lib/utils'
+import type { PendingTransaction } from './pending'
 
 type Account = { id: string; name: string }
 type Person = { id: string; name: string }
 
+/** Everything the row's title needs, which a pending row also has. */
+type Titled = Pick<Transaction, 'kind' | 'merchant' | 'categoryId' | 'accountId'> & {
+  counterAccountId: string | null
+}
+
 export function TransactionList({
   transactions,
+  pending,
   categories,
   accounts,
   people,
   currency,
 }: {
   transactions: Transaction[]
+  /** Rows sent but not confirmed; they sit above the ledger until it catches up. */
+  pending: PendingTransaction[]
   categories: FinanceCategory[]
   accounts: Account[]
   people: Person[]
@@ -35,13 +44,18 @@ export function TransactionList({
   const locale = useLocale()
   const format = useFormatter()
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [pending, startTransition] = useTransition()
+  /**
+   * Which row is mid-write. Plain state rather than `useTransition`, whose
+   * pending flag also covers the page refresh that follows the write and so
+   * left these buttons dead for seconds after the change had landed.
+   */
+  const [busyId, setBusyId] = useState<string | null>(null)
 
-  if (transactions.length === 0) {
+  if (transactions.length === 0 && pending.length === 0) {
     return <p className="text-text-subtle text-sm">{t('noTransactions')}</p>
   }
 
-  const label = (transaction: Transaction) => {
+  const label = (transaction: Titled) => {
     if (transaction.kind === 'transfer') {
       const to = accounts.find((account) => account.id === transaction.counterAccountId)?.name
       return `${accounts.find((account) => account.id === transaction.accountId)?.name ?? ''} → ${to ?? ''}`
@@ -55,6 +69,34 @@ export function TransactionList({
 
   return (
     <ul className="divide-border-base divide-y">
+      {pending.map((row) => (
+        // Faded, and without the pencil or the bin: there is no row on the
+        // server yet for either of them to act on.
+        <li key={row.key} className="flex items-center gap-3 py-2 opacity-50">
+          <span className="text-text-subtle w-16 shrink-0 text-xs tabular-nums">
+            {format.dateTime(fromISODate(row.occurredOn), 'dayMonth')}
+          </span>
+          <span className="min-w-0 flex-1 truncate text-sm">{label(row)}</span>
+          {row.personId ? (
+            <Badge tone="accent">
+              <User className="size-3" />
+              {people.find((person) => person.id === row.personId)?.name ?? '—'}
+            </Badge>
+          ) : null}
+          {row.kind === 'transfer' ? (
+            <Badge>
+              <ArrowRightLeft className="size-3" />
+            </Badge>
+          ) : (
+            <Badge tone={row.kind === 'income' ? 'good' : 'neutral'}>{t(`kinds.${row.kind}`)}</Badge>
+          )}
+          <span className="shrink-0 text-sm font-medium tabular-nums">
+            {row.kind === 'income' ? '+' : row.kind === 'expense' ? '−' : ''}
+            {formatMoney(row.amount, currency, locale)}
+          </span>
+        </li>
+      ))}
+
       {transactions.map((transaction) => {
         if (editingId === transaction.id) {
           return (
@@ -64,10 +106,11 @@ export function TransactionList({
                 accounts={accounts}
                 categories={categories}
                 people={people}
-                pending={pending}
+                pending={busyId === transaction.id}
                 onClose={() => setEditingId(null)}
-                onSave={(patch) =>
-                  startTransition(async () => {
+                onSave={async (patch) => {
+                  setBusyId(transaction.id)
+                  try {
                     const result = await saveTransaction({ id: transaction.id, ...patch })
                     if (!result.ok) {
                       toast.error(tc('error'))
@@ -75,8 +118,10 @@ export function TransactionList({
                     }
                     setEditingId(null)
                     toast.success(t('saved'))
-                  })
-                }
+                  } finally {
+                    setBusyId(null)
+                  }
+                }}
               />
             </li>
           )
@@ -129,7 +174,7 @@ export function TransactionList({
             <span className="flex shrink-0 items-center gap-1 sm:opacity-0 sm:transition-opacity sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
               <button
                 type="button"
-                disabled={pending}
+                disabled={busyId === transaction.id}
                 aria-label={`${tc('edit')} ${label(transaction)}`}
                 onClick={() => setEditingId(transaction.id)}
                 className="text-text-subtle hover:text-text p-1"
@@ -138,11 +183,16 @@ export function TransactionList({
               </button>
               <button
                 type="button"
-                disabled={pending}
+                disabled={busyId === transaction.id}
                 aria-label={`${tc('delete')} ${label(transaction)}`}
-                onClick={() =>
-                  startTransition(async () => void (await removeTransaction(transaction.id)))
-                }
+                onClick={async () => {
+                  setBusyId(transaction.id)
+                  try {
+                    await removeTransaction(transaction.id)
+                  } finally {
+                    setBusyId(null)
+                  }
+                }}
                 className="text-text-subtle hover:text-bad p-1"
               >
                 <Trash2 className="size-3.5" />
@@ -188,7 +238,7 @@ function TransactionEditor({
   accounts: Account[]
   categories: FinanceCategory[]
   people: Person[]
-  onSave: (patch: Patch) => void
+  onSave: (patch: Patch) => Promise<void>
   onClose: () => void
   pending: boolean
 }) {
@@ -209,13 +259,18 @@ function TransactionEditor({
   )
   const destinations = accounts.filter((account) => account.id !== accountId)
 
-  const submit = (formData: FormData) => {
+  // `onSubmit` rather than `action`: a form action runs inside a transition,
+  // and the saving flag set in there would not reach the screen until the
+  // transition — refreshed page and all — had finished.
+  const submit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const formData = new FormData(event.currentTarget)
     const text = (key: string) => {
       const value = String(formData.get(key) ?? '').trim()
       return value === '' ? null : value
     }
 
-    onSave({
+    void onSave({
       occurredOn: text('occurredOn') ?? transaction.occurredOn,
       amount: Number(formData.get('amount') ?? 0),
       kind,
@@ -232,7 +287,7 @@ function TransactionEditor({
 
   return (
     <form
-      action={submit}
+      onSubmit={submit}
       onKeyDown={(event) => {
         if (event.key === 'Escape') onClose()
       }}

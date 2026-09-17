@@ -14,8 +14,7 @@ import {
   InvestmentDialog,
 } from '@/features/finance/finance-dialogs'
 import { Report } from '@/features/finance/report'
-import { TransactionForm } from '@/features/finance/transaction-form'
-import { TransactionList } from '@/features/finance/transaction-list'
+import { TransactionPanel } from '@/features/finance/transaction-panel'
 import { formatMoney } from '@/lib/format/money'
 import { PATHS, type FinanceTab } from '@/lib/paths'
 import { getFinanceData } from '@/server/services/finance'
@@ -90,18 +89,13 @@ export default async function FinancePage({
         <Card>
           <CardHeader title={t('transactions')} />
           <CardBody className="space-y-4">
-            <TransactionForm
-              accounts={data.accounts}
-              categories={data.categories}
-              people={data.people}
-              today={data.today}
-            />
-            <TransactionList
+            <TransactionPanel
               transactions={data.transactions}
               categories={data.categories}
               accounts={data.accounts}
               people={data.people}
               currency={data.currency}
+              today={data.today}
             />
           </CardBody>
         </Card>

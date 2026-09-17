@@ -2,7 +2,7 @@
 
 import { Plus } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
-import { useState, useTransition } from 'react'
+import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,6 +11,7 @@ import { Select } from '@/components/ui/select'
 import type { FinanceCategory } from '@/lib/db/schema'
 import type { ISODate } from '@/lib/dates'
 import { createTransaction } from '@/server/actions/finance'
+import type { PendingTransaction } from './pending'
 
 /**
  * One row that covers income, expense and transfer. The category field swaps
@@ -22,47 +23,69 @@ export function TransactionForm({
   categories,
   people,
   today,
+  onPending,
 }: {
   accounts: { id: string; name: string }[]
   categories: FinanceCategory[]
   people: { id: string; name: string }[]
   today: ISODate
+  /** Shows the row straight away; see `TransactionPanel`. */
+  onPending: (row: PendingTransaction) => void
 }) {
   const t = useTranslations('finance')
-  const tc = useTranslations('common')
   useLocale()
   const [kind, setKind] = useState<'income' | 'expense' | 'transfer'>('expense')
-  const [pending, startTransition] = useTransition()
+  const formRef = useRef<HTMLFormElement>(null)
 
   if (accounts.length === 0) return null
 
-  const submit = (formData: FormData) => {
-    startTransition(async () => {
-      try {
-        const result = await createTransaction({
-          occurredOn: String(formData.get('occurredOn') ?? today),
-          amount: Number(formData.get('amount') ?? 0),
-          kind,
-          accountId: String(formData.get('accountId') ?? ''),
-          counterAccountId: emptyToNull(formData.get('counterAccountId')),
-          categoryId: emptyToNull(formData.get('categoryId')),
-          personId: emptyToNull(formData.get('personId')),
-          merchant: String(formData.get('merchant') ?? ''),
-          note: '',
-        })
+  /**
+   * The row is shown and the fields are cleared on this frame, before the
+   * server has been asked. Both have to happen here rather than after the
+   * await: React defers a `useState` setter inside a transition until the
+   * transition ends, and this one ends only when the refreshed page arrives.
+   *
+   * Clearing the fields is also what makes a second click harmless, which is
+   * why there is no disabled state on the button. The old one stayed disabled
+   * until the refresh landed — seconds after the row was already saved.
+   */
+  const submit = async (formData: FormData) => {
+    const input = {
+      occurredOn: String(formData.get('occurredOn') ?? today),
+      amount: Number(formData.get('amount') ?? 0),
+      kind,
+      accountId: String(formData.get('accountId') ?? ''),
+      counterAccountId: emptyToNull(formData.get('counterAccountId')),
+      categoryId: emptyToNull(formData.get('categoryId')),
+      personId: emptyToNull(formData.get('personId')),
+      merchant: String(formData.get('merchant') ?? ''),
+      note: '',
+    }
 
-        if (!result.ok) {
-          toast.error(tc('error'))
-          return
-        }
-        toast.success(t('saved'))
-        const form = document.getElementById('transaction-form') as HTMLFormElement | null
-        form?.reset()
-      } catch (error) {
-        console.error('[finance] could not save the transaction:', error)
-        toast.error(tc('error'))
-      }
+    onPending({
+      key: crypto.randomUUID(),
+      occurredOn: input.occurredOn,
+      kind,
+      amount: input.amount,
+      accountId: input.accountId,
+      counterAccountId: input.counterAccountId,
+      categoryId: input.categoryId,
+      personId: input.personId,
+      merchant: input.merchant.trim() === '' ? null : input.merchant.trim(),
     })
+    formRef.current?.reset()
+
+    try {
+      const result = await createTransaction(input)
+      if (!result.ok) {
+        toast.error(t('notSaved'))
+        return
+      }
+      toast.success(t('saved'))
+    } catch (error) {
+      console.error('[finance] could not save the transaction:', error)
+      toast.error(t('notSaved'))
+    }
   }
 
   const relevantCategories = categories.filter((category) =>
@@ -70,7 +93,7 @@ export function TransactionForm({
   )
 
   return (
-    <form id="transaction-form" action={submit} className="space-y-2">
+    <form id="transaction-form" ref={formRef} action={submit} className="space-y-2">
       <div className="flex flex-wrap items-end gap-2">
         <label className="w-28 space-y-1.5">
           <span className="text-text-muted text-xs font-medium">{t('kind')}</span>
@@ -149,7 +172,7 @@ export function TransactionForm({
           <Input type="date" name="occurredOn" defaultValue={today} />
         </label>
 
-        <Button type="submit" disabled={pending}>
+        <Button type="submit">
           <Plus className="size-4" />
           {t('addTransaction')}
         </Button>
