@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowRightLeft, Check, Pencil, Trash2, X } from 'lucide-react'
+import { ArrowRightLeft, Check, Pencil, Trash2, User, X } from 'lucide-react'
 import { useFormatter, useLocale, useTranslations } from 'next-intl'
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
@@ -15,16 +15,19 @@ import { removeTransaction, saveTransaction } from '@/server/actions/finance'
 import { cn } from '@/lib/utils'
 
 type Account = { id: string; name: string }
+type Person = { id: string; name: string }
 
 export function TransactionList({
   transactions,
   categories,
   accounts,
+  people,
   currency,
 }: {
   transactions: Transaction[]
   categories: FinanceCategory[]
   accounts: Account[]
+  people: Person[]
   currency: string
 }) {
   const t = useTranslations('finance')
@@ -60,6 +63,7 @@ export function TransactionList({
                 transaction={transaction}
                 accounts={accounts}
                 categories={categories}
+                people={people}
                 pending={pending}
                 onClose={() => setEditingId(null)}
                 onSave={(patch) =>
@@ -93,6 +97,13 @@ export function TransactionList({
             >
               {label(transaction)}
             </button>
+
+            {transaction.personId ? (
+              <Badge tone="accent">
+                <User className="size-3" />
+                {people.find((person) => person.id === transaction.personId)?.name ?? '—'}
+              </Badge>
+            ) : null}
 
             {transaction.kind === 'transfer' ? (
               <Badge>
@@ -151,6 +162,7 @@ type Patch = {
   accountId: string
   counterAccountId: string | null
   categoryId: string | null
+  personId: string | null
   merchant: string | null
   note: string | null
 }
@@ -167,6 +179,7 @@ function TransactionEditor({
   transaction,
   accounts,
   categories,
+  people,
   onSave,
   onClose,
   pending,
@@ -174,6 +187,7 @@ function TransactionEditor({
   transaction: Transaction
   accounts: Account[]
   categories: FinanceCategory[]
+  people: Person[]
   onSave: (patch: Patch) => void
   onClose: () => void
   pending: boolean
@@ -208,6 +222,7 @@ function TransactionEditor({
       accountId: accountId,
       counterAccountId: kind === 'transfer' ? text('counterAccountId') : null,
       categoryId: kind === 'transfer' ? null : text('categoryId'),
+      personId: kind === 'transfer' ? null : text('personId'),
       merchant: text('merchant'),
       // Kept as it was: the note is not in this row, and leaving it out of the
       // patch would quietly wipe whatever the capture box wrote there.
@@ -284,6 +299,20 @@ function TransactionEditor({
             {relevant.map((category) => (
               <option key={category.id} value={category.id}>
                 {category.name}
+              </option>
+            ))}
+          </Select>
+        </label>
+      )}
+
+      {kind === 'transfer' || people.length === 0 ? null : (
+        <label className="min-w-36 flex-1 space-y-1.5">
+          <span className="text-text-muted text-xs font-medium">{t('debt')}</span>
+          <Select name="personId" defaultValue={transaction.personId ?? ''}>
+            <option value="">{t('notDebt')}</option>
+            {people.map((person) => (
+              <option key={person.id} value={person.id}>
+                {person.name}
               </option>
             ))}
           </Select>

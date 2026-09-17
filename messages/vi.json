@@ -871,6 +871,12 @@
     "needCategoryFirst": "Ngân sách cần có danh mục — tạo một danh mục Chi trước, rồi đặt mức mỗi tháng cho nó.",
     "noCategories": "Chưa có danh mục nào",
     "editBudget": "Sửa ngân sách",
+    "debt": "Nợ",
+    "notDebt": "Không phải nợ",
+    "debts": "Nợ",
+    "owesYou": "nợ bạn",
+    "youOwe": "bạn nợ",
+    "debtHint": "Tiền cho mượn không phải là tiền đã tiêu — nó vẫn nằm trong tài sản của bạn cho tới khi đòi về. Muốn xoá một khoản nợ thì ghi lại lần trả.",
     "tabs": {
       "overview": "Tổng quan",
       "report": "Báo cáo"

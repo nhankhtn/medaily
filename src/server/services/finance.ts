@@ -1,14 +1,9 @@
 import { cache } from 'react'
 import { getCurrentUserId } from '@/lib/auth/current-user'
 import type { Asset, Budget, FinanceCategory, Investment, Transaction } from '@/lib/db/schema'
-import {
-  addMonthsISO,
-  monthEndOf,
-  monthStartOf,
-  today as todayOf,
-  type ISODate,
-} from '@/lib/dates'
+import { addMonthsISO, monthEndOf, monthStartOf, today as todayOf, type ISODate } from '@/lib/dates'
 import type { AccountType } from '@/lib/finance/account-types'
+import { debtBalances, netDebt, type DebtBalance } from '@/lib/finance/debts'
 import {
   findAccountBalances,
   findAccounts,
@@ -18,9 +13,11 @@ import {
   findInvestments,
   findTransactions,
   sumByCategory,
+  sumDebtsByPerson,
   type AccountBalance,
   type CategoryTotal,
 } from '@/server/repositories/finance'
+import { findPeople } from '@/server/repositories/people'
 import { dayContextOf, getSettings } from '@/server/services/settings'
 
 export type BudgetView = Budget & { spent: number; categoryName: string }
@@ -44,6 +41,10 @@ export type FinanceData = {
   budgets: BudgetView[]
   assets: Asset[]
   investments: (Investment & { marketValue: number | null; unrealized: number | null })[]
+  /** Contacts a transaction can be a debt with. */
+  people: { id: string; name: string }[]
+  /** Who is still out of balance with you, biggest either way first. */
+  debts: DebtBalance[]
   totals: {
     income: number
     expense: number
@@ -51,6 +52,8 @@ export type FinanceData = {
     previousExpense: number
     cash: number
     netWorth: number
+    /** Owed to you less what you owe; part of net worth. */
+    debt: number
   }
 }
 
@@ -62,18 +65,31 @@ export const getFinanceData = cache(async (): Promise<FinanceData> => {
   const monthEnd = monthEndOf(today)
   const previousStart = addMonthsISO(monthStart, -1)
 
-  const [accountRows, balances, categories, transactions, byCategory, previousTotals, budgetRows, assets, investments] =
-    await Promise.all([
-      findAccounts(userId),
-      findAccountBalances(userId),
-      findCategories(userId),
-      findTransactions(userId, { start: previousStart, end: monthEnd }),
-      sumByCategory(userId, { start: monthStart, end: monthEnd }),
-      sumByCategory(userId, { start: previousStart, end: monthEndOf(previousStart) }),
-      findBudgets(userId, monthStart),
-      findAssets(userId),
-      findInvestments(userId),
-    ])
+  const [
+    accountRows,
+    balances,
+    categories,
+    transactions,
+    byCategory,
+    previousTotals,
+    budgetRows,
+    assets,
+    investments,
+    personRows,
+    debtRows,
+  ] = await Promise.all([
+    findAccounts(userId),
+    findAccountBalances(userId),
+    findCategories(userId),
+    findTransactions(userId, { start: previousStart, end: monthEnd }),
+    sumByCategory(userId, { start: monthStart, end: monthEnd }),
+    sumByCategory(userId, { start: previousStart, end: monthEndOf(previousStart) }),
+    findBudgets(userId, monthStart),
+    findAssets(userId),
+    findInvestments(userId),
+    findPeople(userId),
+    sumDebtsByPerson(userId),
+  ])
 
   const monthTransactions = transactions.filter((row) => row.occurredOn >= monthStart)
   const sumKind = (kind: string, rows: CategoryTotal[]) =>
@@ -103,6 +119,12 @@ export const getFinanceData = cache(async (): Promise<FinanceData> => {
 
   const categoryName = (id: string) => categories.find((row) => row.id === id)?.name ?? '—'
 
+  const debts = debtBalances(
+    debtRows,
+    (id) => personRows.find((person) => person.id === id)?.name ?? '—',
+  )
+  const debt = netDebt(debts)
+
   return {
     today,
     monthStart,
@@ -128,13 +150,18 @@ export const getFinanceData = cache(async (): Promise<FinanceData> => {
     })),
     assets,
     investments: investmentViews,
+    people: personRows.map((person) => ({ id: person.id, name: person.name })),
+    debts,
     totals: {
       income,
       expense,
       net: income - expense,
       previousExpense: sumKind('expense', previousTotals),
       cash,
-      netWorth: cash + assetTotal + investmentTotal,
+      // Money lent is still yours — it has moved out of the account but not out
+      // of your worth — and money borrowed is not.
+      netWorth: cash + assetTotal + investmentTotal + debt,
+      debt,
     },
   }
 })

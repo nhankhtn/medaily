@@ -26,6 +26,7 @@ import {
   updateTransaction,
   upsertBudget,
 } from '@/server/repositories/finance'
+import { findPeople } from '@/server/repositories/people'
 import { parseTransactions } from '@/server/services/finance-capture'
 import { geminiEnabled } from '@/server/services/gemini'
 import { dayContextOf, getSettings } from '@/server/services/settings'
@@ -127,6 +128,7 @@ const transactionFields = {
   accountId: z.string().uuid(),
   counterAccountId: z.string().uuid().nullable().optional(),
   categoryId: z.string().uuid().nullable().optional(),
+  personId: z.string().uuid().nullable().optional(),
   merchant: optionalText,
   note: optionalText,
 } as const
@@ -135,6 +137,7 @@ type TransactionInput = {
   kind: 'income' | 'expense' | 'transfer'
   accountId: string
   counterAccountId?: string | null
+  personId?: string | null
 }
 
 // A transfer moves money between two different accounts; enforced here and
@@ -148,23 +151,53 @@ const transferMessage = {
   path: ['counterAccountId'],
 }
 
-const transactionSchema = z.object(transactionFields).refine(transferRule, transferMessage)
+// A transfer moves money between two accounts you already own, so there is
+// nobody on the other side of it to owe or be owed.
+const debtRule = (value: TransactionInput) => value.kind !== 'transfer' || !value.personId
+const debtMessage = { message: 'a transfer cannot be a debt', path: ['personId'] }
+
+const transactionSchema = z
+  .object(transactionFields)
+  .refine(transferRule, transferMessage)
+  .refine(debtRule, debtMessage)
+
+/**
+ * A well-formed uuid still has to name a row this user owns (spec 29). Returns
+ * the id when it does and null when it does not, so a stale or forged id
+ * becomes "none" rather than a write against someone else's row.
+ */
+function ownedBy(id: string | null | undefined, rows: { id: string }[]): string | null {
+  return id && rows.some((row) => row.id === id) ? id : null
+}
 
 export async function createTransaction(input: unknown) {
   const parsed = transactionSchema.safeParse(input)
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
   const settings = await getSettings()
+  const [accounts, categories, people] = await Promise.all([
+    findAccounts(settings.userId),
+    findCategories(settings.userId),
+    findPeople(settings.userId),
+  ])
+
+  const transfer = parsed.data.kind === 'transfer'
+  const accountId = ownedBy(parsed.data.accountId, accounts)
+  const counterAccountId = transfer ? ownedBy(parsed.data.counterAccountId, accounts) : null
+  if (accountId === null || (transfer && counterAccountId === null)) {
+    return { ok: false as const, error: 'invalid_input' as const }
+  }
+
   await insertTransaction({
     userId: settings.userId,
     occurredOn: parsed.data.occurredOn,
     amount: String(parsed.data.amount),
     currency: settings.defaultCurrency,
     kind: parsed.data.kind,
-    accountId: parsed.data.accountId,
-    counterAccountId:
-      parsed.data.kind === 'transfer' ? (parsed.data.counterAccountId ?? null) : null,
-    categoryId: parsed.data.kind === 'transfer' ? null : (parsed.data.categoryId ?? null),
+    accountId,
+    counterAccountId,
+    categoryId: transfer ? null : ownedBy(parsed.data.categoryId, categories),
+    personId: transfer ? null : ownedBy(parsed.data.personId, people),
     merchant: parsed.data.merchant ?? null,
     note: parsed.data.note ?? null,
   })
@@ -187,25 +220,21 @@ export async function saveTransaction(input: unknown) {
   const parsed = z
     .object({ id: z.string().uuid(), ...transactionFields })
     .refine(transferRule, transferMessage)
+    .refine(debtRule, debtMessage)
     .safeParse(input)
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
   const settings = await getSettings()
-  const [accounts, categories] = await Promise.all([
+  const [accounts, categories, people] = await Promise.all([
     findAccounts(settings.userId),
     findCategories(settings.userId),
+    findPeople(settings.userId),
   ])
 
-  const owned = (id: string | null | undefined, rows: { id: string }[]) =>
-    id && rows.some((row) => row.id === id) ? id : null
-
-  if (owned(parsed.data.accountId, accounts) === null) {
-    return { ok: false as const, error: 'invalid_input' as const }
-  }
-
   const transfer = parsed.data.kind === 'transfer'
-  const counter = transfer ? owned(parsed.data.counterAccountId, accounts) : null
-  if (transfer && counter === null) {
+  const accountId = ownedBy(parsed.data.accountId, accounts)
+  const counterAccountId = transfer ? ownedBy(parsed.data.counterAccountId, accounts) : null
+  if (accountId === null || (transfer && counterAccountId === null)) {
     return { ok: false as const, error: 'invalid_input' as const }
   }
 
@@ -213,9 +242,10 @@ export async function saveTransaction(input: unknown) {
     occurredOn: parsed.data.occurredOn,
     amount: String(parsed.data.amount),
     kind: parsed.data.kind,
-    accountId: parsed.data.accountId,
-    counterAccountId: counter,
-    categoryId: transfer ? null : owned(parsed.data.categoryId, categories),
+    accountId,
+    counterAccountId,
+    categoryId: transfer ? null : ownedBy(parsed.data.categoryId, categories),
+    personId: transfer ? null : ownedBy(parsed.data.personId, people),
     merchant: parsed.data.merchant ?? null,
     note: parsed.data.note ?? null,
   })

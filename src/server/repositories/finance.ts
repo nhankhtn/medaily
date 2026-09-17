@@ -1,4 +1,4 @@
-import { and, asc, between, desc, eq, isNull, or, sql } from 'drizzle-orm'
+import { and, asc, between, desc, eq, isNotNull, isNull, or, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import {
   accounts,
@@ -175,6 +175,7 @@ export async function deleteTransaction(userId: string, id: string): Promise<voi
 
 export type CategoryTotal = { categoryId: string | null; kind: string; total: number }
 
+/** Debts are left out: lending money is not spending it (see `personId`). */
 export async function sumByCategory(userId: string, range: DateRange): Promise<CategoryTotal[]> {
   const rows = await db
     .select({
@@ -186,6 +187,7 @@ export async function sumByCategory(userId: string, range: DateRange): Promise<C
     .where(
       and(
         eq(transactions.userId, userId),
+        isNull(transactions.personId),
         between(transactions.occurredOn, range.start, range.end),
       ),
     )
@@ -266,6 +268,7 @@ export async function sumByMonth(userId: string, range: DateRange): Promise<Mont
     .where(
       and(
         eq(transactions.userId, userId),
+        isNull(transactions.personId),
         between(transactions.occurredOn, range.start, range.end),
       ),
     )
@@ -287,6 +290,7 @@ export async function findLargestExpenses(
       and(
         eq(transactions.userId, userId),
         eq(transactions.kind, 'expense'),
+        isNull(transactions.personId),
         between(transactions.occurredOn, range.start, range.end),
       ),
     )
@@ -304,4 +308,29 @@ export async function findEarliestTransactionDate(userId: string): Promise<ISODa
     .limit(1)
 
   return rows[0]?.occurredOn ?? null
+}
+
+export type PersonDebtRow = { personId: string; kind: string; amount: number }
+
+/**
+ * Every debt row this user has, with no date range at all: a debt runs until
+ * it is paid off, and cutting it at a month boundary would report a loan from
+ * last year as settled.
+ */
+export async function sumDebtsByPerson(userId: string): Promise<PersonDebtRow[]> {
+  const rows = await db
+    .select({
+      personId: transactions.personId,
+      kind: transactions.kind,
+      total: sql<string>`COALESCE(SUM(${transactions.amount}), 0)`,
+    })
+    .from(transactions)
+    .where(and(eq(transactions.userId, userId), isNotNull(transactions.personId)))
+    .groupBy(transactions.personId, transactions.kind)
+
+  return rows.flatMap((row) =>
+    row.personId === null
+      ? []
+      : [{ personId: row.personId, kind: row.kind, amount: Number(row.total) }],
+  )
 }

@@ -871,6 +871,12 @@
     "needCategoryFirst": "Budgets need a category first — create an expense category, then set its monthly limit.",
     "noCategories": "No categories yet",
     "editBudget": "Edit budget",
+    "debt": "Debt",
+    "notDebt": "Not a debt",
+    "debts": "Debts",
+    "owesYou": "owes you",
+    "youOwe": "you owe",
+    "debtHint": "Money you lend is not money you spent — it stays in your net worth until it comes back. To settle a debt, record the repayment.",
     "tabs": {
       "overview": "Overview",
       "report": "Report"

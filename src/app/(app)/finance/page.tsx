@@ -93,18 +93,48 @@ export default async function FinancePage({
             <TransactionForm
               accounts={data.accounts}
               categories={data.categories}
+              people={data.people}
               today={data.today}
             />
             <TransactionList
               transactions={data.transactions}
               categories={data.categories}
               accounts={data.accounts}
+              people={data.people}
               currency={data.currency}
             />
           </CardBody>
         </Card>
       )}
       <div className="grid gap-4 lg:grid-cols-2">
+        {data.debts.length > 0 ? (
+          <Card className="min-w-0">
+            <CardHeader title={t('debts')} />
+            <CardBody>
+              <ul className="divide-border-base divide-y">
+                {data.debts.map((row) => (
+                  <li key={row.personId} className="flex items-baseline gap-2 py-2">
+                    <span className="min-w-0 flex-1 truncate text-sm">{row.name}</span>
+                    <span className="text-text-subtle shrink-0 text-xs">
+                      {row.outstanding > 0 ? t('owesYou') : t('youOwe')}
+                    </span>
+                    <span
+                      className={
+                        row.outstanding > 0
+                          ? 'text-good shrink-0 text-sm font-medium tabular-nums'
+                          : 'text-bad shrink-0 text-sm font-medium tabular-nums'
+                      }
+                    >
+                      {money(Math.abs(row.outstanding))}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-text-subtle mt-3 text-xs leading-snug">{t('debtHint')}</p>
+            </CardBody>
+          </Card>
+        ) : null}
+
         {data.accounts.length > 0 ? (
           <Card>
             <CardHeader title={t('accounts')} />

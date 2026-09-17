@@ -20,10 +20,12 @@ import { createTransaction } from '@/server/actions/finance'
 export function TransactionForm({
   accounts,
   categories,
+  people,
   today,
 }: {
   accounts: { id: string; name: string }[]
   categories: FinanceCategory[]
+  people: { id: string; name: string }[]
   today: ISODate
 }) {
   const t = useTranslations('finance')
@@ -44,6 +46,7 @@ export function TransactionForm({
           accountId: String(formData.get('accountId') ?? ''),
           counterAccountId: emptyToNull(formData.get('counterAccountId')),
           categoryId: emptyToNull(formData.get('categoryId')),
+          personId: emptyToNull(formData.get('personId')),
           merchant: String(formData.get('merchant') ?? ''),
           note: '',
         })
@@ -115,6 +118,21 @@ export function TransactionForm({
               {relevantCategories.map((category) => (
                 <option key={category.id} value={category.id}>
                   {category.name}
+                </option>
+              ))}
+            </Select>
+          </label>
+        )}
+
+        {/* A transfer is between your own accounts, so there is nobody to owe. */}
+        {kind === 'transfer' ? null : people.length === 0 ? null : (
+          <label className="min-w-36 flex-1 space-y-1.5">
+            <span className="text-text-muted text-xs font-medium">{t('debt')}</span>
+            <Select name="personId">
+              <option value="">{t('notDebt')}</option>
+              {people.map((person) => (
+                <option key={person.id} value={person.id}>
+                  {person.name}
                 </option>
               ))}
             </Select>

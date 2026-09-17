@@ -12,6 +12,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 import { users } from './core'
+import { people } from './people'
 import {
   accountTypeEnum,
   categoryKindEnum,
@@ -83,6 +84,19 @@ export const transactions = pgTable(
     categoryId: uuid('category_id').references(() => financeCategories.id, {
       onDelete: 'set null',
     }),
+    /**
+     * Set when this movement is a debt with someone in your contacts, and that
+     * is the whole of what it means: money out is you lending or paying them
+     * back, money in is them paying you back or you borrowing. One signed
+     * total per person falls out of that — above zero they owe you, below zero
+     * you owe them — so settling a debt is recording the repayment rather than
+     * ticking a box somewhere.
+     *
+     * A debt is not spending. These rows leave your account, so balances count
+     * them, but income and expense totals do not: lending money is not losing
+     * it.
+     */
+    personId: uuid('person_id').references(() => people.id, { onDelete: 'set null' }),
     merchant: text('merchant'),
     note: text('note'),
     tags: text('tags').array(),
@@ -92,6 +106,7 @@ export const transactions = pgTable(
   (t) => [
     index('idx_transactions_user_date').on(t.userId, t.occurredOn.desc()),
     index('idx_transactions_category').on(t.categoryId, t.occurredOn.desc()),
+    index('idx_transactions_person').on(t.personId, t.occurredOn.desc()),
     check('amount_positive', sql`${t.amount} > 0`),
     check(
       'transfer_has_counter_account',

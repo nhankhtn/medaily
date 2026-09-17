@@ -237,6 +237,20 @@ prices are typed by hand — the app fetches no market data.
 25k, lunch 55k"* and propose the transactions; nothing is saved until you
 confirm.
 
+**Debts.** A transaction can name someone from your contacts, and that is what
+makes it a debt. Which way it counts follows from the transaction itself: money
+going out is you lending or paying someone back, money coming in is them paying
+you back or you borrowing. Those add up to one number per person — above zero
+they owe you, below zero you owe them — shown in a card on this tab. Nothing is
+ever marked "settled": settling a debt *is* recording the repayment, so a debt
+cannot go stale behind a tick box someone forgot.
+
+Money you lend is not money you spent, so debts are left out of the income and
+expense totals and out of the report. Your account balance still drops, because
+the money really did leave; your net worth does not, because you are owed it.
+A transfer moves money between two accounts you already own, so it cannot be a
+debt and the field is not offered.
+
 **Two tabs.** *Overview* is the ledger above. *Report* is what the numbers add
 up to.
 
