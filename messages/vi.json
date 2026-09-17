@@ -865,6 +865,7 @@
     "marketValue": "Giá trị thị trường",
     "unrealized": "Lãi/lỗ chưa thực hiện",
     "noPrice": "Chưa nhập giá",
+    "notSaved": "Chưa ghi được giao dịch. Nhập lại.",
     "saved": "Đã lưu",
     "transferHint": "Chuyển khoản là chuyển tiền giữa hai tài khoản của chính bạn, nên không tính vào thu hay chi.",
     "noPriceFeed": "Giá do bạn tự nhập — ứng dụng không lấy dữ liệu thị trường.",

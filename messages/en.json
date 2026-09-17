@@ -865,6 +865,7 @@
     "marketValue": "Market value",
     "unrealized": "Unrealized P/L",
     "noPrice": "No price entered",
+    "notSaved": "The transaction was not saved. Enter it again.",
     "saved": "Saved",
     "transferHint": "A transfer moves money between two of your own accounts, so it never counts as income or expense.",
     "noPriceFeed": "Prices are entered by hand — there is no market data feed.",
