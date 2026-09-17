@@ -1222,37 +1222,38 @@
     "next": "Tiếp",
     "finish": "Bắt đầu ghi",
     "replay": "Xem lại phần giới thiệu",
-    "replayDone": "Phần giới thiệu sẽ hiện lần tới khi bạn mở Trang chính",
     "tour": {
-      "log": {
-        "title": "Bắt đầu bằng một ngày",
-        "body": "Mọi thứ còn lại đều dựng từ bản ghi ngày. Bốn thứ quan trọng là năng lượng, giấc ngủ và thời gian tập trung; phần còn lại không bắt buộc. Mất chưa tới một phút, và ngày cũ nào cũng sửa được.",
-        "cta": "Mở bản ghi ngày"
+      "daily": {
+        "title": "Mọi thứ bắt đầu từ đây",
+        "body": "Đây là ô bạn sẽ mở mỗi tối. Bốn thứ quan trọng nhất là năng lượng, giấc ngủ, học kỹ thuật và deep work — phần còn lại điền hay không tuỳ bạn. Mọi trang khác đều đọc lại từ đây, nên ngày nào không ghi là ngày đó trống ở khắp nơi. Ngày cũ sửa lại được bất cứ lúc nào."
       },
-      "dashboard": {
-        "title": "Trang chính đọc lại cho bạn",
-        "body": "Số liệu hôm nay đặt cạnh hôm qua, điểm số bấm vào là thấy cách tính từng thành phần, chuỗi ngày không đứt chỉ vì bỏ lỡ một hôm, và xu hướng khi bạn đã ghi được vài ngày.",
-        "cta": "Xem Trang chính"
+      "home": {
+        "title": "Bạn đang ở Trang chính",
+        "body": "Đây là chỗ app đọc lại cho bạn: điểm của hôm nay tính từ bản ghi ngày, bấm vào là thấy từng thành phần cộng ra sao chứ không phải một con số trên trời. Cạnh nó có hôm qua để so, chuỗi ngày, và xu hướng khi đã đủ vài ngày. Đi tiếp để xem số liệu đó từ đâu ra."
       },
-      "habitsGoals": {
-        "title": "Thói quen và mục tiêu tự chạy",
-        "body": "Thói quen có thể gắn với một chỉ số — \"ngủ từ 7 giờ\" sẽ tự đánh dấu từ bản ghi ngày, nên bạn không phải nhập cùng một việc hai lần. Mục tiêu kiểu \"300 phút học mỗi tuần\" tự chạy thanh tiến độ.",
-        "cta": "Tạo một thói quen"
+      "habits": {
+        "title": "Thói quen tự đánh dấu",
+        "body": "Bấm nút này để tạo. Chỗ đáng giá là gắn thói quen với một chỉ số: \"ngủ từ 7 tiếng\" sẽ tự tick khi bạn ghi ngày, khỏi phải nhập hai lần. Chuỗi ngày không đứt chỉ vì bạn lỡ một hôm."
       },
-      "insight": {
-        "title": "Thống kê và tổng kết",
-        "body": "Xu hướng, và những so sánh kiểu năng lượng vào đêm ngủ 7 giờ so với đêm ngủ ít hơn. Không có gì hiện ra khi dữ liệu chưa đủ để có ý nghĩa, và luôn được nói là liên hệ, không phải nguyên nhân.",
-        "cta": "Mở Thống kê"
+      "goals": {
+        "title": "Mục tiêu tự chạy tiến độ",
+        "body": "Nút này tạo mục tiêu. Loại theo số — \"300 phút học mỗi tuần\" — tự kéo thanh tiến độ từ dữ liệu, bạn không phải cập nhật tay. Trong danh sách, giữ và kéo cái tay nắm bên trái để đổi thứ tự ưu tiên."
       },
-      "life": {
-        "title": "Phần còn lại chờ khi bạn cần",
-        "body": "Dự án, phiên học có bấm giờ, sức khỏe, tài chính, nhật ký, ghi chú, lịch, quan hệ và sự nghiệp. Cứ bỏ qua hết cho tới lúc cần — vòng ghi ngày không đòi thứ nào trong đó.",
-        "cta": "Xem thử"
+      "timer": {
+        "title": "Bấm giờ, và phiên tự về đúng chỗ",
+        "body": "Chọn việc đang làm rồi bấm nút này. Phím cách bật tắt nhanh. Điều đáng nhớ: dừng giờ là số phút tự chảy về đúng nơi — học thì thành phiên học, tập thì thành buổi tập trong Sức khoẻ, đọc sách thì cộng vào bản ghi ngày. Bạn không phải nhập lại lần nữa ở đâu cả."
+      },
+      "learning": {
+        "title": "Ghi chú nối được với nhau",
+        "body": "Nút này viết ghi chú mới. Gõ [[tên một ghi chú khác]] trong bài là nó tự thành link hai chiều — ghi chú kia sẽ thấy bài này trong mục \"Liên kết tới đây\". Tab Phiên học bên cạnh là nơi xem bạn đã học bao nhiêu giờ, chủ đề nào."
+      },
+      "finance": {
+        "title": "Tiền vào ra, bắt đầu từ tài khoản",
+        "body": "Tạo tài khoản trước — BIDV, Momo, tiền mặt — rồi mọi giao dịch mới có chỗ để đi. Nợ thì để số dư ban đầu là số âm. Chuyển tiền giữa hai tài khoản dùng loại Chuyển khoản, một dòng ghi cả hai đầu nên thu nhập không bị thổi phồng."
       },
       "settings": {
-        "title": "Chỉnh cho vừa với bạn",
-        "body": "Đổi Việt–Anh ở bất cứ đâu, đặt múi giờ và giờ chuyển ngày, sửa trọng số của điểm, và xuất toàn bộ dữ liệu ra JSON bất cứ lúc nào.",
-        "cta": "Mở Cài đặt"
+        "title": "Dữ liệu là của bạn",
+        "body": "Đây là chỗ tải toàn bộ dữ liệu về máy dưới dạng JSON, bất cứ lúc nào, không phải hỏi ai. Phía trên trang còn có đổi Việt–Anh, múi giờ, giờ chuyển ngày, và trọng số của điểm. Hết rồi — mở bản ghi ngày và ghi cho hôm nay là xong buổi đầu."
       }
     },
     "checklist": {

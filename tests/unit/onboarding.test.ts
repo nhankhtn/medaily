@@ -1,3 +1,5 @@
+import { readFileSync, readdirSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   buildChecklist,
@@ -5,9 +7,9 @@ import {
   looksLikeFirstRun,
   shouldOpenTour,
   shouldShowChecklist,
-  TOUR_STEPS,
   type OnboardingSignals,
 } from '@/lib/onboarding'
+import { TOUR_STEPS, tourHref, tourIndexOf } from '@/lib/onboarding/tour'
 
 const empty: OnboardingSignals = {
   dailyLogCount: 0,
@@ -102,7 +104,51 @@ describe('step registries', () => {
     }
   })
 
-  it('keeps the tour short enough to actually be read', () => {
-    expect(TOUR_STEPS.length).toBeLessThanOrEqual(6)
+  it('keeps the tour short enough to actually be walked', () => {
+    expect(TOUR_STEPS.length).toBeLessThanOrEqual(8)
   })
 })
+
+describe('the tour', () => {
+  /**
+   * A step points at a button by `data-tour`. Renaming or deleting that button
+   * would leave the step spotlighting nothing, and nothing else would notice —
+   * so the attribute it names has to exist somewhere in the source.
+   */
+  it('points every step at an element that exists', () => {
+    const sources = walk(join(process.cwd(), 'src'))
+      .filter((file) => /\.tsx?$/.test(file))
+      .map((file) => readFileSync(file, 'utf8'))
+      .join('\n')
+
+    for (const step of TOUR_STEPS) {
+      if (!step.target) continue
+      const name = step.target.match(/data-tour="([^"]+)"/)?.[1]
+      expect(name, step.key).toBeTruthy()
+      expect(sources.includes(`data-tour="${name}"`), `${step.key} → ${name}`).toBe(true)
+    }
+  })
+
+  it('carries the step in the address, keeping the page it belongs to', () => {
+    expect(tourHref({ key: 'daily', href: '/daily' })).toBe('/daily?tour=daily')
+    expect(tourHref({ key: 'learning', href: '/learning?tab=notes' })).toBe(
+      '/learning?tab=notes&tour=learning',
+    )
+  })
+
+  it('does not recognise a step that is not in the tour', () => {
+    expect(tourIndexOf('nonsense')).toBe(-1)
+    expect(tourIndexOf(null)).toBe(-1)
+    expect(tourIndexOf(TOUR_STEPS[0]?.key)).toBe(0)
+  })
+})
+
+function walk(dir: string): string[] {
+  const out: string[] = []
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, entry.name)
+    if (entry.isDirectory()) out.push(...walk(full))
+    else out.push(full)
+  }
+  return out
+}

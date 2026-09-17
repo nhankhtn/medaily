@@ -124,7 +124,11 @@ export async function NoteBoard({ openedId }: { openedId?: string }) {
 /** The button that makes a new note, for whoever is drawing the page header. */
 export async function NewNoteButton() {
   const data = await getKnowledgeData()
-  return <NoteEditor topics={data.topics} resources={data.resources} />
+  return (
+    <span data-tour="note-new">
+      <NoteEditor topics={data.topics} resources={data.resources} />
+    </span>
+  )
 }
 
 /**

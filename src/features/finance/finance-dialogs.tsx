@@ -59,7 +59,7 @@ export function AccountDialog({ defaultCurrency }: { defaultCurrency: string }) 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm">
+        <Button size="sm" data-tour="account-new">
           <Plus className="size-4" />
           {t('addAccount')}
         </Button>

@@ -1,24 +1,14 @@
 /**
  * Onboarding is two things, deliberately separate:
  *
- * - a **tour** that names each area once, so a new user knows what exists;
+ * - a **tour** that walks the app, in `./tour`, opening each page and
+ *   pointing at the control it is about;
  * - a **checklist** that reports real progress, so they know what to do next.
  *
  * Only "saw the tour" and "dismissed the checklist" are stored. Whether a step
  * is done is derived from the data every time, so the checklist can never
  * claim something the database does not actually contain (spec 38.4).
  */
-
-export const TOUR_STEPS = [
-  { key: 'log', href: '/daily' },
-  { key: 'dashboard', href: '/' },
-  { key: 'habitsGoals', href: '/habits' },
-  { key: 'insight', href: '/analytics' },
-  { key: 'life', href: '/finance' },
-  { key: 'settings', href: '/settings' },
-] as const
-
-export type TourStepKey = (typeof TOUR_STEPS)[number]['key']
 
 export const CHECKLIST_STEPS = [
   { key: 'log', href: '/daily', target: 1, signal: 'dailyLogCount' },

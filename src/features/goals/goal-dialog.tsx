@@ -128,7 +128,7 @@ export function GoalDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger ?? (
-          <Button size="sm">
+          <Button size="sm" data-tour="goal-new">
             <Plus className="size-4" />
             {t('create')}
           </Button>

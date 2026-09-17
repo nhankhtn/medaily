@@ -1222,37 +1222,38 @@
     "next": "Next",
     "finish": "Start logging",
     "replay": "Show the introduction again",
-    "replayDone": "The introduction will show next time you open Home",
     "tour": {
-      "log": {
-        "title": "Start with one day",
-        "body": "Everything else is built from the daily log. Energy, sleep and focus time are the four that matter; the rest is optional. It takes under a minute, and you can edit any past day.",
-        "cta": "Open the daily log"
+      "daily": {
+        "title": "Everything starts here",
+        "body": "This is the form you will open each evening. Energy, sleep, technical study and deep work are the four that matter; the rest is optional. Every other page reads back from here, so a day you skip is a gap everywhere. Past days can be filled in whenever you like."
       },
-      "dashboard": {
-        "title": "Home reads it back",
-        "body": "Today's numbers with yesterday's beside them, a score you can open to see exactly how it was calculated, streaks that survive one missed day, and trends once you have a few days in.",
-        "cta": "See Home"
+      "home": {
+        "title": "You are on the dashboard",
+        "body": "This is where the app reads you back: today's score comes from the day's log, and clicking it shows each part that made it — not a number from nowhere. Beside it sit yesterday, your streaks, and trends once there are a few days to draw. Next, where those numbers come from."
       },
-      "habitsGoals": {
-        "title": "Habits and goals track themselves",
-        "body": "A habit can be tied to a metric — \"sleep 7h+\" ticks itself from your log, so you never enter the same fact twice. A goal like \"300 study minutes a week\" fills its own progress bar.",
-        "cta": "Set up a habit"
+      "habits": {
+        "title": "Habits that tick themselves",
+        "body": "This button makes one. The part worth using is binding a habit to a metric: \"sleep at least 7 hours\" ticks itself from the day's log, so you never enter it twice. A streak survives one missed day."
       },
-      "insight": {
-        "title": "Analytics and reviews",
-        "body": "Trends, and comparisons like energy on 7-hour nights versus shorter ones. Nothing appears until there is enough data to mean something, and it is always stated as an association, never a cause.",
-        "cta": "Open Analytics"
+      "goals": {
+        "title": "Goals that track themselves",
+        "body": "This button makes a goal. A numeric one — \"300 minutes of study a week\" — fills its own progress bar from your data, with nothing to update by hand. In the list, press and drag the handle on the left to reorder them."
       },
-      "life": {
-        "title": "The rest is there when you want it",
-        "body": "Projects, learning sessions with a timer, health, finance, journal, notes, calendar, people and career. Ignore all of it until you need it — none of it is required for the daily loop.",
-        "cta": "Have a look"
+      "timer": {
+        "title": "Time it, and it files itself",
+        "body": "Pick what you are doing and press this. Space bar starts and stops it too. The thing to remember: when you stop, the minutes go where they belong — study becomes a session, exercise becomes a workout under Health, reading is added to the day's log. Nothing to enter a second time."
+      },
+      "learning": {
+        "title": "Notes that link to each other",
+        "body": "This button writes a note. Type [[the title of another note]] in the body and it becomes a link both ways — the other note will list this one under \"Linked from\". The Sessions tab beside it is where your study hours and topics live."
+      },
+      "finance": {
+        "title": "Money starts with an account",
+        "body": "Make an account first — BIDV, Momo, cash — and transactions have somewhere to go. For a debt, enter the opening balance as a negative number. Moving money between two accounts is a Transfer: one row covers both ends, so income is never inflated."
       },
       "settings": {
-        "title": "Make it yours",
-        "body": "Switch between English and Vietnamese anywhere, set your timezone and when a day rolls over, change what the score weighs, and export everything as JSON whenever you like.",
-        "cta": "Open Settings"
+        "title": "The data is yours",
+        "body": "This is where you download everything as JSON, whenever you want, without asking anyone. Further up the page: English or Vietnamese, your time zone, when a day rolls over, and the weights behind the score. That is the tour — open the day log and fill in today."
       }
     },
     "checklist": {

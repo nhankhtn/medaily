@@ -308,7 +308,13 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
                 </Labelled>
 
                 <div className="flex items-center gap-3 pt-1">
-                  <Button onClick={begin} disabled={pending} size="lg" aria-label={t('start')}>
+                  <Button
+                    onClick={begin}
+                    disabled={pending}
+                    size="lg"
+                    aria-label={t('start')}
+                    data-tour="timer-start"
+                  >
                     {pending ? (
                       <Loader2 className="size-4 animate-spin" />
                     ) : (

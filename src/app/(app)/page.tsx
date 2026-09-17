@@ -12,7 +12,7 @@ import { StatTile } from '@/features/dashboard/stat-tile'
 import { StreakStrip } from '@/features/dashboard/streak-strip'
 import { Trends } from '@/features/dashboard/trends'
 import { GettingStarted } from '@/features/onboarding/getting-started'
-import { WelcomeTour } from '@/features/onboarding/welcome-tour'
+import { TourStart } from '@/features/onboarding/tour-start'
 import { fromISODate } from '@/lib/dates'
 import { PATHS } from '@/lib/paths'
 import { getDashboardData } from '@/server/services/dashboard'
@@ -44,14 +44,16 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      <WelcomeTour open={onboarding.openTour} />
+      {onboarding.openTour ? <TourStart /> : null}
 
       {onboarding.showChecklist ? <GettingStarted checklist={onboarding.checklist} /> : null}
 
       {/* 1. Today — an unlogged day gets the two-tap quick log instead of tiles */}
       {todayCard.logged ? (
         <>
-          <ScoreCard dayScore={todayCard.score} weekScore={data.weekScore} />
+          <div data-tour="home-score">
+            <ScoreCard dayScore={todayCard.score} weekScore={data.weekScore} />
+          </div>
 
           <Card>
             <CardHeader
@@ -117,7 +119,8 @@ export default async function DashboardPage() {
           </Card>
         </>
       ) : (
-        <Card>
+        /* Same tour anchor as the score: whichever of the two is on screen. */
+        <Card data-tour="home-score">
           <CardHeader title={t('todayCard')} />
           <QuickLog date={data.today} />
         </Card>

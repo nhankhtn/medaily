@@ -123,7 +123,7 @@ export function HabitDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger ?? (
-          <Button size="sm">
+          <Button size="sm" data-tour="habit-new">
             <Plus className="size-4" />
             {t('create')}
           </Button>

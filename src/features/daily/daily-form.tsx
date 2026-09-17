@@ -210,94 +210,96 @@ export function DailyForm({
         ) : null}
       </div>
 
-      <FormSection
-        title={t('sections.essentials')}
-        filled={essentialsFilled}
-        total={ESSENTIAL_FIELDS.length}
-      >
-        <Field
-          label={t('fields.energy')}
-          help={t('fields.energyHelp')}
-          copied={copied.has('energy')}
+      <div data-tour="daily-essentials">
+        <FormSection
+          title={t('sections.essentials')}
+          filled={essentialsFilled}
+          total={ESSENTIAL_FIELDS.length}
         >
-          <ScaleInput
-            name={t('fields.energy')}
-            value={values.energy}
-            onChange={(value) => set('energy', value)}
-          />
-        </Field>
+          <Field
+            label={t('fields.energy')}
+            help={t('fields.energyHelp')}
+            copied={copied.has('energy')}
+          >
+            <ScaleInput
+              name={t('fields.energy')}
+              value={values.energy}
+              onChange={(value) => set('energy', value)}
+            />
+          </Field>
 
-        <Field
-          label={t('fields.sleepHours')}
-          hint={medians.sleepHours ? t('medianHint', { value: medians.sleepHours }) : undefined}
-          help={t('fields.sleepHelp')}
-          copied={copied.has('sleepHours')}
-        >
-          <Stepper
-            name={t('fields.sleepHours')}
-            value={values.sleepHours}
-            onChange={(value) => set('sleepHours', value)}
-            suffix={tc('hoursShort')}
-          />
-        </Field>
+          <Field
+            label={t('fields.sleepHours')}
+            hint={medians.sleepHours ? t('medianHint', { value: medians.sleepHours }) : undefined}
+            help={t('fields.sleepHelp')}
+            copied={copied.has('sleepHours')}
+          >
+            <Stepper
+              name={t('fields.sleepHours')}
+              value={values.sleepHours}
+              onChange={(value) => set('sleepHours', value)}
+              suffix={tc('hoursShort')}
+            />
+          </Field>
 
-        <Field
-          label={t('fields.technicalStudy')}
-          hint={
-            studyFromSessions
-              ? t('sessionsDerived', {
-                  minutes: effective?.effectiveStudyMinutes ?? 0,
-                  count: effective?.learningSessionCount ?? 0,
-                })
-              : medians.technicalStudyMinutes
-                ? t('medianHint', { value: medians.technicalStudyMinutes })
-                : undefined
-          }
-          help={t('fields.technicalStudyHelp')}
-          copied={copied.has('technicalStudyMinutes')}
-        >
-          <MinuteInput
-            name={t('fields.technicalStudy')}
-            value={values.technicalStudyMinutes}
-            medianHint={medians.technicalStudyMinutes}
-            derived={studyFromSessions ? effective?.effectiveStudyMinutes : null}
-            onChange={(value) => set('technicalStudyMinutes', value)}
-          />
-        </Field>
+          <Field
+            label={t('fields.technicalStudy')}
+            hint={
+              studyFromSessions
+                ? t('sessionsDerived', {
+                    minutes: effective?.effectiveStudyMinutes ?? 0,
+                    count: effective?.learningSessionCount ?? 0,
+                  })
+                : medians.technicalStudyMinutes
+                  ? t('medianHint', { value: medians.technicalStudyMinutes })
+                  : undefined
+            }
+            help={t('fields.technicalStudyHelp')}
+            copied={copied.has('technicalStudyMinutes')}
+          >
+            <MinuteInput
+              name={t('fields.technicalStudy')}
+              value={values.technicalStudyMinutes}
+              medianHint={medians.technicalStudyMinutes}
+              derived={studyFromSessions ? effective?.effectiveStudyMinutes : null}
+              onChange={(value) => set('technicalStudyMinutes', value)}
+            />
+          </Field>
 
-        <Field
-          label={t('fields.deepWork')}
-          hint={
-            deepWorkFromSessions
-              ? t('sessionsDerived', {
-                  minutes: effective?.effectiveDeepWorkMinutes ?? 0,
-                  count: effective?.executionSessionCount ?? 0,
-                })
-              : medians.deepWorkMinutes
-                ? t('medianHint', { value: medians.deepWorkMinutes })
-                : undefined
-          }
-          help={t('fields.deepWorkHelp')}
-          copied={copied.has('deepWorkMinutes')}
-        >
-          <MinuteInput
-            name={t('fields.deepWork')}
-            value={values.deepWorkMinutes}
-            medianHint={medians.deepWorkMinutes}
-            derived={deepWorkFromSessions ? effective?.effectiveDeepWorkMinutes : null}
-            onChange={(value) => set('deepWorkMinutes', value)}
-          />
-        </Field>
+          <Field
+            label={t('fields.deepWork')}
+            hint={
+              deepWorkFromSessions
+                ? t('sessionsDerived', {
+                    minutes: effective?.effectiveDeepWorkMinutes ?? 0,
+                    count: effective?.executionSessionCount ?? 0,
+                  })
+                : medians.deepWorkMinutes
+                  ? t('medianHint', { value: medians.deepWorkMinutes })
+                  : undefined
+            }
+            help={t('fields.deepWorkHelp')}
+            copied={copied.has('deepWorkMinutes')}
+          >
+            <MinuteInput
+              name={t('fields.deepWork')}
+              value={values.deepWorkMinutes}
+              medianHint={medians.deepWorkMinutes}
+              derived={deepWorkFromSessions ? effective?.effectiveDeepWorkMinutes : null}
+              onChange={(value) => set('deepWorkMinutes', value)}
+            />
+          </Field>
 
-        {/* Only worth saying once both fields are in play — that is when
+          {/* Only worth saying once both fields are in play — that is when
             double-counting becomes possible. */}
-        {(values.technicalStudyMinutes ?? 0) > 0 && (values.deepWorkMinutes ?? 0) > 0 ? (
-          <p className="bg-surface-2 text-text-muted flex items-start gap-2 rounded-[var(--radius)] p-2.5 text-xs leading-snug">
-            <Info className="mt-0.5 size-3.5 shrink-0" />
-            {t('disjointHint')}
-          </p>
-        ) : null}
-      </FormSection>
+          {(values.technicalStudyMinutes ?? 0) > 0 && (values.deepWorkMinutes ?? 0) > 0 ? (
+            <p className="bg-surface-2 text-text-muted flex items-start gap-2 rounded-[var(--radius)] p-2.5 text-xs leading-snug">
+              <Info className="mt-0.5 size-3.5 shrink-0" />
+              {t('disjointHint')}
+            </p>
+          ) : null}
+        </FormSection>
+      </div>
 
       <FormSection
         title={t('sections.activity')}

@@ -1,10 +1,12 @@
 import { Keyboard } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
+import { Suspense } from 'react'
 import { BottomNav } from '@/components/shell/bottom-nav'
 import { Header } from '@/components/shell/header'
 import { Sidebar } from '@/components/shell/sidebar'
 import { CaptureBox } from '@/features/capture/capture-box'
 import { ShortcutProvider } from '@/features/shortcuts/provider'
+import { TourGuide } from '@/features/onboarding/tour-guide'
 import { ShortcutsDialog } from '@/features/settings/shortcuts-panel'
 import { today } from '@/lib/dates'
 import { geminiEnabled } from '@/server/services/gemini'
@@ -36,6 +38,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </div>
       <BottomNav />
       <CaptureBox enabled={geminiEnabled()} />
+      {/* In the shell, not on a page: the tour walks from page to page. */}
+      <Suspense fallback={null}>
+        <TourGuide />
+      </Suspense>
       {/*
        * Stacked above the capture launcher, which is anchored to the same
        * corner. It sits below the panel's z-index on purpose: once capture is

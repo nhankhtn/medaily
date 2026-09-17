@@ -37,7 +37,10 @@ export function DataPanel() {
   }
 
   return (
-    <section className="space-y-3 rounded-[var(--radius)] border border-border-base bg-surface p-4">
+    <section
+      data-tour="settings-export"
+      className="space-y-3 rounded-[var(--radius)] border border-border-base bg-surface p-4"
+    >
       <div>
         <h2 className="text-sm font-semibold">{t('title')}</h2>
         <p className="mt-0.5 text-xs leading-snug text-text-subtle">{t('body')}</p>
