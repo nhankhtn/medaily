@@ -2,6 +2,8 @@
 
 import { LogOut } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { clearPendingSaves } from '@/features/daily/pending-saves'
+import { clearOfflineCaches } from '@/features/daily/register-sw'
 import { signOutFirebase } from '@/lib/auth/firebase-client'
 import { logout } from '@/server/actions/auth'
 
@@ -16,6 +18,11 @@ export function SignOutButton({ variant = 'icon' }: { variant?: 'icon' | 'card' 
    */
   const signOut = async () => {
     await signOutFirebase()
+    // Both hold this person's own day: the cache as a rendered page, the
+    // queue as a save not yet sent. Neither may be there for whoever signs in
+    // next — an unsent day would otherwise be delivered into their account.
+    await clearOfflineCaches()
+    await clearPendingSaves()
     await logout()
   }
 

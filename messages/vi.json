@@ -140,7 +140,12 @@
       "savedToast": "Đã điền {count} ngày"
     },
     "customDone": "Xong",
-    "customNotDone": "Chưa"
+    "customNotDone": "Chưa",
+    "offline": {
+      "queued": "Đã lưu trên máy này. Có mạng là nó tự gửi lên.",
+      "synced": "Đã gửi {count} ngày",
+      "notKept": "Máy không còn chỗ để giữ lại. Có mạng rồi thử lưu lại nhé."
+    }
   },
   "dashboard": {
     "title": "Trang chính",

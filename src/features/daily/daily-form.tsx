@@ -19,6 +19,7 @@ import type { MetricMedians } from '@/server/repositories/daily'
 import { useShortcut } from '@/features/shortcuts/provider'
 import { CustomFields, type CustomValues } from './custom-fields'
 import { Field, FormSection } from './section'
+import { queuePendingSave } from './pending-saves'
 import { useDraft, useUnsavedGuard } from './use-draft'
 import {
   ACTIVITY_FIELDS,
@@ -93,7 +94,32 @@ export function DailyForm({
 
   const submit = useCallback(() => {
     startTransition(async () => {
-      const result = await saveDay({ date, patch: toPatch(values), source: 'manual', custom })
+      const patch = toPatch(values)
+
+      let result: Awaited<ReturnType<typeof saveDay>>
+      try {
+        result = await saveDay({ date, patch, source: 'manual', custom })
+      } catch {
+        // The action throws when it cannot reach the server, which is the one
+        // failure worth keeping: the day is held on the device and goes up on
+        // its own once there is a network. Safe to replay — the write upserts
+        // on (user_id, log_date).
+        try {
+          await queuePendingSave({ date, patch, custom })
+        } catch (error) {
+          // The device would not hold it either. Say so and keep the draft —
+          // reporting a save that happened nowhere is worse than an error,
+          // because nothing then tells them the day is gone.
+          console.error('[offline] could not keep the day on this device:', error)
+          toast.error(t('offline.notKept'))
+          return
+        }
+
+        clearDraft()
+        setSavedAt(Date.now())
+        toast.success(t('offline.queued'))
+        return
+      }
 
       if (!result.ok) {
         toast.error(result.error === 'future_date' ? t('futureBlocked') : tc('error'))

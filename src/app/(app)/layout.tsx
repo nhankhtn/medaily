@@ -5,6 +5,8 @@ import { BottomNav } from '@/components/shell/bottom-nav'
 import { Header } from '@/components/shell/header'
 import { Sidebar } from '@/components/shell/sidebar'
 import { CaptureBox } from '@/features/capture/capture-box'
+import { PendingSaves } from '@/features/daily/pending-saves'
+import { RegisterServiceWorker } from '@/features/daily/register-sw'
 import { assistantEnabled } from '@/server/services/assistant'
 import { ShortcutProvider } from '@/features/shortcuts/provider'
 import { TourGuide } from '@/features/onboarding/tour-guide'
@@ -39,6 +41,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </div>
       <BottomNav />
       <CaptureBox enabled={geminiEnabled()} assistant={assistantEnabled()} />
+      <PendingSaves />
+      <RegisterServiceWorker />
       {/* In the shell, not on a page: the tour walks from page to page. */}
       <Suspense fallback={null}>
         <TourGuide />

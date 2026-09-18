@@ -140,7 +140,12 @@
       "savedToast": "{count} days filled in"
     },
     "customDone": "Done",
-    "customNotDone": "Not yet"
+    "customNotDone": "Not yet",
+    "offline": {
+      "queued": "Saved on this phone. It will go up when you have a connection.",
+      "synced": "{count, plural, one {# day sent} other {# days sent}}",
+      "notKept": "This phone had no room to keep it. Try again when you have a connection."
+    }
   },
   "dashboard": {
     "title": "Home",
