@@ -16,6 +16,17 @@ type Message = { role: 'user' | 'model'; text: string; reason?: string | null }
 const STARTERS = ['thisWeek', 'spending', 'todo'] as const
 
 /**
+ * One conversation per visit. The thread is thrown away the first time the
+ * panel opens after a page load, so it always starts empty; closing and
+ * reopening the panel during the same visit picks up where it left off.
+ *
+ * Module scope rather than state: it has to outlive this component, which
+ * unmounts whenever the capture box closes, and it has to die with the page,
+ * which is what makes a reload the thing that clears.
+ */
+let clearedThisVisit = false
+
+/**
  * The capture box's assistant, answered by the agent service.
  *
  * What separates it from the panel next door: nothing here is the conversation.
@@ -33,11 +44,24 @@ export function AssistantChat() {
 
   useEffect(() => {
     let live = true
-    assistantHistory().then((result) => {
+
+    const open = async () => {
+      // Set before awaiting, so React mounting this twice in development does
+      // not send two deletes and does not show the first one's empty result.
+      if (!clearedThisVisit) {
+        clearedThisVisit = true
+        await resetAssistant()
+        if (live) setLoading(false)
+        return
+      }
+
+      const result = await assistantHistory()
       if (!live) return
       if (result.ok) setMessages(result.turns.map((turn) => ({ ...turn })))
       setLoading(false)
-    })
+    }
+
+    void open()
     return () => {
       live = false
     }
@@ -95,8 +119,8 @@ export function AssistantChat() {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-text-subtle text-xs leading-snug">{t('intro')}</p>
+      {/* Only ever holds the one control, so it pushes it to the right itself. */}
+      <div className="flex items-start justify-end gap-2">
         {messages.length > 0 ? (
           <button
             type="button"

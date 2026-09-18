@@ -1367,8 +1367,7 @@
       "rateLimited": "Hỏi dồn quá nhanh — đợi một phút rồi hỏi tiếp."
     },
     "assistant": {
-      "intro": "Hỏi gì về những thứ bạn đã ghi cũng được. Nó nhớ câu chuyện đang nói dở.",
-      "loading": "Đang mở lại câu chuyện…",
+      "loading": "Đang mở…",
       "thinking": "Đang nghĩ…",
       "send": "Gửi",
       "placeholder": "Tuần này tôi thế nào?",

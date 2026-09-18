@@ -1367,8 +1367,7 @@
       "rateLimited": "Too many questions at once — wait a minute."
     },
     "assistant": {
-      "intro": "Ask about anything you have logged. It remembers where the conversation got to.",
-      "loading": "Opening the conversation…",
+      "loading": "Opening…",
       "thinking": "Thinking…",
       "send": "Send",
       "placeholder": "How did this week go?",
