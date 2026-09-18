@@ -6,6 +6,22 @@ Dates are the day the document was written, not the day the code shipped. A
 line here is the cheapest way to know whether what you are reading is older
 than the code.
 
+## 2026-09-18
+
+**Added**
+
+- The daily log works with no signal. A service worker keeps a copy of the
+  page, and a save the network will not carry is held in IndexedDB — behind a
+  `PendingStore` interface, so the queue's rules do not know what they are
+  written to — and sent on the next connection. Documented under *Daily log →
+  With no signal*, including why this module and not the others: the write
+  upserts on `(user_id, log_date)`, so replaying it is harmless. A new
+  transaction has no such key and would duplicate, which is why finance was
+  left out.
+- Signing out now clears both the cached page and any unsent day. The page is
+  rendered personal data; an unsent day would otherwise be delivered into the
+  account of whoever signed in next.
+
 ## 2026-09-16
 
 **Added**

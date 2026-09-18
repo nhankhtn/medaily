@@ -50,6 +50,17 @@ async function main() {
   console.log(`[auth] anonymous /daily -> ${anonymous.status} ${gateOk ? '✓' : '✗'}`)
   if (!gateOk) failures += 1
 
+  /*
+   * And it must not hold here. A browser refuses to register a worker whose
+   * script was redirected, so the gate swallowing /sw.js turns offline support
+   * off without an error anywhere — which is exactly what it did once. Checked
+   * without a cookie, because that is how the browser asks for it.
+   */
+  const worker = await fetch(BASE + PATHS.serviceWorker, { redirect: 'manual' })
+  const workerOk = worker.status === 200
+  console.log(`[offline] anonymous ${PATHS.serviceWorker} -> ${worker.status} ${workerOk ? '✓' : '✗'}`)
+  if (!workerOk) failures += 1
+
   console.log(failures === 0 ? '✓ all routes healthy' : `✗ ${failures} route failures`)
   process.exit(failures === 0 ? 0 : 1)
 }

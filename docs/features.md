@@ -38,6 +38,31 @@ energy, sleep, study time and deep work. The rest is optional.
 Blank means *not recorded* — never zero. A skipped day does not drag an
 average down.
 
+### With no signal
+
+The daily log is the one screen that works offline, because it is the one you
+reach for in a lift or on a metro.
+
+Open the app once with a connection and it keeps a copy of the page. After
+that, opening `/daily` with no network shows the form instead of a browser
+error. Fill it, press Save, and it is kept on the device — the toast says so
+rather than claiming it was saved. It goes up on its own the next time the app
+has a connection, on whatever screen you happen to be on, and a second toast
+says how many days went.
+
+Two things worth knowing. Sending the same day twice is harmless: the write
+replaces the row for that date rather than adding one, which is what made the
+daily log the safe place to start. And only the daily log does this — every
+other screen still needs a connection, and a day held on the device is dropped
+from the queue if the server ever refuses it outright, so a bad entry cannot
+block the good ones behind it.
+
+Signing out clears both the cached page and anything still waiting to be sent.
+Both are your own day: the page as rendered data, the queue as a save that has
+not gone up yet. Neither should be there for whoever signs in next — an unsent
+day would otherwise land in their account. So sign out on a device with days
+still waiting and those days are gone; get a connection first.
+
 ### Your own activities
 
 The built-in fields are not the ceiling.

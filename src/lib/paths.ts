@@ -72,6 +72,13 @@ export const PATHS = {
   settings: '/settings',
 
   manifest: '/manifest.webmanifest',
+  /**
+   * The offline worker. Public, and it has to be: a browser refuses to
+   * register a worker whose script was redirected, so leaving it behind the
+   * sign-in gate turns offline support off without saying so. Nothing in it
+   * is personal — the caching rules, not the cached pages.
+   */
+  serviceWorker: '/sw.js',
 
   firebaseAuthHandler: '/__/auth',
 
@@ -130,5 +137,6 @@ export const PUBLIC_PATHS = [
   PATHS.api.health,
   PATHS.api.googleAuth,
   PATHS.manifest,
+  PATHS.serviceWorker,
   PATHS.firebaseAuthHandler,
 ] as const
