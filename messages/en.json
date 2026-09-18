@@ -1370,8 +1370,8 @@
       "loading": "Opening…",
       "thinking": "Thinking…",
       "send": "Send",
-      "placeholder": "How did this week go?",
-      "placeholderMore": "Ask something else…",
+      "placeholder": "Ask anything, or / to file something",
+      "placeholderMore": "Ask something else, or / to file something",
       "startOver": "Start over",
       "read": "Read as: {reason}",
       "privacy": "Sent: the totals for whatever you asked about, and for a question about one day, the lines you wrote in that day's log. Your journal, your notes and other people's names never leave this machine.",
@@ -1382,6 +1382,7 @@
         "spending": "What did I spend this month?",
         "todo": "What is still unfinished?"
       }
-    }
+    },
+    "backToAssistant": "Back to the assistant"
   }
 }

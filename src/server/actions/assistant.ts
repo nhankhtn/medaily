@@ -7,10 +7,8 @@ import { createLimit } from '@/lib/rate-limit'
 import {
   assistantEnabled,
   deleteThread,
-  readThread,
   sendMessage,
   type AssistantDecision,
-  type AssistantTurn,
 } from '@/server/services/assistant'
 import { getSettings } from '@/server/services/settings'
 
@@ -54,16 +52,6 @@ export async function askAssistant(input: unknown): Promise<AssistantResult> {
     await log.error('assistant', 'could not answer', error)
     return { ok: false, error: 'failed' }
   }
-}
-
-export type AssistantHistory = { ok: true; turns: AssistantTurn[] } | { ok: false }
-
-/** What the panel shows when it opens, read from Postgres rather than memory. */
-export async function assistantHistory(): Promise<AssistantHistory> {
-  if (!assistantEnabled()) return { ok: false }
-
-  const settings = await getSettings()
-  return { ok: true, turns: await readThread(captureThreadId(settings.userId)) }
 }
 
 export async function resetAssistant(): Promise<{ ok: boolean }> {

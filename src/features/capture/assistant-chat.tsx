@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/input'
 import { Markdown } from '@/components/ui/markdown'
 import { cn } from '@/lib/utils'
-import { askAssistant, assistantHistory, resetAssistant } from '@/server/actions/assistant'
+import { askAssistant, resetAssistant } from '@/server/actions/assistant'
 
 type Message = { role: 'user' | 'model'; text: string; reason?: string | null }
 
@@ -16,25 +16,17 @@ type Message = { role: 'user' | 'model'; text: string; reason?: string | null }
 const STARTERS = ['thisWeek', 'spending', 'todo'] as const
 
 /**
- * One conversation per visit. The thread is thrown away the first time the
- * panel opens after a page load, so it always starts empty; closing and
- * reopening the panel during the same visit picks up where it left off.
- *
- * Module scope rather than state: it has to outlive this component, which
- * unmounts whenever the capture box closes, and it has to die with the page,
- * which is what makes a reload the thing that clears.
- */
-let clearedThisVisit = false
-
-/**
  * The capture box's assistant, answered by the agent service.
  *
- * What separates it from the panel next door: nothing here is the conversation.
- * The transcript is read back from Postgres when the panel opens, so the same
- * conversation continues on a phone, after a refresh, after a redeploy — and
- * nothing is replayed from this component to make that work.
+ * One conversation per opening of the box. The thread is thrown away as the
+ * panel opens, so it always starts empty and nothing is ever read back — what
+ * is on screen for this opening is the whole of it.
+ *
+ * The thread still lives in Postgres between the question and the answer,
+ * because that is where the agent keeps its own working state. It just does
+ * not outlive the panel.
  */
-export function AssistantChat() {
+export function AssistantChat({ onLeave }: { onLeave: () => void }) {
   const t = useTranslations('capture.assistant')
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
@@ -44,24 +36,11 @@ export function AssistantChat() {
 
   useEffect(() => {
     let live = true
-
-    const open = async () => {
-      // Set before awaiting, so React mounting this twice in development does
-      // not send two deletes and does not show the first one's empty result.
-      if (!clearedThisVisit) {
-        clearedThisVisit = true
-        await resetAssistant()
-        if (live) setLoading(false)
-        return
-      }
-
-      const result = await assistantHistory()
-      if (!live) return
-      if (result.ok) setMessages(result.turns.map((turn) => ({ ...turn })))
-      setLoading(false)
-    }
-
-    void open()
+    // Whatever the last opening left behind goes before this one starts, or
+    // the agent would answer against turns nobody on this screen can see.
+    resetAssistant().then(() => {
+      if (live) setLoading(false)
+    })
     return () => {
       live = false
     }
@@ -193,7 +172,15 @@ export function AssistantChat() {
       <div className="flex items-end gap-2">
         <Textarea
           value={text}
-          onChange={(event) => setText(event.target.value)}
+          onChange={(event) => {
+            // A leading slash is nobody's question. It is the way out of here,
+            // and the placeholder says so.
+            if (event.target.value.startsWith('/')) {
+              onLeave()
+              return
+            }
+            setText(event.target.value)
+          }}
           // A chat message is usually one line: Enter sends, Shift+Enter breaks.
           onKeyDown={(event) => {
             if (event.key === 'Enter' && !event.shiftKey) {

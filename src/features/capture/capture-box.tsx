@@ -2,13 +2,14 @@
 
 import { CornerDownLeft, Loader2, MessageSquarePlus, Pencil, Sparkles, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { useEffect, useMemo, useState, useTransition } from 'react'
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/input'
 import {
-  availableModules,
+  assistantModule,
+  FILING_MODULES,
   matchModules,
   slashQuery,
   type CaptureModule,
@@ -95,10 +96,7 @@ export function CaptureBox({
           {/* Mounted only while open, so a dismissed panel never reopens
               holding a half-typed note and its stale drafts. */}
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">
-            <CaptureForm
-              labelOf={(module) => t(`modules.${module.key}`)}
-              modules={availableModules(assistant)}
-            />
+            <CaptureForm labelOf={(module) => t(`modules.${module.key}`)} assistant={assistant} />
           </div>
         </section>
       ) : (
@@ -118,46 +116,87 @@ export function CaptureBox({
 
 function CaptureForm({
   labelOf,
-  modules,
+  assistant,
 }: {
   labelOf: (module: CaptureModule) => string
-  modules: CaptureModule[]
+  assistant: boolean
 }) {
   const t = useTranslations('capture')
-  const [module, setModule] = useState<CaptureModuleKey | null>(null)
 
-  const chosen = modules.find((candidate) => candidate.key === module)
+  /*
+   * The assistant is home, not an entry in a list. The box opens on it, `/`
+   * in its input leaves for the menu, and leaving a filing destination comes
+   * back here — so there is always one way out and one way back.
+   *
+   * Without it configured there is no home to return to, and `null` means the
+   * menu, which is how the box worked before the assistant existed.
+   */
+  const home = assistantModule(assistant)
+  const [module, setModule] = useState<CaptureModuleKey | null>(home?.key ?? null)
 
-  if (!chosen) return <ModulePicker labelOf={labelOf} modules={modules} onPick={setModule} />
+  const chosen = [...FILING_MODULES, ...(home ? [home] : [])].find(
+    (candidate) => candidate.key === module,
+  )
+
+  const atHome = chosen?.key === 'assistant'
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <Badge tone="accent">
-          <chosen.icon className="size-3" />
-          {labelOf(chosen)}
-        </Badge>
-        <button
-          type="button"
-          onClick={() => setModule(null)}
-          className="text-text-subtle hover:text-text inline-flex items-center gap-1 text-xs"
-        >
-          <X className="size-3" />
-          {t('changeTarget')}
-        </button>
-      </div>
+      {chosen ? (
+        <div className="flex items-center gap-2">
+          <Badge tone="accent">
+            <chosen.icon className="size-3" />
+            {labelOf(chosen)}
+          </Badge>
+          {/* Home has no "change": `/` in its own input is how you leave it. */}
+          {atHome ? null : (
+            <button
+              type="button"
+              onClick={() => setModule(home?.key ?? null)}
+              className="text-text-subtle hover:text-text inline-flex items-center gap-1 text-xs"
+            >
+              <X className="size-3" />
+              {t(home ? 'backToAssistant' : 'changeTarget')}
+            </button>
+          )}
+        </div>
+      ) : null}
+
+      {/*
+        Home is hidden while the menu is open, not unmounted. Typing the slash
+        and deleting it again is one keystroke each way, and a remount would
+        refetch the thread and blink the conversation away every time — seven
+        calls to the service for three changes of mind, measured.
+      */}
+      {home ? (
+        <div hidden={!atHome}>
+          <AssistantChat onLeave={() => setModule(null)} />
+        </div>
+      ) : null}
+
+      {chosen ? null : (
+        <ModulePicker
+          labelOf={labelOf}
+          modules={FILING_MODULES}
+          onPick={setModule}
+          onCancel={home ? () => setModule(home.key) : undefined}
+          /* With a home, the only way here is the slash typed to leave it — so
+             the menu arrives already open rather than asking for it twice. */
+          initialText={home ? '/' : ''}
+        />
+      )}
 
       {/* Each destination owns its own input: a note dumped into finance runs
           to several lines, a question about a week is one. */}
-      {chosen.key === 'finance' ? (
-        <FinancePanel />
-      ) : chosen.key === 'plan' ? (
-        <PlanPanel />
-      ) : chosen.key === 'assistant' ? (
-        <AssistantChat />
-      ) : (
-        <ReviewChat />
-      )}
+      {chosen && !atHome ? (
+        chosen.key === 'finance' ? (
+          <FinancePanel />
+        ) : chosen.key === 'plan' ? (
+          <PlanPanel />
+        ) : (
+          <ReviewChat />
+        )
+      ) : null}
     </div>
   )
 }
@@ -166,14 +205,34 @@ function ModulePicker({
   labelOf,
   modules,
   onPick,
+  onCancel,
+  initialText = '',
 }: {
   labelOf: (module: CaptureModule) => string
   modules: CaptureModule[]
   onPick: (key: CaptureModuleKey) => void
+  /**
+   * Where deleting the slash goes. Only passed when there is somewhere to go:
+   * with a home, this field exists to hold a slash and nothing else, so a
+   * field without one is a dead end rather than a state worth being in.
+   */
+  onCancel?: () => void
+  /** What the field starts with, so a slash already typed is not typed twice. */
+  initialText?: string
 }) {
   const t = useTranslations('capture')
-  const [text, setText] = useState('')
+  const [text, setText] = useState(initialText)
   const [active, setActive] = useState(0)
+  const field = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    const input = field.current
+    if (!input) return
+    // `autoFocus` leaves the caret in front of the text it was handed. There
+    // Backspace deletes nothing and the next keystroke lands before the slash,
+    // which turns the field into something that looks typed-in but is inert.
+    input.setSelectionRange(input.value.length, input.value.length)
+  }, [])
 
   const query = slashQuery(text)
   const matches = useMemo(
@@ -205,10 +264,18 @@ function ModulePicker({
     <div className="space-y-3">
       <div>
         <Textarea
+          ref={field}
           autoFocus
           value={text}
           onChange={(event) => {
-            setText(event.target.value)
+            const next = event.target.value
+            // Delete the slash and you have undone the thing that brought you
+            // here, so it takes you back rather than leaving you nowhere.
+            if (onCancel && !next.startsWith('/')) {
+              onCancel()
+              return
+            }
+            setText(next)
             setActive(0)
           }}
           onKeyDown={onKeyDown}

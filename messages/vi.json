@@ -1370,8 +1370,8 @@
       "loading": "Đang mở…",
       "thinking": "Đang nghĩ…",
       "send": "Gửi",
-      "placeholder": "Tuần này tôi thế nào?",
-      "placeholderMore": "Hỏi tiếp gì đó…",
+      "placeholder": "Hỏi gì cũng được, hoặc / để ghi vào chỗ khác",
+      "placeholderMore": "Hỏi tiếp, hoặc / để ghi vào chỗ khác",
       "startOver": "Bắt đầu lại",
       "read": "Hiểu câu hỏi là: {reason}",
       "privacy": "Gửi đi: số liệu của đúng thứ bạn hỏi, và nếu hỏi về một ngày cụ thể thì kèm những dòng bạn tự viết trong phần ghi ngày. Nhật ký, ghi chú riêng và tên người khác không rời khỏi máy này.",
@@ -1382,6 +1382,7 @@
         "spending": "Tháng này tôi tiêu bao nhiêu?",
         "todo": "Còn việc gì chưa xong?"
       }
-    }
+    },
+    "backToAssistant": "Về lại trợ lý"
   }
 }

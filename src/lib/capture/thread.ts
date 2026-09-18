@@ -11,5 +11,5 @@
  * same id again, empty.
  */
 export function captureThreadId(userId: string): string {
-  return `capture:${userId}`
+  return `capture${userId}`
 }
