@@ -21,6 +21,7 @@ import { geminiEnabled } from '@/server/services/gemini'
 import { bindableMetrics, canBindMetric } from '@/server/services/metrics'
 import { parsePlan } from '@/server/services/plan-capture'
 import { dayContextOf, getSettings } from '@/server/services/settings'
+import { createLimit } from '@/lib/rate-limit'
 
 /**
  * Free text in, goals and tasks out.
@@ -29,23 +30,10 @@ import { dayContextOf, getSettings } from '@/server/services/settings'
  * list in, and the save below is the user pressing a button on rows they have
  * seen. It writes through `saveGoal` and `saveTask`, so a captured row goes
  * through exactly the validation a hand-typed one does.
+ *
+ * Ten notes a minute, as with the finance capture box.
  */
-const CAPTURE_WINDOW_MS = 60 * 1000
-const MAX_CAPTURES_PER_WINDOW = 10
-const captures = new Map<string, { count: number; firstAt: number }>()
-
-function captureAllowed(userId: string): boolean {
-  const now = Date.now()
-  const entry = captures.get(userId)
-
-  if (!entry || now - entry.firstAt > CAPTURE_WINDOW_MS) {
-    captures.set(userId, { count: 1, firstAt: now })
-    return true
-  }
-
-  entry.count += 1
-  return entry.count <= MAX_CAPTURES_PER_WINDOW
-}
+const captures = createLimit({ capacity: 10, refillMs: 60 * 1000 })
 
 export type ParsePlanResult =
   /**
@@ -63,7 +51,7 @@ export async function parsePlanText(input: unknown): Promise<ParsePlanResult> {
   if (!parsed.success) return { ok: false, error: 'invalid_input' }
 
   const settings = await getSettings()
-  if (!captureAllowed(settings.userId)) return { ok: false, error: 'rate_limited' }
+  if (!captures.take(settings.userId).allowed) return { ok: false, error: 'rate_limited' }
 
   const today = todayOf(dayContextOf(settings))
 

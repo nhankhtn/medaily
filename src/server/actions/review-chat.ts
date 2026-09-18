@@ -15,28 +15,16 @@ import {
 } from '@/server/services/review-chat'
 import { rangeOf } from '@/server/services/reviews'
 import { dayContextOf, getSettings } from '@/server/services/settings'
+import { createLimit } from '@/lib/rate-limit'
 
 /**
  * Spec 35 §14 — a conversation about the user's own period, grounded in that
  * period's aggregates and the lines they wrote themselves. Opt-in, and off
  * entirely without a key.
+ *
+ * A conversation, so a little tighter: eight messages a minute.
  */
-const CHAT_WINDOW_MS = 60 * 1000
-const MAX_MESSAGES_PER_WINDOW = 8
-const asked = new Map<string, { count: number; firstAt: number }>()
-
-function chatAllowed(userId: string): boolean {
-  const now = Date.now()
-  const entry = asked.get(userId)
-
-  if (!entry || now - entry.firstAt > CHAT_WINDOW_MS) {
-    asked.set(userId, { count: 1, firstAt: now })
-    return true
-  }
-
-  entry.count += 1
-  return entry.count <= MAX_MESSAGES_PER_WINDOW
-}
+const questions = createLimit({ capacity: 8, refillMs: 60 * 1000 })
 
 export type ReviewChatResult =
   | {
@@ -77,7 +65,7 @@ export async function askReview(input: unknown): Promise<ReviewChatResult> {
   if (!parsed.success) return { ok: false, error: 'invalid_input' }
 
   const settings = await getSettings()
-  if (!chatAllowed(settings.userId)) return { ok: false, error: 'rate_limited' }
+  if (!questions.take(settings.userId).allowed) return { ok: false, error: 'rate_limited' }
 
   const history: Exchange[] = parsed.data.history
   const lastAnswer = history.at(-1)?.answer ?? null

@@ -30,6 +30,7 @@ import { findPeople } from '@/server/repositories/people'
 import { parseTransactions } from '@/server/services/finance-capture'
 import { geminiEnabled } from '@/server/services/gemini'
 import { dayContextOf, getSettings } from '@/server/services/settings'
+import { createLimit } from '@/lib/rate-limit'
 
 const money = z.number().positive().max(999_999_999_999)
 const optionalText = z
@@ -264,23 +265,10 @@ export async function saveTransaction(input: unknown) {
  * mapped against the user's own accounts and categories, and the save below
  * re-checks every id, so nothing the model returned can reach the ledger
  * without the user seeing it first.
+ *
+ * Ten notes a minute: enough to work through a receipt, not a bill for the model.
  */
-const CAPTURE_WINDOW_MS = 60 * 1000
-const MAX_CAPTURES_PER_WINDOW = 10
-const captures = new Map<string, { count: number; firstAt: number }>()
-
-function captureAllowed(userId: string): boolean {
-  const now = Date.now()
-  const entry = captures.get(userId)
-
-  if (!entry || now - entry.firstAt > CAPTURE_WINDOW_MS) {
-    captures.set(userId, { count: 1, firstAt: now })
-    return true
-  }
-
-  entry.count += 1
-  return entry.count <= MAX_CAPTURES_PER_WINDOW
-}
+const captures = createLimit({ capacity: 10, refillMs: 60 * 1000 })
 
 /**
  * The drafts travel with everything needed to review them, so the global
@@ -307,7 +295,7 @@ export async function parseTransactionText(input: unknown): Promise<ParseTransac
   // The cookie names the user, so the rate limit is checked before any read
   // rather than after one.
   const userId = await getCurrentUserId()
-  if (!captureAllowed(userId)) return { ok: false, error: 'rate_limited' }
+  if (!captures.take(userId).allowed) return { ok: false, error: 'rate_limited' }
 
   const [settings, accounts, categories] = await Promise.all([
     getSettings(),

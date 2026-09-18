@@ -5,6 +5,7 @@ import { readAuthConfig, readGoogleConfig } from '@/lib/auth/config'
 import { FirebaseVerifyError, verifyFirebaseIdToken } from '@/lib/auth/firebase-verify'
 import { sessionCookieOptions, SESSION_COOKIE, signSession } from '@/lib/auth/session'
 import { resolveGoogleIdentity } from '@/server/services/auth'
+import { createLimit } from '@/lib/rate-limit'
 
 /**
  * Exchanges a Firebase ID token for this app's own session cookie.
@@ -29,28 +30,18 @@ type Failure =
   | 'rate_limited'
   | 'server_error'
 
-const ATTEMPT_WINDOW_MS = 15 * 60 * 1000
-const MAX_ATTEMPTS = 20
-const attempts = new Map<string, { count: number; firstAt: number }>()
-
 /**
- * Per process, like the credential login's limiter (spec 29). A forged token
- * cannot pass verification, so this exists to bound the cost of someone
- * hammering the endpoint, not to stop a break-in.
+ * A forged token cannot pass verification, so this exists to bound the cost of
+ * someone hammering the endpoint, not to stop a break-in. Looser than the
+ * credential login for that reason.
  */
-function rateLimit(key: string): boolean {
-  const now = Date.now()
-  const entry = attempts.get(key)
-  if (!entry || now - entry.firstAt > ATTEMPT_WINDOW_MS) {
-    attempts.set(key, { count: 1, firstAt: now })
-    return true
-  }
-  entry.count += 1
-  return entry.count <= MAX_ATTEMPTS
-}
+const signIns = createLimit({ capacity: 20, refillMs: 15 * 60 * 1000 })
 
-function fail(error: Failure, status: number) {
-  return NextResponse.json({ ok: false, error }, { status, headers: nostore })
+function fail(error: Failure, status: number, retryAfterMs = 0) {
+  const headers: Record<string, string> = { ...nostore }
+  // Seconds, and never zero — `Retry-After: 0` reads as "come straight back".
+  if (retryAfterMs > 0) headers['retry-after'] = String(Math.max(1, Math.ceil(retryAfterMs / 1000)))
+  return NextResponse.json({ ok: false, error }, { status, headers })
 }
 
 const nostore = { 'cache-control': 'no-store' } as const
@@ -64,7 +55,8 @@ export async function POST(request: Request) {
   if (!google.configured || auth.secret.length < 16) return fail('not_configured', 503)
 
   const key = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'local'
-  if (!rateLimit(key)) return fail('rate_limited', 429)
+  const allowance = signIns.take(key)
+  if (!allowance.allowed) return fail('rate_limited', 429, allowance.retryAfterMs)
 
   let idToken: string
   try {
