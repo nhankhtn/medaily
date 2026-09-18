@@ -5,6 +5,7 @@ import { readAuthConfig, readGoogleConfig } from '@/lib/auth/config'
 import { FirebaseVerifyError, verifyFirebaseIdToken } from '@/lib/auth/firebase-verify'
 import { sessionCookieOptions, SESSION_COOKIE, signSession } from '@/lib/auth/session'
 import { resolveGoogleIdentity } from '@/server/services/auth'
+import { clientKey } from '@/lib/client-ip'
 import { createLimit } from '@/lib/rate-limit'
 
 /**
@@ -54,8 +55,7 @@ export async function POST(request: Request) {
   // sign-in still needs it configured.
   if (!google.configured || auth.secret.length < 16) return fail('not_configured', 503)
 
-  const key = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'local'
-  const allowance = signIns.take(key)
+  const allowance = signIns.take(clientKey(request.headers))
   if (!allowance.allowed) return fail('rate_limited', 429, allowance.retryAfterMs)
 
   let idToken: string

@@ -7,6 +7,7 @@ import { readAuthConfig } from '@/lib/auth/config'
 import { safeEqual, SESSION_COOKIE, sessionCookieOptions, signSession } from '@/lib/auth/session'
 import { resolvePasswordIdentity } from '@/server/services/auth'
 import { PATHS, safeNextPath } from '@/lib/paths'
+import { clientKey } from '@/lib/client-ip'
 import { createLimit } from '@/lib/rate-limit'
 
 const credentialsSchema = z.object({
@@ -31,8 +32,7 @@ export async function login(_previous: LoginState, formData: FormData): Promise<
   const auth = readAuthConfig()
   if (!auth.configured) return { error: 'not_configured' }
 
-  const headerList = await headers()
-  const key = headerList.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'local'
+  const key = clientKey(await headers())
   if (!signIns.take(key).allowed) return { error: 'rate_limited' }
 
   const okUser = safeEqual(parsed.data.username, auth.username)
