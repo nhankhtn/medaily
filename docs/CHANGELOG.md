@@ -18,9 +18,12 @@ than the code.
   upserts on `(user_id, log_date)`, so replaying it is harmless. A new
   transaction has no such key and would duplicate, which is why finance was
   left out.
-- Signing out now clears both the cached page and any unsent day. The page is
-  rendered personal data; an unsent day would otherwise be delivered into the
-  account of whoever signed in next.
+- Signing out now clears everything of a person's the device holds: the cached
+  page, any unsent day, and the unsaved drafts. The page is rendered personal
+  data, an unsent day would be delivered into the next account, and a draft
+  would be restored into the next person's form — the restore only asks
+  whether it differs from the server's values and cannot know whose it was.
+  The drafts predate the offline work and were never cleared.
 
 ## 2026-09-16
 

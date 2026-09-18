@@ -57,10 +57,11 @@ other screen still needs a connection, and a day held on the device is dropped
 from the queue if the server ever refuses it outright, so a bad entry cannot
 block the good ones behind it.
 
-Signing out clears both the cached page and anything still waiting to be sent.
-Both are your own day: the page as rendered data, the queue as a save that has
-not gone up yet. Neither should be there for whoever signs in next — an unsent
-day would otherwise land in their account. So sign out on a device with days
+Signing out clears everything of yours the device is holding: the cached page,
+anything still waiting to be sent, and the drafts of days you typed but never
+saved. All three are your own day in a different state, and none should be
+there for whoever signs in next — an unsent day would land in their account,
+and a draft would reappear in their form. So sign out on a device with days
 still waiting and those days are gone; get a connection first.
 
 ### Your own activities

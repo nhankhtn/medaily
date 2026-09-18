@@ -3,6 +3,7 @@
 import { LogOut } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { clearPendingSaves } from '@/features/daily/pending-saves'
+import { clearDailyDrafts } from '@/features/daily/use-draft'
 import { clearOfflineCaches } from '@/features/daily/register-sw'
 import { signOutFirebase } from '@/lib/auth/firebase-client'
 import { logout } from '@/server/actions/auth'
@@ -18,11 +19,14 @@ export function SignOutButton({ variant = 'icon' }: { variant?: 'icon' | 'card' 
    */
   const signOut = async () => {
     await signOutFirebase()
-    // Both hold this person's own day: the cache as a rendered page, the
-    // queue as a save not yet sent. Neither may be there for whoever signs in
-    // next — an unsent day would otherwise be delivered into their account.
+    // Three copies of this person's own day live on the device: the cache as
+    // a rendered page, the queue as a save not yet sent, and the draft as
+    // words typed and not saved. None may be there for whoever signs in next
+    // — the queue would deliver a day into their account, and the draft would
+    // reappear in their form.
     await clearOfflineCaches()
     await clearPendingSaves()
+    clearDailyDrafts()
     await logout()
   }
 

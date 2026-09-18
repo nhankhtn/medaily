@@ -40,6 +40,24 @@ self.addEventListener('activate', (event) => {
           .map((name) => caches.delete(name)),
       )
       await self.clients.claim()
+
+      /*
+       * The page that installed this worker was fetched before the worker
+       * existed, so nothing cached it. Without this, offline only starts
+       * working on the *second* visit — which reads as broken. Failures are
+       * ignored on purpose: not signed in yet is the ordinary case.
+       */
+      try {
+        // Not `cache.add`: it follows redirects, so a signed-out install would
+        // store the sign-in page under the /daily key and serve that offline
+        // forever after. `redirected` is the check that catches it.
+        const response = await fetch('/daily')
+        if (response.ok && !response.redirected) {
+          await (await caches.open(PAGES)).put('/daily', response)
+        }
+      } catch {
+        /* no session, or no network. The fetch handler will catch up. */
+      }
     })(),
   )
 })
@@ -55,9 +73,20 @@ self.addEventListener('message', (event) => {
   )
 })
 
+/*
+ * `ignoreVary` on every lookup. Next answers /daily with
+ *   Vary: rsc, next-router-state-tree, next-router-prefetch, …, Accept-Encoding
+ * and the Cache API honours Vary, so without this a stored page is only
+ * returned when every one of those request headers matches what was stored —
+ * which is the kind of thing that works on the machine it was written on and
+ * fails on a phone. The URL is the identity here; the headers are Next's
+ * routing, not a different document.
+ */
+const LOOKUP = { ignoreVary: true }
+
 async function cacheFirst(request, cacheName) {
   const cache = await caches.open(cacheName)
-  const hit = await cache.match(request)
+  const hit = await cache.match(request, LOOKUP)
   if (hit) return hit
 
   const response = await fetch(request)
@@ -75,14 +104,15 @@ async function networkFirst(request, cacheName) {
 
   try {
     const response = await fetch(request)
-    // Only a 200 is worth keeping. A redirect to /login is the gate doing its
-    // job and must never be served from cache afterwards.
-    if (response.ok && response.type !== 'opaqueredirect') {
+    // Only a real 200 for this URL. A redirect to /login is the gate doing its
+    // job, and storing where it landed would serve the sign-in page as the
+    // daily log for as long as the cache lives.
+    if (response.ok && !response.redirected && response.type !== 'opaqueredirect') {
       cache.put(request, response.clone())
     }
     return response
   } catch (error) {
-    const hit = await cache.match(request)
+    const hit = await cache.match(request, LOOKUP)
     if (hit) return hit
     throw error
   }
