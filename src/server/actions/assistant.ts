@@ -32,9 +32,7 @@ export type AssistantResult =
 export async function askAssistant(input: unknown): Promise<AssistantResult> {
   if (!assistantEnabled()) return { ok: false, error: 'disabled' }
 
-  const parsed = z
-    .object({ message: z.string().trim().min(2).max(1000) })
-    .safeParse(input)
+  const parsed = z.object({ message: z.string().trim().min(2).max(1000) }).safeParse(input)
   if (!parsed.success) return { ok: false, error: 'invalid_input' }
 
   const settings = await getSettings()

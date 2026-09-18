@@ -1,5 +1,6 @@
 import { env } from '@/lib/env'
 import { log } from '@/lib/log'
+import { serviceClient, ServiceError } from '@/server/service-client'
 
 /**
  * The client for `medaily-ai`, the service that answers with a memory.
@@ -8,13 +9,21 @@ import { log } from '@/lib/log'
  * deploys and must never reach a browser, so every call goes out from a server
  * action rather than from the panel that shows the answer.
  *
- * Plain `fetch`, like every other outbound call here. Unset, `assistantEnabled`
- * is false and the destination is not offered at all.
+ * Unset, `assistantEnabled` is false and the destination is not offered at all.
  */
 const TIMEOUT_MS = { ask: 90_000, read: 10_000 } as const
 
 export function assistantEnabled(): boolean {
   return Boolean(env.AI_SERVICE_URL && env.AI_SERVICE_TOKEN)
+}
+
+/** Built per call: the configuration may be absent, and then there is no client. */
+function client() {
+  return serviceClient({
+    name: 'assistant',
+    baseUrl: env.AI_SERVICE_URL as string,
+    token: env.AI_SERVICE_TOKEN as string,
+  })
 }
 
 export type AssistantTurn = { role: 'user' | 'model'; text: string }
@@ -27,41 +36,20 @@ export type AssistantDecision = { intent: string; period: string; reason: string
 
 export type AssistantAnswer = { answer: string; decision: AssistantDecision | null }
 
-async function call<T>(path: string, init: RequestInit, timeoutMs: number): Promise<T> {
-  const base = (env.AI_SERVICE_URL ?? '').replace(/\/+$/, '')
-
-  const response = await fetch(`${base}${path}`, {
-    ...init,
-    headers: {
-      ...init.headers,
-      authorization: `Bearer ${env.AI_SERVICE_TOKEN}`,
-    },
-    signal: AbortSignal.timeout(timeoutMs),
-    cache: 'no-store',
-  })
-
-  if (!response.ok) {
-    // The body is the service's own wording and is not for a person to read:
-    // it goes to the console and the caller decides what the panel says.
-    throw new Error(`assistant responded ${response.status}: ${await response.text()}`)
-  }
-  return (await response.json()) as T
-}
-
 export async function sendMessage(input: {
   threadId: string
   userId: string
   message: string
   timezone?: string
 }): Promise<AssistantAnswer> {
-  const body = await call<{ answer?: string; decision?: AssistantDecision | null }>(
-    '/chat',
+  const body = await client().request<{ answer?: string; decision?: AssistantDecision | null }>(
+    '/api/chat',
     {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(input),
+      timeoutMs: TIMEOUT_MS.ask,
     },
-    TIMEOUT_MS.ask,
   )
 
   if (!body.answer) throw new Error('assistant returned no answer')
@@ -78,14 +66,13 @@ export async function sendMessage(input: {
  */
 export async function readThread(threadId: string): Promise<AssistantTurn[]> {
   try {
-    const body = await call<{ messages?: AssistantTurn[] }>(
-      `/threads/${encodeURIComponent(threadId)}`,
-      { method: 'GET' },
-      TIMEOUT_MS.read,
+    const body = await client().request<{ messages?: AssistantTurn[] }>(
+      `/api/threads/${encodeURIComponent(threadId)}`,
+      { method: 'GET', timeoutMs: TIMEOUT_MS.read },
     )
     return body.messages ?? []
   } catch (error) {
-    if (error instanceof Error && error.message.includes('404')) return []
+    if (error instanceof ServiceError && error.status === 404) return []
     await log.error('assistant', 'could not read the thread', error)
     return []
   }
@@ -93,5 +80,8 @@ export async function readThread(threadId: string): Promise<AssistantTurn[]> {
 
 /** Starting over. The id is reused, so the next message opens it again, empty. */
 export async function deleteThread(threadId: string): Promise<void> {
-  await call(`/threads/${encodeURIComponent(threadId)}`, { method: 'DELETE' }, TIMEOUT_MS.read)
+  await client().request(`/api/threads/${encodeURIComponent(threadId)}`, {
+    method: 'DELETE',
+    timeoutMs: TIMEOUT_MS.read,
+  })
 }
