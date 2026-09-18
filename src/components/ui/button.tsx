@@ -14,13 +14,19 @@ const buttonVariants = cva(
         ghost: 'text-text-muted hover:bg-surface-2 hover:text-text',
         danger: 'bg-bad text-white hover:opacity-90',
       },
+      /*
+       * Compact on a phone, roomier once there is a pointer. A phone screen is
+       * mostly chrome and a finger lands accurately on a 40px target; the extra
+       * 4px only pushed the thing you came for further down the page. Controls
+       * a finger must find rather than read — a drag handle, a row's delete —
+       * still take the full 44px at their own call site.
+       */
       size: {
-        // 44px minimum touch target (spec 22.3)
-        md: 'h-11 px-4 text-sm',
-        sm: 'h-9 px-3 text-sm',
-        lg: 'h-12 px-6 text-base',
-        icon: 'size-11',
-        iconSm: 'size-9',
+        md: 'h-10 px-3.5 text-sm sm:h-11 sm:px-4',
+        sm: 'h-8 px-2.5 text-xs sm:h-9 sm:px-3 sm:text-sm',
+        lg: 'h-11 px-5 text-sm sm:h-12 sm:px-6 sm:text-base',
+        icon: 'size-10 sm:size-11',
+        iconSm: 'size-8 sm:size-9',
       },
     },
     defaultVariants: { variant: 'primary', size: 'md' },

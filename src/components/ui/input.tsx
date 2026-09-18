@@ -5,7 +5,10 @@ export function Input({ className, ...props }: React.ComponentProps<'input'>) {
   return (
     <input
       className={cn(
-        'border-border-strong bg-surface text-text h-11 w-full rounded-[var(--radius)] border px-3 text-base',
+        // Shorter on a phone, but never below 16px type: Safari zooms the whole
+        // page when you focus a field smaller than that, and the zoom is what
+        // makes a floating panel jump out from under your thumb.
+        'border-border-strong bg-surface text-text h-10 w-full rounded-[var(--radius)] border px-2.5 text-base sm:h-11 sm:px-3',
         'placeholder:text-text-subtle focus:border-accent focus:inset-ring-accent focus:inset-ring-1 focus:outline-none',
         className,
       )}
@@ -18,7 +21,7 @@ export function Textarea({ className, ...props }: React.ComponentProps<'textarea
   return (
     <textarea
       className={cn(
-        'border-border-strong bg-surface text-text min-h-20 w-full resize-y rounded-[var(--radius)] border px-3 py-2 text-base',
+        'border-border-strong bg-surface text-text min-h-18 w-full resize-y rounded-[var(--radius)] border px-2.5 py-2 text-base sm:min-h-20 sm:px-3',
         'placeholder:text-text-subtle focus:border-accent focus:inset-ring-accent focus:inset-ring-1 focus:outline-none',
         // Grows with what is typed, so a list is not written through a
         // two-line slit. Browsers without it keep the scrollbar they had.

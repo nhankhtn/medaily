@@ -30,7 +30,7 @@ export function PeriodPicker({ period, years }: { period: Period; years: number[
         aria-label={t('year')}
         value={String(period.year)}
         onChange={(event) => go({ ...period, year: Number(event.target.value) })}
-        className="h-9 w-auto text-sm"
+        className="h-9 w-auto text-base sm:text-sm"
       >
         {years.map((year) => (
           <option key={year} value={year}>
@@ -48,7 +48,7 @@ export function PeriodPicker({ period, years }: { period: Period; years: number[
             month: event.target.value === 'all' ? null : Number(event.target.value),
           })
         }
-        className="h-9 w-auto text-sm"
+        className="h-9 w-auto text-base sm:text-sm"
       >
         <option value="all">{t('wholeYear')}</option>
         {/* The month's own name in the locale, rather than twelve more

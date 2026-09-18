@@ -143,7 +143,7 @@ export function PlanReview({
                     )
                   }
                   maxLength={300}
-                  className="h-8 text-sm"
+                  className="h-8 text-base sm:text-sm"
                 />
 
                 <div className="flex flex-wrap items-center gap-2 text-xs">

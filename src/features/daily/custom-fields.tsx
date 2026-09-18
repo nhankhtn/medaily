@@ -60,8 +60,8 @@ export function CustomFields({
                 aria-pressed={value === true}
                 className={
                   value === true
-                    ? 'border-accent bg-accent-soft text-accent h-11 rounded-[var(--radius)] border px-4 text-sm font-medium'
-                    : 'border-border-strong bg-surface text-text-muted h-11 rounded-[var(--radius)] border px-4 text-sm'
+                    ? 'border-accent bg-accent-soft text-accent h-10 rounded-[var(--radius)] border px-3.5 text-sm font-medium sm:h-11 sm:px-4'
+                    : 'border-border-strong bg-surface text-text-muted h-10 rounded-[var(--radius)] border px-3.5 text-sm sm:h-11 sm:px-4'
                 }
               >
                 {value === true ? t('customDone') : t('customNotDone')}

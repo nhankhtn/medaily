@@ -140,7 +140,7 @@ export function ReviewChat() {
           maxLength={1000}
           rows={2}
           disabled={pending}
-          className="min-h-11 flex-1 text-sm"
+          className="min-h-11 flex-1 text-base sm:text-sm"
         />
         <Button
           type="button"

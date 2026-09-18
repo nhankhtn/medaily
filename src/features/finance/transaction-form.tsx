@@ -167,15 +167,22 @@ export function TransactionForm({
           <Input name="merchant" maxLength={200} />
         </label>
 
-        <label className="col-span-2 space-y-1.5 sm:w-36">
-          <span className="text-text-muted text-xs font-medium">{t('date')}</span>
-          <Input type="date" name="occurredOn" defaultValue={today} />
-        </label>
+        {/*
+         * The date and the button travel as one item. Left loose, the fields
+         * ahead of them grow to fill the line and the button is pushed onto a
+         * line of its own, stranded under a row of inputs.
+         */}
+        <div className="col-span-2 grid gap-2 sm:flex sm:items-end">
+          <label className="space-y-1.5 sm:w-36">
+            <span className="text-text-muted text-xs font-medium">{t('date')}</span>
+            <Input type="date" name="occurredOn" defaultValue={today} />
+          </label>
 
-        <Button type="submit" className="col-span-2 w-full sm:w-auto">
-          <Plus className="size-4" />
-          {t('addTransaction')}
-        </Button>
+          <Button type="submit" className="w-full sm:w-auto">
+            <Plus className="size-4" />
+            {t('addTransaction')}
+          </Button>
+        </div>
       </div>
 
       {kind === 'transfer' ? <p className="text-text-subtle text-xs">{t('transferHint')}</p> : null}

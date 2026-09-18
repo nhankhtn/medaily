@@ -53,7 +53,7 @@ export function SettingsForm({ settings }: { settings: ResolvedSettings }) {
           disabled={pending}
           aria-label={t('timezone')}
           onChange={(event) => save({ timezone: event.target.value })}
-          className="h-11 w-full rounded-[var(--radius)] border border-border-strong bg-surface px-3 text-base"
+          className="h-10 w-full rounded-[var(--radius)] border border-border-strong bg-surface px-2.5 text-base sm:h-11 sm:px-3"
         >
           {[...new Set([settings.timezone, ...TIMEZONES])].map((zone) => (
             <option key={zone} value={zone}>

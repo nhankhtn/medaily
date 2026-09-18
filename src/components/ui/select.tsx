@@ -9,7 +9,7 @@ export function Select({ className, children, ...props }: React.ComponentProps<'
   return (
     <select
       className={cn(
-        'h-11 w-full rounded-[var(--radius)] border border-border-strong bg-surface px-3 text-base text-text',
+        'border-border-strong bg-surface text-text h-10 w-full rounded-[var(--radius)] border px-2.5 text-base sm:h-11 sm:px-3',
         'focus:border-accent focus:outline-none focus:inset-ring-1 focus:inset-ring-accent',
         className,
       )}

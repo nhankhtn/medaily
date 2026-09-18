@@ -30,6 +30,46 @@ piece of work looks finished.
 
 The same goes for `git push`, with the deploy rule above on top of it.
 
+# How big a control is
+
+Phone first, and on a phone everything is one size smaller. A phone screen is
+mostly chrome; the four pixels a desktop button spends on comfort are pixels
+the thing you actually came for gets pushed down by. `Button`, `Input`,
+`Select` and `Textarea` already carry this — use them and you get it for free:
+
+| | phone | `sm:` and up |
+| --- | --- | --- |
+| `Button` md | 40px | 44px |
+| `Button` sm | 32px | 36px |
+| `Button` lg | 44px | 48px |
+| `Input` / `Select` | 40px | 44px |
+
+Three button sizes, and which one to reach for is the button's job, not its
+looks. Mixing them within one row is the only thing that reads as an accident:
+
+- **`lg`** — the one thing a screen is for. Save the day, start the timer, sign
+  in. At most one per screen.
+- **`md`** (the default) — an action inside a form or a dialog. Save, Cancel,
+  Add. Never pass `size` for these; the default is already right.
+- **`sm`** — a button that opens something rather than doing something: the
+  trigger in a page header or a card header, a toolbar. Also the actions inside
+  a panel too small for anything larger, which today means the capture box.
+
+Do not hand a control a bare `h-*`. If a dense row needs something shorter,
+write `h-9 sm:h-10` so the phone still gets the smaller of the two, and never
+go under 32px for anything a finger has to hit.
+
+**Anything typed into keeps 16px type on a phone.** Safari on iOS zooms the
+whole page when a field smaller than that takes focus, and the zoom is what
+sends a floating panel skidding out from under a thumb. So `text-sm` on an
+input is `text-base sm:text-sm`, never `text-sm` alone. Buttons, badges and
+labels are not typed into and have no such floor.
+
+Two things are deliberately larger on a phone than on a desktop, and both are
+the same reason — a finger has to *find* them, not just read them: the drag
+handle on a goal (`size-11 sm:size-7`) and the delete on a row. When you add
+another of those, size it the same way round and say why.
+
 # Text a person reads
 
 Every user-facing string lives in `messages/en.json` and `messages/vi.json`,

@@ -192,13 +192,13 @@ function DraftRow({
           aria-label={t('merchant')}
           placeholder={t('merchant')}
           maxLength={200}
-          className="h-9 min-w-0 flex-1 text-sm"
+          className="h-9 min-w-0 flex-1 text-base sm:text-sm"
         />
         <MoneyInput
           name={`amount:${draft.id}`}
           defaultValue={draft.amount}
           aria-label={t('amount')}
-          className="h-9 w-32 text-right text-sm tabular-nums"
+          className="h-9 w-32 text-right text-base tabular-nums sm:text-sm"
         />
         <Button
           type="button"
@@ -220,7 +220,7 @@ function DraftRow({
             setKind(event.target.value as DraftKind)
             setCategoryId('')
           }}
-          className="h-9 w-28 text-sm"
+          className="h-9 w-28 text-base sm:text-sm"
         >
           <option value="expense">{t('kinds.expense')}</option>
           <option value="income">{t('kinds.income')}</option>
@@ -231,7 +231,7 @@ function DraftRow({
           value={categoryId}
           aria-label={t('category')}
           onChange={(event) => setCategoryId(event.target.value)}
-          className="h-9 min-w-32 flex-1 text-sm"
+          className="h-9 min-w-32 flex-1 text-base sm:text-sm"
         >
           <option value="">{t('noCategory')}</option>
           {relevant.map((category) => (
@@ -246,7 +246,7 @@ function DraftRow({
           name={`occurredOn:${draft.id}`}
           defaultValue={draft.occurredOn}
           aria-label={t('date')}
-          className="h-9 w-36 text-sm"
+          className="h-9 w-36 text-base sm:text-sm"
         />
       </div>
     </li>

@@ -54,7 +54,7 @@ export function MinuteInput({
               onChange(Math.min(1440, Math.max(0, Math.round(parsed))))
             }}
             className={cn(
-              'h-11 w-full rounded-[var(--radius)] border border-border-strong bg-surface pr-12 pl-3',
+              'h-10 w-full rounded-[var(--radius)] border border-border-strong bg-surface pr-12 pl-2.5 sm:h-11 sm:pl-3',
               'text-base tabular-nums text-text focus:border-accent focus:outline-none focus:inset-ring-1 focus:inset-ring-accent',
               // A derived number is a real number, not a suggestion to ignore.
               derived != null && value === null
@@ -70,7 +70,7 @@ export function MinuteInput({
           type="button"
           onClick={() => onChange(Math.min(1440, (value ?? 0) + 15))}
           aria-label={`${name} +15`}
-          className="flex h-11 items-center gap-1 rounded-[var(--radius)] border border-border-strong px-3 text-sm text-text-muted hover:bg-surface-2"
+          className="flex h-10 items-center gap-1 rounded-[var(--radius)] border border-border-strong px-2.5 text-sm text-text-muted hover:bg-surface-2 sm:h-11 sm:px-3"
         >
           <Plus className="size-3.5" />
           15
