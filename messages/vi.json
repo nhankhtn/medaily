@@ -1313,7 +1313,8 @@
     "modules": {
       "finance": "Tài chính",
       "plan": "Mục tiêu & việc cần làm",
-      "review": "Nhìn lại"
+      "review": "Nhìn lại",
+      "assistant": "Trợ lý"
     },
     "examples": {
       "finance": "sáng ăn bánh mì 30k, cà phê 25k, hôm qua đổ xăng 100 nghìn",
@@ -1359,6 +1360,24 @@
       "privacy": "Gửi đi: số liệu của kỳ đó và những dòng bạn tự viết trong phần ghi ngày. Nhật ký, ghi chú riêng và tên người khác không rời khỏi máy này.",
       "failed": "Chưa ghép được câu trả lời. Thử lại sau một lát.",
       "rateLimited": "Hỏi dồn quá nhanh — đợi một phút rồi hỏi tiếp."
+    },
+    "assistant": {
+      "intro": "Hỏi gì về những thứ bạn đã ghi cũng được. Nó nhớ câu chuyện đang nói dở.",
+      "loading": "Đang mở lại câu chuyện…",
+      "thinking": "Đang nghĩ…",
+      "send": "Gửi",
+      "placeholder": "Tuần này tôi thế nào?",
+      "placeholderMore": "Hỏi tiếp gì đó…",
+      "startOver": "Bắt đầu lại",
+      "read": "Hiểu câu hỏi là: {reason}",
+      "privacy": "Gửi đi: số liệu của đúng thứ bạn hỏi, và nếu hỏi về một ngày cụ thể thì kèm những dòng bạn tự viết trong phần ghi ngày. Nhật ký, ghi chú riêng và tên người khác không rời khỏi máy này.",
+      "failed": "Chưa trả lời được. Thử lại sau một chút.",
+      "rateLimited": "Hỏi nhanh quá — đợi một phút nhé.",
+      "starters": {
+        "thisWeek": "Tuần này tôi thế nào?",
+        "spending": "Tháng này tôi tiêu bao nhiêu?",
+        "todo": "Còn việc gì chưa xong?"
+      }
     }
   }
 }

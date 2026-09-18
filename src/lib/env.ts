@@ -46,6 +46,11 @@ const envSchema = z.object({
   AUTH_ALLOWED_DOMAINS: z.string().optional(),
   AUTH_ALLOW_SIGNUP: z.string().optional(),
 
+  // The agent service (`medaily-ai`), which answers with a memory that outlives
+  // the tab. Absent, the capture box simply does not offer that destination.
+  AI_SERVICE_URL: z.string().optional(),
+  AI_SERVICE_TOKEN: z.string().optional(),
+
   // Where a crash is announced. Absent, nothing is sent and the error still
   // reaches the console, which is where it always went.
   TELEGRAM_BOT_TOKEN: z.string().optional(),

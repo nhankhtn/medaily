@@ -1,4 +1,4 @@
-import { LineChart, ListChecks, Wallet, type LucideIcon } from 'lucide-react'
+import { Bot, LineChart, ListChecks, Wallet, type LucideIcon } from 'lucide-react'
 
 /**
  * What `/` offers in the capture box.
@@ -11,7 +11,7 @@ import { LineChart, ListChecks, Wallet, type LucideIcon } from 'lucide-react'
  * borrowing from `nav`: not every destination is a page, and the one that
  * files goals and tasks together answers to no single nav entry.
  */
-export type CaptureModuleKey = 'finance' | 'plan' | 'review'
+export type CaptureModuleKey = 'finance' | 'plan' | 'review' | 'assistant'
 
 export type CaptureModule = {
   key: CaptureModuleKey
@@ -59,7 +59,30 @@ export const CAPTURE_MODULES: CaptureModule[] = [
       'tháng',
     ],
   },
+  {
+    key: 'assistant',
+    icon: Bot,
+    aliases: [
+      'assistant',
+      'agent',
+      'ai',
+      'hoi',
+      'hỏi',
+      'tro ly',
+      'trợ lý',
+      'chat',
+    ],
+  },
 ]
+
+/**
+ * The destinations actually on offer. The assistant answers from a separate
+ * service, which a deploy may not have; the others run in this app and are
+ * always there.
+ */
+export function availableModules(assistant: boolean): CaptureModule[] {
+  return assistant ? CAPTURE_MODULES : CAPTURE_MODULES.filter((m) => m.key !== 'assistant')
+}
 
 /**
  * The slash token being typed, or null when the caret is not in one. Only a
@@ -72,11 +95,15 @@ export function slashQuery(text: string): string | null {
   return /\s/.test(token) ? null : token
 }
 
-export function matchModules(query: string, labelOf: (module: CaptureModule) => string) {
+export function matchModules(
+  query: string,
+  labelOf: (module: CaptureModule) => string,
+  modules: CaptureModule[] = CAPTURE_MODULES,
+) {
   const needle = query.trim().toLowerCase()
-  if (needle === '') return CAPTURE_MODULES
+  if (needle === '') return modules
 
-  return CAPTURE_MODULES.filter((module) =>
+  return modules.filter((module) =>
     [labelOf(module), module.key, ...module.aliases].some((candidate) =>
       candidate.toLowerCase().includes(needle),
     ),

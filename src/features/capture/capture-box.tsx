@@ -8,13 +8,14 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/input'
 import {
-  CAPTURE_MODULES,
+  availableModules,
   matchModules,
   slashQuery,
   type CaptureModule,
   type CaptureModuleKey,
 } from '@/lib/capture/modules'
 import { cn } from '@/lib/utils'
+import { AssistantChat } from '@/features/capture/assistant-chat'
 import { ReviewChat } from '@/features/capture/review-chat'
 import { FinanceDraftList } from '@/features/finance/draft-list'
 import { PlanReview } from '@/features/capture/plan-review'
@@ -36,7 +37,14 @@ type Parsed = { module: 'finance'; result: Extract<ParseTransactionsResult, { ok
  * cannot land in the wrong one. The menu is a registry, so the next
  * destination is one entry plus a branch below.
  */
-export function CaptureBox({ enabled }: { enabled: boolean }) {
+export function CaptureBox({
+  enabled,
+  assistant,
+}: {
+  enabled: boolean
+  /** The agent service is deployed. Its destination is hidden without it. */
+  assistant: boolean
+}) {
   const t = useTranslations('capture')
   const tc = useTranslations('common')
   const [open, setOpen] = useState(false)
@@ -87,7 +95,10 @@ export function CaptureBox({ enabled }: { enabled: boolean }) {
           {/* Mounted only while open, so a dismissed panel never reopens
               holding a half-typed note and its stale drafts. */}
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">
-            <CaptureForm labelOf={(module) => t(`modules.${module.key}`)} />
+            <CaptureForm
+              labelOf={(module) => t(`modules.${module.key}`)}
+              modules={availableModules(assistant)}
+            />
           </div>
         </section>
       ) : (
@@ -105,13 +116,19 @@ export function CaptureBox({ enabled }: { enabled: boolean }) {
   )
 }
 
-function CaptureForm({ labelOf }: { labelOf: (module: CaptureModule) => string }) {
+function CaptureForm({
+  labelOf,
+  modules,
+}: {
+  labelOf: (module: CaptureModule) => string
+  modules: CaptureModule[]
+}) {
   const t = useTranslations('capture')
   const [module, setModule] = useState<CaptureModuleKey | null>(null)
 
-  const chosen = CAPTURE_MODULES.find((candidate) => candidate.key === module)
+  const chosen = modules.find((candidate) => candidate.key === module)
 
-  if (!chosen) return <ModulePicker labelOf={labelOf} onPick={setModule} />
+  if (!chosen) return <ModulePicker labelOf={labelOf} modules={modules} onPick={setModule} />
 
   return (
     <div className="space-y-3">
@@ -136,6 +153,8 @@ function CaptureForm({ labelOf }: { labelOf: (module: CaptureModule) => string }
         <FinancePanel />
       ) : chosen.key === 'plan' ? (
         <PlanPanel />
+      ) : chosen.key === 'assistant' ? (
+        <AssistantChat />
       ) : (
         <ReviewChat />
       )}
@@ -145,9 +164,11 @@ function CaptureForm({ labelOf }: { labelOf: (module: CaptureModule) => string }
 
 function ModulePicker({
   labelOf,
+  modules,
   onPick,
 }: {
   labelOf: (module: CaptureModule) => string
+  modules: CaptureModule[]
   onPick: (key: CaptureModuleKey) => void
 }) {
   const t = useTranslations('capture')
@@ -156,8 +177,8 @@ function ModulePicker({
 
   const query = slashQuery(text)
   const matches = useMemo(
-    () => (query === null ? [] : matchModules(query, labelOf)),
-    [query, labelOf],
+    () => (query === null ? [] : matchModules(query, labelOf, modules)),
+    [query, labelOf, modules],
   )
   const menuOpen = matches.length > 0
   // Clamped at render rather than reset in an effect: the list can shrink

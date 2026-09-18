@@ -1313,7 +1313,8 @@
     "modules": {
       "finance": "Finance",
       "plan": "Goals & to-dos",
-      "review": "Looking back"
+      "review": "Looking back",
+      "assistant": "Assistant"
     },
     "examples": {
       "finance": "banh mi 30k this morning, coffee 25k, petrol 100k yesterday",
@@ -1359,6 +1360,24 @@
       "privacy": "Sent: that period's totals and the lines you wrote yourself in the daily log. Your journal, your notes and other people's names stay on this machine.",
       "failed": "Could not put that answer together. Try again in a moment.",
       "rateLimited": "Too many questions at once — wait a minute."
+    },
+    "assistant": {
+      "intro": "Ask about anything you have logged. It remembers where the conversation got to.",
+      "loading": "Opening the conversation…",
+      "thinking": "Thinking…",
+      "send": "Send",
+      "placeholder": "How did this week go?",
+      "placeholderMore": "Ask something else…",
+      "startOver": "Start over",
+      "read": "Read as: {reason}",
+      "privacy": "Sent: the totals for whatever you asked about, and for a question about one day, the lines you wrote in that day's log. Your journal, your notes and other people's names never leave this machine.",
+      "failed": "Could not answer that. Try again in a moment.",
+      "rateLimited": "Too many questions at once — wait a minute.",
+      "starters": {
+        "thisWeek": "How did this week go?",
+        "spending": "What did I spend this month?",
+        "todo": "What is still unfinished?"
+      }
     }
   }
 }
