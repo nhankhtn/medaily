@@ -59,7 +59,7 @@ export function TaskList({ projectId, tasks }: { projectId: string; tasks: Proje
           value={due}
           onChange={(event) => setDue(event.target.value)}
           aria-label={t('taskDue')}
-          className="w-40 shrink-0"
+          className="w-full shrink-0 sm:w-40"
         />
       </div>
 
@@ -229,7 +229,7 @@ function TaskEditor({
         value={dueDate}
         aria-label={t('taskDue')}
         onChange={(event) => setDueDate(event.target.value)}
-        className="w-40 shrink-0"
+        className="w-full shrink-0 sm:w-40"
       />
       <Select
         value={priority}

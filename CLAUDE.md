@@ -59,6 +59,12 @@ Do not hand a control a bare `h-*`. If a dense row needs something shorter,
 write `h-9 sm:h-10` so the phone still gets the smaller of the two, and never
 go under 32px for anything a finger has to hit.
 
+**Never give `<input type="date">` a fixed width on a phone.** Safari draws its
+own text at its own size — in Vietnamese that is `ngày 18 thg 9, 2026`, far
+wider than the box a desktop layout would hand it, and the date spills out of
+its own border. Write `w-full sm:w-36`, and on a phone give it a row of its own
+rather than a share of one.
+
 **Anything typed into keeps 16px type on a phone.** Safari on iOS zooms the
 whole page when a field smaller than that takes focus, and the zoom is what
 sends a floating panel skidding out from under a thumb. So `text-sm` on an

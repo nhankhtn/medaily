@@ -246,7 +246,7 @@ function DraftRow({
           name={`occurredOn:${draft.id}`}
           defaultValue={draft.occurredOn}
           aria-label={t('date')}
-          className="h-9 w-36 text-base sm:text-sm"
+          className="h-9 w-full text-base sm:w-36 sm:text-sm"
         />
       </div>
     </li>

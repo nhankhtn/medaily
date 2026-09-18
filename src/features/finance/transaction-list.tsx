@@ -391,7 +391,7 @@ function TransactionEditor({
         <Input name="merchant" maxLength={200} defaultValue={transaction.merchant ?? ''} />
       </label>
 
-      <label className="w-36 space-y-1.5">
+      <label className="w-full space-y-1.5 sm:w-36">
         <span className="text-text-muted text-xs font-medium">{t('date')}</span>
         <Input type="date" name="occurredOn" defaultValue={transaction.occurredOn} />
       </label>
