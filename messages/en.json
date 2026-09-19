@@ -406,6 +406,12 @@
     "scoreWeightsHelp": "Must add up to 100%.",
     "resetDefaults": "Reset to defaults",
     "savedToast": "Settings saved",
+    "dailyFields": {
+      "title": "What the day log asks",
+      "help": "Turn off what you do not track. The column and everything already in it stay — a day that has a value still shows that field, so nothing you recorded goes out of sight.",
+      "inUse": "{habits, plural, =0 {No habit} one {# habit} other {# habits}} and {goals, plural, =0 {no goal} one {# goal} other {# goals}} read this. They stop counting if you turn it off.",
+      "timerFills": "The timer writes here on its own; a day it filled will still show."
+    },
     "shortcuts": {
       "title": "Keyboard shortcuts",
       "help": "These are off while the cursor is in a text field, so typing an s never saves the day out from under you.",

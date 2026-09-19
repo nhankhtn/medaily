@@ -21,6 +21,7 @@ export function MarkdownField({
   value,
   placeholder,
   copied,
+  off,
   className,
   onChange,
 }: {
@@ -28,6 +29,8 @@ export function MarkdownField({
   value: string | null
   placeholder?: string
   copied?: boolean
+  /** Turned off in settings, and empty on this day. */
+  off?: boolean
   className?: string
   onChange: (value: string | null) => void
 }) {
@@ -40,6 +43,7 @@ export function MarkdownField({
     <Field
       label={label}
       copied={copied}
+      off={off}
       hint={
         inline ? (
           <button

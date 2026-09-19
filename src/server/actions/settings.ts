@@ -5,6 +5,7 @@ import { cookies } from 'next/headers'
 import { z } from 'zod'
 import { getCurrentUserId, readSession } from '@/lib/auth/current-user'
 import { LOCALE_COOKIE, LOCALES } from '@/i18n/config'
+import { parseHiddenFields } from '@/lib/daily/hidden-fields'
 import { DEFAULT_SCORE_TARGETS, DEFAULT_SCORE_WEIGHTS } from '@/lib/defaults'
 import { PATHS } from '@/lib/paths'
 import { weightsAreValid } from '@/lib/scoring'
@@ -78,6 +79,25 @@ export async function updateUserSettings(input: unknown) {
   }
 
   revalidatePath(PATHS.home, 'layout')
+  return { ok: true as const }
+}
+
+/**
+ * Which questions the daily log stops asking. Whole list every time rather
+ * than a toggle per field: the panel already knows the answer for all of
+ * them, and a patch per checkbox would let two quick clicks race.
+ */
+export async function saveHiddenDailyFields(input: unknown) {
+  const parsed = z.object({ fields: z.array(z.string()).max(50) }).safeParse(input)
+  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+
+  await updateSettings(await getCurrentUserId(), {
+    hiddenDailyFields: parseHiddenFields(parsed.data.fields),
+  })
+
+  revalidatePath(PATHS.daily)
+  revalidatePath(PATHS.catchUp)
+  revalidatePath(PATHS.settings)
   return { ok: true as const }
 }
 

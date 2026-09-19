@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import type { DailyLog } from '@/lib/db/schema'
 import { addDays, rangeOfLastDays, today, type ISODate } from '@/lib/dates'
 import type { DailyLogPatchInput } from '@/lib/validation/daily'
+import type { HideableField } from '@/lib/daily/hidden-fields'
 import { recomputeDerivedHabitLogs } from '@/server/services/habit-derivation'
 import {
   findCustomMetrics,
@@ -104,6 +105,8 @@ export type DailyFormData = {
   customMetrics: CustomMetric[]
   /** Today's values for those, keyed by metric id. */
   customValues: Record<string, number | boolean | string | null>
+  /** Questions this person has turned off; see `lib/daily/hidden-fields`. */
+  hiddenFields: HideableField[]
 }
 
 export async function getDailyFormData(date: ISODate): Promise<DailyFormData> {
@@ -145,6 +148,7 @@ export async function getDailyFormData(date: ISODate): Promise<DailyFormData> {
     missingDays,
     customMetrics,
     customValues,
+    hiddenFields: settings.hiddenDailyFields,
   }
 }
 

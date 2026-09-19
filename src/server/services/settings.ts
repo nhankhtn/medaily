@@ -16,6 +16,7 @@ import type {
   ScoreWeights,
   StreakThresholds,
 } from '@/lib/types'
+import { parseHiddenFields, type HideableField } from '@/lib/daily/hidden-fields'
 import { findUserById } from '@/server/repositories/auth'
 import { findSettings, insertUserSettings } from '@/server/repositories/settings'
 import {
@@ -60,6 +61,7 @@ export type ResolvedSettings = {
   insightThresholds: InsightThresholds
   reminderTime: string
   dashboardCards: string[] | null
+  hiddenDailyFields: HideableField[]
   shortcuts: Bindings
 }
 
@@ -89,6 +91,7 @@ export const getSettings = cache(async (): Promise<ResolvedSettings> => {
     insightThresholds: { ...DEFAULT_INSIGHT_THRESHOLDS, ...(row.insightThresholds ?? {}) },
     reminderTime: row.reminderTime,
     dashboardCards: row.dashboardCards ?? null,
+    hiddenDailyFields: parseHiddenFields(row.hiddenDailyFields),
     shortcuts: resolveBindings(row.shortcuts),
   }
 })
@@ -122,6 +125,7 @@ const FALLBACK_SETTINGS: ResolvedSettings = {
   insightThresholds: DEFAULT_INSIGHT_THRESHOLDS,
   reminderTime: '21:00',
   dashboardCards: null,
+  hiddenDailyFields: [],
   shortcuts: DEFAULT_BINDINGS,
 }
 

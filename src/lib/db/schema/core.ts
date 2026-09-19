@@ -60,6 +60,8 @@ export const userSettings = pgTable('user_settings', {
   reminderTime: time('reminder_time').notNull().default('21:00'),
   notificationPrefs: jsonb('notification_prefs').$type<Record<string, boolean>>(),
   dashboardCards: jsonb('dashboard_cards').$type<string[]>(),
+  /** Daily-log fields the form stops asking for. Hidden, never deleted. */
+  hiddenDailyFields: jsonb('hidden_daily_fields').$type<string[]>(),
   onboarding: jsonb('onboarding').$type<OnboardingState>(),
   /** Only the keys the user changed; the rest come from the registry. */
   shortcuts: jsonb('shortcuts').$type<Record<string, string>>(),

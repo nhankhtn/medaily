@@ -6,10 +6,14 @@ import { CatchUpGrid } from '@/features/daily/catch-up-grid'
 import { today } from '@/lib/dates'
 import { PATHS } from '@/lib/paths'
 import { findMissingDays } from '@/server/services/daily'
-import { getDayContext } from '@/server/services/settings'
+import { getDayContext, getSettings } from '@/server/services/settings'
 
 export default async function CatchUpPage() {
-  const [t, ctx] = await Promise.all([getTranslations('daily.catchUp'), getDayContext()])
+  const [t, ctx, settings] = await Promise.all([
+    getTranslations('daily.catchUp'),
+    getDayContext(),
+    getSettings(),
+  ])
   const missing = await findMissingDays(today(ctx), 14)
 
   return (
@@ -24,9 +28,9 @@ export default async function CatchUpPage() {
       </div>
 
       {missing.length === 0 ? (
-        <p className="text-sm text-text-muted">—</p>
+        <p className="text-text-muted text-sm">—</p>
       ) : (
-        <CatchUpGrid dates={missing} />
+        <CatchUpGrid dates={missing} hiddenFields={settings.hiddenDailyFields} />
       )}
     </div>
   )

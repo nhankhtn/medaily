@@ -120,6 +120,13 @@
       "when": 1789604451333,
       "tag": "0016_transaction_person",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1789775435175,
+      "tag": "0017_hidden_daily_fields",
+      "breakpoints": true
     }
   ]
 }

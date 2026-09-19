@@ -406,6 +406,12 @@
     "scoreWeightsHelp": "Tổng phải bằng 100%.",
     "resetDefaults": "Đặt lại mặc định",
     "savedToast": "Đã lưu cài đặt",
+    "dailyFields": {
+      "title": "Bản ghi ngày hỏi những gì",
+      "help": "Tắt những ô bạn không theo dõi. Cột và mọi thứ đã ghi vẫn còn nguyên — ngày nào đã có số thì ô đó vẫn hiện, không giấu mất cái bạn đã nhập.",
+      "inUse": "{habits, plural, other {# thói quen}} và {goals, plural, other {# mục tiêu}} đang đọc ô này. Tắt đi là chúng ngừng đếm.",
+      "timerFills": "Bấm giờ tự ghi vào đây; ngày nào nó đã ghi thì ô vẫn hiện."
+    },
     "shortcuts": {
       "title": "Phím tắt",
       "help": "Các phím này không chạy khi con trỏ đang ở trong ô nhập liệu, nên gõ chữ s sẽ không vô tình lưu mất ngày.",

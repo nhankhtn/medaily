@@ -27,7 +27,7 @@ export function FormSection({
   const id = useId()
 
   return (
-    <section className="rounded-[var(--radius)] border border-border-base bg-surface">
+    <section className="border-border-base bg-surface rounded-[var(--radius)] border">
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
@@ -47,11 +47,14 @@ export function FormSection({
           </span>
         </span>
         <ChevronDown
-          className={cn('size-4 shrink-0 text-text-subtle transition-transform', open && 'rotate-180')}
+          className={cn(
+            'text-text-subtle size-4 shrink-0 transition-transform',
+            open && 'rotate-180',
+          )}
         />
       </button>
       {open ? (
-        <div id={id} className="space-y-5 border-t border-border-base px-4 py-4">
+        <div id={id} className="border-border-base space-y-5 border-t px-4 py-4">
           {children}
         </div>
       ) : null}
@@ -64,6 +67,7 @@ export function Field({
   hint,
   help,
   copied,
+  off,
   children,
 }: {
   label: string
@@ -71,8 +75,12 @@ export function Field({
   help?: string
   /** Highlighted until touched, after a copy-yesterday fill (spec 6.4). */
   copied?: boolean
+  /** Turned off in settings, and empty on this day. */
+  off?: boolean
   children: React.ReactNode
 }) {
+  if (off) return null
+
   return (
     <div
       className={cn(
@@ -81,11 +89,11 @@ export function Field({
       )}
     >
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-sm font-medium text-text">{label}</span>
-        {hint ? <span className="text-xs text-text-subtle">{hint}</span> : null}
+        <span className="text-text text-sm font-medium">{label}</span>
+        {hint ? <span className="text-text-subtle text-xs">{hint}</span> : null}
       </div>
       {children}
-      {help ? <p className="text-xs leading-snug text-text-subtle">{help}</p> : null}
+      {help ? <p className="text-text-subtle text-xs leading-snug">{help}</p> : null}
     </div>
   )
 }
