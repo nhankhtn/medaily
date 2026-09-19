@@ -1220,7 +1220,6 @@
     "generate": "Viết bản tường thuật",
     "regenerate": "Viết lại",
     "generating": "Đang viết…",
-    "disabled": "Đang tắt. Đặt ANTHROPIC_API_KEY rồi khởi động lại để bật.",
     "privacy": "Chỉ số liệu tổng hợp của kỳ này và các quan sát do quy tắc sinh ra được gửi đi. Ghi chú, nhật ký và tên người không bao giờ rời khỏi máy này.",
     "generatedBy": "Tạo bởi {model} · {date}",
     "failed": "Không tạo được bản tường thuật",
@@ -1374,6 +1373,11 @@
     },
     "assistant": {
       "thinking": "Đang nghĩ…",
+      "steps": {
+        "route": "Đang đọc câu hỏi…",
+        "load": "Đang lục lại ghi chép…",
+        "respond": "Đang viết câu trả lời…"
+      },
       "send": "Gửi",
       "placeholder": "Hỏi gì cũng được, hoặc / để ghi vào chỗ khác",
       "placeholderMore": "Hỏi tiếp, hoặc / để ghi vào chỗ khác",

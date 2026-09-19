@@ -8,6 +8,9 @@ import { serviceClient } from '@/server/service-client'
  * opening of the panel gets a thread of its own, so what is on screen is the
  * whole of it.
  *
+ * The asking is streamed, so its caller is a route handler rather than a
+ * server action: an action returns a value, and a stream is not one.
+ *
  * Server-side only. `AI_SERVICE_TOKEN` is a shared secret between the two
  * deploys and must never reach a browser, so every call goes out from a server
  * action rather than from the panel that shows the answer.
@@ -35,26 +38,27 @@ function client() {
  */
 export type AssistantDecision = { intent: string; period: string; reason: string }
 
-export type AssistantAnswer = { answer: string; decision: AssistantDecision | null }
-
-export async function sendMessage(input: {
+/**
+ * A question, answered node by node.
+ *
+ * The agent reports each step of a run as it finishes it, and a run is several
+ * seconds long — so the panel can say what is happening instead of spinning,
+ * and can show how the question was read before the answer exists.
+ *
+ * The response is handed back unread. Whoever called this owns the body.
+ */
+export async function streamMessage(input: {
   threadId: string
   userId: string
   message: string
   timezone?: string
-}): Promise<AssistantAnswer> {
-  const body = await client().request<{ answer?: string; decision?: AssistantDecision | null }>(
-    '/api/chat',
-    {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(input),
-      timeoutMs: TIMEOUT_MS.ask,
-    },
-  )
-
-  if (!body.answer) throw new Error('assistant returned no answer')
-  return { answer: body.answer, decision: body.decision ?? null }
+}): Promise<Response> {
+  return client().open('/api/chat/stream', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(input),
+    timeoutMs: TIMEOUT_MS.ask,
+  })
 }
 
 /** The end of a conversation: on the way out of the panel, or on "start over". */

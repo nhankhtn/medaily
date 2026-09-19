@@ -1,16 +1,67 @@
 'use client'
 
 import { Loader2, RotateCcw, Send } from 'lucide-react'
-import { useEffect, useRef, useState, useTransition } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/input'
 import { Markdown } from '@/components/ui/markdown'
+import { readEvents } from '@/lib/sse'
 import { cn } from '@/lib/utils'
-import { askAssistant, resetAssistant } from '@/server/actions/assistant'
+import { resetAssistant } from '@/server/actions/assistant'
 
 type Message = { role: 'user' | 'model'; text: string; reason?: string | null }
+
+/** The agent's three nodes, in the order a run walks them. */
+const STEPS = ['route', 'load', 'respond'] as const
+type Step = (typeof STEPS)[number]
+
+function isStep(value: unknown): value is Step {
+  return STEPS.includes(value as Step)
+}
+
+/** Eight a minute. Worth its own wording: waiting a moment fixes it. */
+class RateLimited extends Error {}
+
+/**
+ * One question, read as the agent answers it.
+ *
+ * The run is reported node by node, so the step and the reading land while the
+ * answer is still being written. Both are handed straight to the panel.
+ */
+async function run(
+  message: string,
+  opening: string,
+  on: { step: (step: Step) => void; reading: (reason: string) => void },
+): Promise<{ answer: string; reason: string | null }> {
+  const response = await fetch('/api/assistant', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ message, opening }),
+  })
+
+  if (response.status === 429) throw new RateLimited()
+  if (!response.ok || !response.body) throw new Error(`assistant answered ${response.status}`)
+
+  let answer = ''
+  let reason: string | null = null
+
+  for await (const event of readEvents(response.body)) {
+    const payload = JSON.parse(event.data)
+
+    if (event.event === 'step' && isStep(payload.node)) on.step(payload.node)
+    else if (event.event === 'reason') {
+      reason = payload.reason
+      on.reading(payload.reason)
+    } else if (event.event === 'answer') answer = payload.answer
+    else if (event.event === 'failed') throw new Error('the run reported a failure')
+  }
+
+  // A stream that ends without one has failed quietly, which is still failing.
+  if (!answer) throw new Error('the run ended with no answer')
+  return { answer, reason }
+}
 
 /** The phrases that open a conversation, offered so the first ask is one tap. */
 const STARTERS = ['thisWeek', 'spending', 'todo'] as const
@@ -39,7 +90,15 @@ export function AssistantChat({ onLeave }: { onLeave: () => void }) {
   const t = useTranslations('capture.assistant')
   const [messages, setMessages] = useState<Message[]>([])
   const [text, setText] = useState('')
-  const [pending, startAsking] = useTransition()
+  /*
+   * Plain state rather than `useTransition`: a transition renders at low
+   * priority and holds its updates until it settles, which for a run reported
+   * step by step means the steps all land at the end, together, useless.
+   */
+  const [pending, setPending] = useState(false)
+  /** Where the run has got to, and how it read the question — both live. */
+  const [step, setStep] = useState<Step | null>(null)
+  const [reading, setReading] = useState<string | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
   const [opening] = useState(newOpening)
 
@@ -66,7 +125,7 @@ export function AssistantChat({ onLeave }: { onLeave: () => void }) {
   // Follow the conversation down as it grows; the panel is short.
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: 'end' })
-  }, [messages, pending])
+  }, [messages, pending, step, reading])
 
   const send = (message: string) => {
     const trimmed = message.trim()
@@ -74,34 +133,47 @@ export function AssistantChat({ onLeave }: { onLeave: () => void }) {
 
     setMessages((previous) => [...previous, { role: 'user', text: trimmed }])
     setText('')
+    // Routing has begun by the time the request lands, and nothing on the wire
+    // will say so — the first step is set here or it is never shown.
+    setStep('route')
+    setReading(null)
 
-    startAsking(async () => {
-      const result = await askAssistant({ message: trimmed, opening })
-
-      if (!result.ok) {
-        toast.error(t(result.error === 'rate_limited' ? 'rateLimited' : 'failed'))
+    void (async () => {
+      setPending(true)
+      try {
+        const { answer, reason } = await run(trimmed, opening, {
+          step: setStep,
+          reading: setReading,
+        })
+        setMessages((previous) => [...previous, { role: 'model', text: answer, reason }])
+      } catch (error) {
+        console.error('assistant', error)
+        toast.error(t(error instanceof RateLimited ? 'rateLimited' : 'failed'))
         // Hand the message back rather than swallowing it into a failed turn.
         setMessages((previous) => previous.slice(0, -1))
         setText(trimmed)
-        return
+      } finally {
+        setPending(false)
+        setStep(null)
+        setReading(null)
       }
-
-      setMessages((previous) => [
-        ...previous,
-        { role: 'model', text: result.answer, reason: result.decision?.reason ?? null },
-      ])
-    })
+    })()
   }
 
   const clear = () => {
-    startAsking(async () => {
-      const result = await resetAssistant(opening)
-      if (!result.ok) {
-        toast.error(t('failed'))
-        return
+    void (async () => {
+      setPending(true)
+      try {
+        const result = await resetAssistant(opening)
+        if (!result.ok) {
+          toast.error(t('failed'))
+          return
+        }
+        setMessages([])
+      } finally {
+        setPending(false)
       }
-      setMessages([])
-    })
+    })()
   }
 
   return (
@@ -153,10 +225,16 @@ export function AssistantChat({ onLeave }: { onLeave: () => void }) {
       ) : null}
 
       {pending ? (
-        <p className="text-text-subtle flex items-center gap-2 text-xs">
-          <Loader2 className="size-3 animate-spin" />
-          {t('thinking')}
-        </p>
+        <div className="text-text-subtle space-y-1 text-xs">
+          <p className="flex items-center gap-2">
+            <Loader2 className="size-3 animate-spin" />
+            {t(step ? `steps.${step}` : 'thinking')}
+          </p>
+          {/* The reading arrives well before the answer does. Showing it here
+              means a question taken the wrong way is caught while it is still
+              cheaper to rephrase than to read a wrong answer. */}
+          {reading ? <p className="pl-5 leading-snug">{t('read', { reason: reading })}</p> : null}
+        </div>
       ) : null}
 
       <div ref={endRef} />
