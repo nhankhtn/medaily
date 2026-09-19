@@ -1373,7 +1373,6 @@
       "rateLimited": "Hỏi dồn quá nhanh — đợi một phút rồi hỏi tiếp."
     },
     "assistant": {
-      "loading": "Đang mở…",
       "thinking": "Đang nghĩ…",
       "send": "Gửi",
       "placeholder": "Hỏi gì cũng được, hoặc / để ghi vào chỗ khác",

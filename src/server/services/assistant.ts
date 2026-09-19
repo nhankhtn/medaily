@@ -4,8 +4,9 @@ import { serviceClient } from '@/server/service-client'
 /**
  * The client for `medaily-ai`, the service that answers the capture box.
  *
- * Two calls: ask, and throw the thread away. Nothing is read back — the panel
- * clears the thread as it opens, so what is on screen is the whole of it.
+ * Two calls: ask, and throw the thread away. Nothing is read back — each
+ * opening of the panel gets a thread of its own, so what is on screen is the
+ * whole of it.
  *
  * Server-side only. `AI_SERVICE_TOKEN` is a shared secret between the two
  * deploys and must never reach a browser, so every call goes out from a server
@@ -56,7 +57,7 @@ export async function sendMessage(input: {
   return { answer: body.answer, decision: body.decision ?? null }
 }
 
-/** Starting over. The id is reused, so the next message opens it again, empty. */
+/** The end of a conversation: on the way out of the panel, or on "start over". */
 export async function deleteThread(threadId: string): Promise<void> {
   await client().request(`/api/threads/${encodeURIComponent(threadId)}`, {
     method: 'DELETE',

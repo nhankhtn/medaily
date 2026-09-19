@@ -1,15 +1,18 @@
 /**
  * Which conversation a person is in.
  *
- * Named after them rather than stored: the agent service keys its checkpoints
- * by this string, so deriving it means the conversation is already waiting on a
- * new machine, a new browser and a fresh install — with no column to migrate
- * and nothing for a browser to lose.
+ * One per opening of the panel, and the id is two halves: the person, named by
+ * the server, and the opening, named by the browser. Nothing is stored and
+ * nothing has to be cleared before the panel is usable — an id nobody has
+ * written to is already an empty conversation.
  *
- * The cost is that there is exactly one, and it never ends on its own. Starting
- * over is deliberate: the thread is deleted, and the next message opens the
- * same id again, empty.
+ * The person's half never comes from the browser, so a message cannot be sent
+ * into someone else's thread by asking for one. The opening's half does, and
+ * ends up in a URL path and a database key, so it is checked rather than
+ * trusted.
  */
-export function captureThreadId(userId: string): string {
-  return `capture${userId}`
+export const CAPTURE_OPENING = /^[0-9a-z-]{8,64}$/
+
+export function captureThreadId(userId: string, opening: string): string {
+  return `capture:${userId}:${opening}`
 }

@@ -1373,7 +1373,6 @@
       "rateLimited": "Too many questions at once — wait a minute."
     },
     "assistant": {
-      "loading": "Opening…",
       "thinking": "Thinking…",
       "send": "Send",
       "placeholder": "Ask anything, or / to file something",

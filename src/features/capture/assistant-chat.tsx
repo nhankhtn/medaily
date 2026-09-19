@@ -15,41 +15,58 @@ type Message = { role: 'user' | 'model'; text: string; reason?: string | null }
 /** The phrases that open a conversation, offered so the first ask is one tap. */
 const STARTERS = ['thisWeek', 'spending', 'todo'] as const
 
+/** Where an opening that never got to end itself waits to be collected. */
+const ABANDONED = 'capture.assistant.opening'
+
+function newOpening(): string {
+  // randomUUID wants a secure context, which a phone on the LAN is not.
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID()
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+}
+
 /**
  * The capture box's assistant, answered by the agent service.
  *
- * One conversation per opening of the box. The thread is thrown away as the
- * panel opens, so it always starts empty and nothing is ever read back — what
- * is on screen for this opening is the whole of it.
+ * One conversation per opening of the box, and each opening names its own. A
+ * thread nobody has written to is already empty, so the panel is ready the
+ * moment it is drawn — there is nothing to clear and nothing to wait for.
  *
- * The thread still lives in Postgres between the question and the answer,
- * because that is where the agent keeps its own working state. It just does
- * not outlive the panel.
+ * Ending it is the part that costs a call, and it happens on the way out where
+ * nobody is watching. A tab closed with the panel still open leaves its thread
+ * behind; there is never more than one, and the next opening collects it.
  */
 export function AssistantChat({ onLeave }: { onLeave: () => void }) {
   const t = useTranslations('capture.assistant')
   const [messages, setMessages] = useState<Message[]>([])
-  const [loading, setLoading] = useState(true)
   const [text, setText] = useState('')
   const [pending, startAsking] = useTransition()
   const endRef = useRef<HTMLDivElement>(null)
+  const [opening] = useState(newOpening)
 
   useEffect(() => {
-    let live = true
-    // Whatever the last opening left behind goes before this one starts, or
-    // the agent would answer against turns nobody on this screen can see.
-    resetAssistant().then(() => {
-      if (live) setLoading(false)
-    })
-    return () => {
-      live = false
+    let abandoned: string | null = null
+    try {
+      abandoned = sessionStorage.getItem(ABANDONED)
+      sessionStorage.setItem(ABANDONED, opening)
+    } catch {
+      // A browser that refuses storage just forgets an abandoned thread.
     }
-  }, [])
+    if (abandoned) void resetAssistant(abandoned)
+
+    return () => {
+      void resetAssistant(opening)
+      try {
+        sessionStorage.removeItem(ABANDONED)
+      } catch {
+        // As above.
+      }
+    }
+  }, [opening])
 
   // Follow the conversation down as it grows; the panel is short.
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: 'end' })
-  }, [messages, pending, loading])
+  }, [messages, pending])
 
   const send = (message: string) => {
     const trimmed = message.trim()
@@ -59,7 +76,7 @@ export function AssistantChat({ onLeave }: { onLeave: () => void }) {
     setText('')
 
     startAsking(async () => {
-      const result = await askAssistant({ message: trimmed })
+      const result = await askAssistant({ message: trimmed, opening })
 
       if (!result.ok) {
         toast.error(t(result.error === 'rate_limited' ? 'rateLimited' : 'failed'))
@@ -78,22 +95,13 @@ export function AssistantChat({ onLeave }: { onLeave: () => void }) {
 
   const clear = () => {
     startAsking(async () => {
-      const result = await resetAssistant()
+      const result = await resetAssistant(opening)
       if (!result.ok) {
         toast.error(t('failed'))
         return
       }
       setMessages([])
     })
-  }
-
-  if (loading) {
-    return (
-      <p className="text-text-subtle flex items-center gap-2 py-4 text-xs">
-        <Loader2 className="size-3 animate-spin" />
-        {t('loading')}
-      </p>
-    )
   }
 
   return (
