@@ -67,7 +67,7 @@ export function HabitList({
         return (
           <li
             key={habit.id}
-            className="glass rounded-[var(--radius)] p-3"
+            className="glass border-border-strong rounded-[var(--radius)] p-3"
           >
             <div className="flex items-start gap-3">
               <button
