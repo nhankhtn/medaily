@@ -70,6 +70,8 @@ export function TransactionList({
     )
   }
 
+  const accountName = (id: string) => accounts.find((account) => account.id === id)?.name
+
   return (
     <ul className="divide-border-base divide-y">
       {pending.map((row) => (
@@ -79,7 +81,14 @@ export function TransactionList({
           <span className="text-text-subtle w-16 shrink-0 text-xs tabular-nums">
             {format.dateTime(fromISODate(row.occurredOn), 'dayMonth')}
           </span>
-          <span className="min-w-0 flex-1 truncate text-sm">{label(row)}</span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm">{label(row)}</span>
+            {row.kind !== 'transfer' && accountName(row.accountId) ? (
+              <span className="text-text-subtle block truncate text-xs">
+                {accountName(row.accountId)}
+              </span>
+            ) : null}
+          </span>
           {row.personId ? (
             <Badge tone="accent">
               <User className="size-3" />
@@ -142,9 +151,14 @@ export function TransactionList({
             <button
               type="button"
               onClick={() => setEditingId(transaction.id)}
-              className="min-w-0 truncate text-left text-sm sm:order-2 sm:flex-1"
+              className="min-w-0 truncate text-left sm:order-2 sm:flex-1"
             >
-              {label(transaction)}
+              <span className="block truncate text-sm">{label(transaction)}</span>
+              {transaction.kind !== 'transfer' && accountName(transaction.accountId) ? (
+                <span className="text-text-subtle block truncate text-xs">
+                  {accountName(transaction.accountId)}
+                </span>
+              ) : null}
             </button>
 
             <span
