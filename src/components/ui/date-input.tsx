@@ -11,6 +11,11 @@ import { cn } from '@/lib/utils'
  * Vietnamese iPhone that is "ngày 20 thg 9, 2026", which blows out a narrow
  * row. The real control stays for the picker and the form value; what you
  * see is always `dd/mm/yyyy`, matching `formatDate`.
+ *
+ * The native calendar glyph is only a few pixels wide once the input is
+ * invisible, so taps on the date text do nothing useful. We stretch the
+ * picker indicator across the field and call `showPicker()` on press so the
+ * whole control opens the calendar.
  */
 export function DateInput({
   className,
@@ -38,6 +43,17 @@ export function DateInput({
     form.addEventListener('reset', onReset)
     return () => form.removeEventListener('reset', onReset)
   }, [controlled, defaultValue])
+
+  const openPicker = () => {
+    const input = inputRef.current
+    if (!input || disabled) return
+    try {
+      input.showPicker()
+    } catch {
+      /* Older engines — fall through to the stretched native indicator. */
+      input.focus()
+    }
+  }
 
   return (
     <div className={cn('group relative', className)}>
@@ -67,7 +83,15 @@ export function DateInput({
           onChange?.(event)
         }}
         onBlur={onBlur}
-        className="absolute inset-0 cursor-pointer opacity-0 disabled:cursor-not-allowed"
+        onClick={openPicker}
+        className={cn(
+          // Keep a hair of opacity so WebKit still hit-tests the full box;
+          // `opacity-0` collapses the tappable region to the tiny glyph.
+          'absolute inset-0 z-10 h-full w-full cursor-pointer opacity-[0.01] disabled:cursor-not-allowed',
+          '[&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0',
+          '[&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-full',
+          '[&::-webkit-calendar-picker-indicator]:cursor-pointer',
+        )}
       />
     </div>
   )
