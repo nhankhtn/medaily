@@ -421,8 +421,6 @@ function PlanPanel({ handoff }: { handoff?: string }) {
           {t('submitHint')}
         </span>
       </div>
-
-      <p className="text-text-subtle text-xs leading-snug">{tp('privacy')}</p>
     </div>
   )
 }
@@ -544,8 +542,6 @@ function FinancePanel({ handoff }: { handoff?: string }) {
           {t('submitHint')}
         </span>
       </div>
-
-      <p className="text-text-subtle text-xs leading-snug">{tf('privacy')}</p>
     </div>
   )
 }

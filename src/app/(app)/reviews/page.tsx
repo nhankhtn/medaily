@@ -195,15 +195,7 @@ export default async function ReviewsPage({
               period={aiPeriod}
               periodKey={view.key}
               enabled={aiServiceConfigured()}
-              existing={
-                existingReport
-                  ? {
-                      contentMd: existingReport.contentMd,
-                      model: existingReport.model,
-                      createdAt: existingReport.createdAt.toISOString(),
-                    }
-                  : null
-              }
+              existing={existingReport?.contentMd ?? null}
             />
           </CardBody>
         </Card>

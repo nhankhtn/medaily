@@ -924,11 +924,9 @@
     },
     "capture": {
       "title": "Viết như bạn nói",
-      "label": "AI điền",
       "placeholder": "sáng ăn bánh mì 30k, cà phê 25k, trưa cơm gà 55k, hôm qua đổ xăng 100 nghìn",
       "parse": "Xem trước",
       "parsing": "Đang đọc…",
-      "privacy": "Chỉ ghi chú ở trên và tên các danh mục của bạn được gửi đi. Số dư, lịch sử và mọi phần khác không rời khỏi máy này.",
       "reviewHint": "Kiểm tra lại trước khi lưu — chưa có gì được ghi cả.",
       "rewrite": "Sửa ghi chú",
       "intoAccount": "Tài khoản",
@@ -1220,11 +1218,9 @@
     "generate": "Viết bản tường thuật",
     "regenerate": "Viết lại",
     "generating": "Đang viết…",
-    "privacy": "Chỉ số liệu tổng hợp của kỳ này và các quan sát do quy tắc sinh ra được gửi đi. Ghi chú, nhật ký và tên người không bao giờ rời khỏi máy này.",
-    "generatedBy": "Tạo bởi {model} · {date}",
     "failed": "Không tạo được bản tường thuật",
-    "empty": "Kỳ này chưa có bản tường thuật.",
-    "label": "Do AI tạo"
+    "disabled": "Tổng kết bằng AI chưa bật.",
+    "empty": "Kỳ này chưa có bản tường thuật."
   },
   "onboarding": {
     "welcome": "Chào bạn",
@@ -1349,7 +1345,6 @@
       "save": "{count, plural, other {Lưu # mục}}",
       "saved": "{count, plural, other {Đã lưu # mục}}",
       "someFailed": "{count, plural, other {# dòng chưa lưu được — xem lại rồi thử lại}}",
-      "privacy": "Chỉ đoạn bạn vừa viết được gửi đi. Mục tiêu, việc và mọi thứ bạn đã ghi không rời khỏi máy này.",
       "nothingFound": "Không thấy việc hay mục tiêu nào trong đoạn này",
       "rateLimited": "Gửi quá nhiều lần — đợi một phút rồi thử lại",
       "failed": "Không đọc được đoạn này"
@@ -1367,7 +1362,6 @@
         "lastWeek": "Tuần trước",
         "thisMonth": "Tháng này"
       },
-      "privacy": "Gửi đi: số liệu của kỳ đó và những dòng bạn tự viết trong phần ghi ngày. Nhật ký, ghi chú riêng và tên người khác không rời khỏi máy này.",
       "failed": "Chưa ghép được câu trả lời. Thử lại sau một lát.",
       "rateLimited": "Hỏi dồn quá nhanh — đợi một phút rồi hỏi tiếp."
     },
@@ -1388,7 +1382,6 @@
       "placeholderMore": "Hỏi tiếp, hoặc / để ghi vào chỗ khác",
       "startOver": "Bắt đầu lại",
       "read": "Hiểu câu hỏi là: {reason}",
-      "privacy": "Gửi đi: số liệu của đúng thứ bạn hỏi, và nếu hỏi về một ngày cụ thể thì kèm những dòng bạn tự viết trong phần ghi ngày. Nhật ký, ghi chú riêng và tên người khác không rời khỏi máy này.",
       "failed": "Chưa trả lời được. Thử lại sau một chút.",
       "rateLimited": "Hỏi nhanh quá — đợi một phút nhé.",
       "starters": {

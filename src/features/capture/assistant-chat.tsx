@@ -360,8 +360,6 @@ export function AssistantChat({
           <Send className="size-4" />
         </Button>
       </div>
-
-      <p className="text-text-subtle text-xs leading-snug">{t('privacy')}</p>
     </div>
   )
 }

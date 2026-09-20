@@ -4,7 +4,6 @@ import { Loader2, Sparkles, Wand2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/input'
 import { FinanceDraftList } from '@/features/finance/draft-list'
@@ -47,7 +46,6 @@ export function TransactionCapture({ enabled }: { enabled: boolean }) {
       <div className="flex items-center gap-2">
         <Wand2 className="text-accent size-4 shrink-0" />
         <h3 className="text-sm font-medium">{t('title')}</h3>
-        <Badge tone="accent">{t('label')}</Badge>
       </div>
 
       <Textarea
@@ -76,7 +74,6 @@ export function TransactionCapture({ enabled }: { enabled: boolean }) {
           {parsing ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
           {parsing ? t('parsing') : t('parse')}
         </Button>
-        <p className="text-text-subtle text-xs">{t('privacy')}</p>
       </div>
 
       {parsed ? (
