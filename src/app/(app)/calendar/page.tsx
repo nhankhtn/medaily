@@ -104,7 +104,7 @@ export default async function CalendarPage({
       {view === 'day' ? (
         <DayView date={anchor ?? today} today={today} projects={projects} />
       ) : view === 'week' ? (
-        <WeekView anchor={anchor} />
+        <WeekView anchor={anchor} projects={projects} />
       ) : view === 'month' ? (
         <Month anchor={anchor ?? today} />
       ) : (
@@ -251,7 +251,13 @@ async function Year({ year }: { year: number }) {
   )
 }
 
-async function WeekView({ anchor }: { anchor?: ISODate }) {
+async function WeekView({
+  anchor,
+  projects,
+}: {
+  anchor?: ISODate
+  projects: { id: string; name: string }[]
+}) {
   const [t, format, data] = await Promise.all([
     getTranslations('calendar'),
     getFormatter(),
@@ -403,6 +409,7 @@ async function WeekView({ anchor }: { anchor?: ISODate }) {
                       <span className="text-text-muted min-w-0 flex-1 truncate text-sm">
                         {block.note ?? ''}
                       </span>
+                      <BlockDialog defaultDate={block.blockDate} projects={projects} block={block} />
                     </li>
                   )),
                 )}
@@ -504,6 +511,45 @@ async function DayView({
         <div className="space-y-4">
           <Card>
             <CardHeader
+              title={t('events')}
+              action={<EventDialog defaultDate={date} />}
+            />
+            <CardBody>
+              {plan.events.length === 0 ? (
+                <p className="text-text-subtle text-sm">{t('noEvents')}</p>
+              ) : (
+                <ul className="divide-border-base divide-y">
+                  {plan.events.map((event) => (
+                    <li key={event.key} className="flex items-center gap-3 py-2">
+                      {event.series.recurrenceRule ? (
+                        <Repeat
+                          className="text-text-subtle size-4 shrink-0"
+                          aria-label={t(`repeats.${event.series.recurrenceRule}`)}
+                        />
+                      ) : (
+                        <CalendarDays className="text-text-subtle size-4 shrink-0" />
+                      )}
+                      <span className="min-w-0 flex-1 truncate text-sm">{event.title}</span>
+                      {event.location ? (
+                        <span className="text-text-subtle hidden shrink-0 text-xs sm:inline">
+                          {event.location}
+                        </span>
+                      ) : null}
+                      <span className="text-text-subtle shrink-0 text-xs tabular-nums">
+                        {event.allDay
+                          ? t('allDay')
+                          : format.dateTime(event.startsAt, 'time')}
+                      </span>
+                      <EventDialog defaultDate={event.series.date} event={event.series} />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHeader
               title={t('blocks')}
               action={<BlockDialog defaultDate={date} projects={projects} />}
             />
@@ -517,9 +563,11 @@ async function DayView({
                       <span className="text-text-subtle w-24 shrink-0 text-xs tabular-nums">
                         {block.startTime.slice(0, 5)}–{block.endTime.slice(0, 5)}
                       </span>
+                      <Badge tone="accent">{t(`kinds.${block.kind}`)}</Badge>
                       <span className="min-w-0 flex-1 truncate text-sm">
                         {block.note ?? t(`kinds.${block.kind}`)}
                       </span>
+                      <BlockDialog defaultDate={block.blockDate} projects={projects} block={block} />
                     </li>
                   ))}
                 </ul>

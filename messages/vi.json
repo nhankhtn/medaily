@@ -1067,6 +1067,8 @@
     "note": "Ghi chú",
     "blocks": "Khối thời gian",
     "addBlock": "Lên khối thời gian",
+    "editBlock": "Sửa khối thời gian",
+    "blockDeleted": "Đã xóa khối thời gian",
     "noBlocks": "Chưa lên kế hoạch",
     "kind": "Loại",
     "kinds": {

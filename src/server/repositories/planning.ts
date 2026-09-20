@@ -75,6 +75,19 @@ export async function insertPlannedBlock(
   return row
 }
 
+export async function updatePlannedBlock(
+  userId: string,
+  id: string,
+  patch: Partial<typeof plannedBlocks.$inferInsert>,
+): Promise<PlannedBlock | null> {
+  const rows = await db
+    .update(plannedBlocks)
+    .set({ ...patch, updatedAt: new Date() })
+    .where(and(eq(plannedBlocks.userId, userId), eq(plannedBlocks.id, id)))
+    .returning()
+  return rows[0] ?? null
+}
+
 export async function deletePlannedBlock(userId: string, id: string): Promise<void> {
   await db
     .delete(plannedBlocks)

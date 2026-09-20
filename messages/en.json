@@ -1067,6 +1067,8 @@
     "note": "Note",
     "blocks": "Planned blocks",
     "addBlock": "Plan a block",
+    "editBlock": "Edit block",
+    "blockDeleted": "Block deleted",
     "noBlocks": "Nothing planned",
     "kind": "Kind",
     "kinds": {

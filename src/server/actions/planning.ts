@@ -12,6 +12,7 @@ import {
   insertEvent,
   insertPlannedBlock,
   updateEvent,
+  updatePlannedBlock,
 } from '@/server/repositories/planning'
 
 const timeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/)
@@ -94,8 +95,14 @@ export async function removeEvent(input: unknown) {
 }
 
 export async function createPlannedBlock(input: unknown) {
+  return savePlannedBlock(input)
+}
+
+/** Create or edit one planned block. */
+export async function savePlannedBlock(input: unknown) {
   const parsed = z
     .object({
+      id: z.string().uuid().optional(),
       blockDate: isoDateSchema,
       startTime: timeSchema,
       endTime: timeSchema,
@@ -110,15 +117,22 @@ export async function createPlannedBlock(input: unknown) {
     .safeParse(input)
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
-  await insertPlannedBlock({
-    userId: await getCurrentUserId(),
+  const userId = await getCurrentUserId()
+  const row = {
     blockDate: parsed.data.blockDate,
     startTime: parsed.data.startTime,
     endTime: parsed.data.endTime,
     kind: parsed.data.kind,
     projectId: parsed.data.projectId ?? null,
     note: parsed.data.note ?? null,
-  })
+  }
+
+  if (parsed.data.id) {
+    const updated = await updatePlannedBlock(userId, parsed.data.id, row)
+    if (!updated) return { ok: false as const, error: 'not_found' as const }
+  } else {
+    await insertPlannedBlock({ ...row, userId })
+  }
 
   revalidatePlanning()
   return { ok: true as const }
