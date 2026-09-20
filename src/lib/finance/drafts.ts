@@ -37,7 +37,13 @@ export type TransactionDraft = {
   note: string | null
 }
 
-export type CategoryOption = { id: string; name: string; kind: string }
+export type CategoryOption = {
+  id: string
+  name: string
+  kind: string
+  /** Optional hint used by AI capture when choosing among similarly named buckets. */
+  note?: string | null
+}
 
 /**
  * A category id for the name the model produced, or null. Only names the user
