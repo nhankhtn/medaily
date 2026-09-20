@@ -102,7 +102,7 @@ export function TransactionList({
       {transactions.map((transaction) => {
         if (editingId === transaction.id) {
           return (
-            <li key={transaction.id} className="bg-surface-2 rounded-[var(--radius)] p-2">
+            <li key={transaction.id} className="glass rounded-[var(--radius)] p-2">
               <TransactionEditor
                 transaction={transaction}
                 accounts={accounts}

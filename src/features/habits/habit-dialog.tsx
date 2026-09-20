@@ -194,7 +194,7 @@ export function HabitDialog({
                         'h-9 min-w-11 rounded-full border px-2 text-xs font-medium',
                         active
                           ? 'bg-accent text-accent-text border-transparent'
-                          : 'border-border-base bg-surface-2 text-text-muted',
+                          : 'glass text-text-muted',
                       )}
                     >
                       {t(`weekdayShort.${day}`)}
@@ -230,7 +230,7 @@ export function HabitDialog({
           )}
 
           {/* The feature that makes habits worth having (spec 7.3). */}
-          <div className="border-border-base bg-surface-2 space-y-2 rounded-[var(--radius)] border p-3">
+          <div className="glass space-y-2 rounded-[var(--radius)] p-3">
             <label className="flex items-start gap-2.5">
               <input
                 type="checkbox"

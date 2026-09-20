@@ -10,6 +10,7 @@ import {
   TIMER_FILLS,
   type HideableField,
 } from '@/lib/daily/hidden-fields'
+import { Card } from '@/components/ui/card'
 import { saveHiddenDailyFields } from '@/server/actions/settings'
 import { cn } from '@/lib/utils'
 
@@ -47,7 +48,7 @@ export function DailyFieldsPanel({ hidden, uses }: { hidden: string[]; uses: Met
   const needsToggle = HIDEABLE_FIELDS.length > MOBILE_PREVIEW
 
   return (
-    <section className="border-border-base bg-surface rounded-[var(--radius)] border p-4">
+    <Card className="p-4">
       <div className="flex items-center gap-2">
         <h2 className="text-sm font-semibold">{t('title')}</h2>
         {pending ? <Loader2 className="text-text-subtle size-3.5 animate-spin" /> : null}
@@ -109,7 +110,7 @@ export function DailyFieldsPanel({ hidden, uses }: { hidden: string[]; uses: Met
           {expanded ? tc('showLess') : tc('showMore')}
         </button>
       ) : null}
-    </section>
+    </Card>
   )
 }
 

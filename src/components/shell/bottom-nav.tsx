@@ -33,7 +33,7 @@ export function BottomNav() {
   return (
     <>
       {moreOpen ? (
-        <div className="fixed inset-0 z-40 bg-bg md:hidden">
+        <div className="fixed inset-0 z-40 bg-bg/95 backdrop-blur-md md:hidden">
           <div className="flex h-14 items-center justify-between border-b border-border-base px-4">
             <span className="font-semibold">{t('more')}</span>
             <button
@@ -51,7 +51,7 @@ export function BottomNav() {
                 <Link
                   key={item.key}
                   href={item.href}
-                  className="flex aspect-square flex-col items-center justify-center gap-2 rounded-[var(--radius)] border border-border-base bg-surface p-2 text-center"
+                  className="glass flex aspect-square flex-col items-center justify-center gap-2 rounded-[var(--radius)] p-2 text-center"
                 >
                   <item.icon className="size-6 text-accent" />
                   <span className="text-xs leading-tight text-text-muted">{t(item.key)}</span>
@@ -65,7 +65,7 @@ export function BottomNav() {
       ) : null}
 
       <nav
-        className="fixed inset-x-0 bottom-0 z-50 border-t border-border-base bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
+        className="glass fixed inset-x-0 bottom-0 z-50 border-x-0 border-b-0 pb-[env(safe-area-inset-bottom)] md:hidden"
         aria-label={t('groupCore')}
       >
         <ul className="grid grid-cols-5">

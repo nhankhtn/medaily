@@ -35,7 +35,7 @@ export function SignOutButton({ variant = 'icon' }: { variant?: 'icon' | 'card' 
       <form action={signOut}>
         <button
           type="submit"
-          className="flex aspect-square w-full flex-col items-center justify-center gap-2 rounded-[var(--radius)] border border-border-base bg-surface p-2 text-center"
+          className="glass flex aspect-square w-full flex-col items-center justify-center gap-2 rounded-[var(--radius)] p-2 text-center"
         >
           <LogOut className="size-6 text-text-subtle" />
           <span className="text-xs leading-tight text-text-muted">{t('signOut')}</span>

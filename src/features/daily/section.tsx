@@ -3,6 +3,7 @@
 import { ChevronDown } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useId, useState } from 'react'
+import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 
 /**
@@ -27,7 +28,7 @@ export function FormSection({
   const id = useId()
 
   return (
-    <section className="border-border-base bg-surface rounded-[var(--radius)] border">
+    <Card>
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
@@ -58,7 +59,7 @@ export function FormSection({
           {children}
         </div>
       ) : null}
-    </section>
+    </Card>
   )
 }
 

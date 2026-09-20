@@ -4,6 +4,7 @@ import { ChevronDown, Info } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
 import type { DayScore, PeriodScore } from '@/lib/scoring'
 import { cn } from '@/lib/utils'
 
@@ -26,7 +27,7 @@ export function ScoreCard({
   const componentsWithData = dayScore?.components.filter((c) => c.value !== null) ?? []
 
   return (
-    <div className="rounded-[var(--radius)] border border-border-base bg-surface">
+    <Card>
       <div className="flex items-stretch divide-x divide-border-base">
         <div className="flex-1 px-4 py-3">
           <p className="text-xs text-text-muted">{t('dayScore')}</p>
@@ -112,6 +113,6 @@ export function ScoreCard({
           ) : null}
         </>
       ) : null}
-    </div>
+    </Card>
   )
 }

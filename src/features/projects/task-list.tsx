@@ -81,7 +81,7 @@ export function TaskList({ projectId, tasks }: { projectId: string; tasks: Proje
 
             if (editingId === task.id) {
               return (
-                <li key={task.id} className="bg-surface-2 rounded-[var(--radius)] p-2">
+                <li key={task.id} className="glass rounded-[var(--radius)] p-2">
                   <TaskEditor
                     task={task}
                     onClose={() => setEditingId(null)}
@@ -266,7 +266,7 @@ function TaskEditor({
           type="button"
           onClick={onClose}
           aria-label={tc('cancel')}
-          className="text-text-subtle hover:text-text border-border-base flex size-9 items-center justify-center rounded-[var(--radius)] border"
+          className="glass text-text-subtle hover:text-text flex size-9 items-center justify-center rounded-[var(--radius)]"
         >
           <X className="size-4" />
         </button>

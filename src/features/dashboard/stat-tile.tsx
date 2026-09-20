@@ -34,7 +34,7 @@ export function StatTile({
   const Icon = tone === 'flat' ? Minus : delta && delta > 0 ? ArrowUp : ArrowDown
 
   return (
-    <div className="rounded-[var(--radius)] border border-border-base bg-surface px-3 py-2.5">
+    <div className="glass rounded-[var(--radius)] px-3 py-2.5">
       <p className="truncate text-xs text-text-muted">{label}</p>
       <p className="mt-0.5 flex items-baseline gap-1">
         <span

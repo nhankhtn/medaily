@@ -68,7 +68,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               type="button"
               aria-label={t('shortcuts.title')}
               title={t('shortcuts.title')}
-              className="border-border-base bg-surface text-text-muted hover:border-border-strong hover:text-text flex size-10 items-center justify-center rounded-full border shadow-lg transition-colors"
+              className="glass text-text-muted hover:border-border-strong hover:text-text flex size-10 items-center justify-center rounded-full transition-colors"
             >
               <Keyboard className="size-4.5" />
             </button>

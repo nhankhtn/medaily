@@ -1,6 +1,7 @@
 import { KeyRound, Mail } from 'lucide-react'
 import { getFormatter, getTranslations } from 'next-intl/server'
 import type { SessionProvider } from '@/lib/auth/session'
+import { Card } from '@/components/ui/card'
 import type { User } from '@/lib/db/schema'
 
 /**
@@ -21,7 +22,7 @@ export async function ProfileCard({
   const email = user.email ?? (provider === 'google' ? subject : null)
 
   return (
-    <section className="border-border-base bg-surface rounded-[var(--radius)] border p-4">
+    <Card className="p-4">
       <div className="flex items-center gap-4">
         <Avatar user={user} />
         <div className="min-w-0 flex-1">
@@ -46,7 +47,7 @@ export async function ProfileCard({
         <Row label={t('signedInWith')} value={t(`providers.${provider}`)} />
         <Row label={t('since')} value={format.dateTime(user.createdAt, 'dayMonthYear')} />
       </dl>
-    </section>
+    </Card>
   )
 }
 

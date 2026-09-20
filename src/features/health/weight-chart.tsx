@@ -10,7 +10,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { SERIES_COLORS } from '@/components/charts/theme'
+import { ChartTooltip } from '@/components/charts/chart-tooltip'
+import { CURSOR_STROKE, SERIES_COLORS } from '@/components/charts/theme'
 import { useChartMode } from '@/components/charts/use-chart-mode'
 import { fromISODate } from '@/lib/dates'
 
@@ -54,18 +55,18 @@ export function WeightChart({
               domain={['dataMin - 1', 'dataMax + 1']}
             />
             <Tooltip
-              cursor={{ stroke: 'var(--border-strong)', strokeWidth: 1 }}
+              cursor={{ stroke: CURSOR_STROKE, strokeWidth: 1 }}
               content={({ active, payload }) => {
                 if (!active || !payload?.length) return null
                 const point = payload[0]?.payload as (typeof points)[number] | undefined
                 if (!point) return null
                 return (
-                  <div className="rounded-md border border-border-base bg-surface px-2 py-1 text-xs shadow-[var(--shadow-card)]">
+                  <ChartTooltip>
                     <div className="text-text-subtle">
                       {format.dateTime(fromISODate(point.date), 'dayMonth')}
                     </div>
                     <div className="font-medium tabular-nums">{point.value ?? '—'}</div>
-                  </div>
+                  </ChartTooltip>
                 )
               }}
             />

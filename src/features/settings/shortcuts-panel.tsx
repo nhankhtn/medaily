@@ -297,8 +297,8 @@ function Kbd({ children }: { children: React.ReactNode }) {
   return (
     <kbd
       className={cn(
-        'border-border-strong bg-surface-2 text-text-muted inline-flex h-6 min-w-6 items-center',
-        'justify-center rounded border px-1.5 font-sans text-[11px] font-medium',
+        'glass text-text-muted inline-flex h-6 min-w-6 items-center',
+        'justify-center rounded border-border-strong px-1.5 font-sans text-[11px] font-medium',
       )}
     >
       {children}

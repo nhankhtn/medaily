@@ -42,7 +42,7 @@ export function TimerBadge({ timer }: { timer: RunningTimer | null }) {
     <div
       className={cn(
         'flex h-9 items-center gap-1 rounded-full border px-1.5',
-        running ? 'border-accent bg-accent-soft' : 'border-border-base bg-surface-2',
+        running ? 'border-accent bg-accent-soft' : 'glass',
       )}
     >
       <Link

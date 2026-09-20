@@ -35,7 +35,7 @@ export function HabitList({
 
   if (habits.length === 0) {
     return (
-      <div className="border-border-strong bg-surface rounded-[var(--radius)] border border-dashed p-6 text-center">
+      <div className="glass rounded-[var(--radius)] border-dashed border-border-strong p-6 text-center">
         <p className="font-medium">{t('noneYet')}</p>
         <p className="text-text-subtle mx-auto mt-1 max-w-prose text-sm">{t('noneYetBody')}</p>
         <div className="mt-4 flex justify-center">
@@ -67,7 +67,7 @@ export function HabitList({
         return (
           <li
             key={habit.id}
-            className="border-border-base bg-surface rounded-[var(--radius)] border p-3"
+            className="glass rounded-[var(--radius)] p-3"
           >
             <div className="flex items-start gap-3">
               <button

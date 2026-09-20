@@ -42,7 +42,7 @@ export function TransactionCapture({ enabled }: { enabled: boolean }) {
     })
 
   return (
-    <div className="border-border-base space-y-3 rounded-[var(--radius)] border border-dashed p-3">
+    <div className="glass space-y-3 rounded-[var(--radius)] border-dashed p-3">
       <div className="flex items-center gap-2">
         <Wand2 className="text-accent size-4 shrink-0" />
         <h3 className="text-sm font-medium">{t('title')}</h3>

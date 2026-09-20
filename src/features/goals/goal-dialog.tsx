@@ -198,7 +198,7 @@ export function GoalDialog({
               />
             </Field>
           ) : mode === 'metric' ? (
-            <div className="border-border-base bg-surface-2 space-y-2 rounded-[var(--radius)] border p-3">
+            <div className="glass space-y-2 rounded-[var(--radius)] p-3">
               <Field label={t('metric')}>
                 <Select value={metric} onChange={(event) => pickMetric(event.target.value)}>
                   <MetricOptions builtIn={builtIn} own={metrics} t={t} />

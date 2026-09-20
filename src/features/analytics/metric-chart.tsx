@@ -10,7 +10,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { SERIES_COLORS, type SeriesKey } from '@/components/charts/theme'
+import { ChartTooltip } from '@/components/charts/chart-tooltip'
+import { CURSOR_STROKE, SERIES_COLORS, type SeriesKey } from '@/components/charts/theme'
 import { useChartMode } from '@/components/charts/use-chart-mode'
 import { fromISODate } from '@/lib/dates'
 import type { MetricSeries } from '@/server/services/analytics'
@@ -39,7 +40,7 @@ export function MetricChart({
   const hasData = series.points.filter((point) => point.value !== null).length >= 2
 
   return (
-    <figure className="rounded-[var(--radius)] border border-border-base bg-surface p-4">
+    <figure className="glass rounded-[var(--radius)] p-4">
       <figcaption className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
         <span className="text-sm font-medium">{title}</span>
         <span className="flex items-center gap-3 text-xs text-text-subtle">
@@ -90,13 +91,13 @@ export function MetricChart({
                 width={44}
               />
               <Tooltip
-                cursor={{ stroke: 'var(--border-strong)', strokeWidth: 1 }}
+                cursor={{ stroke: CURSOR_STROKE, strokeWidth: 1 }}
                 content={({ active, payload }) => {
                   if (!active || !payload?.length) return null
                   const point = payload[0]?.payload as MetricSeries['points'][number] | undefined
                   if (!point) return null
                   return (
-                    <div className="rounded-md border border-border-base bg-surface px-2 py-1 text-xs shadow-[var(--shadow-card)]">
+                    <ChartTooltip>
                       <div className="text-text-subtle">
                         {format.dateTime(fromISODate(point.date), 'weekdayDayMonth')}
                       </div>
@@ -104,7 +105,7 @@ export function MetricChart({
                         {point.value === null ? '—' : point.value}
                         {unit && point.value !== null ? ` ${unit}` : ''}
                       </div>
-                    </div>
+                    </ChartTooltip>
                   )
                 }}
               />

@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { useRef, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { importData } from '@/server/actions/data'
 import type { ImportSummary } from '@/server/services/export'
 import { PATHS } from '@/lib/paths'
@@ -37,10 +38,7 @@ export function DataPanel() {
   }
 
   return (
-    <section
-      data-tour="settings-export"
-      className="space-y-3 rounded-[var(--radius)] border border-border-base bg-surface p-4"
-    >
+    <Card data-tour="settings-export" className="space-y-3 p-4">
       <div>
         <h2 className="text-sm font-semibold">{t('title')}</h2>
         <p className="mt-0.5 text-xs leading-snug text-text-subtle">{t('body')}</p>
@@ -116,7 +114,7 @@ export function DataPanel() {
 
         <p className="text-xs text-text-subtle">{t('backupNote')}</p>
       </div>
-    </section>
+    </Card>
   )
 }
 

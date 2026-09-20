@@ -11,6 +11,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { ChartTooltip } from '@/components/charts/chart-tooltip'
+import { CURSOR_FILL } from '@/components/charts/theme'
 import { fromISODate } from '@/lib/dates'
 import type { MonthTotals } from '@/lib/finance/report'
 import { formatCompactMoney, formatMoney } from '@/lib/format/money'
@@ -48,14 +50,14 @@ export function MonthBars({ months, currency }: { months: MonthTotals[]; currenc
             tickFormatter={(value: number) => formatCompactMoney(value, currency, locale)}
           />
           <Tooltip
-            cursor={{ fill: 'var(--surface-2)' }}
+            cursor={{ fill: CURSOR_FILL }}
             content={({ active, payload }) => {
               if (!active || !payload?.length) return null
               const month = payload[0]?.payload as MonthTotals | undefined
               if (!month) return null
 
               return (
-                <div className="border-border-base bg-surface rounded-md border px-2 py-1 text-xs shadow-[var(--shadow-card)]">
+                <ChartTooltip>
                   <div className="text-text-subtle">
                     {format.dateTime(fromISODate(month.month), 'monthYear')}
                   </div>
@@ -68,7 +70,7 @@ export function MonthBars({ months, currency }: { months: MonthTotals[]; currenc
                   <div className="font-medium tabular-nums">
                     {t('net')} {formatMoney(month.net, currency, locale)}
                   </div>
-                </div>
+                </ChartTooltip>
               )
             }}
           />

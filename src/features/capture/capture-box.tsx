@@ -76,7 +76,7 @@ export function CaptureBox({
       {open ? (
         <section
           aria-label={t('title')}
-          className="border-border-strong bg-surface flex max-h-[min(42rem,calc(100dvh-7rem))] w-[min(26rem,calc(100vw-2rem))] flex-col rounded-2xl border shadow-2xl"
+          className="glass-strong flex max-h-[min(42rem,calc(100dvh-7rem))] w-[min(26rem,calc(100vw-2rem))] flex-col rounded-2xl shadow-2xl"
         >
           <header className="flex shrink-0 items-start justify-between gap-3 px-4 pt-3 pb-2">
             <div className="min-w-0">
@@ -317,7 +317,7 @@ function ModulePicker({
           <ul
             role="listbox"
             aria-label={t('destinations')}
-            className="border-border-strong bg-surface mt-1 overflow-hidden rounded-[var(--radius)] border"
+            className="glass mt-1 overflow-hidden rounded-[var(--radius)]"
           >
             {matches.map((candidate, index) => (
               <li key={candidate.key}>

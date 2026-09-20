@@ -37,7 +37,7 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'rounded-[var(--radius)] border border-dashed border-border-strong bg-surface p-6 text-center',
+        'glass rounded-[var(--radius)] border-dashed border-border-strong p-6 text-center',
         className,
       )}
     >
@@ -54,7 +54,7 @@ export function StatRow({ items }: { items: { label: string; value: string; hint
       {items.map((item) => (
         <div
           key={item.label}
-          className="rounded-[var(--radius)] border border-border-base bg-surface px-3 py-2.5"
+          className="glass rounded-[var(--radius)] px-3 py-2.5"
         >
           <dt className="truncate text-xs text-text-muted">{item.label}</dt>
           <dd className="mt-0.5 text-xl font-semibold tabular-nums">{item.value}</dd>
@@ -74,7 +74,7 @@ export type Tab = { key: string; label: string; href: string }
  */
 export function TabNav({ tabs, current }: { tabs: Tab[]; current: string }) {
   return (
-    <nav className="flex w-fit rounded-full border border-border-base bg-surface-2 p-0.5">
+    <nav className="glass flex w-fit rounded-full p-0.5">
       {tabs.map((tab) => (
         <Link
           key={tab.key}
@@ -83,7 +83,7 @@ export function TabNav({ tabs, current }: { tabs: Tab[]; current: string }) {
           className={cn(
             'rounded-full px-3 py-1 text-sm transition-colors',
             tab.key === current
-              ? 'bg-surface font-medium text-text shadow-[var(--shadow-card)]'
+              ? 'glass-strong font-medium text-text'
               : 'text-text-muted hover:text-text',
           )}
         >

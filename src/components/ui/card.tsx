@@ -4,10 +4,7 @@ import { cn } from '@/lib/utils'
 export function Card({ className, ...props }: React.ComponentProps<'section'>) {
   return (
     <section
-      className={cn(
-        'border-border-base bg-surface rounded-[var(--radius)] border shadow-[var(--shadow-card)]',
-        className,
-      )}
+      className={cn('glass rounded-[var(--radius)]', className)}
       {...props}
     />
   )

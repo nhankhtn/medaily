@@ -43,7 +43,7 @@ export function DateInput({
       <div
         aria-hidden
         className={cn(
-          'border-border-strong bg-surface flex h-10 w-full items-center rounded-[var(--radius)] border px-2.5 text-base tabular-nums sm:h-11 sm:px-3',
+          'glass flex h-10 w-full items-center rounded-[var(--radius)] border-border-strong px-2.5 text-base tabular-nums sm:h-11 sm:px-3',
           'group-focus-within:border-accent group-focus-within:inset-ring-accent group-focus-within:inset-ring-1',
           shown ? 'text-text' : 'text-text-subtle',
           disabled && 'opacity-50',

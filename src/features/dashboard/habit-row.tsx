@@ -52,7 +52,7 @@ export function HabitRow({ habits, date }: { habits: DashboardHabit[]; date: ISO
                 'flex w-full items-center gap-3 rounded-[var(--radius)] border px-3 py-2.5 text-left transition-colors',
                 done
                   ? 'border-transparent bg-good-soft'
-                  : 'border-border-base bg-surface hover:bg-surface-2',
+                  : 'glass hover:bg-surface-2',
               )}
             >
               <span

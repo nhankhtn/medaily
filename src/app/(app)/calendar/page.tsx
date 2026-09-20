@@ -63,7 +63,7 @@ export default async function CalendarPage({
       />
 
       <div className="flex flex-wrap items-center gap-2">
-        <nav className="border-border-base bg-surface-2 flex rounded-full border p-0.5">
+        <nav className="glass flex rounded-full p-0.5">
           {VIEWS.map((candidate) => (
             <Link
               key={candidate}
@@ -72,7 +72,7 @@ export default async function CalendarPage({
               className={cn(
                 'rounded-full px-3 py-1 text-sm transition-colors',
                 candidate === view
-                  ? 'bg-surface text-text font-medium shadow-[var(--shadow-card)]'
+                  ? 'glass-strong font-medium text-text'
                   : 'text-text-muted hover:text-text',
               )}
             >
