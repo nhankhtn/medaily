@@ -20,12 +20,15 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
+  // Edge-to-edge under the notch / Dynamic Island so env(safe-area-inset-*)
+  // is non-zero and glass chrome can fill the “rabbit ears”.
+  viewportFit: 'cover',
   // The soft keyboard shrinks the layout viewport, so a bottom sheet stays
   // above it and `dvh` means what it says while someone is typing.
   interactiveWidget: 'resizes-content',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#fafafa' },
-    { media: '(prefers-color-scheme: dark)', color: '#1a1a1f' },
+    { media: '(prefers-color-scheme: light)', color: '#f5f6f8' },
+    { media: '(prefers-color-scheme: dark)', color: '#1a1a22' },
   ],
 }
 
@@ -64,7 +67,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <RequestIdProvider value={requestHeaders.get(REQUEST_ID_HEADER)}>
             {children}
           </RequestIdProvider>
-          <Toaster position="top-center" closeButton richColors />
+          <Toaster
+            position="top-center"
+            closeButton
+            richColors
+            offset="calc(env(safe-area-inset-top, 0px) + 12px)"
+            mobileOffset="calc(env(safe-area-inset-top, 0px) + 12px)"
+          />
         </NextIntlClientProvider>
       </body>
     </html>

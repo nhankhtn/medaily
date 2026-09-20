@@ -13,7 +13,7 @@ export default async function LoginPage({
   const [t, params] = await Promise.all([getTranslations('auth'), searchParams])
 
   return (
-    <div className="flex min-h-dvh items-center justify-center px-4 py-12">
+    <div className="flex min-h-dvh items-center justify-center px-4 py-12 pt-[max(3rem,env(safe-area-inset-top,0px))] pb-[max(3rem,env(safe-area-inset-bottom,0px))]">
       <Card className="w-full max-w-sm">
         <CardBody className="space-y-6 pt-4">
           <div className="flex items-center justify-between">

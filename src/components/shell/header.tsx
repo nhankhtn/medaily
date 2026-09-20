@@ -17,32 +17,34 @@ export async function Header({ today, theme }: { today: ISODate; theme: ThemePre
   const [t, format] = await Promise.all([getTranslations('common'), getFormatter()])
 
   return (
-    <header className="glass sticky top-0 z-30 flex h-14 items-center gap-3 border-x-0 border-t-0 px-4">
-      <div className="flex min-w-0 flex-1 items-center gap-2">
-        <span className="text-text-muted truncate text-sm font-medium">
-          {format.dateTime(fromISODate(today), 'weekdayDayMonthYear')}
+    <header className="glass sticky top-0 z-30 border-x-0 border-t-0 pt-[env(safe-area-inset-top,0px)]">
+      <div className="flex h-14 items-center gap-3 pr-[max(1rem,env(safe-area-inset-right,0px))] pl-[max(1rem,env(safe-area-inset-left,0px))]">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <span className="text-text-muted truncate text-sm font-medium">
+            {format.dateTime(fromISODate(today), 'weekdayDayMonthYear')}
+          </span>
+        </div>
+
+        {/* Streamed separately: a badge that is usually absent must not hold up
+            the whole shell for a database round trip. */}
+        <Suspense fallback={null}>
+          <HeaderTimer />
+        </Suspense>
+        <CommandPalette today={today} />
+        <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">
+          <Link href={PATHS.daily}>
+            <ClipboardList className="size-4" />
+            {t('today')}
+          </Link>
+        </Button>
+        {/* Language, theme and sign-out live in the More sheet on a phone —
+            the header has room for the date, the run and search, and no more. */}
+        <LocaleSwitcher className="hidden sm:flex" />
+        <ThemeToggle current={theme} className="hidden sm:flex" />
+        <span className="hidden sm:block">
+          <SignOutButton />
         </span>
       </div>
-
-      {/* Streamed separately: a badge that is usually absent must not hold up
-          the whole shell for a database round trip. */}
-      <Suspense fallback={null}>
-        <HeaderTimer />
-      </Suspense>
-      <CommandPalette today={today} />
-      <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">
-        <Link href={PATHS.daily}>
-          <ClipboardList className="size-4" />
-          {t('today')}
-        </Link>
-      </Button>
-      {/* Language, theme and sign-out live in the More sheet on a phone —
-          the header has room for the date, the run and search, and no more. */}
-      <LocaleSwitcher className="hidden sm:flex" />
-      <ThemeToggle current={theme} className="hidden sm:flex" />
-      <span className="hidden sm:block">
-        <SignOutButton />
-      </span>
     </header>
   )
 }

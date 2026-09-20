@@ -34,8 +34,8 @@ export function BottomNav() {
     <>
       {moreOpen ? (
         <div className="fixed inset-0 z-40 bg-bg/95 backdrop-blur-md md:hidden">
-          <div className="flex h-14 items-center justify-between border-b border-border-base px-4">
-            <span className="font-semibold">{t('more')}</span>
+          <div className="flex h-14 items-center justify-between border-b border-border-base pr-[max(1rem,env(safe-area-inset-right,0px))] pl-[max(1rem,env(safe-area-inset-left,0px))] pt-[env(safe-area-inset-top,0px)]">
+            <span className="flex h-14 items-center font-semibold">{t('more')}</span>
             <button
               type="button"
               onClick={() => setMoreOpen(false)}
@@ -45,7 +45,7 @@ export function BottomNav() {
               <X className="size-5" />
             </button>
           </div>
-          <div className="h-[calc(100dvh-3.5rem)] overflow-y-auto overscroll-contain p-4 pb-24">
+          <div className="h-[calc(100dvh-3.5rem-env(safe-area-inset-top,0px))] overflow-y-auto overscroll-contain p-4 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] pr-[max(1rem,env(safe-area-inset-right,0px))] pl-[max(1rem,env(safe-area-inset-left,0px))]">
             <div className="grid grid-cols-3 gap-3">
               {MORE_NAV_ITEMS.map((item) => (
                 <Link
@@ -65,7 +65,7 @@ export function BottomNav() {
       ) : null}
 
       <nav
-        className="glass fixed inset-x-0 bottom-0 z-50 border-x-0 border-b-0 pb-[env(safe-area-inset-bottom)] md:hidden"
+        className="glass fixed inset-x-0 bottom-0 z-50 border-x-0 border-b-0 pr-[env(safe-area-inset-right,0px)] pb-[env(safe-area-inset-bottom,0px)] pl-[env(safe-area-inset-left,0px)] md:hidden"
         aria-label={t('groupCore')}
       >
         <ul className="grid grid-cols-5">
