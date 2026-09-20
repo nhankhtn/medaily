@@ -5,9 +5,8 @@ export function Input({ className, ...props }: React.ComponentProps<'input'>) {
   return (
     <input
       className={cn(
-        // Shorter on a phone, but never below 16px type: Safari zooms the whole
-        // page when you focus a field smaller than that, and the zoom is what
-        // makes a floating panel jump out from under your thumb.
+        // 16px on every viewport: Safari zooms the page when a focused field
+        // is smaller, including landscape phones past the `sm` breakpoint.
         'border-border-strong bg-surface text-text h-10 w-full rounded-[var(--radius)] border px-2.5 text-base sm:h-11 sm:px-3',
         'placeholder:text-text-subtle focus:border-accent focus:inset-ring-accent focus:inset-ring-1 focus:outline-none',
         className,

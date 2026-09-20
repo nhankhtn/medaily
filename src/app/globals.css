@@ -208,6 +208,23 @@ input[type='number'] {
   -moz-appearance: textfield;
 }
 
+/*
+ * iOS Safari zooms the page when a focused control is under 16px. That includes
+ * landscape phones past the `sm` breakpoint, so width media queries are not
+ * enough — pin form type on touch devices regardless of orientation.
+ */
+@media (hover: none) and (pointer: coarse) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
+      [type='hidden']
+    ):not([type='button']):not([type='submit']):not([type='reset']):not([type='image']),
+  textarea,
+  select,
+  [contenteditable='true'],
+  [contenteditable='plaintext-only'] {
+    font-size: 16px !important;
+  }
+}
+
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }

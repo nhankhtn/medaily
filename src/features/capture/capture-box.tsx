@@ -305,7 +305,6 @@ function ModulePicker({
           placeholder={t('placeholder')}
           maxLength={200}
           rows={2}
-          className="text-sm"
         />
 
         {menuOpen ? (
@@ -408,7 +407,6 @@ function PlanPanel({ handoff }: { handoff?: string }) {
         maxLength={2000}
         rows={4}
         disabled={reading}
-        className="text-sm"
       />
 
       <div className="flex flex-wrap items-center gap-2">
@@ -529,7 +527,6 @@ function FinancePanel({ handoff }: { handoff?: string }) {
         maxLength={2000}
         rows={3}
         disabled={parsing}
-        className="text-sm"
       />
 
       <div className="flex flex-wrap items-center gap-2">
