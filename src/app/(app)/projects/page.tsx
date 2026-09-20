@@ -42,7 +42,7 @@ export default async function ProjectsPage() {
             return (
               <li
                 key={project.id}
-                className="rounded-[var(--radius)] border border-border-base bg-surface p-4"
+                className="glass rounded-[var(--radius)] p-4"
               >
                 <div className="flex items-start justify-between gap-3">
                   <Link

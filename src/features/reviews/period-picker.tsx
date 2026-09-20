@@ -42,7 +42,7 @@ export function PeriodPicker({
               'h-9 rounded-full border px-3.5 text-sm font-medium transition-colors',
               period === option
                 ? 'border-transparent bg-accent text-accent-text'
-                : 'border-border-base bg-surface text-text-muted hover:border-border-strong',
+                : 'glass text-text-muted hover:border-border-strong',
             )}
           >
             {t(option)}

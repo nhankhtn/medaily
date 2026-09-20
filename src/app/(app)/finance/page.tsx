@@ -163,11 +163,19 @@ export default async function FinancePage({
             ) : (
               <ul className="divide-border-base divide-y">
                 {data.categories.map((category) => (
-                  <li key={category.id} className="flex items-center justify-between gap-2 py-2">
-                    <span className="min-w-0 truncate text-sm">{category.name}</span>
-                    <Badge tone={category.kind === 'income' ? 'good' : 'neutral'}>
-                      {t(`kinds.${category.kind}`)}
-                    </Badge>
+                  <li key={category.id} className="flex items-start justify-between gap-2 py-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm">{category.name}</p>
+                      {category.note ? (
+                        <p className="text-text-subtle mt-0.5 line-clamp-2 text-xs">{category.note}</p>
+                      ) : null}
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <Badge tone={category.kind === 'income' ? 'good' : 'neutral'}>
+                        {t(`kinds.${category.kind}`)}
+                      </Badge>
+                      <CategoryDialog category={category} />
+                    </div>
                   </li>
                 ))}
               </ul>

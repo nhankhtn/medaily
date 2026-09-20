@@ -36,10 +36,10 @@ export function Trends({ points }: { points: TrendPoint[] }) {
             onClick={() => setDays(range)}
             aria-pressed={days === range}
             className={cn(
-              'h-8 rounded-full border px-3 text-xs font-medium transition-colors',
+              'h-8 rounded-full px-3 text-xs font-medium transition-colors',
               days === range
-                ? 'border-transparent bg-accent text-accent-text'
-                : 'border-border-base bg-surface-2 text-text-muted hover:border-border-strong',
+                ? 'bg-accent text-accent-text'
+                : 'glass text-text-muted hover:border-border-strong',
             )}
           >
             {range === 7 ? t('range7') : t('range30')}

@@ -94,8 +94,8 @@ export function TransactionForm({
 
   return (
     <form id="transaction-form" ref={formRef} action={submit} className="space-y-2">
-      <div className="grid grid-cols-2 items-end gap-2 sm:flex sm:flex-wrap">
-        <label className="space-y-1.5 sm:w-28">
+      <div className="grid grid-cols-2 items-end gap-2 lg:flex lg:flex-nowrap">
+        <label className="space-y-1.5 lg:w-24 lg:shrink-0">
           <span className="text-text-muted text-xs font-medium">{t('kind')}</span>
           <Select value={kind} onChange={(event) => setKind(event.target.value as typeof kind)}>
             {(['expense', 'income', 'transfer'] as const).map((option) => (
@@ -106,12 +106,12 @@ export function TransactionForm({
           </Select>
         </label>
 
-        <label className="space-y-1.5 sm:w-32">
+        <label className="space-y-1.5 lg:w-28 lg:shrink-0">
           <span className="text-text-muted text-xs font-medium">{t('amount')}</span>
           <MoneyInput name="amount" required className="text-right tabular-nums" />
         </label>
 
-        <label className="space-y-1.5 sm:min-w-36 sm:flex-1">
+        <label className="space-y-1.5 lg:w-28 lg:shrink-0">
           <span className="text-text-muted text-xs font-medium">{t('account')}</span>
           <Select name="accountId" required>
             {accounts.map((account) => (
@@ -123,7 +123,7 @@ export function TransactionForm({
         </label>
 
         {kind === 'transfer' ? (
-          <label className="space-y-1.5 sm:min-w-36 sm:flex-1">
+          <label className="space-y-1.5 min-w-0 lg:w-32 lg:flex-1">
             <span className="text-text-muted text-xs font-medium">{t('toAccount')}</span>
             <Select name="counterAccountId" required>
               {accounts.map((account) => (
@@ -134,7 +134,7 @@ export function TransactionForm({
             </Select>
           </label>
         ) : (
-          <label className="space-y-1.5 sm:min-w-36 sm:flex-1">
+          <label className="space-y-1.5 min-w-0 lg:w-32 lg:flex-1">
             <span className="text-text-muted text-xs font-medium">{t('category')}</span>
             <Select name="categoryId">
               <option value="">{t('noCategory')}</option>
@@ -149,7 +149,7 @@ export function TransactionForm({
 
         {/* A transfer is between your own accounts, so there is nobody to owe. */}
         {kind === 'transfer' ? null : people.length === 0 ? null : (
-          <label className="space-y-1.5 sm:min-w-36 sm:flex-1">
+          <label className="space-y-1.5 lg:w-28 lg:shrink-0">
             <span className="text-text-muted text-xs font-medium">{t('debt')}</span>
             <Select name="personId">
               <option value="">{t('notDebt')}</option>
@@ -162,27 +162,20 @@ export function TransactionForm({
           </label>
         )}
 
-        <label className="space-y-1.5 sm:min-w-32 sm:flex-1">
+        <label className="space-y-1.5 min-w-0 lg:min-w-24 lg:flex-1">
           <span className="text-text-muted text-xs font-medium">{t('merchant')}</span>
           <Input name="merchant" maxLength={200} />
         </label>
 
-        {/*
-         * The date and the button travel as one item. Left loose, the fields
-         * ahead of them grow to fill the line and the button is pushed onto a
-         * line of its own, stranded under a row of inputs.
-         */}
-        <div className="col-span-2 grid gap-2 sm:flex sm:items-end">
-          <label className="space-y-1.5 sm:w-36">
-            <span className="text-text-muted text-xs font-medium">{t('date')}</span>
-            <Input type="date" name="occurredOn" defaultValue={today} />
-          </label>
+        <label className="space-y-1.5 lg:w-32 lg:shrink-0">
+          <span className="text-text-muted text-xs font-medium">{t('date')}</span>
+          <Input type="date" name="occurredOn" defaultValue={today} />
+        </label>
 
-          <Button type="submit" className="w-full sm:w-auto">
-            <Plus className="size-4" />
-            {t('addTransaction')}
-          </Button>
-        </div>
+        <Button type="submit" className="col-span-2 w-full lg:col-auto lg:w-auto lg:shrink-0">
+          <Plus className="size-4" />
+          {t('addTransaction')}
+        </Button>
       </div>
 
       {kind === 'transfer' ? <p className="text-text-subtle text-xs">{t('transferHint')}</p> : null}

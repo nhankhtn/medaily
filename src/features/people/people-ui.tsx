@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import { Input, Textarea } from '@/components/ui/input'
+import { MarkdownEditor } from '@/components/ui/markdown-editor'
 import { Select } from '@/components/ui/select'
 import { Field } from '@/features/projects/project-dialog'
 import { fromISODate, type ISODate } from '@/lib/dates'
@@ -22,9 +23,16 @@ export function PersonDialog({ person, trigger }: { person?: PersonView; trigger
   const tc = useTranslations('common')
   const [open, setOpen] = useState(false)
   const [pending, startTransition] = useTransition()
+  const [notes, setNotes] = useState(person?.notes ?? '')
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next)
+        if (next) setNotes(person?.notes ?? '')
+      }}
+    >
       <DialogTrigger asChild>
         {trigger ?? (
           <Button size="sm">
@@ -109,11 +117,12 @@ export function PersonDialog({ person, trigger }: { person?: PersonView; trigger
           </Field>
 
           <Field label={t('notes')}>
-            <Textarea
-              name="notes"
-              defaultValue={person?.notes ?? ''}
-              rows={8}
-              className="font-mono text-sm"
+            <input type="hidden" name="notes" value={notes} />
+            <MarkdownEditor
+              label={t('notes')}
+              value={notes}
+              onChange={setNotes}
+              className="min-h-40"
             />
             <p className="mt-1 text-xs text-text-subtle">{t('notesHint')}</p>
           </Field>

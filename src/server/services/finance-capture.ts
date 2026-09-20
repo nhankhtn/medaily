@@ -43,9 +43,13 @@ export async function parseTransactions({
       text,
       today,
       currency,
-      // Names only. The ids stay here; matching a name back to one is this
-      // side's job, and an id is nothing the reading needs.
-      categories: categories.map((category) => ({ name: category.name, kind: category.kind })),
+      // Names (and optional notes) only. Ids stay here; matching a name back
+      // to one is this side's job, and an id is nothing the reading needs.
+      categories: categories.map((category) => ({
+        name: category.name,
+        kind: category.kind,
+        ...(category.note?.trim() ? { note: category.note.trim() } : {}),
+      })),
       maxItems: MAX_DRAFTS,
     }),
   })

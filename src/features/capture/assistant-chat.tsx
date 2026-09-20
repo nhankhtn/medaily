@@ -279,7 +279,7 @@ export function AssistantChat({
                     <button
                       type="button"
                       onClick={() => onFile('finance', message.offer as string)}
-                      className="border-border-strong bg-surface hover:bg-surface-2 mt-2 inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs"
+                      className="glass hover:bg-surface-2 mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs"
                     >
                       <Wallet className="size-3" />
                       {t('fileAsSpending')}
@@ -317,7 +317,7 @@ export function AssistantChat({
               type="button"
               onClick={() => send(t(`starters.${starter}`))}
               disabled={pending}
-              className="border-border-strong bg-surface hover:bg-surface-2 rounded-full border px-2.5 py-1 text-xs disabled:opacity-50"
+              className="glass hover:bg-surface-2 rounded-full px-2.5 py-1 text-xs disabled:opacity-50"
             >
               {t(`starters.${starter}`)}
             </button>

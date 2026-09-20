@@ -183,7 +183,7 @@ function Chip({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="border-border-strong bg-surface hover:bg-surface-2 rounded-full border px-2.5 py-1 text-xs disabled:opacity-50"
+      className="glass hover:bg-surface-2 rounded-full px-2.5 py-1 text-xs disabled:opacity-50"
     >
       {children}
     </button>

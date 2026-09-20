@@ -67,7 +67,7 @@ export function MarkdownField({
         />
 
         {inline && !hidden ? (
-          <div className="border-border-base bg-surface-2 rounded-[var(--radius)] border p-3">
+          <div className="glass rounded-[var(--radius)] p-3">
             <Markdown>{text}</Markdown>
           </div>
         ) : null}

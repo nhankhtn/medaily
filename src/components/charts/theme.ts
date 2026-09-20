@@ -26,6 +26,16 @@ export type SeriesKey = keyof (typeof SERIES_COLORS)['light']
 export const AXIS_COLOR = 'var(--text-subtle)'
 export const GRID_COLOR = 'var(--border)'
 
+/** Recharts cursor / hover band — translucent, not a second axis. */
+export const CURSOR_FILL = 'var(--surface-2)'
+export const CURSOR_STROKE = 'var(--border-strong)'
+
+/** Gap between pie slices; solid so adjacent fills don't merge on glass. */
+export const PIE_SLICE_STROKE = 'var(--surface-solid)'
+
+/** Active point ring on line charts — reads over the series on glass panels. */
+export const ACTIVE_DOT_STROKE = 'var(--surface-solid)'
+
 /**
  * A ramp for slices of a whole — finance categories, where how many series
  * there are is whatever the person created rather than a fixed four.

@@ -51,7 +51,7 @@ export function AiReview({
       </div>
 
       {content ? (
-        <div className="rounded-[var(--radius)] border border-border-base bg-surface-2 p-4">
+        <div className="glass rounded-[var(--radius)] p-4">
           <Markdown>{content}</Markdown>
         </div>
       ) : (

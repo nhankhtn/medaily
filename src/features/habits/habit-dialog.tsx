@@ -6,7 +6,8 @@ import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
-import { Input, Textarea } from '@/components/ui/input'
+import { Input } from '@/components/ui/input'
+import { MarkdownEditor } from '@/components/ui/markdown-editor'
 import { Select } from '@/components/ui/select'
 import { Field } from '@/features/projects/project-dialog'
 import { MetricOptions } from '@/features/metrics/metric-options'
@@ -54,6 +55,7 @@ export function HabitDialog({
   const tm = useTranslations('metricNames')
   const [open, setOpen] = useState(false)
   const [pending, startTransition] = useTransition()
+  const [notes, setNotes] = useState(habit?.notes ?? '')
 
   const [frequency, setFrequency] = useState<(typeof FREQUENCIES)[number]>(
     habit?.frequencyType ?? 'daily',
@@ -120,7 +122,13 @@ export function HabitDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next)
+        if (next) setNotes(habit?.notes ?? '')
+      }}
+    >
       <DialogTrigger asChild>
         {trigger ?? (
           <Button size="sm" data-tour="habit-new">
@@ -194,7 +202,7 @@ export function HabitDialog({
                         'h-9 min-w-11 rounded-full border px-2 text-xs font-medium',
                         active
                           ? 'bg-accent text-accent-text border-transparent'
-                          : 'border-border-base bg-surface-2 text-text-muted',
+                          : 'glass text-text-muted',
                       )}
                     >
                       {t(`weekdayShort.${day}`)}
@@ -230,7 +238,7 @@ export function HabitDialog({
           )}
 
           {/* The feature that makes habits worth having (spec 7.3). */}
-          <div className="border-border-base bg-surface-2 space-y-2 rounded-[var(--radius)] border p-3">
+          <div className="glass space-y-2 rounded-[var(--radius)] p-3">
             <label className="flex items-start gap-2.5">
               <input
                 type="checkbox"
@@ -308,7 +316,13 @@ export function HabitDialog({
           </div>
 
           <Field label={t('notes')}>
-            <Textarea name="notes" rows={2} />
+            <input type="hidden" name="notes" value={notes} />
+            <MarkdownEditor
+              label={t('notes')}
+              value={notes}
+              onChange={setNotes}
+              className="min-h-24"
+            />
           </Field>
 
           <div className="flex items-center justify-between gap-2 pt-1">

@@ -11,7 +11,8 @@ import {
   YAxis,
 } from 'recharts'
 import { fromISODate } from '@/lib/dates'
-import { SERIES_COLORS, type SeriesKey } from './theme'
+import { ChartTooltip } from './chart-tooltip'
+import { ACTIVE_DOT_STROKE, CURSOR_STROKE, SERIES_COLORS, type SeriesKey } from './theme'
 import { useChartMode } from './use-chart-mode'
 
 export type FacetPoint = { date: string; value: number | null }
@@ -44,7 +45,7 @@ export function SparklineFacet({
   const hasData = present.length >= 2
 
   return (
-    <figure className="rounded-[var(--radius)] border border-border-base bg-surface p-3">
+    <figure className="glass rounded-[var(--radius)] p-3">
       <figcaption className="mb-1 flex items-baseline justify-between gap-2">
         <span className="text-xs font-medium text-text-muted">{title}</span>
         {average !== null && average !== undefined ? (
@@ -63,13 +64,13 @@ export function SparklineFacet({
               <XAxis dataKey="date" hide />
               <YAxis hide domain={['dataMin', 'dataMax']} />
               <Tooltip
-                cursor={{ stroke: 'var(--border-strong)', strokeWidth: 1 }}
+                cursor={{ stroke: CURSOR_STROKE, strokeWidth: 1 }}
                 content={({ active, payload }) => {
                   if (!active || !payload?.length) return null
                   const point = payload[0]?.payload as FacetPoint | undefined
                   if (!point || point.value === null) return null
                   return (
-                    <div className="rounded-md border border-border-base bg-surface px-2 py-1 text-xs shadow-[var(--shadow-card)]">
+                    <ChartTooltip>
                       <div className="text-text-subtle">
                         {format.dateTime(fromISODate(point.date), 'dayMonth')}
                       </div>
@@ -77,7 +78,7 @@ export function SparklineFacet({
                         {formatValue(point.value)}
                         {unit ? ` ${unit}` : ''}
                       </div>
-                    </div>
+                    </ChartTooltip>
                   )
                 }}
               />
@@ -87,7 +88,7 @@ export function SparklineFacet({
                 stroke={color}
                 strokeWidth={2}
                 dot={false}
-                activeDot={{ r: 4, strokeWidth: 2, stroke: 'var(--surface)' }}
+                activeDot={{ r: 4, strokeWidth: 2, stroke: ACTIVE_DOT_STROKE }}
                 connectNulls={false}
                 isAnimationActive={false}
               />

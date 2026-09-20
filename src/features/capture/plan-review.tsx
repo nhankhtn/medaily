@@ -117,10 +117,7 @@ export function PlanReview({
         {rows.map((row) => (
           <li
             key={row.id}
-            className={cn(
-              'border-border-base rounded-[var(--radius)] border p-2',
-              row.checked ? '' : 'opacity-50',
-            )}
+            className={cn('glass rounded-[var(--radius)] p-2', row.checked ? '' : 'opacity-50')}
           >
             <div className="flex items-start gap-2">
               <input
@@ -151,7 +148,7 @@ export function PlanReview({
                     type="button"
                     onClick={() => flip(row)}
                     title={t(row.kind === 'goal' ? 'makeTask' : 'makeGoal')}
-                    className="border-border-strong hover:bg-surface-2 inline-flex items-center gap-1 rounded-full border px-2 py-0.5"
+                    className="glass hover:bg-surface-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5"
                   >
                     {row.kind === 'goal' ? (
                       <Target className="size-3" />

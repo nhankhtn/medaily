@@ -200,7 +200,7 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
                         'rounded-full border px-3 py-1.5 text-sm transition-colors',
                         activity === id
                           ? 'border-accent bg-accent-soft text-accent font-medium'
-                          : 'border-border-base bg-surface-2 text-text-muted hover:text-text',
+                          : 'glass text-text-muted hover:text-text',
                       )}
                     >
                       {labelOf(id)}
@@ -249,7 +249,7 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
                             key={type}
                             type="button"
                             onClick={() => setWorkoutType(type)}
-                            className="border-border-base bg-surface-2 text-text-muted hover:text-text rounded-full border px-2.5 py-1 text-xs"
+                            className="glass text-text-muted hover:text-text rounded-full px-2.5 py-1 text-xs"
                           >
                             {type}
                           </button>
@@ -280,7 +280,7 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
                           'rounded-full border px-3 py-1 text-sm',
                           minutes === preset
                             ? 'border-accent bg-accent-soft text-accent font-medium'
-                            : 'border-border-base bg-surface-2 text-text-muted hover:text-text',
+                            : 'glass text-text-muted hover:text-text',
                         )}
                       >
                         {t('minutesShort', { minutes: preset })}
@@ -389,7 +389,7 @@ function Total({
   t: ReturnType<typeof useTranslations<'timer'>>
 }) {
   return (
-    <div className="border-border-base bg-surface-2 rounded-[var(--radius)] border px-3 py-2.5">
+    <div className="glass rounded-[var(--radius)] px-3 py-2.5">
       <p className="text-text-muted truncate text-xs">{label}</p>
       <p className="mt-0.5 text-xl font-semibold tabular-nums">{t('minutesShort', { minutes })}</p>
     </div>
@@ -467,7 +467,7 @@ function Segmented({
   onChange: (value: string) => void
 }) {
   return (
-    <div className="border-border-base bg-surface-2 inline-flex rounded-full border p-0.5">
+    <div className="glass inline-flex rounded-full p-0.5">
       {options.map((option) => (
         <button
           key={option.value}
@@ -477,7 +477,7 @@ function Segmented({
           className={cn(
             'rounded-full px-4 py-1.5 text-sm transition-colors',
             value === option.value
-              ? 'bg-surface text-text font-medium shadow-[var(--shadow-card)]'
+              ? 'glass-strong text-text font-medium'
               : 'text-text-muted hover:text-text',
           )}
         >

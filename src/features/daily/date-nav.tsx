@@ -80,7 +80,7 @@ export function DateNav({ date, today }: { date: ISODate; today: ISODate }) {
               input.focus()
             }
           }}
-          className="border-border-strong hover:bg-surface-2 flex h-9 items-center gap-2 rounded-[var(--radius)] border px-3 text-sm"
+          className="glass hover:bg-surface-2 flex h-9 items-center gap-2 rounded-[var(--radius)] border-border-strong px-3 text-sm"
         >
           <CalendarDays className="text-text-subtle size-4" />
           <span className="tabular-nums">

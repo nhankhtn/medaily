@@ -261,7 +261,7 @@ export function CommandPalette({ today }: { today: ISODate }) {
       type="button"
       onClick={() => setOpen(true)}
       aria-label={t('open')}
-      className="border-border-base bg-surface-2 text-text-subtle hover:border-border-strong flex h-9 items-center gap-2 rounded-full border px-3 text-xs"
+      className="glass text-text-subtle hover:border-border-strong flex h-9 items-center gap-2 rounded-full px-3 text-xs"
     >
       <Search className="size-3.5" />
       <span className="hidden sm:inline">{t('open')}</span>
@@ -284,12 +284,12 @@ export function CommandPalette({ today }: { today: ISODate }) {
       {trigger}
       {createPortal(
         <div
-          className="fixed inset-0 z-[60] flex items-start justify-center p-4 pt-[7dvh]"
+          className="fixed inset-0 z-[60] flex items-start justify-center bg-overlay/80 p-4 pt-[max(7dvh,calc(env(safe-area-inset-top,0px)+1rem))] backdrop-blur-sm pr-[max(1rem,env(safe-area-inset-right,0px))] pl-[max(1rem,env(safe-area-inset-left,0px))]"
           onClick={() => setOpen(false)}
           role="presentation"
         >
           <div
-            className="border-border-strong bg-surface flex max-h-[calc(80dvh-var(--keyboard-inset))] w-full max-w-lg flex-col overflow-hidden rounded-[var(--radius)] border shadow-2xl"
+            className="glass-strong flex max-h-[calc(80dvh-var(--keyboard-inset))] w-full max-w-lg flex-col overflow-hidden rounded-[var(--radius)]"
             style={{ '--keyboard-inset': `${keyboard}px` } as React.CSSProperties}
             onClick={(event) => event.stopPropagation()}
             role="dialog"

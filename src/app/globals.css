@@ -3,9 +3,8 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans:
-    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
-    'Noto Sans', sans-serif;
+  --font-sans: var(--font-be-vietnam), ui-sans-serif, system-ui, sans-serif;
+  --font-brand: var(--font-outfit), var(--font-be-vietnam), ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
 }
 
@@ -17,50 +16,85 @@
  * A theme's block must set every token :root sets. `.dark` carries the dark
  * palette because Tailwind's `dark:` variant keys off that class; the boot
  * script adds it for any theme whose base is dark (see lib/themes.ts).
+ *
+ * Surfaces are translucent (liquid glass). Atmosphere on body::before gives
+ * the blur something to refract against in every theme.
  */
 :root {
-  --bg: oklch(98.5% 0.002 250);
-  --surface: oklch(100% 0 0);
-  --surface-2: oklch(96.8% 0.003 250);
-  --border: oklch(91% 0.004 250);
-  --border-strong: oklch(84% 0.006 250);
+  --bg: oklch(97% 0.012 250);
+  --surface: oklch(100% 0 0 / 0.55);
+  --surface-2: oklch(100% 0 0 / 0.38);
+  --surface-solid: oklch(100% 0 0 / 0.88);
+  --border: oklch(72% 0.01 250 / 0.45);
+  --border-strong: oklch(58% 0.014 250 / 0.55);
   --text: oklch(21% 0.01 250);
   --text-muted: oklch(50% 0.012 250);
   --text-subtle: oklch(62% 0.01 250);
   --accent: oklch(54% 0.17 275);
   --accent-hover: oklch(48% 0.17 275);
-  --accent-soft: oklch(94% 0.03 275);
+  --accent-soft: oklch(94% 0.03 275 / 0.7);
   --accent-text: oklch(100% 0 0);
   --good: oklch(58% 0.13 155);
-  --good-soft: oklch(94% 0.04 155);
+  --good-soft: oklch(94% 0.04 155 / 0.7);
   --warn: oklch(70% 0.14 75);
-  --warn-soft: oklch(95% 0.05 85);
+  --warn-soft: oklch(95% 0.05 85 / 0.7);
   --bad: oklch(58% 0.18 25);
-  --bad-soft: oklch(95% 0.04 25);
-  --shadow-card: 0 1px 2px oklch(0% 0 0 / 0.04), 0 1px 3px oklch(0% 0 0 / 0.04);
+  --bad-soft: oklch(95% 0.04 25 / 0.7);
+  --shadow-card:
+    0 1px 0 oklch(100% 0 0 / 0.55) inset, 0 8px 28px oklch(40% 0.03 250 / 0.1),
+    0 1px 3px oklch(0% 0 0 / 0.04);
+  --glass-blur: 24px;
+  --glass-saturate: 1.4;
+  --glass-chip: oklch(100% 0 0 / 0.16);
+  --glass-chip-border: oklch(100% 0 0 / 0.38);
+  --glass-chip-blur: 48px;
+  --glass-chip-shadow:
+    0 0.5px 0 oklch(100% 0 0 / 0.55) inset, 0 8px 28px oklch(0% 0 0 / 0.1);
+  --overlay: oklch(20% 0.02 250 / 0.35);
+  --bg-atmosphere:
+    radial-gradient(ellipse 80% 60% at 10% 0%, oklch(88% 0.06 275 / 0.55), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 90% 10%, oklch(90% 0.05 200 / 0.45), transparent 50%),
+    radial-gradient(ellipse 60% 45% at 50% 100%, oklch(92% 0.04 320 / 0.4), transparent 55%),
+    linear-gradient(165deg, oklch(97.5% 0.01 250), oklch(95% 0.02 220));
   --radius: 0.75rem;
 }
 
 .dark {
-  --bg: oklch(17% 0.008 260);
-  --surface: oklch(21% 0.01 260);
-  --surface-2: oklch(25% 0.012 260);
-  --border: oklch(30% 0.012 260);
-  --border-strong: oklch(38% 0.014 260);
+  --bg: oklch(14% 0.012 260);
+  --surface: oklch(28% 0.014 260 / 0.45);
+  --surface-2: oklch(35% 0.016 260 / 0.35);
+  --surface-solid: oklch(22% 0.012 260 / 0.85);
+  --border: oklch(100% 0 0 / 0.12);
+  --border-strong: oklch(100% 0 0 / 0.2);
   --text: oklch(96% 0.004 260);
   --text-muted: oklch(72% 0.01 260);
   --text-subtle: oklch(58% 0.012 260);
   --accent: oklch(68% 0.15 275);
   --accent-hover: oklch(74% 0.15 275);
-  --accent-soft: oklch(30% 0.06 275);
+  --accent-soft: oklch(40% 0.08 275 / 0.55);
   --accent-text: oklch(15% 0.01 275);
   --good: oklch(70% 0.14 155);
-  --good-soft: oklch(28% 0.05 155);
+  --good-soft: oklch(35% 0.06 155 / 0.55);
   --warn: oklch(78% 0.13 80);
-  --warn-soft: oklch(30% 0.05 80);
+  --warn-soft: oklch(38% 0.06 80 / 0.55);
   --bad: oklch(68% 0.16 25);
-  --bad-soft: oklch(30% 0.06 25);
-  --shadow-card: 0 1px 2px oklch(0% 0 0 / 0.3);
+  --bad-soft: oklch(38% 0.08 25 / 0.55);
+  --shadow-card:
+    0 1px 0 oklch(100% 0 0 / 0.1) inset, 0 12px 36px oklch(0% 0 0 / 0.45),
+    0 1px 3px oklch(0% 0 0 / 0.3);
+  --glass-blur: 28px;
+  --glass-saturate: 1.5;
+  --glass-chip: oklch(100% 0 0 / 0.1);
+  --glass-chip-border: oklch(100% 0 0 / 0.22);
+  --glass-chip-blur: 48px;
+  --glass-chip-shadow:
+    0 0.5px 0 oklch(100% 0 0 / 0.2) inset, 0 10px 32px oklch(0% 0 0 / 0.35);
+  --overlay: oklch(0% 0 0 / 0.5);
+  --bg-atmosphere:
+    radial-gradient(ellipse 80% 55% at 15% -5%, oklch(35% 0.1 275 / 0.5), transparent 55%),
+    radial-gradient(ellipse 65% 50% at 95% 15%, oklch(30% 0.08 200 / 0.4), transparent 50%),
+    radial-gradient(ellipse 55% 40% at 40% 110%, oklch(28% 0.07 320 / 0.35), transparent 50%),
+    linear-gradient(165deg, oklch(15% 0.015 260), oklch(12% 0.01 250));
 }
 
 /*
@@ -69,25 +103,41 @@
  * against a tinted background.
  */
 [data-theme='pink'] {
-  --bg: oklch(98% 0.012 350);
-  --surface: oklch(100% 0.004 350);
-  --surface-2: oklch(96% 0.02 350);
-  --border: oklch(91% 0.028 350);
-  --border-strong: oklch(83% 0.045 350);
+  --bg: oklch(97% 0.02 350);
+  --surface: oklch(100% 0.004 350 / 0.55);
+  --surface-2: oklch(100% 0.01 350 / 0.38);
+  --surface-solid: oklch(100% 0.004 350 / 0.88);
+  --border: oklch(65% 0.04 350 / 0.45);
+  --border-strong: oklch(52% 0.06 350 / 0.55);
   --text: oklch(24% 0.05 350);
   --text-muted: oklch(48% 0.06 350);
   --text-subtle: oklch(58% 0.05 350);
   --accent: oklch(55% 0.2 355);
   --accent-hover: oklch(48% 0.2 355);
-  --accent-soft: oklch(94% 0.04 350);
+  --accent-soft: oklch(94% 0.04 350 / 0.7);
   --accent-text: oklch(100% 0 0);
   --good: oklch(52% 0.14 155);
-  --good-soft: oklch(94% 0.04 155);
+  --good-soft: oklch(94% 0.04 155 / 0.7);
   --warn: oklch(60% 0.13 60);
-  --warn-soft: oklch(95% 0.05 70);
+  --warn-soft: oklch(95% 0.05 70 / 0.7);
   --bad: oklch(54% 0.19 20);
-  --bad-soft: oklch(95% 0.04 20);
-  --shadow-card: 0 1px 2px oklch(40% 0.1 350 / 0.06), 0 1px 3px oklch(40% 0.1 350 / 0.06);
+  --bad-soft: oklch(95% 0.04 20 / 0.7);
+  --shadow-card:
+    0 1px 0 oklch(100% 0 0 / 0.6) inset, 0 8px 28px oklch(50% 0.1 350 / 0.12),
+    0 1px 3px oklch(40% 0.1 350 / 0.06);
+  --glass-blur: 24px;
+  --glass-saturate: 1.45;
+  --glass-chip: oklch(100% 0 0 / 0.16);
+  --glass-chip-border: oklch(100% 0 0 / 0.4);
+  --glass-chip-blur: 48px;
+  --glass-chip-shadow:
+    0 0.5px 0 oklch(100% 0 0 / 0.55) inset, 0 8px 28px oklch(40% 0.08 350 / 0.12);
+  --overlay: oklch(30% 0.05 350 / 0.35);
+  --bg-atmosphere:
+    radial-gradient(ellipse 80% 60% at 10% 0%, oklch(90% 0.07 350 / 0.55), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 90% 10%, oklch(92% 0.05 20 / 0.4), transparent 50%),
+    radial-gradient(ellipse 60% 45% at 50% 100%, oklch(93% 0.04 320 / 0.35), transparent 55%),
+    linear-gradient(165deg, oklch(98% 0.015 350), oklch(95% 0.025 340));
   --radius: 0.9rem;
 }
 
@@ -95,6 +145,7 @@
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
+  --color-surface-solid: var(--surface-solid);
   --color-border-base: var(--border);
   --color-border-strong: var(--border-strong);
   --color-text: var(--text);
@@ -110,7 +161,45 @@
   --color-warn-soft: var(--warn-soft);
   --color-bad: var(--bad);
   --color-bad-soft: var(--bad-soft);
+  --color-overlay: var(--overlay);
   --radius-card: var(--radius);
+}
+
+/*
+ * Shared frosted panel. Prefer this (or <Card>) over hand-rolled border +
+ * bg-surface so every surface picks up blur and specular chrome together.
+ */
+@utility glass {
+  background-color: var(--surface);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-card);
+}
+
+@utility glass-strong {
+  background-color: var(--surface-solid);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-card);
+}
+
+/* Control Center–style chip / floating dock: low fill so blur reads. */
+@utility glass-chip {
+  background-color: var(--glass-chip);
+  -webkit-backdrop-filter: blur(var(--glass-chip-blur)) saturate(1.9);
+  backdrop-filter: blur(var(--glass-chip-blur)) saturate(1.9);
+  border: 0.5px solid var(--glass-chip-border);
+  box-shadow: var(--glass-chip-shadow);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass,
+  .glass-strong,
+  .glass-chip {
+    background-color: var(--surface-solid);
+  }
 }
 
 * {
@@ -120,6 +209,13 @@
 html {
   color-scheme: light;
   -webkit-tap-highlight-color: transparent;
+  /* Synced with viewport-fit=cover — notch / Dynamic Island / home indicator. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  /* Safari 26 falls back here when no edge sticky/fixed is sampled. */
+  background-color: var(--bg);
 }
 
 html.dark {
@@ -127,12 +223,23 @@ html.dark {
 }
 
 body {
+  position: relative;
+  isolation: isolate;
   background-color: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
   /* 16px minimum keeps iOS from zooming on focus (spec 22.3) */
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--bg-atmosphere);
 }
 
 /* Compact density (spec 22.7) */
@@ -231,4 +338,75 @@ input[type='number'] {
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Sign-in: entrance + soft orbs (atmosphere already on body::before). */
+@keyframes login-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes login-orb-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(4%, -3%, 0) scale(1.05);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .login-enter {
+    animation: login-enter 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .login-orb {
+    animation: login-orb-drift 18s ease-in-out infinite;
+  }
+}
+
+.login-orb {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(40px);
+}
+
+.login-orb-a {
+  top: 8%;
+  left: -8%;
+  width: min(48vw, 28rem);
+  height: min(48vw, 28rem);
+  background: var(--accent-soft);
+  opacity: 0.85;
+}
+
+.login-orb-b {
+  right: -6%;
+  bottom: 18%;
+  width: min(42vw, 22rem);
+  height: min(42vw, 22rem);
+  background: var(--good-soft);
+  opacity: 0.7;
+  animation-delay: -6s;
+  animation-duration: 22s;
+}
+
+.login-orb-c {
+  top: 42%;
+  left: 38%;
+  width: min(36vw, 18rem);
+  height: min(36vw, 18rem);
+  background: var(--warn-soft);
+  opacity: 0.45;
+  animation-delay: -11s;
+  animation-duration: 26s;
 }

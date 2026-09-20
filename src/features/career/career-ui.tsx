@@ -265,7 +265,7 @@ export function PortfolioList({ items }: { items: PortfolioItem[] }) {
   return (
     <ul className="space-y-2">
       {items.map((item) => (
-        <li key={item.id} className="rounded-[var(--radius)] border border-border-base p-3">
+        <li key={item.id} className="glass rounded-[var(--radius)] p-3">
           <div className="flex items-start justify-between gap-2">
             <span className="min-w-0 truncate font-medium">{item.title}</span>
             {item.url ? (

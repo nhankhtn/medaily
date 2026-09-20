@@ -3,6 +3,12 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { getCurrentUserId } from '@/lib/auth/current-user'
+import {
+  deliveryUrl,
+  isUploadedAvatar,
+  publicIdFromDeliveryUrl,
+  readCloudinaryConfig,
+} from '@/lib/media/cloudinary'
 import { PATHS } from '@/lib/paths'
 import { isoDateSchema } from '@/lib/validation/daily'
 import { findPerson } from '@/server/repositories/people'
@@ -12,6 +18,7 @@ import {
   insertPersonPhoto,
   updatePersonPhoto,
 } from '@/server/repositories/media'
+import { findUserById, setUserImageUrl } from '@/server/repositories/auth'
 import { createUploadTicket, destroyAsset, type UploadTicket } from '@/server/services/media'
 
 export type TicketResult =
@@ -110,5 +117,68 @@ export async function describePhoto(input: unknown) {
   })
 
   revalidatePath(PATHS.people)
+  return { ok: true as const }
+}
+
+/**
+ * Profile avatar: one photo per user, stored as `users.image_url`. Folder is
+ * owned by the session user themselves, so no separate ownership check.
+ */
+export async function requestAvatarUpload(): Promise<TicketResult> {
+  const userId = await getCurrentUserId()
+  const ticket = createUploadTicket('avatars', userId, userId)
+  if (!ticket) return { ok: false, error: 'disabled' }
+  return { ok: true, ticket }
+}
+
+export async function attachAvatar(input: unknown) {
+  const parsed = z.object({ publicId: z.string().min(1).max(300) }).safeParse(input)
+  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+
+  const userId = await getCurrentUserId()
+  const expectedPrefix = `${userId}/avatars/${userId}/`
+  if (!parsed.data.publicId.includes(expectedPrefix)) {
+    return { ok: false as const, error: 'invalid_input' as const }
+  }
+
+  const config = readCloudinaryConfig()
+  if (!config.configured) return { ok: false as const, error: 'disabled' as const }
+
+  const user = await findUserById(userId)
+  if (user?.imageUrl && isUploadedAvatar(user.imageUrl, userId)) {
+    const previous = publicIdFromDeliveryUrl(user.imageUrl, config.cloudName)
+    if (previous && previous !== parsed.data.publicId) {
+      try {
+        await destroyAsset(previous)
+      } catch (error) {
+        console.error('[avatar] destroy previous failed:', error)
+      }
+    }
+  }
+
+  await setUserImageUrl(userId, deliveryUrl(config.cloudName, parsed.data.publicId, 'thumb'))
+  revalidatePath(PATHS.settings)
+  return { ok: true as const }
+}
+
+export async function removeAvatar() {
+  const userId = await getCurrentUserId()
+  const config = readCloudinaryConfig()
+  const user = await findUserById(userId)
+  if (!user?.imageUrl) return { ok: true as const }
+
+  if (config.configured && isUploadedAvatar(user.imageUrl, userId)) {
+    const publicId = publicIdFromDeliveryUrl(user.imageUrl, config.cloudName)
+    if (publicId) {
+      try {
+        await destroyAsset(publicId)
+      } catch (error) {
+        console.error('[avatar] destroy failed:', error)
+      }
+    }
+  }
+
+  await setUserImageUrl(userId, null)
+  revalidatePath(PATHS.settings)
   return { ok: true as const }
 }

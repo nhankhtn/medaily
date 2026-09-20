@@ -10,11 +10,15 @@ import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Field } from '@/features/projects/project-dialog'
 import type { ISODate } from '@/lib/dates'
+import type { PlannedBlock } from '@/lib/db/schema'
 import { RECURRENCE_RULES, type RecurrenceRule } from '@/lib/planning/recurrence'
-import { createPlannedBlock, removeEvent, saveEvent } from '@/server/actions/planning'
+import { removeEvent, removePlannedBlock, saveEvent, savePlannedBlock } from '@/server/actions/planning'
 import type { EventForm } from '@/lib/planning/event-form'
 
 const BLOCK_KINDS = ['deep_work', 'learning', 'project', 'exercise', 'other'] as const
+
+/** Wall-clock `HH:MM` from a `time` column that may arrive with seconds. */
+const hhmm = (value: string) => value.slice(0, 5)
 
 /**
  * One event, new or already there.
@@ -209,31 +213,57 @@ export function EventDialog({ defaultDate, event }: { defaultDate: ISODate; even
   )
 }
 
+export type BlockForm = Pick<
+  PlannedBlock,
+  'id' | 'blockDate' | 'startTime' | 'endTime' | 'kind' | 'projectId' | 'note'
+>
+
 export function BlockDialog({
   defaultDate,
   projects,
+  block,
 }: {
   defaultDate: ISODate
   projects: { id: string; name: string }[]
+  block?: BlockForm
 }) {
   const t = useTranslations('calendar')
   const tc = useTranslations('common')
   const [open, setOpen] = useState(false)
+  const [confirming, setConfirming] = useState(false)
   const [pending, startTransition] = useTransition()
 
+  const close = () => {
+    setOpen(false)
+    setConfirming(false)
+  }
+
+  const title = block ? t('editBlock') : t('addBlock')
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(next) => (next ? setOpen(true) : close())}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline">
-          <Plus className="size-4" />
-          {t('addBlock')}
-        </Button>
+        {block ? (
+          <button
+            type="button"
+            aria-label={t('editBlock')}
+            className="text-text-subtle hover:bg-surface-2 hover:text-text flex size-7 shrink-0 items-center justify-center rounded-full"
+          >
+            <Pencil className="size-3.5" />
+          </button>
+        ) : (
+          <Button size="sm" variant="outline">
+            <Plus className="size-4" />
+            {t('addBlock')}
+          </Button>
+        )}
       </DialogTrigger>
-      <DialogContent title={t('addBlock')} description={t('planNote')}>
+      <DialogContent title={title} description={block ? undefined : t('planNote')}>
         <form
           action={(formData) =>
             startTransition(async () => {
-              const result = await createPlannedBlock({
+              const result = await savePlannedBlock({
+                ...(block ? { id: block.id } : {}),
                 blockDate: String(formData.get('blockDate') ?? defaultDate),
                 startTime: String(formData.get('startTime') ?? '09:00'),
                 endTime: String(formData.get('endTime') ?? '10:00'),
@@ -246,26 +276,36 @@ export function BlockDialog({
                 return
               }
               toast.success(t('saved'))
-              setOpen(false)
+              close()
             })
           }
           className="space-y-3"
         >
           <div className="grid gap-3 sm:grid-cols-3">
             <Field label={t('date')}>
-              <Input type="date" name="blockDate" defaultValue={defaultDate} />
+              <Input type="date" name="blockDate" defaultValue={block?.blockDate ?? defaultDate} />
             </Field>
             <Field label={t('startTime')}>
-              <Input type="time" name="startTime" defaultValue="09:00" required />
+              <Input
+                type="time"
+                name="startTime"
+                defaultValue={block ? hhmm(block.startTime) : '09:00'}
+                required
+              />
             </Field>
             <Field label={t('endTime')}>
-              <Input type="time" name="endTime" defaultValue="10:30" required />
+              <Input
+                type="time"
+                name="endTime"
+                defaultValue={block ? hhmm(block.endTime) : '10:30'}
+                required
+              />
             </Field>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <Field label={t('kind')}>
-              <Select name="kind" defaultValue="deep_work">
+              <Select name="kind" defaultValue={block?.kind ?? 'deep_work'}>
                 {BLOCK_KINDS.map((kind) => (
                   <option key={kind} value={kind}>
                     {t(`kinds.${kind}`)}
@@ -274,7 +314,7 @@ export function BlockDialog({
               </Select>
             </Field>
             <Field label={tc('none')}>
-              <Select name="projectId" defaultValue="">
+              <Select name="projectId" defaultValue={block?.projectId ?? ''}>
                 <option value="">—</option>
                 {projects.map((project) => (
                   <option key={project.id} value={project.id}>
@@ -286,16 +326,41 @@ export function BlockDialog({
           </div>
 
           <Field label={t('note')}>
-            <Input name="note" maxLength={200} />
+            <Input name="note" maxLength={200} defaultValue={block?.note ?? ''} />
           </Field>
 
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-              {tc('cancel')}
-            </Button>
-            <Button type="submit" disabled={pending}>
-              {tc('save')}
-            </Button>
+          <div className="flex items-center justify-between gap-2">
+            {block ? (
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={pending}
+                onClick={() => {
+                  if (!confirming) {
+                    setConfirming(true)
+                    return
+                  }
+                  startTransition(async () => {
+                    await removePlannedBlock(block.id)
+                    toast.success(t('blockDeleted'))
+                    close()
+                  })
+                }}
+              >
+                {confirming ? t('confirmDelete') : tc('delete')}
+              </Button>
+            ) : (
+              <span />
+            )}
+
+            <div className="flex gap-2">
+              <Button type="button" variant="ghost" onClick={() => close()}>
+                {tc('cancel')}
+              </Button>
+              <Button type="submit" disabled={pending}>
+                {tc('save')}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>

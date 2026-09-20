@@ -47,7 +47,7 @@ export function PersonNotes({ person }: { person: PersonView }) {
       </div>
 
       {open && hasNotes ? (
-        <div className="mt-2 rounded-[var(--radius)] border border-border-base bg-surface-2 p-3">
+        <div className="glass mt-2 rounded-[var(--radius)] p-3">
           <p className="mb-1.5 text-xs font-medium text-text-muted">
             {t('notesAbout', { name: person.name })}
           </p>
