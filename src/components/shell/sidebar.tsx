@@ -46,7 +46,10 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        'sticky top-0 hidden h-dvh shrink-0 flex-col glass border-y-0 border-l-0 pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] md:flex',
+        // Floating dock on the left — same Control Center inset/radius idea as
+        // the mobile bottom nav, still sticky beside the content column.
+        'sticky top-3 z-20 ml-3 hidden h-[calc(100dvh-1.5rem)] shrink-0 flex-col overflow-hidden md:flex',
+        'glass-chip rounded-[1.75rem]',
         collapsed ? 'w-16' : 'w-60',
         mounted ? 'transition-[width]' : '',
       )}
@@ -74,7 +77,7 @@ export function Sidebar() {
                   {t(labelKey)}
                 </p>
               ) : (
-                <div className="mx-2 my-2 border-t border-border-base" />
+                <div className="border-border-base mx-2 my-2 border-t" />
               )}
               <ul className="space-y-0.5">
                 {items.map((item) => {
@@ -112,7 +115,7 @@ export function Sidebar() {
         type="button"
         onClick={toggle}
         aria-label={collapsed ? t('expand') : t('collapse')}
-        className="flex h-11 items-center justify-center gap-2 border-t border-border-base text-text-subtle hover:text-text"
+        className="border-border-base text-text-subtle hover:text-text flex h-11 items-center justify-center gap-2 border-t"
       >
         {collapsed ? (
           <PanelLeftOpen className="size-4" />
