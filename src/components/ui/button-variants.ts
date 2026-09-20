@@ -5,7 +5,8 @@ import { cva, type VariantProps } from 'class-variance-authority'
  * Keep this file free of `'use client'` so RSC pages can call it.
  */
 export const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 rounded-[var(--radius)] font-medium whitespace-nowrap transition-colors disabled:pointer-events-none disabled:opacity-50 select-none',
+  // Pill / circle like iOS controls — continuous radius, not card corners.
+  'inline-flex items-center justify-center gap-2 rounded-full font-medium whitespace-nowrap transition-colors disabled:pointer-events-none disabled:opacity-50 select-none',
   {
     variants: {
       variant: {
@@ -23,8 +24,8 @@ export const buttonVariants = cva(
        * still take the full 44px at their own call site.
        */
       size: {
-        md: 'h-10 px-3.5 text-sm sm:h-11 sm:px-4',
-        sm: 'h-8 px-2.5 text-xs sm:h-9 sm:px-3 sm:text-sm',
+        md: 'h-10 px-4 text-sm sm:h-11 sm:px-5',
+        sm: 'h-8 px-3 text-xs sm:h-9 sm:px-3.5 sm:text-sm',
         lg: 'h-11 px-5 text-sm sm:h-12 sm:px-6 sm:text-base',
         icon: 'size-10 sm:size-11',
         iconSm: 'size-8 sm:size-9',
