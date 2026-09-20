@@ -17,7 +17,7 @@ const CELL_TONE = {
   hit: 'bg-good',
   miss: 'bg-border-strong',
   pending: 'bg-accent-soft border border-accent',
-  not_scheduled: 'bg-surface-2',
+  not_scheduled: 'bg-surface-2 border border-border-base',
 } as const
 
 export function HabitList({

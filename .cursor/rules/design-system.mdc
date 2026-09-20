@@ -63,6 +63,7 @@ Use `MarkdownEditor` for fields meant as Markdown notes (daily, people notes, ha
 
 - Bottom nav is a **floating** `glass-chip` dock (inset from edges + `safe-area`), not flush to the screen bottom.
 - Respect `env(safe-area-inset-*)` / `--safe-*` on sticky headers and fixed chrome. Root viewport uses `viewportFit: 'cover'`.
+- iPhone notch ears: put `glass` / `glass-strong` **on** the sticky/fixed root (Safari 26 samples that node’s `background-color` + `backdrop-filter`). Do **not** move the fill to an absolute child if you want the status-bar ears to tint with the chrome.
 
 ## Checklist before shipping UI
 

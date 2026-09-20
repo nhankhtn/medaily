@@ -214,6 +214,8 @@ html {
   --safe-right: env(safe-area-inset-right, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
+  /* Safari 26 falls back here when no edge sticky/fixed is sampled. */
+  background-color: var(--bg);
 }
 
 html.dark {

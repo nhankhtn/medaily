@@ -75,33 +75,26 @@ export function BottomNav() {
         </div>
       ) : null}
 
-      {/* Full-bleed glass under the home indicator so the bottom “ears” are
-          frosted edge-to-edge; the floating dock sits above this strip. */}
+      {/* Full-bleed chrome under the home indicator. Fill is on this fixed
+          node so Safari can sample it for the bottom ears (absolute children
+          are ignored by the tint algorithm). */}
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-x-0 bottom-0 z-40 md:hidden"
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-40 bg-[var(--surface-solid)] md:hidden"
         style={{ height: 'env(safe-area-inset-bottom, 0px)' }}
-      >
-        <div className="glass absolute inset-0 border-0" />
-      </div>
+      />
 
-      {/* Floating dock — inset from screen edges like Control Center, not flush.
-          Glass sits on an absolute child so Safari 26 can still sample the
-          fixed edge (and tint home-indicator chrome) without reading blur on
-          the fixed root. */}
+      {/* Floating dock — glass on the fixed root so Safari tints bottom chrome. */}
       <nav
         className={cn(
-          'fixed z-50 md:hidden',
+          'glass-chip fixed z-50 md:hidden',
           'right-[max(0.75rem,env(safe-area-inset-right,0px))] left-[max(0.75rem,env(safe-area-inset-left,0px))]',
           'bottom-[max(0.75rem,env(safe-area-inset-bottom,0px))]',
+          'rounded-[1.75rem] px-1.5 py-1.5',
         )}
         aria-label={t('groupCore')}
       >
-        <div
-          aria-hidden
-          className="glass-chip pointer-events-none absolute inset-0 rounded-[1.75rem]"
-        />
-        <ul className="relative grid grid-cols-5 px-1.5 py-1.5">
+        <ul className="grid grid-cols-5">
           {BOTTOM_NAV_ITEMS.map((item) => {
             const active =
               !moreOpen && (item.href === '/' ? pathname === '/' : pathname.startsWith(item.href))
