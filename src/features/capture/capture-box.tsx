@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/input'
 import {
   assistantModule,
   FILING_MODULES,
+  type FilingTarget,
   matchModules,
   slashQuery,
   type CaptureModule,
@@ -134,6 +135,22 @@ function CaptureForm({
   const home = assistantModule(assistant)
   const [module, setModule] = useState<CaptureModuleKey | null>(home?.key ?? null)
 
+  /*
+   * A note the assistant recognised, on its way to the form that writes it
+   * down. It carries the text, so the form arrives with the note already in
+   * it and already being read — the tap that would have chosen the
+   * destination is the tap that is no longer needed.
+   *
+   * Cleared whenever a destination is chosen by hand, or the same note would
+   * be read again the next time that form is opened.
+   */
+  const [handoff, setHandoff] = useState<{ target: FilingTarget; text: string } | null>(null)
+
+  const go = (key: CaptureModuleKey | null) => {
+    setHandoff(null)
+    setModule(key)
+  }
+
   const chosen = [...FILING_MODULES, ...(home ? [home] : [])].find(
     (candidate) => candidate.key === module,
   )
@@ -152,7 +169,7 @@ function CaptureForm({
           {atHome ? null : (
             <button
               type="button"
-              onClick={() => setModule(home?.key ?? null)}
+              onClick={() => go(home?.key ?? null)}
               className="text-text-subtle hover:text-text inline-flex items-center gap-1 text-xs"
             >
               <X className="size-3" />
@@ -170,7 +187,13 @@ function CaptureForm({
       */}
       {home ? (
         <div hidden={!atHome}>
-          <AssistantChat onLeave={() => setModule(null)} />
+          <AssistantChat
+            onLeave={() => setModule(null)}
+            onFile={(target, text) => {
+              setHandoff({ target, text })
+              setModule(target)
+            }}
+          />
         </div>
       ) : null}
 
@@ -178,8 +201,8 @@ function CaptureForm({
         <ModulePicker
           labelOf={labelOf}
           modules={FILING_MODULES}
-          onPick={setModule}
-          onCancel={home ? () => setModule(home.key) : undefined}
+          onPick={go}
+          onCancel={home ? () => go(home.key) : undefined}
           /* With a home, the only way here is the slash typed to leave it — so
              the menu arrives already open rather than asking for it twice. */
           initialText={home ? '/' : ''}
@@ -190,9 +213,9 @@ function CaptureForm({
           to several lines, a question about a week is one. */}
       {chosen && !atHome ? (
         chosen.key === 'finance' ? (
-          <FinancePanel />
+          <FinancePanel handoff={handoff?.target === 'finance' ? handoff.text : undefined} />
         ) : chosen.key === 'plan' ? (
-          <PlanPanel />
+          <PlanPanel handoff={handoff?.target === 'plan' ? handoff.text : undefined} />
         ) : (
           <ReviewChat />
         )
@@ -324,10 +347,10 @@ function ModulePicker({
   )
 }
 
-function PlanPanel() {
+function PlanPanel({ handoff }: { handoff?: string }) {
   const t = useTranslations('capture')
   const tp = useTranslations('capture.plan')
-  const [text, setText] = useState('')
+  const [text, setText] = useState(handoff ?? '')
   const [read, setRead] = useState<{
     items: PlanItem[]
     today: ISODate
@@ -337,9 +360,9 @@ function PlanPanel() {
 
   const ready = text.trim().length >= 3
 
-  const parse = () =>
+  const parse = (source: string = text) =>
     startReading(async () => {
-      const result = await parsePlanText({ text })
+      const result = await parsePlanText({ text: source })
       if (!result.ok) {
         toast.error(tp(result.error === 'rate_limited' ? 'rateLimited' : 'failed'))
         return
@@ -350,6 +373,8 @@ function PlanPanel() {
       }
       setRead({ items: result.items, today: result.today, metrics: result.metrics })
     })
+
+  useHandoff(handoff, setText, parse)
 
   if (read) {
     return (
@@ -387,7 +412,7 @@ function PlanPanel() {
       />
 
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" size="sm" onClick={parse} disabled={reading || !ready}>
+        <Button type="button" size="sm" onClick={() => parse()} disabled={reading || !ready}>
           {reading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
           {reading ? tp('reading') : tp('read')}
         </Button>
@@ -402,16 +427,42 @@ function PlanPanel() {
   )
 }
 
-function FinancePanel() {
+/**
+ * A note the assistant already recognised, read the moment the form opens.
+ *
+ * It was written once and routed once; asking for the button as well would be
+ * the same decision made twice. Runs at most once per handoff — `parse` is
+ * deliberately not a dependency, because it is rebuilt on every keystroke and
+ * a note must not be re-read as the rows below it are being corrected.
+ */
+function useHandoff(
+  handoff: string | undefined,
+  setText: (text: string) => void,
+  parse: (source: string) => void,
+) {
+  /* The note already read, rather than a flag: a handoff can arrive a render
+     after the form mounts, and this must survive that without reading twice. */
+  const read = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!handoff || read.current === handoff) return
+    read.current = handoff
+    setText(handoff)
+    parse(handoff)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [handoff])
+}
+
+function FinancePanel({ handoff }: { handoff?: string }) {
   const t = useTranslations('capture')
   const tf = useTranslations('finance.capture')
-  const [text, setText] = useState('')
+  const [text, setText] = useState(handoff ?? '')
   const [parsed, setParsed] = useState<Parsed | null>(null)
   const [parsing, startParsing] = useTransition()
 
-  const parse = () =>
+  const parse = (source: string = text) =>
     startParsing(async () => {
-      const result = await parseTransactionText({ text })
+      const result = await parseTransactionText({ text: source })
       if (!result.ok) {
         toast.error(tf(result.error === 'rate_limited' ? 'rateLimited' : 'failed'))
         return
@@ -422,6 +473,8 @@ function FinancePanel() {
       }
       setParsed({ module: 'finance', result })
     })
+
+  useHandoff(handoff, setText, parse)
 
   const ready = text.trim().length >= 3
 
@@ -482,7 +535,7 @@ function FinancePanel() {
       />
 
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" size="sm" onClick={parse} disabled={parsing || !ready}>
+        <Button type="button" size="sm" onClick={() => parse()} disabled={parsing || !ready}>
           {parsing ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
           {parsing ? tf('parsing') : tf('parse')}
         </Button>

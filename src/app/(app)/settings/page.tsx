@@ -12,7 +12,7 @@ import { SettingsForm } from '@/features/settings/settings-form'
 import { ShortcutsDialog } from '@/features/settings/shortcuts-panel'
 import { readSession } from '@/lib/auth/current-user'
 import { findUserById } from '@/server/repositories/auth'
-import { geminiEnabled } from '@/server/services/gemini'
+import { aiServiceConfigured } from '@/server/services/ai-service'
 import { findCustomMetrics } from '@/server/repositories/custom-metrics'
 import { findGoals } from '@/server/repositories/goals'
 import { findHabits } from '@/server/repositories/habits'
@@ -68,7 +68,7 @@ export default async function SettingsPage() {
         <h2 className="text-sm font-semibold">{t('shortcuts.title')}</h2>
         <p className="text-text-subtle mt-0.5 mb-3 text-xs leading-snug">{t('shortcuts.help')}</p>
         <ShortcutsDialog
-          captureEnabled={geminiEnabled()}
+          captureEnabled={aiServiceConfigured()}
           trigger={
             <Button variant="outline" size="sm">
               <Keyboard className="size-4" />

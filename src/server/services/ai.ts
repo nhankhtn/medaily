@@ -1,4 +1,3 @@
-import Anthropic from '@anthropic-ai/sdk'
 import { cache } from 'react'
 import { and, desc, eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
@@ -6,18 +5,18 @@ import { getCurrentUserId } from '@/lib/auth/current-user'
 import { aiReports } from '@/lib/db/schema'
 import type { AiReport } from '@/lib/db/schema'
 import type { ReviewMetricsSnapshot } from '@/lib/types'
+import { ServiceError } from '@/server/service-client'
+import { aiClient, aiServiceConfigured } from '@/server/services/ai-service'
 
 /**
- * Spec 35 §14 — opt-in, off unless a key is configured, and grounded strictly in
- * the aggregates handed to it. Only the numbers below ever leave the machine:
- * no notes, no journal entries, no names.
+ * Spec 35 §14 — opt-in, off unless the service is configured, and grounded
+ * strictly in the aggregates handed to it. Only the numbers below ever leave
+ * the machine: no notes, no journal entries, no names.
+ *
+ * A long piece of writing rather than an extraction, so it is the one thing
+ * asked of a different provider. Which one is no longer this app's business.
  */
-export const AI_MODEL = 'claude-opus-5'
-export const PROMPT_VERSION = 'v1'
-
-export function aiEnabled(): boolean {
-  return Boolean(process.env.ANTHROPIC_API_KEY)
-}
+const TIMEOUT_MS = 180_000
 
 export type AiContext = {
   period: 'weekly' | 'monthly'
@@ -29,55 +28,34 @@ export type AiContext = {
   insights: { kind: string; values: Record<string, string | number> }[]
 }
 
-const SYSTEM_PROMPT = `You are a careful personal-analytics assistant inside a private life-tracking app.
+/**
+ * The writing is `medaily-ai`'s — the prompt lives there, at
+ * `src/services/report.ts`, with every other prompt, and so does the
+ * Anthropic key. What comes back is the review plus which model wrote it and
+ * which prompt it came from, because both are filed alongside it here: a
+ * change of prompt has to be visible in the table afterwards.
+ *
+ * `disabled` rather than a failure when that deploy has no Anthropic key.
+ * Gemini and Anthropic are configured separately over there, so everything
+ * else can work while this one thing does not.
+ */
+export class NarrativeDisabledError extends Error {}
 
-You will receive aggregate numbers for one period, the previous period for comparison, and a list of rule-generated observations. Write a short review of the period.
-
-Hard rules:
-- Ground every statement in the numbers provided. Never invent a number, a habit, an event or a cause.
-- These are associations recorded on the same days. Never claim one metric produced, caused, improved, boosted or led to another. Describe what co-occurred, and attach the numbers.
-- Say plainly when the data is thin (few logged days) rather than reading a trend into it.
-- No praise inflation and no scolding. This is an operational signal, not a judgement of the person.
-- Do not suggest medical, psychiatric or pharmacological interventions.
-
-Format: GitHub-flavoured Markdown, at most 250 words, in this shape:
-1. One paragraph on how the period went, with the two or three numbers that matter.
-2. "What changed" — up to three bullets comparing against the previous period.
-3. "Worth watching" — up to three bullets, each an observation plus the number behind it.
-4. One short closing line naming a single concrete thing to try next period.
-
-Write in ENGLISH if locale is "en" and in VIETNAMESE if locale is "vi".`
-
-export async function generateNarrative(context: AiContext): Promise<string> {
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not set')
-
-  const client = new Anthropic({ apiKey })
-
-  const response = await client.messages.create({
-    model: AI_MODEL,
-    max_tokens: 16000,
-    system: SYSTEM_PROMPT,
-    // Adaptive thinking: the model decides how much reasoning this needs.
-    thinking: { type: 'adaptive' },
-    output_config: { effort: 'medium' },
-    messages: [
-      {
-        role: 'user',
-        content: `Here is the data. Return only the review.\n\n${JSON.stringify(context, null, 2)}`,
-      },
-    ],
-  })
-
-  if (response.stop_reason === 'refusal') {
-    throw new Error('the model declined to answer this request')
+export async function generateNarrative(
+  context: AiContext,
+): Promise<{ text: string; model: string; promptVersion: string }> {
+  try {
+    return await aiClient('report', TIMEOUT_MS).request('/api/report/narrative', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(context),
+    })
+  } catch (error) {
+    if (error instanceof ServiceError && error.status === 503) {
+      throw new NarrativeDisabledError('the service has no key for this')
+    }
+    throw error
   }
-
-  return response.content
-    .filter((block): block is Anthropic.TextBlock => block.type === 'text')
-    .map((block) => block.text)
-    .join('\n')
-    .trim()
 }
 
 export async function saveReport(values: {
@@ -85,6 +63,8 @@ export async function saveReport(values: {
   periodStart: string
   periodEnd: string
   contentMd: string
+  model: string
+  promptVersion: string
 }): Promise<AiReport> {
   const rows = await db
     .insert(aiReports)
@@ -93,8 +73,8 @@ export async function saveReport(values: {
       kind: values.kind,
       periodStart: values.periodStart,
       periodEnd: values.periodEnd,
-      model: AI_MODEL,
-      promptVersion: PROMPT_VERSION,
+      model: values.model,
+      promptVersion: values.promptVersion,
       contentMd: values.contentMd,
     })
     .returning()
@@ -104,22 +84,21 @@ export async function saveReport(values: {
   return row
 }
 
-export const findLatestReport = cache(async (
-  kind: 'weekly' | 'monthly',
-  periodStart: string,
-): Promise<AiReport | null> => {
-  const rows = await db
-    .select()
-    .from(aiReports)
-    .where(
-      and(
-        eq(aiReports.userId, await getCurrentUserId()),
-        eq(aiReports.kind, kind),
-        eq(aiReports.periodStart, periodStart),
-      ),
-    )
-    .orderBy(desc(aiReports.createdAt))
-    .limit(1)
+export const findLatestReport = cache(
+  async (kind: 'weekly' | 'monthly', periodStart: string): Promise<AiReport | null> => {
+    const rows = await db
+      .select()
+      .from(aiReports)
+      .where(
+        and(
+          eq(aiReports.userId, await getCurrentUserId()),
+          eq(aiReports.kind, kind),
+          eq(aiReports.periodStart, periodStart),
+        ),
+      )
+      .orderBy(desc(aiReports.createdAt))
+      .limit(1)
 
-  return rows[0] ?? null
-})
+    return rows[0] ?? null
+  },
+)

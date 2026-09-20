@@ -1,5 +1,4 @@
-import { env } from '@/lib/env'
-import { serviceClient } from '@/server/service-client'
+import { aiClient, aiServiceConfigured } from '@/server/services/ai-service'
 
 /**
  * The client for `medaily-ai`, the service that answers the capture box.
@@ -11,39 +10,31 @@ import { serviceClient } from '@/server/service-client'
  * The asking is streamed, so its caller is a route handler rather than a
  * server action: an action returns a value, and a stream is not one.
  *
- * Server-side only. `AI_SERVICE_TOKEN` is a shared secret between the two
- * deploys and must never reach a browser, so every call goes out from a server
- * action rather than from the panel that shows the answer.
- *
  * Unset, `assistantEnabled` is false and the destination is not offered at all.
  */
 const TIMEOUT_MS = { ask: 90_000, clear: 10_000 } as const
 
 export function assistantEnabled(): boolean {
-  return Boolean(env.AI_SERVICE_URL && env.AI_SERVICE_TOKEN)
+  return aiServiceConfigured()
 }
 
-/** Built per call: the configuration may be absent, and then there is no client. */
-function client() {
-  return serviceClient({
-    name: 'assistant',
-    baseUrl: env.AI_SERVICE_URL as string,
-    token: env.AI_SERVICE_TOKEN as string,
-  })
-}
+const client = () => aiClient('assistant')
 
-/**
- * What the router decided. Shown, not logged: a question read the wrong way
- * should be visible to the person who asked it.
- */
-export type AssistantDecision = { intent: string; period: string; reason: string }
-
-/**
- * A question, answered node by node.
+/*
+ * What the router decided used to be typed here, back when this file read the
+ * answer. The panel reads the stream now and the agent sends it the one field
+ * worth showing, so there is nothing left on this side to give a shape to:
  *
- * The agent reports each step of a run as it finishes it, and a run is several
- * seconds long — so the panel can say what is happening instead of spinning,
- * and can show how the question was read before the answer exists.
+ * export type AssistantDecision = { intent: string; period: string; reason: string }
+ */
+
+/**
+ * A question, answered as it is worked out.
+ *
+ * `/live` is the agent's panel-shaped stream: the step now running, how the
+ * question was read, and the answer. Its sibling `/stream` reports every node
+ * patch instead, which is what to reach for when a nine-second run needs
+ * explaining rather than showing.
  *
  * The response is handed back unread. Whoever called this owns the body.
  */
@@ -53,7 +44,7 @@ export async function streamMessage(input: {
   message: string
   timezone?: string
 }): Promise<Response> {
-  return client().open('/api/chat/stream', {
+  return client().open('/api/chat/live', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(input),

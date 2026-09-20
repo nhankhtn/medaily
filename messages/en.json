@@ -1373,6 +1373,11 @@
     },
     "assistant": {
       "thinking": "Thinking…",
+      "filed": {
+        "finance": "That one goes in spending — here is the form.",
+        "plan": "That one goes in your plan — here is the form."
+      },
+      "fileAsSpending": "File as spending",
       "steps": {
         "route": "Reading the question…",
         "load": "Looking things up…",
@@ -1389,7 +1394,8 @@
       "starters": {
         "thisWeek": "How did this week go?",
         "spending": "What did I spend this month?",
-        "todo": "What is still unfinished?"
+        "todo": "What is still unfinished?",
+        "howTo": "How do I use this app?"
       }
     },
     "backToAssistant": "Back to the assistant"

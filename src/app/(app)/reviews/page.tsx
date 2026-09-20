@@ -8,8 +8,9 @@ import { PeriodPicker } from '@/features/reviews/period-picker'
 import { ReviewEditor } from '@/features/reviews/review-editor'
 import { fromISODate } from '@/lib/dates'
 import { PATHS } from '@/lib/paths'
-import { aiEnabled, findLatestReport } from '@/server/services/ai'
+import { findLatestReport } from '@/server/services/ai'
 import { getReviewView } from '@/server/services/reviews'
+import { aiServiceConfigured } from '@/server/services/ai-service'
 
 const PERIODS = ['weekly', 'monthly', 'yearly'] as const
 type Period = (typeof PERIODS)[number]
@@ -193,7 +194,7 @@ export default async function ReviewsPage({
             <AiReview
               period={aiPeriod}
               periodKey={view.key}
-              enabled={aiEnabled()}
+              enabled={aiServiceConfigured()}
               existing={
                 existingReport
                   ? {

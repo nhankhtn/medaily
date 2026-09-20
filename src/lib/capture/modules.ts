@@ -88,6 +88,19 @@ export const FILING_MODULES: CaptureModule[] = CAPTURE_MODULES.filter(
 )
 
 /**
+ * The two destinations that write something down.
+ *
+ * `review` is in the menu but not here: it reads, like the assistant does, so
+ * there is nothing to hand it. These are the ones the agent can send a note to
+ * without being asked, and a name off a wire is checked before it is believed.
+ */
+export type FilingTarget = Extract<CaptureModuleKey, 'finance' | 'plan'>
+
+export function isFilingTarget(value: unknown): value is FilingTarget {
+  return value === 'finance' || value === 'plan'
+}
+
+/**
  * Whether the assistant can be the box's home. It answers from a separate
  * service, which a deploy may not have; without it the menu comes first, as
  * it did before there was an assistant at all.

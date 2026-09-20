@@ -5,9 +5,10 @@ import { z } from 'zod'
 import { addDays, addMonthsISO } from '@/lib/dates'
 import { PATHS } from '@/lib/paths'
 import { getSettings } from '@/server/services/settings'
-import { aiEnabled, generateNarrative, saveReport } from '@/server/services/ai'
+import { generateNarrative, NarrativeDisabledError, saveReport } from '@/server/services/ai'
 import { getReviewView } from '@/server/services/reviews'
 import { getDashboardData } from '@/server/services/dashboard'
+import { aiServiceConfigured } from '../services/ai-service'
 
 export type GenerateResult =
   | { ok: true; contentMd: string }
@@ -18,7 +19,7 @@ export type GenerateResult =
  * payload is limited to period aggregates plus rule-generated observations.
  */
 export async function generateReview(input: unknown): Promise<GenerateResult> {
-  if (!aiEnabled()) return { ok: false, error: 'disabled' }
+  if (!aiServiceConfigured()) return { ok: false, error: 'disabled' }
 
   const parsed = z
     .object({ period: z.enum(['weekly', 'monthly']), key: z.string().min(4).max(10) })
@@ -36,7 +37,7 @@ export async function generateReview(input: unknown): Promise<GenerateResult> {
   const dashboard = await getDashboardData()
 
   try {
-    const contentMd = await generateNarrative({
+    const review = await generateNarrative({
       period: parsed.data.period,
       periodStart: view.range.start,
       periodEnd: view.range.end,
@@ -53,12 +54,17 @@ export async function generateReview(input: unknown): Promise<GenerateResult> {
       kind: parsed.data.period,
       periodStart: view.range.start,
       periodEnd: view.range.end,
-      contentMd,
+      contentMd: review.text,
+      model: review.model,
+      promptVersion: review.promptVersion,
     })
 
     revalidatePath(PATHS.reviews)
-    return { ok: true, contentMd }
+    return { ok: true, contentMd: review.text }
   } catch (error) {
+    // The service is there but has no key for this one. Not a failure to
+    // report — the same nothing-configured answer the gate above gives.
+    if (error instanceof NarrativeDisabledError) return { ok: false, error: 'disabled' }
     return {
       ok: false,
       error: 'failed',

@@ -2,7 +2,7 @@ import './load-env'
 import { addDays, today as todayOf } from '../src/lib/dates'
 import type { TransactionDraft } from '../src/lib/finance/drafts'
 import { parseTransactions } from '../src/server/services/finance-capture'
-import { geminiEnabled, geminiModels } from '../src/server/services/gemini'
+import { aiServiceConfigured } from '../src/server/services/ai-service'
 
 /**
  * Runs real notes through the real model and checks what comes back.
@@ -12,7 +12,9 @@ import { geminiEnabled, geminiModels } from '../src/server/services/gemini'
  * "hôm kia". This can, and it costs a few cents to find out.
  *
  * No database: the categories below are fixtures, so this is safe to run
- * against any environment that has a key.
+ * against any environment that has `medaily-ai` configured. It goes the whole
+ * way round now — this app, the service, the model — so a prompt edited over
+ * there is what this reads.
  *
  *   pnpm capture:check              every case
  *   pnpm capture:check xăng 7       only cases matching "xăng", plus case 7
@@ -184,8 +186,8 @@ function selectCases(args: string[]): Case[] {
 }
 
 async function main() {
-  if (!geminiEnabled()) {
-    console.error('GEMINI_API_KEY is not set — nothing to check.')
+  if (!aiServiceConfigured()) {
+    console.error('AI_SERVICE_URL / AI_SERVICE_TOKEN are not set — nothing to check.')
     process.exit(1)
   }
 
@@ -199,7 +201,7 @@ async function main() {
   }
 
   console.log(
-    `models: ${geminiModels().join(' → ')}   today: ${TODAY}   cases: ${selected.length}/${CASES.length}\n`,
+    `service: ${process.env.AI_SERVICE_URL}   today: ${TODAY}   cases: ${selected.length}/${CASES.length}\n`,
   )
   let failures = 0
   let first = true

@@ -119,9 +119,7 @@ except `/api/health` until all four are present:
 | `AUTH_USERNAME` | your login |
 | `AUTH_PASSWORD` | a long password |
 | `AUTH_SECRET` | `openssl rand -hex 32` |
-| `ANTHROPIC_API_KEY` | optional — only to enable the AI review |
-| `GEMINI_API_KEY` | optional — only to enable the finance quick capture |
-| `GEMINI_MODEL` / `GEMINI_MODELS` | optional — override the model fallback chain |
+| `AI_SERVICE_URL` / `AI_SERVICE_TOKEN` | optional — `medaily-ai`, which answers quick capture, the review chat, the AI review and the assistant |
 | `NEXT_PUBLIC_FIREBASE_*`, `AUTH_OWNER_EMAIL` | optional — only to enable Google sign-in (see [Sign-in](#sign-in)) |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | optional — send crashes to a Telegram chat (see [Crash alerts](#crash-alerts)) |
 
@@ -189,7 +187,7 @@ minified Server Components error.
 | `pnpm test:unit` | Pure domain logic only — no database needed |
 | `pnpm test:integration` | Constraints, transactions and views against a real Postgres |
 | `pnpm smoke` | Signs a session and requests every route in both locales |
-| `pnpm capture:check` | Runs real notes through the configured Gemini model and checks what comes back (needs `GEMINI_API_KEY`) |
+| `pnpm capture:check` | Runs real notes the whole way round — this app, `medaily-ai`, the model — and checks what comes back (needs `AI_SERVICE_*`) |
 | `pnpm db:generate` | Generate a migration from schema changes |
 | `pnpm db:migrate` | Apply migrations, then re-apply views/triggers (idempotent) |
 | `pnpm db:baseline` | Mark existing migrations as applied — for a database created with `drizzle-kit push` |
@@ -237,15 +235,15 @@ minified Server Components error.
   goals and people, accent-insensitive.
 - **Import/export** — full JSON round-trip with a dry run, plus CSV.
 - **AI review** *(opt-in)* — a narrative for a period, grounded in aggregates
-  only, off unless `ANTHROPIC_API_KEY` is set.
+  only, off unless `medaily-ai` is configured.
 - **Quick capture** *(opt-in)* — a box in the bottom-right corner of every
   page. Type a day's spending as one sentence ("sáng ăn phở 40k, cà phê 25k,
   đổ xăng 100 nghìn") and get one editable draft row per payment. Off unless
-  `GEMINI_API_KEY` is set. See below.
+  `AI_SERVICE_URL` and `AI_SERVICE_TOKEN` are set. See below.
 
 ## Quick capture
 
-With `GEMINI_API_KEY` set, a launcher appears in the bottom-right corner of
+With `medaily-ai` configured, a launcher appears in the bottom-right corner of
 every page (**⌘/Ctrl + J** to open or close, **Esc** to close). The finance page
 carries the same box inline, above the transaction form.
 
@@ -300,11 +298,10 @@ payload against 6.5s and no database work. `suggest` lifts the no-advice rule,
 `open` asks for a full review, and anything unrecognised is a plain follow-up,
 which is the safe default.
 
-No LangChain or LangGraph. Its Gemini adapter still depends on
-`@google/generative-ai@0.24`, which talks to the superseded `generateContent`
-endpoint rather than the Interactions API used here — adopting it would drop
-both the model fallback chain and the pinned `Api-Revision` in exchange for a
-graph runtime over four branches with no cycles.
+The routing is a regex here rather than a graph because these four branches
+have no cycles. Where a conversation does need one — the assistant, which
+remembers a thread across turns — that is LangGraph's job, and it runs in
+`medaily-ai` along with the model call it wraps.
 
 ### Adding a destination
 
@@ -336,29 +333,30 @@ It never reaches the database directly:
 
 Capped at 25 rows per note and 10 notes per minute.
 
-### Choosing a model
+### Where the model calls happen
 
-Quota on this API is counted **per model**, so the client walks a chain instead
-of depending on one:
+Not here. Every prompt in the product lives in
+[`medaily-ai`](https://github.com/nhankhtn/medaily-ai), a second deploy that
+owns the key, the fallback chain between models and the quota that comes out of
+it. This app sends what it knows about the person and renders what comes back:
+which categories exist, what a draft row is allowed to be, and the check that
+turns an answer off a model into rows a form can show — those stay here.
 
-```text
-gemini-3.5-flash-lite → gemini-3.1-flash-lite → gemini-3.5-flash → gemini-3.7-flash
-```
+| what | route on `medaily-ai` |
+| --- | --- |
+| quick capture, finance | `POST /api/capture/finance` |
+| quick capture, goals and to-dos | `POST /api/capture/plan` |
+| the review chat | `POST /api/review/ask`, `POST /api/review/translate` |
+| the written AI review | `POST /api/report/narrative` |
+| the assistant | `POST /api/chat/live`, `DELETE /api/threads/:id` |
 
-A `429` (out of quota), `503` (overloaded) or `404` (not reachable by this
-project) moves to the next one and logs the switch; anything else is a problem
-with the request itself and fails immediately rather than repeating it three
-more times. `GEMINI_MODEL` names a first choice and keeps the chain behind it;
-`GEMINI_MODELS` (comma-separated) replaces the chain outright.
-
-Check the tier before pinning something newer: on a project without billing
-enabled for it, `gemini-3.8-flash` answers from a 20-request-a-day free bucket
-and is several times slower on this task, while the lite tier returns in about
-two seconds.
+`AI_SERVICE_TOKEN` is a shared secret between the two deploys and never reaches
+a browser: the calls go out from Server Actions, and the assistant's stream
+from a route handler at `/api/assistant` that pipes it through.
 
 `pnpm capture:check` runs a set of real Vietnamese and English notes through
-the configured model and prints what came back, so a model or prompt change can
-be judged rather than guessed at:
+that whole path and prints what came back, so a prompt change over there can be
+judged from here rather than guessed at:
 
 ```bash
 pnpm capture:check              # every case

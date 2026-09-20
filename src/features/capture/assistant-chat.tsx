@@ -1,17 +1,34 @@
 'use client'
 
-import { Loader2, RotateCcw, Send } from 'lucide-react'
+import { Loader2, RotateCcw, Send, Wallet } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/input'
 import { Markdown } from '@/components/ui/markdown'
+import { isFilingTarget, type FilingTarget } from '@/lib/capture/modules'
 import { readEvents } from '@/lib/sse'
 import { cn } from '@/lib/utils'
 import { resetAssistant } from '@/server/actions/assistant'
 
-type Message = { role: 'user' | 'model'; text: string; reason?: string | null }
+type Message = {
+  role: 'user' | 'model'
+  text: string
+  reason?: string | null
+  /**
+   * The note this answer might have been. Read as a question, but it carried
+   * an amount — so the way to file it after all is one tap under the answer,
+   * rather than typing it again somewhere else.
+   */
+  offer?: string
+}
+
+/**
+ * An amount, roughly. Only ever used to offer a second reading of something
+ * already answered, so a false positive costs a button nobody presses.
+ */
+const AMOUNT = /\d[\d.,]*\s*(k|ngh[iì]n|ng[aà]n|tr|tri[eệ]u|đ|vnd)\b/i
 
 /** The agent's three nodes, in the order a run walks them. */
 const STEPS = ['route', 'load', 'respond'] as const
@@ -25,16 +42,21 @@ function isStep(value: unknown): value is Step {
 class RateLimited extends Error {}
 
 /**
- * One question, read as the agent answers it.
+ * One message, read as the agent works it out.
  *
- * The run is reported node by node, so the step and the reading land while the
- * answer is still being written. Both are handed straight to the panel.
+ * Two ways it can end. A question is answered, and the step and the reading
+ * land while that answer is still being written. A note is not answered at
+ * all: the agent stops at the decision and names the form it belongs in.
  */
+type RunResult =
+  | { filed: null; answer: string; reason: string | null }
+  | { filed: FilingTarget; answer: null; reason: string | null }
+
 async function run(
   message: string,
   opening: string,
   on: { step: (step: Step) => void; reading: (reason: string) => void },
-): Promise<{ answer: string; reason: string | null }> {
+): Promise<RunResult> {
   const response = await fetch('/api/assistant', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -54,17 +76,25 @@ async function run(
     else if (event.event === 'reason') {
       reason = payload.reason
       on.reading(payload.reason)
+    } else if (event.event === 'file' && isFilingTarget(payload.module)) {
+      /*
+       * Straight out. Nothing follows a filing — the run ends at the decision,
+       * and what is left of the stream is the checkpoint being written, which
+       * took three seconds to close on a note that was already decided.
+       * Leaving here cancels the read, which hangs up on the agent.
+       */
+      return { filed: payload.module, answer: null, reason }
     } else if (event.event === 'answer') answer = payload.answer
     else if (event.event === 'failed') throw new Error('the run reported a failure')
   }
 
   // A stream that ends without one has failed quietly, which is still failing.
   if (!answer) throw new Error('the run ended with no answer')
-  return { answer, reason }
+  return { filed: null, answer, reason }
 }
 
 /** The phrases that open a conversation, offered so the first ask is one tap. */
-const STARTERS = ['thisWeek', 'spending', 'todo'] as const
+const STARTERS = ['thisWeek', 'spending', 'todo', 'howTo'] as const
 
 /** Where an opening that never got to end itself waits to be collected. */
 const ABANDONED = 'capture.assistant.opening'
@@ -85,8 +115,19 @@ function newOpening(): string {
  * Ending it is the part that costs a call, and it happens on the way out where
  * nobody is watching. A tab closed with the panel still open leaves its thread
  * behind; there is never more than one, and the next opening collects it.
+ *
+ * Not everything typed here is a question. "hôm nay tiêu 30k" is a note, and
+ * the agent says so instead of answering it — the box then opens the form that
+ * writes it down, which is the same form the menu would have opened.
  */
-export function AssistantChat({ onLeave }: { onLeave: () => void }) {
+export function AssistantChat({
+  onLeave,
+  onFile,
+}: {
+  onLeave: () => void
+  /** A note, and the form it goes in. The box swaps itself out for that form. */
+  onFile: (target: FilingTarget, text: string) => void
+}) {
   const t = useTranslations('capture.assistant')
   const [messages, setMessages] = useState<Message[]>([])
   const [text, setText] = useState('')
@@ -141,11 +182,28 @@ export function AssistantChat({ onLeave }: { onLeave: () => void }) {
     void (async () => {
       setPending(true)
       try {
-        const { answer, reason } = await run(trimmed, opening, {
-          step: setStep,
-          reading: setReading,
-        })
-        setMessages((previous) => [...previous, { role: 'model', text: answer, reason }])
+        const result = await run(trimmed, opening, { step: setStep, reading: setReading })
+
+        if (result.filed) {
+          // Left in the transcript on the way past, so coming back to a panel
+          // that swapped itself out does not look like a question gone missing.
+          setMessages((previous) => [
+            ...previous,
+            { role: 'model', text: t(`filed.${result.filed}`), reason: result.reason },
+          ])
+          onFile(result.filed, trimmed)
+          return
+        }
+
+        setMessages((previous) => [
+          ...previous,
+          {
+            role: 'model',
+            text: result.answer,
+            reason: result.reason,
+            offer: AMOUNT.test(trimmed) ? trimmed : undefined,
+          },
+        ])
       } catch (error) {
         console.error('assistant', error)
         toast.error(t(error instanceof RateLimited ? 'rateLimited' : 'failed'))
@@ -214,6 +272,18 @@ export function AssistantChat({ onLeave }: { onLeave: () => void }) {
                     <p className="text-text-subtle mt-2 text-xs leading-snug">
                       {t('read', { reason: message.reason })}
                     </p>
+                  ) : null}
+                  {/* Answered, but it had an amount in it. The other reading
+                      is one tap away rather than a retype somewhere else. */}
+                  {message.offer ? (
+                    <button
+                      type="button"
+                      onClick={() => onFile('finance', message.offer as string)}
+                      className="border-border-strong bg-surface hover:bg-surface-2 mt-2 inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs"
+                    >
+                      <Wallet className="size-3" />
+                      {t('fileAsSpending')}
+                    </button>
                   ) : null}
                 </>
               ) : (

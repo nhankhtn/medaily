@@ -1373,6 +1373,11 @@
     },
     "assistant": {
       "thinking": "Đang nghĩ…",
+      "filed": {
+        "finance": "Cái này là chi tiêu, mở chỗ ghi ngay đây.",
+        "plan": "Cái này là việc cần làm, mở chỗ ghi ngay đây."
+      },
+      "fileAsSpending": "Ghi vào chi tiêu",
       "steps": {
         "route": "Đang đọc câu hỏi…",
         "load": "Đang lục lại ghi chép…",
@@ -1389,7 +1394,8 @@
       "starters": {
         "thisWeek": "Tuần này tôi thế nào?",
         "spending": "Tháng này tôi tiêu bao nhiêu?",
-        "todo": "Còn việc gì chưa xong?"
+        "todo": "Còn việc gì chưa xong?",
+        "howTo": "Dùng app này thế nào?"
       }
     },
     "backToAssistant": "Về lại trợ lý"
