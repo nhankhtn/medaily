@@ -26,7 +26,7 @@ export function readCloudinaryConfig(): CloudinaryConfig {
   }
 }
 
-export const MEDIA_KINDS = ['people'] as const
+export const MEDIA_KINDS = ['people', 'avatars'] as const
 export type MediaKind = (typeof MEDIA_KINDS)[number]
 
 /** One predictable path per owner, so a second kind of asset needs no rethink. */
@@ -37,6 +37,15 @@ export function folderFor(
   ownerId: string,
 ): string {
   return `${baseFolder}/${userId}/${kind}/${ownerId}`
+}
+
+/**
+ * A profile photo we uploaded ourselves. Google avatars live on another host;
+ * afterSignIn must leave these alone or the next login wipes the upload.
+ */
+export function isUploadedAvatar(imageUrl: string | null | undefined, userId: string): boolean {
+  if (!imageUrl) return false
+  return imageUrl.includes(`/${userId}/avatars/`)
 }
 
 /**
@@ -68,4 +77,13 @@ export function deliveryUrl(
   variant: ImageVariant = 'thumb',
 ): string {
   return `https://res.cloudinary.com/${cloudName}/image/upload/${TRANSFORMS[variant]}/${publicId}`
+}
+
+/** Undo `deliveryUrl` for an asset we built, so a replace can destroy the old one. */
+export function publicIdFromDeliveryUrl(url: string, cloudName: string): string | null {
+  for (const transform of Object.values(TRANSFORMS)) {
+    const prefix = `https://res.cloudinary.com/${cloudName}/image/upload/${transform}/`
+    if (url.startsWith(prefix)) return decodeURIComponent(url.slice(prefix.length))
+  }
+  return null
 }

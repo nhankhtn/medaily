@@ -385,6 +385,13 @@
       "signedInWith": "Đăng nhập bằng",
       "since": "Dùng app từ",
       "username": "Đang đăng nhập là {name}",
+      "changePhoto": "Đổi ảnh đại diện",
+      "photoUpdated": "Đã đổi ảnh đại diện",
+      "photoRemoved": "Đã gỡ ảnh đại diện",
+      "removePhoto": "Gỡ ảnh",
+      "photoTooLarge": "Ảnh phải dưới 5MB",
+      "photoInvalid": "Chọn một file ảnh",
+      "uploadDisabled": "Chưa cấu hình lưu ảnh",
       "providers": {
         "google": "Google",
         "password": "Tên đăng nhập và mật khẩu"

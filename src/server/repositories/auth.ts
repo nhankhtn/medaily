@@ -81,3 +81,12 @@ export async function updateUserProfile(
 
   await tx.update(users).set(set).where(eq(users.id, userId))
 }
+
+/** Avatar upload may clear as well as set — unlike updateUserProfile. */
+export async function setUserImageUrl(
+  userId: string,
+  imageUrl: string | null,
+  tx: DbOrTx = db,
+): Promise<void> {
+  await tx.update(users).set({ imageUrl, updatedAt: new Date() }).where(eq(users.id, userId))
+}

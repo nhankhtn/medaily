@@ -385,6 +385,13 @@
       "signedInWith": "Signed in with",
       "since": "Here since",
       "username": "Signed in as {name}",
+      "changePhoto": "Change profile photo",
+      "photoUpdated": "Profile photo updated",
+      "photoRemoved": "Profile photo removed",
+      "removePhoto": "Remove photo",
+      "photoTooLarge": "Photo must be under 5MB",
+      "photoInvalid": "Choose an image file",
+      "uploadDisabled": "Photo storage is not configured",
       "providers": {
         "google": "Google",
         "password": "Username and password"
