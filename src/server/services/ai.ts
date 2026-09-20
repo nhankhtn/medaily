@@ -1,12 +1,14 @@
 import { cache } from 'react'
-import { and, desc, eq } from 'drizzle-orm'
-import { db } from '@/lib/db'
 import { getCurrentUserId } from '@/lib/auth/current-user'
-import { aiReports } from '@/lib/db/schema'
+import { addDays, addMonthsISO } from '@/lib/dates'
 import type { AiReport } from '@/lib/db/schema'
 import type { ReviewMetricsSnapshot } from '@/lib/types'
+import { insertAiReport, findLatestAiReport } from '@/server/repositories/ai'
 import { ServiceError } from '@/server/service-client'
 import { aiClient, aiServiceConfigured } from '@/server/services/ai-service'
+import { getDashboardData } from '@/server/services/dashboard'
+import { getReviewView } from '@/server/services/reviews'
+import { getSettings } from '@/server/services/settings'
 
 /**
  * Spec 35 §14 — opt-in, off unless the service is configured, and grounded
@@ -66,39 +68,62 @@ export async function saveReport(values: {
   model: string
   promptVersion: string
 }): Promise<AiReport> {
-  const rows = await db
-    .insert(aiReports)
-    .values({
-      userId: await getCurrentUserId(),
-      kind: values.kind,
-      periodStart: values.periodStart,
-      periodEnd: values.periodEnd,
-      model: values.model,
-      promptVersion: values.promptVersion,
-      contentMd: values.contentMd,
-    })
-    .returning()
-
-  const row = rows[0]
-  if (!row) throw new Error('failed to save report')
-  return row
+  return insertAiReport({
+    userId: await getCurrentUserId(),
+    kind: values.kind,
+    periodStart: values.periodStart,
+    periodEnd: values.periodEnd,
+    model: values.model,
+    promptVersion: values.promptVersion,
+    contentMd: values.contentMd,
+  })
 }
 
 export const findLatestReport = cache(
-  async (kind: 'weekly' | 'monthly', periodStart: string): Promise<AiReport | null> => {
-    const rows = await db
-      .select()
-      .from(aiReports)
-      .where(
-        and(
-          eq(aiReports.userId, await getCurrentUserId()),
-          eq(aiReports.kind, kind),
-          eq(aiReports.periodStart, periodStart),
-        ),
-      )
-      .orderBy(desc(aiReports.createdAt))
-      .limit(1)
-
-    return rows[0] ?? null
-  },
+  async (kind: 'weekly' | 'monthly', periodStart: string): Promise<AiReport | null> =>
+    findLatestAiReport(await getCurrentUserId(), kind, periodStart),
 )
+
+/**
+ * Spec 29 — assemble the period aggregates, ask `medaily-ai` to write, and
+ * file the result. The action only validates input and revalidates the page.
+ */
+export async function generatePeriodNarrative(
+  period: 'weekly' | 'monthly',
+  key: string,
+): Promise<string> {
+  if (!aiServiceConfigured()) {
+    throw new NarrativeDisabledError('AI_SERVICE is not configured')
+  }
+
+  const settings = await getSettings()
+  const view = await getReviewView(period, key)
+
+  const previousKey = period === 'weekly' ? addDays(key, -7) : addMonthsISO(key, -1)
+  const previousView = await getReviewView(period, previousKey)
+  const dashboard = await getDashboardData()
+
+  const review = await generateNarrative({
+    period,
+    periodStart: view.range.start,
+    periodEnd: view.range.end,
+    locale: settings.locale,
+    metrics: view.metrics,
+    previousMetrics: previousView.metrics,
+    insights: dashboard.insights.map((insight) => ({
+      kind: insight.kind,
+      values: insight.payload.values,
+    })),
+  })
+
+  await saveReport({
+    kind: period,
+    periodStart: view.range.start,
+    periodEnd: view.range.end,
+    contentMd: review.text,
+    model: review.model,
+    promptVersion: review.promptVersion,
+  })
+
+  return review.text
+}
