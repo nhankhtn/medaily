@@ -34,7 +34,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col">
           <Header today={logicalToday} theme={theme} />
-          <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-4 pb-24 md:pb-8">
+          <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-4 pb-28 md:pb-8">
             {children}
           </main>
         </div>
@@ -56,8 +56,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         className={cn(
           'fixed right-4 z-30 max-md:hidden md:right-6',
           aiServiceConfigured()
-            ? 'bottom-[calc(8.25rem+env(safe-area-inset-bottom))] md:bottom-[5.25rem]'
-            : 'bottom-[calc(4.5rem+env(safe-area-inset-bottom))] md:bottom-6',
+            ? 'bottom-[calc(9.5rem+env(safe-area-inset-bottom,0px))] md:bottom-[5.25rem]'
+            : 'bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] md:bottom-6',
         )}
       >
         <ShortcutsDialog

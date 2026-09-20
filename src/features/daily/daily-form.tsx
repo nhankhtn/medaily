@@ -522,7 +522,7 @@ export function DailyForm({
       ) : null}
 
       {/* Sticky on mobile so Save is always in thumb reach (spec 22.3) */}
-      <div className="glass-strong fixed inset-x-0 bottom-14 z-20 border-t p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:static md:z-auto md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none">
+      <div className="glass-chip fixed right-3 left-3 z-20 rounded-[1.5rem] p-3 bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] md:static md:inset-auto md:z-auto md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none">
         <Button size="lg" className="w-full md:w-auto" onClick={submit} disabled={pending}>
           {pending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
           {pending ? tc('saving') : t('saveDay')}

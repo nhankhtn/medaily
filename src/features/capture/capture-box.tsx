@@ -70,7 +70,7 @@ export function CaptureBox({
     <div
       className={cn(
         'fixed right-4 z-40 md:right-6',
-        'bottom-[calc(4.5rem+env(safe-area-inset-bottom))] md:bottom-6',
+        'bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] md:bottom-6',
       )}
     >
       {open ? (

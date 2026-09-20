@@ -33,25 +33,25 @@ export function BottomNav() {
   return (
     <>
       {moreOpen ? (
-        <div className="fixed inset-0 z-40 bg-bg/95 backdrop-blur-md md:hidden">
-          <div className="flex h-14 items-center justify-between border-b border-border-base pr-[max(1rem,env(safe-area-inset-right,0px))] pl-[max(1rem,env(safe-area-inset-left,0px))] pt-[env(safe-area-inset-top,0px)]">
-            <span className="flex h-14 items-center font-semibold">{t('more')}</span>
+        <div className="fixed inset-0 z-40 bg-overlay/70 backdrop-blur-2xl md:hidden">
+          <div className="flex items-center justify-between pr-[max(1.25rem,env(safe-area-inset-right,0px))] pl-[max(1.25rem,env(safe-area-inset-left,0px))] pt-[env(safe-area-inset-top,0px)]">
+            <span className="flex h-14 items-center text-lg font-semibold">{t('more')}</span>
             <button
               type="button"
               onClick={() => setMoreOpen(false)}
               aria-label={t('collapse')}
-              className="flex size-10 items-center justify-center rounded-full hover:bg-surface-2"
+              className="glass-chip flex size-10 items-center justify-center rounded-full"
             >
               <X className="size-5" />
             </button>
           </div>
-          <div className="h-[calc(100dvh-3.5rem-env(safe-area-inset-top,0px))] overflow-y-auto overscroll-contain p-4 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] pr-[max(1rem,env(safe-area-inset-right,0px))] pl-[max(1rem,env(safe-area-inset-left,0px))]">
+          <div className="h-[calc(100dvh-3.5rem-env(safe-area-inset-top,0px))] overflow-y-auto overscroll-contain pt-2 pb-[calc(7.5rem+env(safe-area-inset-bottom,0px))] pl-[max(1.25rem,env(safe-area-inset-left,0px))] pr-[max(1.25rem,env(safe-area-inset-right,0px))]">
             <div className="grid grid-cols-3 gap-3">
               {MORE_NAV_ITEMS.map((item) => (
                 <Link
                   key={item.key}
                   href={item.href}
-                  className="glass flex aspect-square flex-col items-center justify-center gap-2 rounded-[var(--radius)] p-2 text-center"
+                  className="glass-chip flex aspect-square flex-col items-center justify-center gap-2 rounded-[1.35rem] p-2 text-center"
                 >
                   <item.icon className="size-6 text-accent" />
                   <span className="text-xs leading-tight text-text-muted">{t(item.key)}</span>
@@ -64,8 +64,14 @@ export function BottomNav() {
         </div>
       ) : null}
 
+      {/* Floating dock — inset from screen edges like Control Center, not flush. */}
       <nav
-        className="glass fixed inset-x-0 bottom-0 z-50 border-x-0 border-b-0 pr-[env(safe-area-inset-right,0px)] pb-[env(safe-area-inset-bottom,0px)] pl-[env(safe-area-inset-left,0px)] md:hidden"
+        className={cn(
+          'glass-chip fixed z-50 md:hidden',
+          'right-[max(0.75rem,env(safe-area-inset-right,0px))] left-[max(0.75rem,env(safe-area-inset-left,0px))]',
+          'bottom-[max(0.75rem,env(safe-area-inset-bottom,0px))]',
+          'rounded-[1.75rem] px-1.5 py-1.5',
+        )}
         aria-label={t('groupCore')}
       >
         <ul className="grid grid-cols-5">
@@ -78,7 +84,7 @@ export function BottomNav() {
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
                   className={cn(
-                    'flex h-14 flex-col items-center justify-center gap-0.5',
+                    'flex h-12 flex-col items-center justify-center gap-0.5 rounded-2xl',
                     active ? 'text-accent' : 'text-text-subtle',
                   )}
                 >
@@ -96,7 +102,7 @@ export function BottomNav() {
               onClick={() => setMoreOpen(!moreOpen)}
               aria-expanded={moreOpen}
               className={cn(
-                'flex h-14 w-full flex-col items-center justify-center gap-0.5',
+                'flex h-12 w-full flex-col items-center justify-center gap-0.5 rounded-2xl',
                 moreOpen || moreActive ? 'text-accent' : 'text-text-subtle',
               )}
             >

@@ -46,6 +46,9 @@
     0 1px 3px oklch(0% 0 0 / 0.04);
   --glass-blur: 24px;
   --glass-saturate: 1.4;
+  --glass-chip: oklch(100% 0 0 / 0.42);
+  --glass-chip-border: oklch(100% 0 0 / 0.55);
+  --glass-chip-blur: 36px;
   --overlay: oklch(20% 0.02 250 / 0.35);
   --bg-atmosphere:
     radial-gradient(ellipse 80% 60% at 10% 0%, oklch(88% 0.06 275 / 0.55), transparent 55%),
@@ -80,6 +83,9 @@
     0 1px 3px oklch(0% 0 0 / 0.3);
   --glass-blur: 28px;
   --glass-saturate: 1.5;
+  --glass-chip: oklch(100% 0 0 / 0.14);
+  --glass-chip-border: oklch(100% 0 0 / 0.28);
+  --glass-chip-blur: 40px;
   --overlay: oklch(0% 0 0 / 0.5);
   --bg-atmosphere:
     radial-gradient(ellipse 80% 55% at 15% -5%, oklch(35% 0.1 275 / 0.5), transparent 55%),
@@ -118,6 +124,9 @@
     0 1px 3px oklch(40% 0.1 350 / 0.06);
   --glass-blur: 24px;
   --glass-saturate: 1.45;
+  --glass-chip: oklch(100% 0 0 / 0.4);
+  --glass-chip-border: oklch(100% 0 0 / 0.55);
+  --glass-chip-blur: 36px;
   --overlay: oklch(30% 0.05 350 / 0.35);
   --bg-atmosphere:
     radial-gradient(ellipse 80% 60% at 10% 0%, oklch(90% 0.07 350 / 0.55), transparent 55%),
@@ -171,9 +180,21 @@
   box-shadow: var(--shadow-card);
 }
 
+/* Control Center–style chip / floating dock: lighter fill, hairline rim. */
+@utility glass-chip {
+  background-color: var(--glass-chip);
+  -webkit-backdrop-filter: blur(var(--glass-chip-blur)) saturate(1.8);
+  backdrop-filter: blur(var(--glass-chip-blur)) saturate(1.8);
+  border: 0.5px solid var(--glass-chip-border);
+  box-shadow:
+    0 1px 0 oklch(100% 0 0 / 0.22) inset,
+    0 10px 36px oklch(0% 0 0 / 0.28);
+}
+
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .glass,
-  .glass-strong {
+  .glass-strong,
+  .glass-chip {
     background-color: var(--surface-solid);
   }
 }
