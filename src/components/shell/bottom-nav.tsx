@@ -33,8 +33,19 @@ export function BottomNav() {
   return (
     <>
       {moreOpen ? (
-        <div className="fixed inset-0 z-40 bg-overlay/70 backdrop-blur-2xl md:hidden">
-          <div className="flex items-center justify-between pr-[max(1.25rem,env(safe-area-inset-right,0px))] pl-[max(1.25rem,env(safe-area-inset-left,0px))] pt-[env(safe-area-inset-top,0px)]">
+        <div className="fixed inset-0 z-40 bg-black/20 md:hidden dark:bg-black/40">
+          {/*
+           * No backdrop-blur on this layer — a parent filter would freeze the
+           * page into a flat grey, and every glass-chip would only sample that
+           * milky sheet (reading as opaque white tiles). Chips blur the live
+           * page themselves.
+           */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 opacity-80"
+            style={{ background: 'var(--bg-atmosphere)' }}
+          />
+          <div className="relative flex items-center justify-between pr-[max(1.25rem,env(safe-area-inset-right,0px))] pl-[max(1.25rem,env(safe-area-inset-left,0px))] pt-[env(safe-area-inset-top,0px)]">
             <span className="flex h-14 items-center text-lg font-semibold">{t('more')}</span>
             <button
               type="button"
@@ -45,7 +56,7 @@ export function BottomNav() {
               <X className="size-5" />
             </button>
           </div>
-          <div className="h-[calc(100dvh-3.5rem-env(safe-area-inset-top,0px))] overflow-y-auto overscroll-contain pt-2 pb-[calc(7.5rem+env(safe-area-inset-bottom,0px))] pl-[max(1.25rem,env(safe-area-inset-left,0px))] pr-[max(1.25rem,env(safe-area-inset-right,0px))]">
+          <div className="relative h-[calc(100dvh-3.5rem-env(safe-area-inset-top,0px))] overflow-y-auto overscroll-contain pt-2 pb-[calc(7.5rem+env(safe-area-inset-bottom,0px))] pl-[max(1.25rem,env(safe-area-inset-left,0px))] pr-[max(1.25rem,env(safe-area-inset-right,0px))]">
             <div className="grid grid-cols-3 gap-3">
               {MORE_NAV_ITEMS.map((item) => (
                 <Link

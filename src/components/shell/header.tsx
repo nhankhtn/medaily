@@ -8,10 +8,11 @@ import { SignOutButton } from './sign-out-button'
 import { ThemeToggle } from './theme-toggle'
 import { fromISODate, type ISODate } from '@/lib/dates'
 import { PATHS } from '@/lib/paths'
-import { Button } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button-variants'
 import { TimerBadge } from '@/features/timer/timer-badge'
 import { getRunningTimer } from '@/server/services/timer'
 import type { ThemePreference } from '@/lib/themes'
+import { cn } from '@/lib/utils'
 
 export async function Header({ today, theme }: { today: ISODate; theme: ThemePreference }) {
   const [t, format] = await Promise.all([getTranslations('common'), getFormatter()])
@@ -31,12 +32,13 @@ export async function Header({ today, theme }: { today: ISODate; theme: ThemePre
           <HeaderTimer />
         </Suspense>
         <CommandPalette today={today} />
-        <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">
-          <Link href={PATHS.daily}>
-            <ClipboardList className="size-4" />
-            {t('today')}
-          </Link>
-        </Button>
+        <Link
+          href={PATHS.daily}
+          className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'hidden sm:inline-flex')}
+        >
+          <ClipboardList className="size-4" />
+          {t('today')}
+        </Link>
         {/* Language, theme and sign-out live in the More sheet on a phone —
             the header has room for the date, the run and search, and no more. */}
         <LocaleSwitcher className="hidden sm:flex" />

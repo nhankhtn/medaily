@@ -1,7 +1,7 @@
 import { ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { getFormatter, getTranslations } from 'next-intl/server'
-import { Button } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button-variants'
 import { Card, CardBody, CardHeader } from '@/components/ui/card'
 import { GoalList } from '@/features/dashboard/goal-list'
 import { HabitRow } from '@/features/dashboard/habit-row'
@@ -15,6 +15,7 @@ import { GettingStarted } from '@/features/onboarding/getting-started'
 import { TourStart } from '@/features/onboarding/tour-start'
 import { fromISODate } from '@/lib/dates'
 import { PATHS } from '@/lib/paths'
+import { cn } from '@/lib/utils'
 import { getDashboardData } from '@/server/services/dashboard'
 import { getOnboardingView } from '@/server/services/onboarding'
 
@@ -59,12 +60,10 @@ export default async function DashboardPage() {
             <CardHeader
               title={t('todayCard')}
               action={
-                <Button asChild variant="ghost" size="sm">
-                  <Link href={PATHS.daily}>
+                <Link href={PATHS.daily} className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}>
                     {tc('edit')}
                     <ArrowRight className="size-3.5" />
                   </Link>
-                </Button>
               }
             />
             <CardBody className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
@@ -205,9 +204,9 @@ export default async function DashboardPage() {
           <CardHeader
             title={t('goalsCard')}
             action={
-              <Button asChild variant="ghost" size="sm">
-                <Link href={PATHS.goals}>{t('seeAll')}</Link>
-              </Button>
+              <Link href={PATHS.goals} className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}>
+                {t('seeAll')}
+              </Link>
             }
           />
           <GoalList goals={data.goals} />
@@ -218,9 +217,9 @@ export default async function DashboardPage() {
           <CardHeader
             title={t('habitsCard')}
             action={
-              <Button asChild variant="ghost" size="sm">
-                <Link href={PATHS.habits}>{t('seeAll')}</Link>
-              </Button>
+              <Link href={PATHS.habits} className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}>
+                {t('seeAll')}
+              </Link>
             }
           />
           <HabitRow habits={data.habits} date={data.today} />
