@@ -1,5 +1,6 @@
 'use client'
 
+import { CalendarDays } from 'lucide-react'
 import * as React from 'react'
 import { formatDate } from '@/lib/format/dates'
 import type { ISODate } from '@/lib/dates'
@@ -43,13 +44,16 @@ export function DateInput({
       <div
         aria-hidden
         className={cn(
-          'glass flex h-10 w-full items-center rounded-[var(--radius)] border-border-strong px-2.5 text-base tabular-nums sm:h-11 sm:px-3',
+          'glass flex h-10 w-full items-center gap-2 rounded-[var(--radius)] border-border-strong pr-2.5 pl-2.5 text-base tabular-nums sm:h-11 sm:pr-3 sm:pl-3',
           'group-focus-within:border-accent group-focus-within:inset-ring-accent group-focus-within:inset-ring-1',
           shown ? 'text-text' : 'text-text-subtle',
           disabled && 'opacity-50',
         )}
       >
-        {shown ? formatDate(shown as ISODate) : 'dd/mm/yyyy'}
+        <span className="min-w-0 flex-1 truncate">
+          {shown ? formatDate(shown as ISODate) : 'dd/mm/yyyy'}
+        </span>
+        <CalendarDays className="text-text-muted size-4 shrink-0" />
       </div>
       <input
         {...props}
