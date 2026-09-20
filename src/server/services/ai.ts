@@ -32,14 +32,12 @@ export type AiContext = {
 
 /**
  * The writing is `medaily-ai`'s — the prompt lives there, at
- * `src/services/report.ts`, with every other prompt, and so does the
- * Anthropic key. What comes back is the review plus which model wrote it and
- * which prompt it came from, because both are filed alongside it here: a
- * change of prompt has to be visible in the table afterwards.
+ * `src/services/report.ts`, with every other prompt, on the same Gemini chain.
+ * What comes back is the review plus which model wrote it and which prompt it
+ * came from, because both are filed alongside it here: a change of prompt has
+ * to be visible in the table afterwards.
  *
- * `disabled` rather than a failure when that deploy has no Anthropic key.
- * Gemini and Anthropic are configured separately over there, so everything
- * else can work while this one thing does not.
+ * `disabled` rather than a failure when that deploy has no Gemini key.
  */
 export class NarrativeDisabledError extends Error {}
 

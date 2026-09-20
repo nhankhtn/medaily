@@ -24,8 +24,6 @@ export async function generateReview(input: unknown): Promise<GenerateResult> {
     revalidatePath(PATHS.reviews)
     return { ok: true, contentMd }
   } catch (error) {
-    // The service is there but has no key for this one. Not a failure to
-    // report — the same nothing-configured answer an unconfigured deploy gives.
     if (error instanceof NarrativeDisabledError) return { ok: false, error: 'disabled' }
     return {
       ok: false,
