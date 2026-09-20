@@ -64,7 +64,7 @@ export default async function SettingsPage() {
       <SettingsForm settings={settings} />
       <CustomMetricsPanel metrics={await findCustomMetrics(settings.userId)} />
       <DailyFieldsPanel hidden={settings.hiddenDailyFields} uses={uses} />
-      <section className="border-border-base bg-surface rounded-[var(--radius)] border p-4">
+      <section className="border-border-base bg-surface hidden rounded-[var(--radius)] border p-4 sm:block">
         <h2 className="text-sm font-semibold">{t('shortcuts.title')}</h2>
         <p className="text-text-subtle mt-0.5 mb-3 text-xs leading-snug">{t('shortcuts.help')}</p>
         <ShortcutsDialog

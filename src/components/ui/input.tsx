@@ -1,9 +1,17 @@
 import * as React from 'react'
+import { DateInput } from '@/components/ui/date-input'
 import { cn } from '@/lib/utils'
 
-export function Input({ className, ...props }: React.ComponentProps<'input'>) {
+export function Input({ className, type, ...props }: React.ComponentProps<'input'>) {
+  // Safari paints `type="date"` in the OS locale (long Vietnamese on iPhone).
+  // Route it through DateInput so the visible string is always dd/mm/yyyy.
+  if (type === 'date') {
+    return <DateInput className={className} {...props} />
+  }
+
   return (
     <input
+      type={type}
       className={cn(
         // 16px on every viewport: Safari zooms the page when a focused field
         // is smaller, including landscape phones past the `sm` breakpoint.
