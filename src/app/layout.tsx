@@ -5,6 +5,7 @@ import { getLocale, getMessages } from 'next-intl/server'
 import { Toaster } from 'sonner'
 import { RequestIdProvider } from '@/components/shell/request-id'
 import { FORMATS } from '@/lib/format/dates'
+import { fontBrand, fontSans } from '@/lib/fonts'
 import { REQUEST_ID_HEADER } from '@/lib/request-id'
 import { themeBootScript } from '@/lib/themes'
 import { getShellSettings, getShellTheme } from '@/server/services/settings'
@@ -52,12 +53,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       lang={locale}
       data-theme-pref={theme}
       data-density={settings.density}
+      className={`${fontSans.variable} ${fontBrand.variable}`}
       suppressHydrationWarning
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body>
+      <body className="font-sans">
         <NextIntlClientProvider
           locale={locale}
           messages={messages}

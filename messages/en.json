@@ -545,7 +545,14 @@
     "nothingInData": "Nothing written about “{query}” yet"
   },
   "auth": {
-    "title": "Sign in",
+    "brand": "Personal OS",
+    "headline": "One place for the day that just happened.",
+    "subtitle": "Log energy, habits, money and focus — then see what actually moves the needle.",
+    "pillarDaily": "Daily log",
+    "pillarHabits": "Habits & goals",
+    "pillarInsights": "Insights",
+    "title": "Welcome back",
+    "titleHint": "Sign in to continue where you left off.",
     "username": "Username",
     "password": "Password",
     "submit": "Sign in",

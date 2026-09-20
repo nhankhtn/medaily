@@ -3,9 +3,8 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans:
-    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
-    'Noto Sans', sans-serif;
+  --font-sans: var(--font-be-vietnam), ui-sans-serif, system-ui, sans-serif;
+  --font-brand: var(--font-outfit), var(--font-be-vietnam), ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
 }
 
@@ -337,4 +336,75 @@ input[type='number'] {
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Sign-in: entrance + soft orbs (atmosphere already on body::before). */
+@keyframes login-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes login-orb-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(4%, -3%, 0) scale(1.05);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .login-enter {
+    animation: login-enter 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .login-orb {
+    animation: login-orb-drift 18s ease-in-out infinite;
+  }
+}
+
+.login-orb {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(40px);
+}
+
+.login-orb-a {
+  top: 8%;
+  left: -8%;
+  width: min(48vw, 28rem);
+  height: min(48vw, 28rem);
+  background: var(--accent-soft);
+  opacity: 0.85;
+}
+
+.login-orb-b {
+  right: -6%;
+  bottom: 18%;
+  width: min(42vw, 22rem);
+  height: min(42vw, 22rem);
+  background: var(--good-soft);
+  opacity: 0.7;
+  animation-delay: -6s;
+  animation-duration: 22s;
+}
+
+.login-orb-c {
+  top: 42%;
+  left: 38%;
+  width: min(36vw, 18rem);
+  height: min(36vw, 18rem);
+  background: var(--warn-soft);
+  opacity: 0.45;
+  animation-delay: -11s;
+  animation-duration: 26s;
 }

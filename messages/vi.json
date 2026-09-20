@@ -545,7 +545,14 @@
     "nothingInData": "Chưa có gì viết về “{query}”"
   },
   "auth": {
-    "title": "Đăng nhập",
+    "brand": "Personal OS",
+    "headline": "Một chỗ cho ngày vừa qua.",
+    "subtitle": "Ghi năng lượng, thói quen, tiền bạc và tập trung — rồi thấy thứ gì thật sự thay đổi.",
+    "pillarDaily": "Nhật ký ngày",
+    "pillarHabits": "Thói quen & mục tiêu",
+    "pillarInsights": "Phân tích",
+    "title": "Chào bạn quay lại",
+    "titleHint": "Đăng nhập để tiếp tục từ chỗ bạn dừng.",
     "username": "Tên đăng nhập",
     "password": "Mật khẩu",
     "submit": "Đăng nhập",
