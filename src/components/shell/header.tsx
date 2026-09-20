@@ -19,13 +19,17 @@ export async function Header({ today, theme }: { today: ISODate; theme: ThemePre
 
   return (
     /*
-     * Glass must live on this sticky root (not an absolute child). Safari 26
-     * samples background-color + backdrop-filter on edge sticky/fixed nodes to
-     * tint the notch / Dynamic Island ears; absolute children are ignored and
-     * the ears fall back to flat --bg.
+     * Floating chip — same inset / radius language as the sidebar and mobile
+     * dock. Outer sticky stays transparent; padding clears the notch while the
+     * chip itself carries glass-chip.
      */
-    <header className="glass-strong sticky top-0 z-30 border-x-0 border-t-0 pt-[env(safe-area-inset-top,0px)]">
-      <div className="flex h-14 items-center gap-3 pr-[max(1rem,env(safe-area-inset-right,0px))] pl-[max(1rem,env(safe-area-inset-left,0px))]">
+    <div
+      className={cn(
+        'sticky top-0 z-30 px-3',
+        'pt-[max(0.75rem,env(safe-area-inset-top,0px))]',
+      )}
+    >
+      <header className="glass-chip flex h-14 items-center gap-3 rounded-[1.75rem] px-3 sm:px-4">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <span className="text-text-muted truncate text-sm font-medium">
             {format.dateTime(fromISODate(today), 'weekdayDayMonthYear')}
@@ -52,8 +56,8 @@ export async function Header({ today, theme }: { today: ISODate; theme: ThemePre
         <span className="hidden sm:block">
           <SignOutButton />
         </span>
-      </div>
-    </header>
+      </header>
+    </div>
   )
 }
 
