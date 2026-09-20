@@ -56,11 +56,20 @@ export function DateInput({
   }
 
   return (
-    <div className={cn('group relative', className)}>
+    <div
+      className={cn(
+        // Height lives on the wrapper so callers (e.g. draft rows with `h-9`)
+        // shrink the whole control; the face fills it instead of overflowing.
+        'group relative h-10 w-full sm:h-11',
+        className,
+      )}
+    >
       <div
         aria-hidden
         className={cn(
-          'glass flex h-10 w-full items-center gap-2 rounded-[var(--radius)] border-border-strong pr-2.5 pl-2.5 text-base tabular-nums sm:h-11 sm:pr-3 sm:pl-3',
+          // Decorative only — must not steal taps from the real input or from
+          // neighbours when a taller face would paint outside this box.
+          'pointer-events-none glass absolute inset-0 flex items-center gap-2 rounded-[var(--radius)] border-border-strong pr-2.5 pl-2.5 text-base tabular-nums sm:pr-3 sm:pl-3',
           'group-focus-within:border-accent group-focus-within:inset-ring-accent group-focus-within:inset-ring-1',
           shown ? 'text-text' : 'text-text-subtle',
           disabled && 'opacity-50',
