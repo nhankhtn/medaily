@@ -14,8 +14,9 @@ import { getSettings } from '@/server/services/settings'
  *
  * What this handler owns is what only it can know: who is asking, which thread
  * that person's opening maps to, and how often they may ask. The shape of the
- * stream is not its business — `medaily-ai` sends the panel's three events
- * ready to use, and the body is passed through untouched.
+ * stream is not its business — `medaily-ai` sends the panel's events
+ * ready to use (`step`, `reason`, `file`, `delta`, `answer`), and the body is
+ * passed through untouched.
  *
  * The shared secret stops here, as it does in the action next door.
  *

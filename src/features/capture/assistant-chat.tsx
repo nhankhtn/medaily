@@ -17,6 +17,11 @@ type Message = {
   text: string
   reason?: string | null
   /**
+   * Still being written. The bubble is on screen so the person can read as the
+   * tokens land; chrome that belongs on a finished answer (reason, offer) waits.
+   */
+  drafting?: boolean
+  /**
    * The note this answer might have been. Read as a question, but it carried
    * an amount — so the way to file it after all is one tap under the answer,
    * rather than typing it again somewhere else.
@@ -55,7 +60,12 @@ type RunResult =
 async function run(
   message: string,
   opening: string,
-  on: { step: (step: Step) => void; reading: (reason: string) => void },
+  on: {
+    step: (step: Step) => void
+    reading: (reason: string) => void
+    /** Each token chunk of the answer, as Gemini writes it. */
+    delta: (text: string) => void
+  },
 ): Promise<RunResult> {
   const response = await fetch('/api/assistant', {
     method: 'POST',
@@ -84,6 +94,8 @@ async function run(
        * Leaving here cancels the read, which hangs up on the agent.
        */
       return { filed: payload.module, answer: null, reason }
+    } else if (event.event === 'delta' && typeof payload.text === 'string') {
+      on.delta(payload.text)
     } else if (event.event === 'answer') answer = payload.answer
     else if (event.event === 'failed') throw new Error('the run reported a failure')
   }
@@ -181,34 +193,65 @@ export function AssistantChat({
 
     void (async () => {
       setPending(true)
+      let drafting = false
       try {
-        const result = await run(trimmed, opening, { step: setStep, reading: setReading })
+        const result = await run(trimmed, opening, {
+          step: setStep,
+          reading: setReading,
+          delta: (chunk) => {
+            drafting = true
+            setMessages((previous) => {
+              const last = previous.at(-1)
+              if (last?.role === 'model' && last.drafting) {
+                return [
+                  ...previous.slice(0, -1),
+                  { ...last, text: last.text + chunk },
+                ]
+              }
+              return [...previous, { role: 'model', text: chunk, drafting: true }]
+            })
+          },
+        })
 
         if (result.filed) {
           // Left in the transcript on the way past, so coming back to a panel
           // that swapped itself out does not look like a question gone missing.
-          setMessages((previous) => [
-            ...previous,
-            { role: 'model', text: t(`filed.${result.filed}`), reason: result.reason },
-          ])
+          setMessages((previous) => {
+            const withoutDraft = drafting
+              ? previous.filter((message) => !(message.role === 'model' && message.drafting))
+              : previous
+            return [
+              ...withoutDraft,
+              { role: 'model', text: t(`filed.${result.filed}`), reason: result.reason },
+            ]
+          })
           onFile(result.filed, trimmed)
           return
         }
 
-        setMessages((previous) => [
-          ...previous,
-          {
-            role: 'model',
-            text: result.answer,
-            reason: result.reason,
-            offer: AMOUNT.test(trimmed) ? trimmed : undefined,
-          },
-        ])
+        setMessages((previous) => {
+          const withoutDraft = previous.filter(
+            (message) => !(message.role === 'model' && message.drafting),
+          )
+          return [
+            ...withoutDraft,
+            {
+              role: 'model',
+              text: result.answer,
+              reason: result.reason,
+              offer: AMOUNT.test(trimmed) ? trimmed : undefined,
+            },
+          ]
+        })
       } catch (error) {
         console.error('assistant', error)
         toast.error(t(error instanceof RateLimited ? 'rateLimited' : 'failed'))
         // Hand the message back rather than swallowing it into a failed turn.
-        setMessages((previous) => previous.slice(0, -1))
+        setMessages((previous) =>
+          previous
+            .filter((message) => !(message.role === 'model' && message.drafting))
+            .slice(0, -1),
+        )
         setText(trimmed)
       } finally {
         setPending(false)
@@ -296,10 +339,14 @@ export function AssistantChat({
 
       {pending ? (
         <div className="text-text-subtle space-y-1 text-xs">
-          <p className="flex items-center gap-2">
-            <Loader2 className="size-3 animate-spin" />
-            {t(step ? `steps.${step}` : 'thinking')}
-          </p>
+          {/* Once tokens are landing the bubble above is the progress; the step
+              line would just bounce under a growing answer. */}
+          {!messages.some((message) => message.drafting) ? (
+            <p className="flex items-center gap-2">
+              <Loader2 className="size-3 animate-spin" />
+              {t(step ? `steps.${step}` : 'thinking')}
+            </p>
+          ) : null}
           {/* The reading arrives well before the answer does. Showing it here
               means a question taken the wrong way is caught while it is still
               cheaper to rephrase than to read a wrong answer. */}
