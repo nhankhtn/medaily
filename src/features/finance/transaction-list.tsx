@@ -30,6 +30,7 @@ export function TransactionList({
   accounts,
   people,
   currency,
+  emptyLabel,
 }: {
   transactions: Transaction[]
   /** Rows sent but not confirmed; they sit above the ledger until it catches up. */
@@ -38,6 +39,8 @@ export function TransactionList({
   accounts: Account[]
   people: Person[]
   currency: string
+  /** Overrides the empty-state copy when filters leave nothing to show. */
+  emptyLabel?: string
 }) {
   const t = useTranslations('finance')
   const tc = useTranslations('common')
@@ -52,7 +55,7 @@ export function TransactionList({
   const [busyId, setBusyId] = useState<string | null>(null)
 
   if (transactions.length === 0 && pending.length === 0) {
-    return <p className="text-text-subtle text-sm">{t('noTransactions')}</p>
+    return <p className="text-text-subtle text-sm">{emptyLabel ?? t('noTransactions')}</p>
   }
 
   const label = (transaction: Titled) => {
