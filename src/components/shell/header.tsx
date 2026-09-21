@@ -5,6 +5,7 @@ import { ClipboardList } from 'lucide-react'
 import { CommandPalette } from './command-palette'
 import { LocaleSwitcher } from './locale-switcher'
 import { SignOutButton } from './sign-out-button'
+import { StandaloneReload } from './standalone-reload'
 import { ThemeToggle } from './theme-toggle'
 import { fromISODate, type ISODate } from '@/lib/dates'
 import { PATHS } from '@/lib/paths'
@@ -41,6 +42,7 @@ export async function Header({ today, theme }: { today: ISODate; theme: ThemePre
         <Suspense fallback={null}>
           <HeaderTimer />
         </Suspense>
+        <StandaloneReload />
         <CommandPalette today={today} />
         <Link
           href={PATHS.daily}

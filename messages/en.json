@@ -63,6 +63,7 @@
     "language": "Language",
     "openMenu": "Open menu",
     "pickDate": "Pick a date",
+    "reload": "Reload",
     "loadFailed": "This page did not load",
     "loadFailedHint": "Try again in a moment.",
     "backHome": "Back to home",
