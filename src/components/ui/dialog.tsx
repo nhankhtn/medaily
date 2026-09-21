@@ -11,7 +11,7 @@ export const DialogTrigger = DialogPrimitive.Trigger
 export const DialogClose = DialogPrimitive.Close
 
 /**
- * A sheet on phones, a centred dialog from `sm` up (spec 22.3).
+ * A sheet on phones; from `sm` up either a centred dialog or a side drawer.
  *
  * The scrolling area is a child of the content, so the title and the close
  * button stay put while a long form scrolls under them.
@@ -19,18 +19,24 @@ export const DialogClose = DialogPrimitive.Close
  * The sheet is also lifted clear of the on-screen keyboard. Without that it
  * keeps its full height below the keyboard, and the fields at the bottom —
  * including the save button — cannot be reached at all.
+ *
+ * `layout="drawer"` is for long writing (notes, journal): nearly full height
+ * on a phone, a wide side panel on desktop, so the body field has room to grow.
  */
 export function DialogContent({
   title,
   description,
+  layout = 'dialog',
   className,
   children,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   title: string
   description?: string
+  layout?: 'dialog' | 'drawer'
 }) {
   const keyboard = useKeyboardInset()
+  const drawer = layout === 'drawer'
 
   return (
     <DialogPrimitive.Portal>
@@ -38,8 +44,9 @@ export function DialogContent({
       <DialogPrimitive.Content
         className={cn(
           'glass-strong fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-2xl',
-          'max-h-[calc(90dvh-var(--keyboard-inset))] bottom-[var(--keyboard-inset)]',
-          'sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:w-full sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:max-h-[85dvh]',
+          drawer
+            ? 'max-h-[calc(96dvh-var(--keyboard-inset))] bottom-[var(--keyboard-inset)] sm:inset-y-0 sm:right-0 sm:left-auto sm:bottom-0 sm:h-full sm:max-h-none sm:w-full sm:max-w-xl sm:translate-x-0 sm:translate-y-0 sm:rounded-none sm:rounded-l-2xl lg:max-w-2xl'
+            : 'max-h-[calc(90dvh-var(--keyboard-inset))] bottom-[var(--keyboard-inset)] sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:w-full sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:max-h-[85dvh]',
           className,
         )}
         {...props}
@@ -62,7 +69,12 @@ export function DialogContent({
           </DialogPrimitive.Close>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div
+          className={cn(
+            'min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[max(1rem,env(safe-area-inset-bottom))]',
+            drawer && 'flex flex-col',
+          )}
+        >
           {children}
         </div>
       </DialogPrimitive.Content>

@@ -27,6 +27,7 @@ Prefer utilities / primitives over hand-rolled chrome:
 |------|-----|
 | Panel / card | `<Card>` or class `glass` |
 | Modal / sheet / strong panel | `glass-strong` or `<DialogContent>` |
+| Long writing (notes) | `<DialogContent layout="drawer">` — tall sheet / side drawer |
 | Floating dock, More tiles, Control Center chips | `glass-chip` |
 | Page chrome (header / sidebar) | `glass` + safe-area insets |
 | A control **inside** any of the above | `glass-inset` |

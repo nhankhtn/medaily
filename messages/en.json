@@ -1032,7 +1032,8 @@
     "resource": "Book or course",
     "noResource": "None",
     "close": "Close",
-    "edit": "Edit"
+    "edit": "Edit",
+    "view": "View"
   },
   "search": {
     "types": {

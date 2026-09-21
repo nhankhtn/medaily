@@ -38,9 +38,26 @@ export async function NoteBoard({ openedId }: { openedId?: string }) {
                     ...opened.note,
                     ...noteExtras(data.notes.find((n) => n.id === opened.note.id)),
                   }}
+                  targets={targets}
+                  defaultMode="edit"
                   trigger={
                     <Button variant="outline" size="sm">
                       {t('edit')}
+                    </Button>
+                  }
+                />
+                <NoteEditor
+                  topics={data.topics}
+                  resources={data.resources}
+                  note={{
+                    ...opened.note,
+                    ...noteExtras(data.notes.find((n) => n.id === opened.note.id)),
+                  }}
+                  targets={targets}
+                  defaultMode="view"
+                  trigger={
+                    <Button variant="ghost" size="sm">
+                      {t('view')}
                     </Button>
                   }
                 />

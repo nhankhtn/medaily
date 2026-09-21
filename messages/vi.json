@@ -1032,7 +1032,8 @@
     "resource": "Sách hoặc khóa học",
     "noResource": "Không có",
     "close": "Đóng",
-    "edit": "Sửa"
+    "edit": "Sửa",
+    "view": "Xem"
   },
   "search": {
     "types": {

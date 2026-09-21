@@ -144,6 +144,29 @@ export function MarkdownEditor({
     onChange(next)
   }
 
+  /** Tab must indent here, not jump to the next field in the form. */
+  const indent = () => replaceSelection('  ')
+
+  /** Shift+Tab peels one indent level off the start of the current line. */
+  const outdent = () => {
+    const root = ref.current
+    if (!root) return
+
+    const at = selectionRange(root) ?? { start: 0, end: 0 }
+    const text = textOf(root)
+    const lineStart = text.lastIndexOf('\n', Math.max(0, at.start - 1)) + 1
+    const lead = text.slice(lineStart, lineStart + 2)
+    const remove = lead === '  ' ? 2 : lead.startsWith('\t') || lead.startsWith(' ') ? 1 : 0
+    if (remove === 0) return
+
+    const next = text.slice(0, lineStart) + text.slice(lineStart + remove)
+    draw(root, next)
+    placeCaret(root, Math.max(lineStart, at.start - remove))
+    markActive(root)
+    emitted.current = next
+    onChange(next)
+  }
+
   return (
     <div
       ref={ref}
@@ -164,6 +187,13 @@ export function MarkdownEditor({
         if (event.key === 'Enter') {
           event.preventDefault()
           replaceSelection('\n')
+          return
+        }
+
+        if (event.key === 'Tab') {
+          event.preventDefault()
+          if (event.shiftKey) outdent()
+          else indent()
           return
         }
 
