@@ -23,7 +23,8 @@ export function LoginForm({ next }: { next?: string }) {
           id="username"
           name="username"
           autoComplete="username"
-          autoFocus
+          // No autoFocus: on a home-screen PWA, focusing without a tap leaves
+          // the field active but never raises the soft keyboard.
           required
           aria-invalid={state.error === 'invalid'}
         />

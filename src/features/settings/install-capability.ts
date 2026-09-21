@@ -6,6 +6,10 @@
  * here rather than in either component.
  */
 
+import { isIosSafari, isStandalone } from '@/lib/pwa'
+
+export { isIosSafari, isStandalone }
+
 export type InstallPrompt = Event & {
   prompt: () => Promise<void>
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
@@ -60,23 +64,6 @@ export function bindInstallPromptListeners(): () => void {
     window.removeEventListener('beforeinstallprompt', onPrompt)
     window.removeEventListener('appinstalled', onInstalled)
   }
-}
-
-export function isStandalone(): boolean {
-  if (window.matchMedia('(display-mode: standalone)').matches) return true
-  return (window.navigator as Navigator & { standalone?: boolean }).standalone === true
-}
-
-/**
- * iPhone and iPad. iPadOS reports itself as a Mac, so the touch count is what
- * separates a tablet from a desktop.
- */
-export function isIosSafari(): boolean {
-  const ua = window.navigator.userAgent
-  const iPhone = /iphone|ipod/i.test(ua)
-  const iPad = /ipad/i.test(ua) || (/macintosh/i.test(ua) && window.navigator.maxTouchPoints > 1)
-  if (!iPhone && !iPad) return false
-  return !/crios|fxios|edgios/i.test(ua)
 }
 
 export function resolveInstallMode(hasPrompt: boolean): InstallMode {
