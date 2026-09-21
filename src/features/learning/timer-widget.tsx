@@ -8,7 +8,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { TimerBadge } from '@/features/timer/timer-badge'
-import { startTimer } from '@/server/actions/timer'
+import { beginRun } from '@/features/timer/run-actions'
 import type { RunningTimer } from '@/server/services/timer'
 import { PATHS } from '@/lib/paths'
 
@@ -76,11 +76,14 @@ export function TimerWidget({
         disabled={pending}
         onClick={() =>
           startTransition(async () => {
-            const result = await startTimer({
-              target: 'focus',
-              kind,
+            const result = await beginRun({
+              activity: kind,
+              mode: 'stopwatch',
+              targetMinutes: 25,
               topicId: topicId || null,
               projectId: projectId || null,
+              workoutType: null,
+              note: null,
             })
             if (!result.ok) toast.error(tc('error'))
           })

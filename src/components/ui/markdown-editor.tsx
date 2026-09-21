@@ -4,6 +4,8 @@ import { useEffect, useRef } from 'react'
 import { lineInfo } from '@/lib/markdown'
 import { cn } from '@/lib/utils'
 
+const TAB = '    '
+
 /**
  * A Markdown box that dresses each line as you write it: `# ` makes the line a
  * heading there and then, `- ` indents a bullet, `> ` sets a quote off.
@@ -20,9 +22,8 @@ import { cn } from '@/lib/utils'
  * something invisible. The text itself is untouched either way, so what gets
  * saved is still the Markdown that was typed.
  *
- * Inline marks (`**bold**`, a link) are left as written. Styling those means
- * wrapping part of a line while the caret sits inside it; the preview under
- * the box is where those are rendered instead.
+ * `source` skips the dressing and draws plain line elements, so typing a
+ * heading or a third list item does not rebuild spans under the caret.
  *
  * Two things this has to respect:
  *
@@ -40,6 +41,12 @@ export function MarkdownEditor({
   placeholder,
   label,
   disabled,
+  /**
+   * Show the Markdown source as typed (`# `, `- `) instead of dressing lines.
+   * Use with a separate View mode — hiding markers there looks like the body
+   * already rendered while you are still editing.
+   */
+  source = false,
   className,
 }: {
   value: string
@@ -47,12 +54,15 @@ export function MarkdownEditor({
   placeholder?: string
   label: string
   disabled?: boolean
+  source?: boolean
   className?: string
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const composing = useRef(false)
   /** What we last handed up, so a value echoed back is not a reason to redraw. */
   const emitted = useRef<string | null>(null)
+  const sourceRef = useRef(source)
+  sourceRef.current = source
 
   // Seed on mount, and follow the value when it changes from elsewhere — a
   // restored draft, a day copied from yesterday, an undo.
@@ -61,9 +71,9 @@ export function MarkdownEditor({
     if (!root || composing.current) return
     if (value === emitted.current) return
 
-    draw(root, value)
+    draw(root, value, source)
     emitted.current = value
-  }, [value])
+  }, [value, source])
 
   // Which line the caret is in. Nothing is redrawn for this — one attribute
   // moves from one line element to another, and CSS does the rest.
@@ -76,15 +86,25 @@ export function MarkdownEditor({
     return () => document.removeEventListener('selectionchange', sync)
   }, [])
 
+  const commit = (next: string, caret: number, caretEnd = caret) => {
+    const root = ref.current
+    if (!root) return
+    draw(root, next, sourceRef.current)
+    placeCaret(root, caret, caretEnd)
+    markActive(root)
+    emitted.current = next
+    onChange(next)
+  }
+
   const read = () => {
     const root = ref.current
     if (!root) return
 
     const text = textOf(root)
 
-    if (shapeOf(text) !== shapeOf(emitted.current ?? '')) {
+    if (shapeOf(text, sourceRef.current) !== shapeOf(emitted.current ?? '', sourceRef.current)) {
       const caret = selectionRange(root)
-      draw(root, text)
+      draw(root, text, sourceRef.current)
       if (caret) placeCaret(root, caret.end)
       markActive(root)
     }
@@ -136,12 +156,100 @@ export function MarkdownEditor({
     const at = selectionRange(root) ?? { start: 0, end: 0 }
     const text = textOf(root)
     const next = text.slice(0, at.start) + inserted + text.slice(at.end)
+    commit(next, at.start + inserted.length)
+  }
 
-    draw(root, next)
-    placeCaret(root, at.start + inserted.length)
-    markActive(root)
-    emitted.current = next
-    onChange(next)
+  /** Enter continues a list / quote; an empty item exits it. */
+  const handleEnter = () => {
+    const root = ref.current
+    if (!root) return
+
+    const at = selectionRange(root) ?? { start: 0, end: 0 }
+    const text = textOf(root)
+    const lineStart = text.lastIndexOf('\n', Math.max(0, at.start - 1)) + 1
+    const lineBreak = text.indexOf('\n', at.start)
+    const lineEnd = lineBreak === -1 ? text.length : lineBreak
+    const line = text.slice(lineStart, lineEnd)
+    const prefix = listPrefix(line)
+
+    // Empty list / quote / task line → drop the marker and leave a blank line.
+    if (prefix && line.slice(prefix.length).trim() === '') {
+      const next = text.slice(0, lineStart) + text.slice(lineEnd)
+      commit(next, lineStart)
+      return
+    }
+
+    if (prefix) {
+      const nextPrefix = nextListPrefix(prefix)
+      const next = text.slice(0, at.start) + '\n' + nextPrefix + text.slice(at.end)
+      commit(next, at.start + 1 + nextPrefix.length)
+      return
+    }
+
+    replaceSelection('\n')
+  }
+
+  /** Tab indents each selected line by four spaces — not a jump to the next field. */
+  const indent = () => {
+    const root = ref.current
+    if (!root) return
+
+    const at = selectionRange(root) ?? { start: 0, end: 0 }
+    const text = textOf(root)
+    const blockStart = text.lastIndexOf('\n', Math.max(0, at.start - 1)) + 1
+    const blockEnd = (() => {
+      const break_ = text.indexOf('\n', Math.max(at.start, at.end))
+      return break_ === -1 ? text.length : break_
+    })()
+    const block = text.slice(blockStart, blockEnd)
+    const indented = block
+      .split('\n')
+      .map((line) => TAB + line)
+      .join('\n')
+    const next = text.slice(0, blockStart) + indented + text.slice(blockEnd)
+    const lines = block.split('\n').length
+    commit(next, at.start + TAB.length, at.end + TAB.length * lines)
+  }
+
+  /** Shift+Tab peels one indent level (four spaces) off each selected line. */
+  const outdent = () => {
+    const root = ref.current
+    if (!root) return
+
+    const at = selectionRange(root) ?? { start: 0, end: 0 }
+    const text = textOf(root)
+    const blockStart = text.lastIndexOf('\n', Math.max(0, at.start - 1)) + 1
+    const blockEnd = (() => {
+      const break_ = text.indexOf('\n', Math.max(at.start, at.end))
+      return break_ === -1 ? text.length : break_
+    })()
+    const block = text.slice(blockStart, blockEnd)
+    let removedBeforeStart = 0
+    let removedBeforeEnd = 0
+    let removed = 0
+    let offset = 0
+    const outdented = block
+      .split('\n')
+      .map((line) => {
+        const lead = line.slice(0, TAB.length)
+        const n =
+          lead === TAB ? TAB.length : (line.match(/^ {1,3}/)?.[0].length ?? 0)
+        const lineAbs = blockStart + offset
+        if (lineAbs < at.start) removedBeforeStart += n
+        if (lineAbs < at.end) removedBeforeEnd += n
+        removed += n
+        offset += line.length + 1
+        return line.slice(n)
+      })
+      .join('\n')
+    if (removed === 0) return
+
+    const next = text.slice(0, blockStart) + outdented + text.slice(blockEnd)
+    commit(
+      next,
+      Math.max(blockStart, at.start - removedBeforeStart),
+      Math.max(blockStart, at.end - removedBeforeEnd),
+    )
   }
 
   return (
@@ -163,7 +271,14 @@ export function MarkdownEditor({
 
         if (event.key === 'Enter') {
           event.preventDefault()
-          replaceSelection('\n')
+          handleEnter()
+          return
+        }
+
+        if (event.key === 'Tab') {
+          event.preventDefault()
+          if (event.shiftKey) outdent()
+          else indent()
           return
         }
 
@@ -197,24 +312,27 @@ export function MarkdownEditor({
         // The placeholder, since an empty contenteditable has no `::placeholder`.
         'empty:before:text-text-subtle empty:before:content-[attr(data-placeholder)]',
         '[&>[data-line]]:min-h-[1lh]',
-        // The marker is out of sight except on the line being edited, where
-        // the raw source comes back so it can be deleted like any other text.
-        '[&_[data-mark]]:hidden',
-        '[&>[data-line][data-active]_[data-mark]]:inline',
-        // …and its stand-in is shown the other way round, so a line never
-        // carries both a `- ` and a bullet. It sits in the indent rather than
-        // in the text, which keeps every line of a list starting in the same
-        // column however wide its marker is.
-        '[&>[data-label]]:relative',
-        '[&>[data-label]]:before:text-text-subtle [&>[data-label]]:before:absolute [&>[data-label]]:before:left-0 [&>[data-label]]:before:content-[attr(data-label)]',
-        '[&>[data-label][data-active]]:before:hidden',
-        '[&>[data-style=h1]]:text-lg [&>[data-style=h1]]:font-semibold',
-        '[&>[data-style=h2]]:text-base [&>[data-style=h2]]:font-semibold',
-        '[&>[data-style=h3]]:text-sm [&>[data-style=h3]]:font-semibold',
-        '[&>[data-style=bullet]]:pl-6 [&>[data-style=ordered]]:pl-6 [&>[data-style=task]]:pl-6',
-        '[&>[data-style=quote]]:border-border-strong [&>[data-style=quote]]:text-text-muted [&>[data-style=quote]]:border-l-2 [&>[data-style=quote]]:pl-2',
-        '[&>[data-style=code]]:text-text-muted [&>[data-style=code]]:font-mono [&>[data-style=code]]:text-sm',
-        '[&>[data-style=rule]]:border-border-strong [&>[data-style=rule]]:border-b',
+        !source && [
+          // The marker is out of sight except on the line being edited, where
+          // the raw source comes back so it can be deleted like any other text.
+          '[&_[data-mark]]:hidden',
+          '[&>[data-line][data-active]_[data-mark]]:inline',
+          // …and its stand-in is shown the other way round, so a line never
+          // carries both a `- ` and a bullet. It sits in the indent rather than
+          // in the text, which keeps every line of a list starting in the same
+          // column however wide its marker is.
+          '[&>[data-label]]:relative',
+          '[&>[data-label]]:before:text-text-subtle [&>[data-label]]:before:absolute [&>[data-label]]:before:left-0 [&>[data-label]]:before:content-[attr(data-label)]',
+          '[&>[data-label][data-active]]:before:hidden',
+          '[&>[data-style=h1]]:text-lg [&>[data-style=h1]]:font-semibold',
+          '[&>[data-style=h2]]:text-base [&>[data-style=h2]]:font-semibold',
+          '[&>[data-style=h3]]:text-sm [&>[data-style=h3]]:font-semibold',
+          '[&>[data-style=bullet]]:pl-6 [&>[data-style=ordered]]:pl-6 [&>[data-style=task]]:pl-6',
+          '[&>[data-style=quote]]:border-border-strong [&>[data-style=quote]]:text-text-muted [&>[data-style=quote]]:border-l-2 [&>[data-style=quote]]:pl-2',
+          '[&>[data-style=code]]:text-text-muted [&>[data-style=code]]:font-mono [&>[data-style=code]]:text-sm',
+          '[&>[data-style=rule]]:border-border-strong [&>[data-style=rule]]:border-b',
+        ],
+        source && 'font-mono text-sm leading-relaxed whitespace-pre-wrap',
         className,
       )}
     />
@@ -222,12 +340,11 @@ export function MarkdownEditor({
 }
 
 /**
- * Everything the drawn elements depend on: how many lines there are, each
- * one's style, and how long its marker is and what stands in for it. The
- * marker's length matters because it is wrapped by character count, and the
- * stand-in because `1.` becoming `2.` changes nothing else.
+ * Everything that forces a redraw. In source mode only the line count matters
+ * — restyling a heading under the caret is what made `#` / list typing jump.
  */
-function shapeOf(text: string): string {
+function shapeOf(text: string, source: boolean): string {
+  if (source) return `lines:${text.split('\n').length}`
   return text
     .split('\n')
     .map((line) => {
@@ -255,7 +372,7 @@ function textOf(root: HTMLElement): string {
   return root.innerText.replace(/\r\n/g, '\n')
 }
 
-function draw(root: HTMLElement, text: string): void {
+function draw(root: HTMLElement, text: string, source: boolean): void {
   // Truly empty, so `:empty` matches and the placeholder shows.
   if (text === '') {
     root.replaceChildren()
@@ -267,6 +384,13 @@ function draw(root: HTMLElement, text: string): void {
   for (const line of text.split('\n')) {
     const element = document.createElement('div')
     element.setAttribute('data-line', '')
+
+    if (source) {
+      if (line === '') element.append(document.createElement('br'))
+      else element.append(document.createTextNode(line))
+      fragment.append(element)
+      continue
+    }
 
     const { style, marker, label } = lineInfo(line)
     if (style) element.setAttribute('data-style', style)
@@ -360,41 +484,87 @@ function selectionRange(root: HTMLElement): { start: number; end: number } | nul
   return start <= end ? { start, end } : { start: end, end: start }
 }
 
-function placeCaret(root: HTMLElement, offset: number): void {
-  let remaining = offset
+function pointAt(root: HTMLElement, offset: number): { node: Node; offset: number } | null {
+  let remaining = Math.max(0, offset)
+  const lines = [...root.children]
+  if (lines.length === 0) return null
 
-  for (const line of root.children) {
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index]!
     const length = (line.textContent ?? '').length
-    if (remaining > length) {
+    const isLast = index === lines.length - 1
+
+    if (remaining > length && !isLast) {
       remaining -= length + 1
       continue
     }
 
-    const range = document.createRange()
     const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT)
     let seen = 0
 
     for (let node = walker.nextNode(); node; node = walker.nextNode()) {
       const size = node.textContent?.length ?? 0
       if (seen + size >= remaining) {
-        range.setStart(node, remaining - seen)
-        range.collapse(true)
-        select(range)
-        return
+        return { node, offset: remaining - seen }
       }
       seen += size
     }
 
-    // An empty line has no text node to sit in.
-    range.selectNodeContents(line)
-    range.collapse(true)
-    select(range)
-    return
+    // An empty line has no text node to sit in; clamp past-end onto this line.
+    return { node: line, offset: line.childNodes.length }
   }
+
+  return null
+}
+
+function placeCaret(root: HTMLElement, start: number, end = start): void {
+  const from = pointAt(root, start)
+  const to = end === start ? from : pointAt(root, end)
+  if (!from || !to) return
+
+  const range = document.createRange()
+  range.setStart(from.node, from.offset)
+  range.setEnd(to.node, to.offset)
+  select(range)
 }
 
 function select(range: Range): void {
   const selection = window.getSelection()
   selection?.removeAllRanges()
   selection?.addRange(range)
+}
+
+/**
+ * Leading marker of a list / quote / task line, including an *empty* one
+ * (`- ` with nothing after) that `lineInfo` does not yet call a bullet.
+ */
+function listPrefix(line: string): string | null {
+  const info = lineInfo(line)
+  if (
+    info.marker &&
+    (info.style === 'bullet' ||
+      info.style === 'ordered' ||
+      info.style === 'task' ||
+      info.style === 'quote')
+  ) {
+    return info.marker
+  }
+
+  const empty =
+    /^(\s*[-*+]\s+)$/.exec(line) ??
+    /^(\s*\d+[.)]\s+)$/.exec(line) ??
+    /^(\s*>\s?)$/.exec(line) ??
+    /^(\s*[-*+]\s+\[[ xX]\]\s+)$/.exec(line)
+  return empty?.[1] ?? null
+}
+
+/** Same indent and marker kind; ordered lists bump the number. */
+function nextListPrefix(prefix: string): string {
+  const ordered = /^(\s*)(\d+)([.)]\s+)$/.exec(prefix)
+  if (ordered) return `${ordered[1]}${Number(ordered[2]) + 1}${ordered[3]}`
+
+  const task = /^(\s*[-*+]\s+)\[.\]\s+$/.exec(prefix)
+  if (task) return `${task[1]}[ ] `
+
+  return prefix
 }

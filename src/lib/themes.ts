@@ -9,8 +9,8 @@
 
 export type ThemeId = 'light' | 'dark' | 'pink'
 
-/** What the user chose. `system` follows the operating system. */
-export type ThemePreference = ThemeId | 'system'
+/** What the user chose — always a concrete palette, never the OS preference. */
+export type ThemePreference = ThemeId
 
 export type Theme = {
   id: ThemeId
@@ -29,20 +29,19 @@ export const THEMES: readonly Theme[] = [
   { id: 'pink', base: 'light', labelKey: 'themePink' },
 ] as const
 
-export const DEFAULT_THEME: ThemePreference = 'system'
+export const DEFAULT_THEME: ThemePreference = 'light'
 
 /**
  * Mirrors the stored preference, the way the locale cookie does. The sign-in
  * page has no session and so no settings row to read: without this it would
- * always render in the system theme, and signing in would change the colours
+ * always render in the default theme, and signing in would change the colours
  * under you.
  */
 export const THEME_COOKIE = 'medaily_theme'
 
 export const THEME_IDS = THEMES.map((theme) => theme.id)
 
-/** `system` first: it is the default, and the one most people leave alone. */
-export const THEME_PREFERENCES: readonly ThemePreference[] = ['system', ...THEME_IDS]
+export const THEME_PREFERENCES: readonly ThemePreference[] = THEME_IDS
 
 export const isThemePreference = (value: unknown): value is ThemePreference =>
   typeof value === 'string' && (THEME_PREFERENCES as readonly string[]).includes(value)
@@ -62,9 +61,9 @@ export const DARK_THEME_IDS = THEMES.filter((theme) => theme.base === 'dark').ma
  */
 export function themeBootScript(): string {
   return `(function(){try{
-var r=document.documentElement,p=r.dataset.themePref||'system',
+var r=document.documentElement,p=r.dataset.themePref||'light',
 d=${JSON.stringify(DARK_THEME_IDS)},
-id=p==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):p;
+id=${JSON.stringify(THEME_IDS)}.indexOf(p)>-1?p:'light';
 r.dataset.theme=id;r.classList.toggle('dark',d.indexOf(id)>-1)
 }catch(e){}})()`.replace(/\n/g, '')
 }

@@ -18,15 +18,21 @@ const DB_NAME = 'medaily-offline'
  * are missing, so an install that already has the daily queue gains the
  * transactions one without losing what is in it.
  */
-const DB_VERSION = 2
+const DB_VERSION = 3
 
 export const DAILY_STORE = 'pending-daily'
 export const TRANSACTION_STORE = 'pending-transactions'
+/** The run in flight on this device — one row, keyed `current`. */
+export const TIMER_RUN_STORE = 'timer-run'
+/** Completed runs waiting to be filed after a reconnect. */
+export const TIMER_STOP_STORE = 'pending-timer-stops'
 
 /** Every store this database holds, and what each one is keyed by. */
 const STORES: Record<string, string> = {
   [DAILY_STORE]: 'date',
   [TRANSACTION_STORE]: 'id',
+  [TIMER_RUN_STORE]: 'id',
+  [TIMER_STOP_STORE]: 'id',
 }
 
 const BY_QUEUED_AT = 'queuedAt'

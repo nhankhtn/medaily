@@ -1,5 +1,5 @@
 /*
- * Offline support for the daily log, and nothing wider than that.
+ * Offline support for home, the daily log, finance, and timer.
  *
  * Every page in this app is server-rendered per request, so there is no shell
  * to fall back on — what makes /daily openable offline is a copy of the last
@@ -10,18 +10,20 @@
  * Plain JS on purpose: served straight out of `public/`, no build step, no
  * dependency, and readable by whoever has to debug it on a phone.
  */
-const VERSION = 'v1'
+const VERSION = 'v4'
 const SHELL = `medaily-shell-${VERSION}`
 const PAGES = `medaily-pages-${VERSION}`
 
 /** Only these navigations are worth keeping. The rest are online-only. */
 function isOfflinePage(url) {
-  // /finance carries the accounts and categories the form needs to offer, so
-  // caching the page is also what makes adding a transaction offline possible.
+  // / is the dashboard snapshot. /finance and /timer carry the pickers their
+  // offline forms need. /daily is the full day log.
   return (
+    url.pathname === '/' ||
     url.pathname === '/daily' ||
     url.pathname.startsWith('/daily/') ||
-    url.pathname === '/finance'
+    url.pathname === '/finance' ||
+    url.pathname === '/timer'
   )
 }
 
@@ -58,7 +60,7 @@ self.addEventListener('activate', (event) => {
         // store the sign-in page under the /daily key and serve that offline
         // forever after. `redirected` is the check that catches it.
         const cache = await caches.open(PAGES)
-        for (const path of ['/daily', '/finance']) {
+        for (const path of ['/', '/daily', '/finance', '/timer']) {
           const response = await fetch(path)
           if (response.ok && !response.redirected) await cache.put(path, response)
         }

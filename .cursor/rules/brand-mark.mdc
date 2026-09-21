@@ -1,0 +1,40 @@
+---
+description: Keep brand mark, favicon, and home-screen icons in sync
+globs: src/lib/brand.ts,src/components/brand/**,src/app/icon.svg,src/app/apple-icon.tsx,src/app/icon-maskable.png/**,src/app/manifest.ts,tests/unit/brand.test.ts
+alwaysApply: false
+---
+
+# Brand mark sync
+
+The staircase mark lives in **one** place: `src/lib/brand.ts` (`MARK_PATH`, tile
+constants, `markSvg()`).
+
+## Surfaces
+
+| Surface | Source |
+|---------|--------|
+| In-app sidebar / login | `<Logo>` + CSS `.logo-mark` (real liquid glass) |
+| Favicon / tab | static `src/app/icon.svg` |
+| iOS Add to Home | `src/app/apple-icon.tsx` → `markSvg({ rounded: false })` |
+| Android / PWA maskable | `src/app/icon-maskable.png/route.tsx` → same |
+
+Home-screen icons **cannot** use `backdrop-filter`. Bake the glass look in
+`markSvg()` (opaque gradient + sheen + rim). Do not invent a second palette in
+those routes.
+
+## When you change the mark
+
+1. Edit `src/lib/brand.ts` only (path, stroke, tile colours, `markSvg` markup).
+2. Rewrite `src/app/icon.svg` as the exact output of `markSvg()`:
+   `bun -e "import { markSvg } from './src/lib/brand.ts'; await Bun.write('src/app/icon.svg', markSvg())"`
+3. Run `tests/unit/brand.test.ts` — it asserts `icon.svg === markSvg()`.
+4. Do **not** hand-edit apple-icon / maskable PNG routes for colours; they
+   already import `markSvg`.
+
+## Anti-patterns
+
+```text
+❌ Change only Logo CSS and assume the home-screen icon updates
+❌ Paste a new SVG into icon.svg with different path/colours than markSvg()
+❌ Hardcode hex fills in apple-icon.tsx or the maskable route
+```

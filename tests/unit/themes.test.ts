@@ -91,14 +91,15 @@ describe('the colour maths', () => {
 })
 
 describe('the registry', () => {
-  it('offers system plus every theme', () => {
-    expect(THEME_PREFERENCES[0]).toBe('system')
-    expect(THEME_PREFERENCES).toHaveLength(THEMES.length + 1)
+  it('offers every concrete theme', () => {
+    expect(THEME_PREFERENCES).toEqual(THEMES.map((theme) => theme.id))
+    expect(THEME_PREFERENCES).not.toContain('system')
   })
 
   it('accepts only what it lists', () => {
     expect(isThemePreference('pink')).toBe(true)
-    expect(isThemePreference('system')).toBe(true)
+    expect(isThemePreference('light')).toBe(true)
+    expect(isThemePreference('system')).toBe(false)
     expect(isThemePreference('mauve')).toBe(false)
     expect(isThemePreference(null)).toBe(false)
   })
@@ -113,7 +114,7 @@ describe('the registry', () => {
     ).common as Record<string, string>
 
     for (const theme of THEMES) expect(common[theme.labelKey]).toBeTruthy()
-    expect(common.themeSystem).toBeTruthy()
+    expect(common.themeSystem).toBeUndefined()
   })
 })
 
@@ -129,7 +130,7 @@ describe('the boot script', () => {
   })
 
   it('resolves the preference the way the toggle does', () => {
-    const run = (pref: string, prefersDark: boolean) => {
+    const run = (pref: string) => {
       const root = {
         dataset: { themePref: pref } as Record<string, string>,
         classList: {
@@ -139,16 +140,15 @@ describe('the boot script', () => {
           },
         },
       }
-      const window = { matchMedia: () => ({ matches: prefersDark }) }
-      new Function('document', 'window', script)({ documentElement: root }, window)
+      new Function('document', 'window', script)({ documentElement: root }, {})
       return { theme: root.dataset.theme, dark: root.classList.toggled }
     }
 
-    expect(run('pink', false)).toEqual({ theme: 'pink', dark: false })
-    expect(run('pink', true)).toEqual({ theme: 'pink', dark: false })
-    expect(run('light', true)).toEqual({ theme: 'light', dark: false })
-    expect(run('dark', false)).toEqual({ theme: 'dark', dark: true })
-    expect(run('system', true)).toEqual({ theme: 'dark', dark: true })
-    expect(run('system', false)).toEqual({ theme: 'light', dark: false })
+    expect(run('pink')).toEqual({ theme: 'pink', dark: false })
+    expect(run('light')).toEqual({ theme: 'light', dark: false })
+    expect(run('dark')).toEqual({ theme: 'dark', dark: true })
+    // Stale cookies / rows that still say system fall back to light.
+    expect(run('system')).toEqual({ theme: 'light', dark: false })
+    expect(run('')).toEqual({ theme: 'light', dark: false })
   })
 })

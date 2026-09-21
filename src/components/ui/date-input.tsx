@@ -12,10 +12,9 @@ import { cn } from '@/lib/utils'
  * row. The real control stays for the picker and the form value; what you
  * see is always `dd/mm/yyyy`, matching `formatDate`.
  *
- * The native calendar glyph is only a few pixels wide once the input is
- * invisible, so taps on the date text do nothing useful. We stretch the
- * picker indicator across the field and call `showPicker()` on press so the
- * whole control opens the calendar.
+ * The tap target is the native input itself (stretched calendar indicator +
+ * near-invisible fill). Calling `showPicker()` from a separate control fails
+ * on iOS; the wrapper stays `pointer-events-none` so hits land on the input.
  */
 export function DateInput({
   className,
@@ -43,17 +42,6 @@ export function DateInput({
     form.addEventListener('reset', onReset)
     return () => form.removeEventListener('reset', onReset)
   }, [controlled, defaultValue])
-
-  const openPicker = () => {
-    const input = inputRef.current
-    if (!input || disabled) return
-    try {
-      input.showPicker()
-    } catch {
-      /* Older engines — fall through to the stretched native indicator. */
-      input.focus()
-    }
-  }
 
   return (
     <div

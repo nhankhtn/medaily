@@ -7,19 +7,21 @@ import { useTransition } from 'react'
 import { toast } from 'sonner'
 import { formatDuration } from '@/lib/timer'
 import { cn } from '@/lib/utils'
-import { pauseTimer, resumeTimer, stopTimer } from '@/server/actions/timer'
 import type { RunningTimer } from '@/server/services/timer'
+import { dropRun, finishRun, togglePauseRun } from './run-actions'
+import { useEffectiveTimer } from './use-effective-timer'
 import { useElapsedSeconds } from './use-run'
 import { PATHS } from '@/lib/paths'
 
 /**
- * The run, wherever the user is in the app. It only mirrors server state — the
- * page at /timer is where a run is configured.
+ * The run, wherever the user is in the app. Prefers the device mirror so a
+ * pause taken offline still shows here; /timer is where a run is configured.
  */
-export function TimerBadge({ timer }: { timer: RunningTimer | null }) {
+export function TimerBadge({ timer: serverTimer }: { timer: RunningTimer | null }) {
   const t = useTranslations('timer')
   const tc = useTranslations('common')
   const [pending, startTransition] = useTransition()
+  const timer = useEffectiveTimer(serverTimer)
   const elapsed = useElapsedSeconds(timer)
 
   if (!timer) {
@@ -27,7 +29,7 @@ export function TimerBadge({ timer }: { timer: RunningTimer | null }) {
       <Link
         href={PATHS.timer}
         aria-label={t('title')}
-        className="flex size-9 items-center justify-center rounded-full text-text-muted hover:bg-surface-2 hover:text-text"
+        className="text-text-muted hover:bg-surface-2 hover:text-text flex size-9 items-center justify-center rounded-full"
       >
         <Timer className="size-4" />
       </Link>
@@ -53,7 +55,7 @@ export function TimerBadge({ timer }: { timer: RunningTimer | null }) {
         <span
           className={cn(
             'size-2 shrink-0 rounded-full',
-            running ? 'animate-pulse bg-accent' : 'bg-text-subtle',
+            running ? 'bg-accent animate-pulse' : 'bg-text-subtle',
           )}
         />
         <span
@@ -68,10 +70,10 @@ export function TimerBadge({ timer }: { timer: RunningTimer | null }) {
 
       <button
         type="button"
-        onClick={() => startTransition(async () => void (await (running ? pauseTimer() : resumeTimer())))}
+        onClick={() => startTransition(async () => void (await togglePauseRun()))}
         disabled={pending}
         aria-label={t(running ? 'pause' : 'resume')}
-        className="flex size-6 items-center justify-center rounded-full text-text-muted hover:text-text"
+        className="text-text-muted hover:text-text flex size-6 items-center justify-center rounded-full"
       >
         {running ? <Pause className="size-3" /> : <Play className="size-3" />}
       </button>
@@ -80,19 +82,23 @@ export function TimerBadge({ timer }: { timer: RunningTimer | null }) {
         type="button"
         onClick={() =>
           startTransition(async () => {
-            const result = await stopTimer({})
+            const result = await finishRun({})
             if (!result.ok) {
               toast[result.error === 'too_short' ? 'info' : 'error'](
                 result.error === 'too_short' ? t('tooShort') : tc('error'),
               )
               return
             }
-            toast.success(t('savedShort', { minutes: result.minutes }))
+            toast.success(
+              result.queued
+                ? t('offline.queued', { minutes: result.minutes })
+                : t('savedShort', { minutes: result.minutes }),
+            )
           })
         }
         disabled={pending}
         aria-label={t('stop')}
-        className="flex size-6 items-center justify-center rounded-full bg-accent text-accent-text"
+        className="bg-accent text-accent-text flex size-6 items-center justify-center rounded-full"
       >
         {pending ? <Loader2 className="size-3 animate-spin" /> : <Square className="size-3" />}
       </button>

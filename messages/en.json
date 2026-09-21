@@ -60,7 +60,6 @@
     "themeLight": "Light",
     "themeDark": "Dark",
     "themePink": "Pink",
-    "themeSystem": "System",
     "language": "Language",
     "openMenu": "Open menu",
     "pickDate": "Pick a date",
@@ -738,7 +737,12 @@
     "tooShort": "Under 30 seconds, so nothing was recorded",
     "capped": "The run was left going, so it was capped at 8 hours",
     "savedTo": "Saved {minutes} min to {where}",
-    "savedShort": "Saved {minutes} min"
+    "savedShort": "Saved {minutes} min",
+    "offline": {
+      "queued": "Saved {minutes} min on this device. It will upload when you are back online.",
+      "synced": "Uploaded {count} timed runs",
+      "notKept": "This device could not keep the run. Try stopping again when you are online."
+    }
   },
   "reviews": {
     "title": "Reviews",
@@ -1027,7 +1031,8 @@
     "resource": "Book or course",
     "noResource": "None",
     "close": "Close",
-    "edit": "Edit"
+    "edit": "Edit",
+    "view": "View"
   },
   "search": {
     "types": {
@@ -1269,6 +1274,13 @@
     "next": "Next",
     "finish": "Start logging",
     "replay": "Show the introduction again",
+    "installOffer": {
+      "title": "Add to your home screen?",
+      "body": "Open it like an app, without the browser chrome — and keep anything you save offline from being cleared.",
+      "add": "Add to home screen",
+      "gotIt": "Got it",
+      "later": "Not now"
+    },
     "tour": {
       "daily": {
         "title": "Everything starts here",

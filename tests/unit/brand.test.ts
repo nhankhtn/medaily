@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { MARK_PATH, TILE_FROM, TILE_TO, markSvg } from '@/lib/brand'
+import { MARK_PATH, markSvg } from '@/lib/brand'
 
 /**
  * `app/icon.svg` has to be a static file for Next to pick it up, so it cannot
@@ -10,13 +10,12 @@ import { MARK_PATH, TILE_FROM, TILE_TO, markSvg } from '@/lib/brand'
 const favicon = readFileSync(resolve('src/app/icon.svg'), 'utf8')
 
 describe('the favicon', () => {
-  it('draws the same mark as the component', () => {
-    expect(favicon).toContain(`d="${MARK_PATH}"`)
+  it('matches markSvg() exactly', () => {
+    expect(favicon).toBe(markSvg())
   })
 
-  it('uses the brand gradient', () => {
-    expect(favicon).toContain(TILE_FROM)
-    expect(favicon).toContain(TILE_TO)
+  it('draws the same mark as the component', () => {
+    expect(favicon).toContain(`d="${MARK_PATH}"`)
   })
 
   it('keeps its corners, unlike the iOS one', () => {

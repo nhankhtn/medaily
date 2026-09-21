@@ -171,7 +171,7 @@ function isFrameworkSignal(error: unknown): boolean {
  *
  * Signed in, the row wins: it is the same preference on every device. Signed
  * out — the sign-in page — there is no row, so the cookie this device last
- * wrote carries it. Without that the sign-in page is always in the system
+ * wrote carries it. Without that the sign-in page is always in the default
  * theme and the colours change the moment you sign in.
  */
 export const getShellTheme = cache(async (): Promise<ThemePreference> => {

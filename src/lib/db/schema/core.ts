@@ -46,8 +46,8 @@ export const userSettings = pgTable('user_settings', {
   timezone: text('timezone').notNull().default('Asia/Ho_Chi_Minh'),
   dayRolloverHour: smallint('day_rollover_hour').notNull().default(4),
   weekStart: weekStartEnum('week_start').notNull().default('monday'),
-  /** A theme id from lib/themes, or 'system'. Text, so a new theme is one file. */
-  theme: text('theme').notNull().default('system'),
+  /** A theme id from lib/themes. Text, so a new theme is one file. */
+  theme: text('theme').notNull().default('light'),
   density: text('density').notNull().default('comfortable'),
   accent: text('accent').notNull().default('indigo'),
   unitSystem: unitSystemEnum('unit_system').notNull().default('metric'),

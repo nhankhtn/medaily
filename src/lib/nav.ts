@@ -38,11 +38,11 @@ export type NavItem = {
 export const NAV_ITEMS: NavItem[] = [
   { key: 'home', href: PATHS.home, icon: Home, group: 'core', bottomBar: true },
   { key: 'daily', href: PATHS.daily, icon: ClipboardList, group: 'core', bottomBar: true },
-  { key: 'habits', href: PATHS.habits, icon: Repeat, group: 'core', bottomBar: true },
+  { key: 'habits', href: PATHS.habits, icon: Repeat, group: 'core' },
   { key: 'goals', href: PATHS.goals, icon: Target, group: 'core' },
   { key: 'projects', href: PATHS.projects, icon: FolderKanban, group: 'core' },
   { key: 'learning', href: PATHS.learning, icon: GraduationCap, group: 'core' },
-  { key: 'timer', href: PATHS.timer, icon: Timer, group: 'core' },
+  { key: 'timer', href: PATHS.timer, icon: Timer, group: 'core', bottomBar: true },
   { key: 'health', href: PATHS.health, icon: Heart, group: 'life' },
   { key: 'finance', href: PATHS.finance, icon: Wallet, group: 'life', bottomBar: true },
   { key: 'journal', href: PATHS.journal, icon: NotebookPen, group: 'life' },
@@ -60,6 +60,14 @@ export const NAV_GROUPS: { group: NavGroup; labelKey: string }[] = [
   { group: 'insight', labelKey: 'groupInsight' },
 ]
 
-export const BOTTOM_NAV_ITEMS = NAV_ITEMS.filter((i) => i.bottomBar)
+/** Mobile dock order — independent of the sidebar registry order. */
+const BOTTOM_BAR_KEYS = ['home', 'finance', 'daily', 'timer'] as const
+
+export const BOTTOM_NAV_ITEMS = BOTTOM_BAR_KEYS.map((key) => {
+  const item = NAV_ITEMS.find((entry) => entry.key === key)
+  if (!item) throw new Error(`bottom bar names unknown nav key: ${key}`)
+  return item
+})
+
 export const MORE_NAV_ITEMS = NAV_ITEMS.filter((i) => !i.bottomBar)
 export const ACTIVITY_ICON = Activity

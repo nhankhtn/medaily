@@ -43,7 +43,7 @@ export function enqueue(list: PendingSave[], entry: PendingSave): PendingSave[] 
  * good one behind it, retried forever.
  */
 export function isPermanentFailure(error: string): boolean {
-  return error === 'invalid_input' || error === 'future_date'
+  return error === 'invalid_input' || error === 'future_date' || error === 'too_short'
 }
 
 /** What `saveDay` answers, narrowed to what the queue needs to decide. */
@@ -92,5 +92,30 @@ export type QueuedTransaction = {
   personId: string | null
   merchant: string | null
   note: string | null
+  queuedAt: number
+}
+
+/**
+ * A stopped timer the network would not file, held until it can be sent.
+ *
+ * Carries every field `fileCompletedRun` needs, including the seconds the
+ * device counted — the server has no running row for an offline start, and
+ * even an online start that was paused offline may disagree with
+ * `timer_state`. The `id` makes a replay safe against every sink (focus,
+ * workout, daily minutes, custom).
+ */
+export type QueuedTimerStop = {
+  id: string
+  activity: string
+  startedAt: string
+  endedAt: string
+  seconds: number
+  mode: 'stopwatch' | 'countdown'
+  targetSeconds: number | null
+  workoutType: string | null
+  topicId: string | null
+  projectId: string | null
+  note: string | null
+  rpe: number | null
   queuedAt: number
 }

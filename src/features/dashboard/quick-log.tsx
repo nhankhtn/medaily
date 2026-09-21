@@ -13,13 +13,18 @@ import type { ISODate } from '@/lib/dates'
 import { PATHS } from '@/lib/paths'
 import { cn } from '@/lib/utils'
 import { saveDay } from '@/server/actions/daily'
+import { queuePendingSave } from '@/features/daily/pending-saves'
 
 /**
  * Spec 6.4 — when today is unlogged, the dashboard offers energy and sleep
  * inline. Two taps create the row; the rest of the day can be filled in later.
+ *
+ * Offline uses the same day queue as the full form: a catch means the action
+ * never reached the server, and `saveDay` upserts so a replay is safe.
  */
 export function QuickLog({ date }: { date: ISODate }) {
   const t = useTranslations('daily.quickLog')
+  const to = useTranslations('daily.offline')
   const tc = useTranslations('common')
   const td = useTranslations('daily.fields')
   const [energy, setEnergy] = useState<number | null>(null)
@@ -28,12 +33,30 @@ export function QuickLog({ date }: { date: ISODate }) {
 
   const submit = () => {
     startTransition(async () => {
-      const result = await saveDay({ date, patch: { energy, sleepHours }, source: 'manual' })
-      if (!result.ok) {
-        toast.error(tc('error'))
-        return
+      const patch = { energy, sleepHours }
+
+      try {
+        const result = await saveDay({ date, patch, source: 'manual' })
+        if (!result.ok) {
+          toast.error(tc('error'))
+          return
+        }
+        toast.success(tc('saved'))
+        setEnergy(null)
+        setSleepHours(null)
+      } catch (error) {
+        console.error('[home] quick log did not reach the server:', error)
+        try {
+          await queuePendingSave({ date, patch, custom: {} })
+        } catch (kept) {
+          console.error('[offline] could not keep the quick log on this device:', kept)
+          toast.error(to('notKept'))
+          return
+        }
+        toast.success(to('queued'))
+        setEnergy(null)
+        setSleepHours(null)
       }
-      toast.success(tc('saved'))
     })
   }
 
