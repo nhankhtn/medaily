@@ -14,7 +14,7 @@ export const buttonVariants = cva(
         secondary: 'glass text-text hover:bg-surface-2',
         outline: 'glass border-border-strong text-text hover:bg-surface-2',
         ghost: 'text-text-muted hover:bg-surface-2 hover:text-text',
-        danger: 'bg-bad text-white hover:opacity-90',
+        danger: 'bg-bad text-accent-text hover:opacity-90',
       },
       /*
        * Compact on a phone, roomier once there is a pointer. A phone screen is

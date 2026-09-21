@@ -8,8 +8,20 @@ export type Rgb = { r: number; g: number; b: number }
 
 const OKLCH = /^oklch\(\s*([\d.]+)%\s+([\d.]+)\s+([\d.]+)\s*(?:\/\s*([\d.]+)\s*)?\)$/
 
-/** Returns null for anything that is not a plain `oklch(L% C H)` colour. */
-export function parseOklch(value: string): { l: number; c: number; h: number } | null {
+/**
+ * Returns null for anything that is not a plain `oklch(L% C H)` colour.
+ *
+ * `alpha` is kept rather than dropped: every surface token in this app is
+ * translucent, and a translucent token is not a colour until something is
+ * painted under it. Reading `oklch(70% 0.03 260 / 0.1)` as an opaque 70% grey
+ * says a dark panel is nearly white.
+ */
+export function parseOklch(value: string): {
+  l: number
+  c: number
+  h: number
+  alpha: number
+} | null {
   const match = OKLCH.exec(value.trim())
   if (!match) return null
 
@@ -17,6 +29,16 @@ export function parseOklch(value: string): { l: number; c: number; h: number } |
     l: Number(match[1]) / 100,
     c: Number(match[2]),
     h: Number(match[3]),
+    alpha: match[4] === undefined ? 1 : Number(match[4]),
+  }
+}
+
+/** `top` painted over `bottom` at `alpha`, both already gamma-encoded sRGB. */
+export function composite(top: Rgb, bottom: Rgb, alpha: number): Rgb {
+  return {
+    r: top.r * alpha + bottom.r * (1 - alpha),
+    g: top.g * alpha + bottom.g * (1 - alpha),
+    b: top.b * alpha + bottom.b * (1 - alpha),
   }
 }
 
@@ -61,9 +83,22 @@ export function contrastRatio(a: Rgb, b: Rgb): number {
   return ((light ?? 0) + 0.05) / ((dark ?? 0) + 0.05)
 }
 
-export function contrastOf(a: string, b: string): number | null {
-  const first = parseOklch(a)
-  const second = parseOklch(b)
-  if (!first || !second) return null
-  return contrastRatio(oklchToRgb(first), oklchToRgb(second))
+/**
+ * Contrast of `a` on `b`. `base` is the opaque colour the whole stack sits on
+ * — the theme's `--bg`. Without it a translucent `b` is measured as if it
+ * were opaque, which is how an unreadable panel passes a palette test.
+ */
+export function contrastOf(a: string, b: string, base?: string): number | null {
+  const front = parseOklch(a)
+  const back = parseOklch(b)
+  if (!front || !back) return null
+
+  const under = base ? parseOklch(base) : null
+  let backRgb = oklchToRgb(back)
+  if (back.alpha < 1 && under) backRgb = composite(backRgb, oklchToRgb(under), back.alpha)
+
+  let frontRgb = oklchToRgb(front)
+  if (front.alpha < 1) frontRgb = composite(frontRgb, backRgb, front.alpha)
+
+  return contrastRatio(frontRgb, backRgb)
 }

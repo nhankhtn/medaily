@@ -3,6 +3,7 @@
 import { LogOut } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { clearPendingSaves } from '@/features/daily/pending-saves'
+import { clearPendingTransactions } from '@/features/finance/pending-transactions'
 import { clearDailyDrafts } from '@/features/daily/use-draft'
 import { clearOfflineCaches } from '@/features/daily/register-sw'
 import { signOutFirebase } from '@/lib/auth/firebase-client'
@@ -26,6 +27,7 @@ export function SignOutButton({ variant = 'icon' }: { variant?: 'icon' | 'card' 
     // reappear in their form.
     await clearOfflineCaches()
     await clearPendingSaves()
+    await clearPendingTransactions()
     clearDailyDrafts()
     await logout()
   }

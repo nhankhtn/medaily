@@ -6,6 +6,7 @@ import { Header } from '@/components/shell/header'
 import { Sidebar } from '@/components/shell/sidebar'
 import { CaptureBox } from '@/features/capture/capture-box'
 import { PendingSaves } from '@/features/daily/pending-saves'
+import { PendingTransactions } from '@/features/finance/pending-transactions'
 import { RegisterServiceWorker } from '@/features/daily/register-sw'
 import { assistantEnabled } from '@/server/services/assistant'
 import { ShortcutProvider } from '@/features/shortcuts/provider'
@@ -42,6 +43,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <BottomNav />
       <CaptureBox enabled={aiServiceConfigured()} assistant={assistantEnabled()} />
       <PendingSaves />
+      <PendingTransactions />
       <RegisterServiceWorker />
       {/* In the shell, not on a page: the tour walks from page to page. */}
       <Suspense fallback={null}>

@@ -482,6 +482,14 @@
         "count_days": "Số ngày làm",
         "latest": "Mới nhất"
       }
+    },
+    "install": {
+      "title": "Thêm vào màn hình chính",
+      "help": "Mở như một app, không còn thanh địa chỉ — và những gì lưu offline không bị dọn mất.",
+      "action": "Thêm vào màn hình chính",
+      "iosIntro": "Safari không có nút cho việc này nên phải bấm hai bước.",
+      "iosStepShare": "Bấm nút Chia sẻ ở thanh dưới của Safari",
+      "iosStepAdd": "Chọn Thêm vào MH chính"
     }
   },
   "analytics": {
@@ -965,6 +973,11 @@
       "needAmount": "Mỗi giao dịch cần có số tiền",
       "rateLimited": "Gửi quá nhiều lần — đợi một phút rồi thử lại",
       "failed": "Không đọc được ghi chú này"
+    },
+    "offline": {
+      "queued": "Đã lưu trên máy này. Có mạng là nó tự gửi lên.",
+      "synced": "Đã gửi {count} giao dịch",
+      "notKept": "Máy không còn chỗ để giữ lại. Có mạng rồi thử lưu lại nhé."
     }
   },
   "journal": {

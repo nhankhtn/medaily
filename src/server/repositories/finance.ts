@@ -192,8 +192,6 @@ export async function findTransactions(
     .limit(limit)
 }
 
-<<<<<<< Updated upstream
-=======
 /**
  * Keyset page for the ledger. Fetches `limit + 1` rows so the caller can tell
  * whether another page exists without a separate count query.
@@ -269,14 +267,15 @@ export async function findTransactionsPage(
  * Returns null when the row already existed, so a caller can tell "saved" from
  * "was already saved" rather than guessing.
  */
->>>>>>> Stashed changes
 export async function insertTransaction(
   values: typeof transactions.$inferInsert,
-): Promise<Transaction> {
-  const rows = await db.insert(transactions).values(values).returning()
-  const row = rows[0]
-  if (!row) throw new Error('failed to insert transaction')
-  return row
+): Promise<Transaction | null> {
+  const rows = await db
+    .insert(transactions)
+    .values(values)
+    .onConflictDoNothing({ target: transactions.id })
+    .returning()
+  return rows[0] ?? null
 }
 
 /** One statement, so a batch of drafts is all saved or none of it is. */

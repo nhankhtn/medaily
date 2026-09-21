@@ -126,7 +126,7 @@ export function FinanceDraftList({
         </Select>
       </label>
 
-      <ul className="space-y-2">
+      <ul className="space-y-2 pb-16">
         {rows.map((row) => (
           <DraftRow
             key={row.id}
@@ -145,14 +145,19 @@ export function FinanceDraftList({
        * Pinned to the bottom of whatever is scrolling: in the capture panel the
        * rows can run past the fold, and a save button you have to go looking
        * for is the reason a review step gets skipped.
+       *
+       * Solid fill, no backdrop-filter: a sticky glass sheet used to sit on
+       * top of the last draft row and eat its taps (WebKit still hit-tests
+       * some blurred layers). The bar ignores pointers; only the actions
+       * take clicks again.
        */}
-      <div className="glass sticky bottom-0 -mx-4 -mb-4 flex flex-wrap items-center justify-between gap-2 px-4 pt-2 pb-4">
+      <div className="pointer-events-none sticky bottom-0 z-10 -mx-4 -mb-4 flex flex-wrap items-center justify-between gap-2 border-t border-border-base bg-[var(--surface-solid)] px-4 pt-2 pb-4">
         <p className="text-text-muted text-xs tabular-nums">
           {t('summary', { count: rows.length })}
           {totals.expense > 0 ? ` · ${t('outgoing')} ${money(totals.expense)}` : ''}
           {totals.income > 0 ? ` · ${t('incoming')} ${money(totals.income)}` : ''}
         </p>
-        <div className="flex gap-2">
+        <div className="pointer-events-auto flex gap-2">
           <Button type="button" variant="outline" size="sm" onClick={onDiscard} disabled={saving}>
             {t('discard')}
           </Button>

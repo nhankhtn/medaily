@@ -15,7 +15,7 @@ export function Input({ className, type, ...props }: React.ComponentProps<'input
       className={cn(
         // 16px on every viewport: Safari zooms the page when a focused field
         // is smaller, including landscape phones past the `sm` breakpoint.
-        'glass text-text h-10 w-full rounded-[var(--radius)] border-border-strong px-2.5 text-base sm:h-11 sm:px-3',
+        'glass-inset text-text h-10 w-full rounded-[var(--radius)] border-border-strong px-2.5 text-base sm:h-11 sm:px-3',
         'placeholder:text-text-subtle focus:border-accent focus:inset-ring-accent focus:inset-ring-1 focus:outline-none',
         className,
       )}
@@ -28,7 +28,7 @@ export function Textarea({ className, ...props }: React.ComponentProps<'textarea
   return (
     <textarea
       className={cn(
-        'glass text-text min-h-18 w-full resize-y rounded-[var(--radius)] border-border-strong px-2.5 py-2 text-base sm:min-h-20 sm:px-3',
+        'glass-inset text-text min-h-18 w-full resize-y rounded-[var(--radius)] border-border-strong px-2.5 py-2 text-base sm:min-h-20 sm:px-3',
         'placeholder:text-text-subtle focus:border-accent focus:inset-ring-accent focus:inset-ring-1 focus:outline-none',
         // Grows with what is typed, so a list is not written through a
         // two-line slit. Browsers without it keep the scrollbar they had.

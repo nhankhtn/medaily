@@ -1,4 +1,4 @@
-import { toISODate, type ISODate } from '@/lib/dates'
+import { hhmmInZone, toISODateInZone, type ISODate } from '@/lib/dates'
 import type { RecurrenceRule } from '@/lib/planning/recurrence'
 
 /**
@@ -34,18 +34,21 @@ export type EventRow = {
   recurrenceUntil: ISODate | null
 }
 
-const hhmm = (date: Date) =>
-  `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
-
-export function toEventForm(row: EventRow): EventForm {
+/**
+ * Split a stored instant into the date and `HH:mm` the form shows.
+ *
+ * Must use the user's timezone: `Date#getHours()` is the server's clock, which
+ * on a UTC host turns a 19:30 Vietnam meeting into 12:30 in the edit dialog.
+ */
+export function toEventForm(row: EventRow, timezone: string): EventForm {
   return {
     id: row.id,
     title: row.title,
-    date: toISODate(row.startsAt),
-    // An all-day event is stored at midnight; showing 00:00 would invite
-    // someone to un-tick the box and save a meeting nobody scheduled.
-    startTime: row.allDay ? null : hhmm(row.startsAt),
-    endTime: row.allDay || !row.endsAt ? null : hhmm(row.endsAt),
+    date: toISODateInZone(row.startsAt, timezone),
+    // An all-day event is stored at midnight in the user's zone; showing 00:00
+    // would invite someone to un-tick the box and save a meeting nobody scheduled.
+    startTime: row.allDay ? null : hhmmInZone(row.startsAt, timezone),
+    endTime: row.allDay || !row.endsAt ? null : hhmmInZone(row.endsAt, timezone),
     allDay: row.allDay,
     location: row.location,
     recurrenceRule: row.recurrenceRule,

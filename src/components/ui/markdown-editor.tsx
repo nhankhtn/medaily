@@ -191,7 +191,7 @@ export function MarkdownEditor({
         read()
       }}
       className={cn(
-        'glass text-text min-h-20 w-full rounded-[var(--radius)] border-border-strong px-3 py-2 text-base',
+        'glass-inset text-text min-h-20 w-full rounded-[var(--radius)] border-border-strong px-3 py-2 text-base',
         'focus:border-accent focus:inset-ring-accent focus:inset-ring-1 focus:outline-none',
         disabled && 'text-text-muted bg-surface-2',
         // The placeholder, since an empty contenteditable has no `::placeholder`.

@@ -482,6 +482,14 @@
         "count_days": "Days done",
         "latest": "Latest"
       }
+    },
+    "install": {
+      "title": "Add to home screen",
+      "help": "Opens like an app, without the address bar — and keeps anything saved offline from being cleared.",
+      "action": "Add to home screen",
+      "iosIntro": "Safari has no button for this, so it takes two taps.",
+      "iosStepShare": "Tap Share at the bottom of Safari",
+      "iosStepAdd": "Choose Add to Home Screen"
     }
   },
   "analytics": {
@@ -965,6 +973,11 @@
       "needAmount": "Every transaction needs an amount",
       "rateLimited": "Too many notes in a row — wait a minute",
       "failed": "Could not read that note"
+    },
+    "offline": {
+      "queued": "Saved on this phone. It will go up when you have a connection.",
+      "synced": "{count, plural, one {# transaction sent} other {# transactions sent}}",
+      "notKept": "This phone had no room to keep it. Try again when you have a connection."
     }
   },
   "journal": {

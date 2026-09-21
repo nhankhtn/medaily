@@ -21,10 +21,12 @@
  * the blur something to refract against in every theme.
  */
 :root {
-  --bg: oklch(97% 0.012 250);
-  --surface: oklch(100% 0 0 / 0.55);
-  --surface-2: oklch(100% 0 0 / 0.38);
-  --surface-solid: oklch(100% 0 0 / 0.88);
+  --bg: oklch(95% 0.02 250);
+  --surface: oklch(100% 0 0 / 0.32);
+  --surface-2: oklch(100% 0 0 / 0.2);
+  --surface-solid: oklch(100% 0 0 / 0.8);
+  --inset: oklch(100% 0 0 / 0.45);
+  --inset-hover: oklch(100% 0 0 / 0.62);
   --border: oklch(72% 0.01 250 / 0.45);
   --border-strong: oklch(58% 0.014 250 / 0.55);
   --text: oklch(21% 0.01 250);
@@ -41,29 +43,47 @@
   --bad: oklch(58% 0.18 25);
   --bad-soft: oklch(95% 0.04 25 / 0.7);
   --shadow-card:
-    0 1px 0 oklch(100% 0 0 / 0.55) inset, 0 8px 28px oklch(40% 0.03 250 / 0.1),
-    0 1px 3px oklch(0% 0 0 / 0.04);
-  --glass-blur: 24px;
-  --glass-saturate: 1.4;
+    0 1px 0 oklch(100% 0 0 / 0.75) inset, 0 -1px 0 oklch(50% 0.02 250 / 0.06) inset,
+    0 10px 34px oklch(40% 0.04 250 / 0.13), 0 2px 6px oklch(0% 0 0 / 0.05);
+  --shadow-inset: 0 1px 0 oklch(100% 0 0 / 0.6) inset;
+  --glass-blur: 40px;
+  --glass-saturate: 1.8;
   --glass-chip: oklch(100% 0 0 / 0.16);
   --glass-chip-border: oklch(100% 0 0 / 0.38);
-  --glass-chip-blur: 48px;
+  /*
+   * A chip is around 56px tall. A blur wider than the element averages a
+   * region bigger than itself, so every edge behind it is smeared into one
+   * flat tone and the chip reads as paint — the radius has to stay well
+   * under the height for anything to survive the trip through.
+   */
+  --glass-chip-blur: 24px;
   --glass-chip-shadow:
-    0 0.5px 0 oklch(100% 0 0 / 0.55) inset, 0 8px 28px oklch(0% 0 0 / 0.1);
+    0 1px 0 oklch(100% 0 0 / 0.8) inset, 0 -1px 0 oklch(40% 0.02 250 / 0.1) inset,
+    0 10px 30px oklch(0% 0 0 / 0.14);
   --overlay: oklch(20% 0.02 250 / 0.35);
+  /*
+   * How much colour the page has for the glass to pick up. 0 is a flat sheet
+   * and the panels go opaque; 1 is a lock screen. This is the one number to
+   * turn if the app feels too loud or too washed out — every bloom scales
+   * off it, in all three themes.
+   */
+  --atmosphere: 0.7;
   --bg-atmosphere:
-    radial-gradient(ellipse 80% 60% at 10% 0%, oklch(88% 0.06 275 / 0.55), transparent 55%),
-    radial-gradient(ellipse 70% 50% at 90% 10%, oklch(90% 0.05 200 / 0.45), transparent 50%),
-    radial-gradient(ellipse 60% 45% at 50% 100%, oklch(92% 0.04 320 / 0.4), transparent 55%),
-    linear-gradient(165deg, oklch(97.5% 0.01 250), oklch(95% 0.02 220));
+    radial-gradient(ellipse 95% 70% at 5% -10%, oklch(84% 0.1 285 / calc(var(--atmosphere) * 1)), transparent 62%),
+    radial-gradient(ellipse 80% 60% at 100% 5%, oklch(86% 0.09 205 / calc(var(--atmosphere) * 0.92)), transparent 60%),
+    radial-gradient(ellipse 90% 55% at 45% 108%, oklch(85% 0.085 335 / calc(var(--atmosphere) * 0.85)), transparent 62%),
+    radial-gradient(ellipse 65% 45% at 78% 60%, oklch(88% 0.07 155 / calc(var(--atmosphere) * 0.62)), transparent 62%),
+    linear-gradient(160deg, oklch(95% 0.025 265), oklch(93% 0.032 225));
   --radius: 0.75rem;
 }
 
 .dark {
-  --bg: oklch(14% 0.012 260);
-  --surface: oklch(28% 0.014 260 / 0.45);
-  --surface-2: oklch(35% 0.016 260 / 0.35);
-  --surface-solid: oklch(22% 0.012 260 / 0.85);
+  --bg: oklch(14% 0.018 260);
+  --surface: oklch(70% 0.03 260 / 0.1);
+  --surface-2: oklch(80% 0.03 260 / 0.14);
+  --surface-solid: oklch(24% 0.014 260 / 0.8);
+  --inset: oklch(100% 0 0 / 0.07);
+  --inset-hover: oklch(100% 0 0 / 0.13);
   --border: oklch(100% 0 0 / 0.12);
   --border-strong: oklch(100% 0 0 / 0.2);
   --text: oklch(96% 0.004 260);
@@ -80,21 +100,25 @@
   --bad: oklch(68% 0.16 25);
   --bad-soft: oklch(38% 0.08 25 / 0.55);
   --shadow-card:
-    0 1px 0 oklch(100% 0 0 / 0.1) inset, 0 12px 36px oklch(0% 0 0 / 0.45),
-    0 1px 3px oklch(0% 0 0 / 0.3);
-  --glass-blur: 28px;
-  --glass-saturate: 1.5;
+    0 1px 0 oklch(100% 0 0 / 0.22) inset, 0 -1px 0 oklch(0% 0 0 / 0.25) inset,
+    0 14px 40px oklch(0% 0 0 / 0.5), 0 2px 6px oklch(0% 0 0 / 0.3);
+  --shadow-inset: 0 1px 0 oklch(100% 0 0 / 0.1) inset;
+  --glass-blur: 44px;
+  --glass-saturate: 1.9;
   --glass-chip: oklch(100% 0 0 / 0.1);
   --glass-chip-border: oklch(100% 0 0 / 0.22);
-  --glass-chip-blur: 48px;
+  --glass-chip-blur: 26px;
   --glass-chip-shadow:
-    0 0.5px 0 oklch(100% 0 0 / 0.2) inset, 0 10px 32px oklch(0% 0 0 / 0.35);
+    0 1px 0 oklch(100% 0 0 / 0.3) inset, 0 -1px 0 oklch(0% 0 0 / 0.3) inset,
+    0 12px 34px oklch(0% 0 0 / 0.4);
   --overlay: oklch(0% 0 0 / 0.5);
+  --atmosphere: 0.7;
   --bg-atmosphere:
-    radial-gradient(ellipse 80% 55% at 15% -5%, oklch(35% 0.1 275 / 0.5), transparent 55%),
-    radial-gradient(ellipse 65% 50% at 95% 15%, oklch(30% 0.08 200 / 0.4), transparent 50%),
-    radial-gradient(ellipse 55% 40% at 40% 110%, oklch(28% 0.07 320 / 0.35), transparent 50%),
-    linear-gradient(165deg, oklch(15% 0.015 260), oklch(12% 0.01 250));
+    radial-gradient(ellipse 95% 65% at 8% -10%, oklch(42% 0.14 280 / calc(var(--atmosphere) * 1)), transparent 60%),
+    radial-gradient(ellipse 80% 55% at 100% 8%, oklch(38% 0.12 205 / calc(var(--atmosphere) * 0.9)), transparent 58%),
+    radial-gradient(ellipse 85% 50% at 40% 112%, oklch(36% 0.11 330 / calc(var(--atmosphere) * 0.82)), transparent 58%),
+    radial-gradient(ellipse 60% 42% at 80% 55%, oklch(34% 0.09 160 / calc(var(--atmosphere) * 0.6)), transparent 60%),
+    linear-gradient(160deg, oklch(16% 0.02 265), oklch(12% 0.015 250));
 }
 
 /*
@@ -103,10 +127,12 @@
  * against a tinted background.
  */
 [data-theme='pink'] {
-  --bg: oklch(97% 0.02 350);
-  --surface: oklch(100% 0.004 350 / 0.55);
-  --surface-2: oklch(100% 0.01 350 / 0.38);
-  --surface-solid: oklch(100% 0.004 350 / 0.88);
+  --bg: oklch(95% 0.035 350);
+  --surface: oklch(100% 0.004 350 / 0.32);
+  --surface-2: oklch(100% 0.01 350 / 0.2);
+  --surface-solid: oklch(100% 0.004 350 / 0.8);
+  --inset: oklch(100% 0.004 350 / 0.45);
+  --inset-hover: oklch(100% 0.004 350 / 0.62);
   --border: oklch(65% 0.04 350 / 0.45);
   --border-strong: oklch(52% 0.06 350 / 0.55);
   --text: oklch(24% 0.05 350);
@@ -123,21 +149,25 @@
   --bad: oklch(54% 0.19 20);
   --bad-soft: oklch(95% 0.04 20 / 0.7);
   --shadow-card:
-    0 1px 0 oklch(100% 0 0 / 0.6) inset, 0 8px 28px oklch(50% 0.1 350 / 0.12),
-    0 1px 3px oklch(40% 0.1 350 / 0.06);
-  --glass-blur: 24px;
-  --glass-saturate: 1.45;
+    0 1px 0 oklch(100% 0 0 / 0.78) inset, 0 -1px 0 oklch(50% 0.08 350 / 0.07) inset,
+    0 10px 34px oklch(50% 0.1 350 / 0.15), 0 2px 6px oklch(40% 0.1 350 / 0.07);
+  --shadow-inset: 0 1px 0 oklch(100% 0 0 / 0.62) inset;
+  --glass-blur: 40px;
+  --glass-saturate: 1.85;
   --glass-chip: oklch(100% 0 0 / 0.16);
   --glass-chip-border: oklch(100% 0 0 / 0.4);
-  --glass-chip-blur: 48px;
+  --glass-chip-blur: 24px;
   --glass-chip-shadow:
-    0 0.5px 0 oklch(100% 0 0 / 0.55) inset, 0 8px 28px oklch(40% 0.08 350 / 0.12);
+    0 1px 0 oklch(100% 0 0 / 0.82) inset, 0 -1px 0 oklch(40% 0.06 350 / 0.1) inset,
+    0 10px 30px oklch(40% 0.08 350 / 0.16);
   --overlay: oklch(30% 0.05 350 / 0.35);
+  --atmosphere: 0.7;
   --bg-atmosphere:
-    radial-gradient(ellipse 80% 60% at 10% 0%, oklch(90% 0.07 350 / 0.55), transparent 55%),
-    radial-gradient(ellipse 70% 50% at 90% 10%, oklch(92% 0.05 20 / 0.4), transparent 50%),
-    radial-gradient(ellipse 60% 45% at 50% 100%, oklch(93% 0.04 320 / 0.35), transparent 55%),
-    linear-gradient(165deg, oklch(98% 0.015 350), oklch(95% 0.025 340));
+    radial-gradient(ellipse 95% 70% at 5% -10%, oklch(88% 0.11 350 / calc(var(--atmosphere) * 1)), transparent 62%),
+    radial-gradient(ellipse 80% 60% at 100% 5%, oklch(90% 0.09 25 / calc(var(--atmosphere) * 0.88)), transparent 60%),
+    radial-gradient(ellipse 90% 55% at 45% 108%, oklch(88% 0.08 320 / calc(var(--atmosphere) * 0.82)), transparent 62%),
+    radial-gradient(ellipse 65% 45% at 78% 60%, oklch(91% 0.065 5 / calc(var(--atmosphere) * 0.58)), transparent 62%),
+    linear-gradient(160deg, oklch(96% 0.03 350), oklch(94% 0.038 335));
   --radius: 0.9rem;
 }
 
@@ -146,6 +176,8 @@
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
   --color-surface-solid: var(--surface-solid);
+  --color-inset: var(--inset);
+  --color-inset-hover: var(--inset-hover);
   --color-border-base: var(--border);
   --color-border-strong: var(--border-strong);
   --color-text: var(--text);
@@ -192,6 +224,49 @@
   backdrop-filter: blur(var(--glass-chip-blur)) saturate(1.9);
   border: 0.5px solid var(--glass-chip-border);
   box-shadow: var(--glass-chip-shadow);
+}
+
+/*
+ * Level 2 — a control that lives *inside* a glass panel: a field, a segment,
+ * a pill in a row. Fill and rim only, deliberately no backdrop-filter.
+ *
+ * A nested backdrop-filter samples what its parent already composited, not
+ * the page. So a glass field inside a glass card blurs a flat sheet — it
+ * cannot reveal anything the card did not already show, and all it adds is
+ * another coat of fill. Two coats of 32% white read as 54%, three as 69%,
+ * and the panel that was supposed to be glass is opaque. One blurred layer
+ * per branch; everything nested inside it uses this.
+ */
+@utility glass-inset {
+  background-color: var(--inset);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-inset);
+}
+
+/*
+ * Safety net for the same rule, because the trap is invisible in review: a
+ * panel nested in another panel looks fine in the diff and only shows up as
+ * a washed-out screen. Any glass inside glass drops its filter and falls
+ * back to the inset fill, so the mistake costs nothing.
+ *
+ * Unlayered on purpose — utilities live in `@layer utilities`, and an
+ * unlayered rule outranks every layer, so this still wins over `glass`
+ * applied directly to the nested node. `glass-chip` is an ancestor here but
+ * never a target: a chip is floating chrome and is meant to stay glass even
+ * when it sits over a panel.
+ *
+ * It takes away the filter and the cast shadow, and deliberately leaves
+ * `background-color` alone. Winning the cascade against every layer also
+ * means winning against `hover:bg-surface-2` on the same node, so setting a
+ * fill here would freeze the hover state of every nested control. The
+ * remaining `--surface` over its parent's `--surface` is two mild coats,
+ * which is the point: the cost of nesting is now a little opacity instead
+ * of a dead blur and an opaque panel.
+ */
+:is(.glass, .glass-strong, .glass-chip) :is(.glass, .glass-strong) {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: var(--shadow-inset);
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
@@ -330,6 +405,39 @@ input[type='number'] {
   [contenteditable='plaintext-only'] {
     font-size: 16px !important;
   }
+}
+
+/*
+ * Thin, quiet scrollbars — page chrome and nested overflow panes (ledger,
+ * command palette, etc.). `.no-scrollbar` below opts out entirely.
+ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--text-muted) 45%, transparent) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: color-mix(in oklab, var(--text-muted) 40%, transparent);
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in oklab, var(--text-muted) 65%, transparent);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 .no-scrollbar::-webkit-scrollbar {

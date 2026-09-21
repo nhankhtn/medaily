@@ -6,6 +6,22 @@ Dates are the day the document was written, not the day the code shipped. A
 line here is the cheapest way to know whether what you are reading is older
 than the code.
 
+## 2026-09-21
+
+**Added**
+
+- Adding a transaction works offline. Held in its own IndexedDB queue and sent
+  on the next connection, like the daily log — but only after the insert was
+  made idempotent: the browser decides the id before the first attempt and the
+  insert does nothing when that row is already there. Without it a retry
+  duplicates money. No migration; `transactions.id` was already a uuid key.
+- Queued transactions are drawn above the ledger from the store, not from
+  React state. The form's optimistic row is `useOptimistic`, which resets when
+  the action settles, so a queued transaction would have blinked out while the
+  server had no record of it either.
+- Editing and deleting are still online-only, and `features.md` says why: they
+  need a rule for which of two changes wins, and adding does not.
+
 ## 2026-09-18
 
 **Added**

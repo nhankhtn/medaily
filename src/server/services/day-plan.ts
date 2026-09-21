@@ -1,5 +1,11 @@
 import { cache } from 'react'
-import { addDays, fromISODate, toISODate, today as todayOf, type ISODate } from '@/lib/dates'
+import {
+  addDays,
+  startOfZonedDay,
+  toISODateInZone,
+  today as todayOf,
+  type ISODate,
+} from '@/lib/dates'
 import type { PlannedBlock, ProjectTask, Reminder } from '@/lib/db/schema'
 import { toEventForm, type EventForm } from '@/lib/planning/event-form'
 import { expandAll } from '@/lib/planning/recurrence'
@@ -45,7 +51,10 @@ export const getDayPlan = cache(async (requested?: ISODate): Promise<DayPlan> =>
   const settings = await getSettings()
   const today = todayOf(dayContextOf(settings))
   const date = requested ?? today
-  const window = { from: fromISODate(date), to: fromISODate(addDays(date, 1)) }
+  const { timezone } = settings
+  // Bound the day in the user's zone so a 19:30 Vietnam meeting is not missed
+  // when the host clock is UTC (server-local midnight is 07:00 VN).
+  const window = { from: startOfZonedDay(date, timezone), to: startOfZonedDay(addDays(date, 1), timezone) }
 
   const [tasks, projects, eventRows, blocks, reminders, previousLog] = await Promise.all([
     findTasksForDay(settings.userId, date, today),
@@ -65,7 +74,7 @@ export const getDayPlan = cache(async (requested?: ISODate): Promise<DayPlan> =>
     overdue: task.status !== 'done' && task.dueDate !== null && task.dueDate < today,
   })
 
-  const seriesById = new Map(eventRows.map((row) => [row.id, toEventForm(row)]))
+  const seriesById = new Map(eventRows.map((row) => [row.id, toEventForm(row, timezone)]))
 
   return {
     date,
@@ -73,12 +82,12 @@ export const getDayPlan = cache(async (requested?: ISODate): Promise<DayPlan> =>
     tasks: tasks.filter((task) => task.dueDate !== null).map(expand),
     unscheduled: tasks.filter((task) => task.dueDate === null).map(expand),
     events: expandAll(eventRows, window).map((event) => ({
-      key: `${event.id}:${toISODate(event.startsAt)}`,
+      key: `${event.id}:${toISODateInZone(event.startsAt, timezone)}`,
       title: event.title,
       startsAt: event.startsAt,
       allDay: event.allDay,
       location: event.location,
-      series: seriesById.get(event.id) ?? toEventForm(event),
+      series: seriesById.get(event.id) ?? toEventForm(event, timezone),
     })),
     blocks,
     reminders: reminders.filter((reminder) => reminder.doneAt === null),

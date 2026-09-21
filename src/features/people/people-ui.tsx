@@ -312,7 +312,7 @@ export function ReminderPanel({
                 disabled={pending}
                 aria-label={t('markDone')}
                 onClick={() => startTransition(async () => void (await markReminderDone(reminder.id)))}
-                className="flex size-5 shrink-0 items-center justify-center rounded-full border border-border-strong hover:bg-good hover:text-white"
+                className="flex size-5 shrink-0 items-center justify-center rounded-full border border-border-strong hover:bg-good hover:text-accent-text"
               >
                 <Check className="size-3" />
               </button>

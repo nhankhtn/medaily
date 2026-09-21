@@ -1,8 +1,8 @@
-import { decide, MAX_PENDING, type PendingSave, type SendResult } from './pending'
-import type { PendingStore } from './store'
+import { decide, MAX_PENDING, type SendResult } from './pending'
+import type { PendingStore, Queued } from './store'
 
-/** Sends one day. `null` is the call never reaching the server. */
-export type Sender = (entry: PendingSave) => Promise<SendResult | null>
+/** Sends one queued item. `null` is the call never reaching the server. */
+export type Sender<T> = (entry: T) => Promise<SendResult | null>
 
 export type DrainReport = {
   /** Landed on the server. */
@@ -26,7 +26,11 @@ export type DrainReport = {
  * days behind it will fail the same way, and walking them would be one dead
  * request per day for no information.
  */
-export async function drainPending(store: PendingStore, send: Sender): Promise<DrainReport> {
+export async function drainPending<T extends Queued>(
+  store: PendingStore<T>,
+  send: Sender<T>,
+  keyOf: (entry: T) => string,
+): Promise<DrainReport> {
   const queued = await store.list()
   let sent = 0
   let dropped = 0
@@ -42,9 +46,9 @@ export async function drainPending(store: PendingStore, send: Sender): Promise<D
     if (decision === 'sent') sent += 1
     else dropped += 1
 
-    // Removed by date, so a save made in another tab during the drain is left
-    // alone — it was never in this snapshot and is not addressed by it.
-    await store.remove(entry.date)
+    // Removed by key, so anything queued in another tab during the drain is
+    // left alone — it was never in this snapshot and is not addressed by it.
+    await store.remove(keyOf(entry))
   }
 
   return { sent, dropped, kept: 0 }
@@ -57,12 +61,12 @@ export async function drainPending(store: PendingStore, send: Sender): Promise<D
  * toast has already promised the day is safe here; a swallowed write turns
  * that into something the person only discovers by the day being gone.
  */
-export async function queuePending(
-  store: PendingStore,
-  entry: Omit<PendingSave, 'queuedAt'>,
+export async function queuePending<T extends Queued>(
+  store: PendingStore<T>,
+  entry: Omit<T, 'queuedAt'>,
   max = MAX_PENDING,
 ): Promise<void> {
-  await store.put({ ...entry, queuedAt: Date.now() })
+  await store.put({ ...entry, queuedAt: Date.now() } as T)
   // A queue this long is a sync that has stopped working, not a busy week, and
   // the recent days are the ones still worth sending.
   await store.trim(max)

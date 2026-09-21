@@ -1,22 +1,34 @@
-import type { ISODate } from '@/lib/dates'
-import type { PendingSave } from './pending'
-import type { PendingStore } from './store'
+import type { PendingStore, Queued } from './store'
 
 /**
- * The real store: one record per day in IndexedDB.
+ * The real store: one record per queued item in IndexedDB.
  *
- * Keyed by date, so adding and removing a day touch one record. The
- * `localStorage` version this replaces read and rewrote the whole queue on
- * every step of a drain — synchronously, on the main thread — which is
- * quadratic work in the number of unsent days and exactly the wrong place for
- * it on a phone.
+ * Keyed, so adding and removing touch one record. A `localStorage` version
+ * would read and rewrite the whole queue on every step of a drain —
+ * synchronously, on the main thread — which is quadratic work in the number
+ * of unsent items and exactly the wrong place for it on a phone.
  *
  * Written against the bare API rather than a wrapper: four operations, no
  * build step, and nothing to keep up to date.
  */
 const DB_NAME = 'medaily-offline'
-const DB_VERSION = 1
-const STORE = 'pending-daily'
+
+/**
+ * Bumped when an object store is added. `onupgradeneeded` creates whichever
+ * are missing, so an install that already has the daily queue gains the
+ * transactions one without losing what is in it.
+ */
+const DB_VERSION = 2
+
+export const DAILY_STORE = 'pending-daily'
+export const TRANSACTION_STORE = 'pending-transactions'
+
+/** Every store this database holds, and what each one is keyed by. */
+const STORES: Record<string, string> = {
+  [DAILY_STORE]: 'date',
+  [TRANSACTION_STORE]: 'id',
+}
+
 const BY_QUEUED_AT = 'queuedAt'
 
 function request<T>(req: IDBRequest<T>): Promise<T> {
@@ -36,17 +48,18 @@ function open(): Promise<IDBDatabase> {
     const req = indexedDB.open(DB_NAME, DB_VERSION)
     req.onupgradeneeded = () => {
       const db = req.result
-      if (!db.objectStoreNames.contains(STORE)) {
-        const store = db.createObjectStore(STORE, { keyPath: 'date' })
+      for (const [name, keyPath] of Object.entries(STORES)) {
+        if (db.objectStoreNames.contains(name)) continue
+        const store = db.createObjectStore(name, { keyPath })
         // Ordering and trimming are both by age, so it gets an index rather
         // than a sort over every record.
-        store.createIndex(BY_QUEUED_AT, 'queuedAt')
+        store.createIndex(BY_QUEUED_AT, BY_QUEUED_AT)
       }
     }
     req.onsuccess = () => resolve(req.result)
     req.onerror = () => reject(req.error ?? new Error('indexeddb open failed'))
     // A second tab holding an older version open. Rejecting is right: the
-    // caller reports that the day could not be kept rather than hanging.
+    // caller reports that the work could not be kept rather than hanging.
     req.onblocked = () => reject(new Error('indexeddb open blocked'))
   })
 }
@@ -56,9 +69,10 @@ function open(): Promise<IDBDatabase> {
  *
  * Waiting for the transaction rather than the request is the point: a write
  * over quota fails at commit, and a `put` that resolved on request success
- * would report a day as kept that was then thrown away.
+ * would report work as kept that was then thrown away.
  */
 async function run<T>(
+  name: string,
   mode: IDBTransactionMode,
   body: (store: IDBObjectStore) => Promise<T> | T,
 ): Promise<T> {
@@ -66,14 +80,14 @@ async function run<T>(
 
   try {
     return await new Promise<T>((resolve, reject) => {
-      const tx = db.transaction(STORE, mode)
+      const tx = db.transaction(name, mode)
       let result: T
 
       tx.oncomplete = () => resolve(result)
       tx.onerror = () => reject(tx.error ?? new Error('indexeddb transaction failed'))
       tx.onabort = () => reject(tx.error ?? new Error('indexeddb transaction aborted'))
 
-      Promise.resolve(body(tx.objectStore(STORE)))
+      Promise.resolve(body(tx.objectStore(name)))
         .then((value) => {
           result = value
         })
@@ -87,30 +101,31 @@ async function run<T>(
   }
 }
 
-export function indexedDbStore(): PendingStore {
+export function indexedDbStore<T extends Queued>(name: string): PendingStore<T> {
   return {
-    async list(): Promise<PendingSave[]> {
-      return run('readonly', (store) =>
-        request(store.index(BY_QUEUED_AT).getAll() as IDBRequest<PendingSave[]>),
+    async list(): Promise<T[]> {
+      return run(name, 'readonly', (store) =>
+        request(store.index(BY_QUEUED_AT).getAll() as IDBRequest<T[]>),
       )
     },
 
-    async put(entry: PendingSave): Promise<void> {
-      await run('readwrite', async (store) => {
-        // `put` on a keyPath store replaces the record for that date, which is
-        // the queue's rule — a newer save of a day supersedes the older one.
+    async put(entry: T): Promise<void> {
+      await run(name, 'readwrite', async (store) => {
+        // `put` on a keyPath store replaces the record with that key, which
+        // is the rule either queue wants: a newer save of a day supersedes
+        // the older one, and a retried transaction lands on itself.
         await request(store.put(entry))
       })
     },
 
-    async remove(date: ISODate): Promise<void> {
-      await run('readwrite', async (store) => {
-        await request(store.delete(date))
+    async remove(key: string): Promise<void> {
+      await run(name, 'readwrite', async (store) => {
+        await request(store.delete(key))
       })
     },
 
     async trim(max: number): Promise<number> {
-      return run('readwrite', async (store) => {
+      return run(name, 'readwrite', async (store) => {
         const count = await request(store.count())
         const excess = count - max
         if (excess <= 0) return 0
@@ -137,7 +152,7 @@ export function indexedDbStore(): PendingStore {
     },
 
     async clear(): Promise<void> {
-      await run('readwrite', async (store) => {
+      await run(name, 'readwrite', async (store) => {
         await request(store.clear())
       })
     },
