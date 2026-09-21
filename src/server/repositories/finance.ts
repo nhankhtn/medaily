@@ -150,13 +150,26 @@ export async function findTransactions(
     .limit(limit)
 }
 
+/**
+ * Insert, or do nothing if this row is already here.
+ *
+ * The caller may pass an `id` the browser generated, which is what makes a
+ * transaction queued offline safe to send twice — a retry after a reply that
+ * never arrived lands on the same primary key and writes nothing. Without it
+ * a replay is a duplicate, and a duplicate here is money.
+ *
+ * Returns null when the row already existed, so a caller can tell "saved" from
+ * "was already saved" rather than guessing.
+ */
 export async function insertTransaction(
   values: typeof transactions.$inferInsert,
-): Promise<Transaction> {
-  const rows = await db.insert(transactions).values(values).returning()
-  const row = rows[0]
-  if (!row) throw new Error('failed to insert transaction')
-  return row
+): Promise<Transaction | null> {
+  const rows = await db
+    .insert(transactions)
+    .values(values)
+    .onConflictDoNothing({ target: transactions.id })
+    .returning()
+  return rows[0] ?? null
 }
 
 /** One statement, so a batch of drafts is all saved or none of it is. */
