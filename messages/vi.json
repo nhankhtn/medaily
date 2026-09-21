@@ -1274,6 +1274,13 @@
     "next": "Tiếp",
     "finish": "Bắt đầu ghi",
     "replay": "Xem lại phần giới thiệu",
+    "installOffer": {
+      "title": "Thêm vào màn hình chính?",
+      "body": "Mở như một app, không có thanh địa chỉ — và giữ những gì bạn lưu offline khỏi bị xoá.",
+      "add": "Thêm vào màn hình chính",
+      "gotIt": "Đã hiểu",
+      "later": "Để sau"
+    },
     "tour": {
       "daily": {
         "title": "Mọi thứ bắt đầu từ đây",

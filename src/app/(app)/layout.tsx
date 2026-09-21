@@ -12,6 +12,8 @@ import { RegisterServiceWorker } from '@/features/daily/register-sw'
 import { assistantEnabled } from '@/server/services/assistant'
 import { ShortcutProvider } from '@/features/shortcuts/provider'
 import { TourGuide } from '@/features/onboarding/tour-guide'
+import { InstallAfterTour } from '@/features/onboarding/install-after-tour'
+import { InstallPromptCapture } from '@/features/settings/install-prompt-capture'
 import { ShortcutsDialog } from '@/features/settings/shortcuts-panel'
 import { today } from '@/lib/dates'
 import { aiServiceConfigured } from '@/server/services/ai-service'
@@ -47,10 +49,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <PendingTransactions />
       <PendingTimerStops />
       <RegisterServiceWorker />
+      <InstallPromptCapture />
       {/* In the shell, not on a page: the tour walks from page to page. */}
       <Suspense fallback={null}>
         <TourGuide />
       </Suspense>
+      <InstallAfterTour />
       {/*
        * Stacked above the capture launcher, which is anchored to the same
        * corner. It sits below the panel's z-index on purpose: once capture is

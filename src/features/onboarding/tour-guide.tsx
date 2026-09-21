@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { TOUR_PARAM, TOUR_STEPS, tourHref, tourIndexOf, type TourStep } from '@/lib/onboarding/tour'
 import { markTourSeen } from '@/server/actions/onboarding'
+import { TOUR_FINISHED_EVENT } from '@/features/settings/install-capability'
 import { cn } from '@/lib/utils'
 
 const same = (a: DOMRect | null, b: DOMRect) =>
@@ -88,6 +89,7 @@ export function TourGuide() {
     const query = next.toString()
     router.replace(query ? `?${query}` : window.location.pathname)
     void markTourSeen()
+    window.dispatchEvent(new Event(TOUR_FINISHED_EVENT))
   }, [params, router])
 
   const go = useCallback(

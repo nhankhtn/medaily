@@ -1274,6 +1274,13 @@
     "next": "Next",
     "finish": "Start logging",
     "replay": "Show the introduction again",
+    "installOffer": {
+      "title": "Add to your home screen?",
+      "body": "Open it like an app, without the browser chrome — and keep anything you save offline from being cleared.",
+      "add": "Add to home screen",
+      "gotIt": "Got it",
+      "later": "Not now"
+    },
     "tour": {
       "daily": {
         "title": "Everything starts here",
