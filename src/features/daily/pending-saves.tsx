@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import { drainPending, queuePending } from '@/lib/offline/drain'
-import { indexedDbStore } from '@/lib/offline/indexeddb-store'
+import { DAILY_STORE, indexedDbStore } from '@/lib/offline/indexeddb-store'
 import type { PendingSave } from '@/lib/offline/pending'
 import type { PendingStore } from '@/lib/offline/store'
 import { saveDay } from '@/server/actions/daily'
@@ -13,10 +13,13 @@ import { saveDay } from '@/server/actions/daily'
  * One store for the app, behind the interface so the drain never learns what
  * it is writing to. Swapping IndexedDB for something else is this line.
  */
-let store: PendingStore | null = null
+let store: PendingStore<PendingSave> | null = null
 
-function pendingStore(): PendingStore {
-  store ??= indexedDbStore()
+/** The daily queue is addressed by the day it holds. */
+const byDate = (entry: PendingSave) => entry.date
+
+function pendingStore(): PendingStore<PendingSave> {
+  store ??= indexedDbStore<PendingSave>(DAILY_STORE)
   return store
 }
 
@@ -58,15 +61,18 @@ export function PendingSaves() {
     running.current = true
 
     try {
-      const { sent } = await drainPending(pendingStore(), (entry) =>
+      const { sent } = await drainPending(
+        pendingStore(),
+        (entry) =>
         // `null` is the action never reaching the server, which is what the
         // drain reads as "still offline, stop here".
-        saveDay({
-          date: entry.date,
-          patch: entry.patch,
-          custom: entry.custom,
-          source: 'manual',
-        }).catch(() => null),
+          saveDay({
+            date: entry.date,
+            patch: entry.patch,
+            custom: entry.custom,
+            source: 'manual',
+          }).catch(() => null),
+        byDate,
       )
 
       if (sent > 0) toast.success(t('offline.synced', { count: sent }))
