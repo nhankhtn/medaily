@@ -41,7 +41,7 @@ export default async function LoginPage({
       <main className="relative z-10 mx-auto grid w-full max-w-5xl flex-1 content-center items-center gap-6 px-4 py-6 pr-[max(1rem,var(--safe-right))] pb-[max(2rem,var(--safe-bottom))] pl-[max(1rem,var(--safe-left))] sm:px-8 lg:gap-14 lg:py-12 lg:grid-cols-[1.05fr_0.95fr]">
         <section className="login-enter space-y-6 lg:space-y-8" style={{ animationDelay: '80ms' }}>
           <div className="flex items-center justify-center gap-3 lg:justify-start">
-            <Logo size={48} className="rounded-[0.9rem] shadow-[var(--shadow-card)]" />
+            <Logo size={48} frosted className="shadow-[var(--shadow-card)]" />
             <p className="font-brand text-2xl font-semibold tracking-tight sm:text-3xl">{t('brand')}</p>
           </div>
 

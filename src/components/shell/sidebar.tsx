@@ -59,7 +59,7 @@ export function Sidebar() {
           href={PATHS.home}
           className="flex items-center gap-2 overflow-hidden rounded-md px-1 py-1 font-semibold"
         >
-          <Logo size={32} className="shrink-0 rounded-lg" />
+          <Logo size={32} className="shrink-0" />
           {!collapsed ? (
             <span className="font-brand truncate text-sm tracking-tight">Personal OS</span>
           ) : null}
