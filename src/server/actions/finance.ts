@@ -12,10 +12,12 @@ import { PATHS } from '@/lib/paths'
 import { isoDateSchema } from '@/lib/validation/daily'
 import {
   countAccountTransactions,
+  decodeTransactionCursor,
   deleteAccount,
   deleteTransaction,
   findAccounts,
   findCategories,
+  findTransactionsPage,
   insertAccount,
   insertAsset,
   insertCategory,
@@ -420,6 +422,45 @@ export async function removeTransaction(input: unknown) {
   await deleteTransaction(await getCurrentUserId(), id)
   revalidateFinance()
   return { ok: true }
+}
+
+const listTransactionsSchema = z.object({
+  cursor: z.string().min(1).max(200).optional(),
+  accountId: z.string().uuid().optional(),
+  categoryId: z.union([z.string().uuid(), z.literal('__none__')]).optional(),
+  from: isoDateSchema.optional(),
+  to: isoDateSchema.optional(),
+})
+
+/** Cursor page for the ledger; filters run in SQL, not on a client-side dump. */
+export async function listTransactions(input: unknown) {
+  const parsed = listTransactionsSchema.safeParse(input)
+  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+
+  const cursorRaw = parsed.data.cursor
+  const cursor = cursorRaw ? decodeTransactionCursor(cursorRaw) : null
+  if (cursorRaw && !cursor) {
+    return { ok: false as const, error: 'invalid_cursor' as const }
+  }
+
+  const categoryId =
+    parsed.data.categoryId === '__none__'
+      ? null
+      : parsed.data.categoryId === undefined
+        ? undefined
+        : parsed.data.categoryId
+
+  const page = await findTransactionsPage(await getCurrentUserId(), {
+    cursor,
+    filters: {
+      accountId: parsed.data.accountId,
+      categoryId,
+      from: parsed.data.from,
+      to: parsed.data.to,
+    },
+  })
+
+  return { ok: true as const, ...page }
 }
 
 export async function saveBudget(input: unknown) {

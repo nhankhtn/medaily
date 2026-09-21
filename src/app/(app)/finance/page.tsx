@@ -88,7 +88,7 @@ export default async function FinancePage({
         />
       ) : (
         <TransactionPanel
-          transactions={data.transactions}
+          initialPage={data.transactionsPage}
           categories={data.categories}
           accounts={data.accounts}
           people={data.people}

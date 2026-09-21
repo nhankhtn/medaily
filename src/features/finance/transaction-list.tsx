@@ -1,8 +1,9 @@
 'use client'
 
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { ArrowRightLeft, Check, Pencil, Trash2, User, X } from 'lucide-react'
 import { useFormatter, useLocale, useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -23,6 +24,8 @@ type Titled = Pick<Transaction, 'kind' | 'merchant' | 'categoryId' | 'accountId'
   counterAccountId: string | null
 }
 
+const ROW_ESTIMATE = 56
+
 export function TransactionList({
   transactions,
   pending,
@@ -31,6 +34,10 @@ export function TransactionList({
   people,
   currency,
   emptyLabel,
+  loadingMore = false,
+  hasMore = false,
+  onLoadMore,
+  onRemoved,
 }: {
   transactions: Transaction[]
   /** Rows sent but not confirmed; they sit above the ledger until it catches up. */
@@ -41,6 +48,10 @@ export function TransactionList({
   currency: string
   /** Overrides the empty-state copy when filters leave nothing to show. */
   emptyLabel?: string
+  loadingMore?: boolean
+  hasMore?: boolean
+  onLoadMore?: () => void
+  onRemoved?: (id: string) => void
 }) {
   const t = useTranslations('finance')
   const tc = useTranslations('common')
@@ -53,10 +64,33 @@ export function TransactionList({
    * left these buttons dead for seconds after the change had landed.
    */
   const [busyId, setBusyId] = useState<string | null>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const sentinelRef = useRef<HTMLDivElement>(null)
 
-  if (transactions.length === 0 && pending.length === 0) {
-    return <p className="text-text-subtle text-sm">{emptyLabel ?? t('noTransactions')}</p>
-  }
+  // TanStack Virtual returns unstable function identities; React Compiler skips this component.
+  // eslint-disable-next-line react-hooks/incompatible-library -- useVirtualizer
+  const virtualizer = useVirtualizer({
+    count: transactions.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => ROW_ESTIMATE,
+    overscan: 8,
+  })
+
+  useEffect(() => {
+    if (!hasMore || !onLoadMore || loadingMore) return
+    const root = scrollRef.current
+    const target = sentinelRef.current
+    if (!root || !target) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) onLoadMore()
+      },
+      { root, rootMargin: '120px' },
+    )
+    observer.observe(target)
+    return () => observer.disconnect()
+  }, [hasMore, loadingMore, onLoadMore, transactions.length])
 
   const label = (transaction: Titled) => {
     if (transaction.kind === 'transfer') {
@@ -72,165 +106,210 @@ export function TransactionList({
 
   const accountName = (id: string) => accounts.find((account) => account.id === id)?.name
 
+  if (transactions.length === 0 && pending.length === 0) {
+    return <p className="text-text-subtle text-sm">{emptyLabel ?? t('noTransactions')}</p>
+  }
+
   return (
-    <ul className="divide-border-base divide-y">
-      {pending.map((row) => (
-        // Faded, and without the pencil or the bin: there is no row on the
-        // server yet for either of them to act on.
-        <li key={row.key} className="flex items-center gap-3 py-2 opacity-50">
-          <span className="text-text-subtle w-16 shrink-0 text-xs tabular-nums">
-            {format.dateTime(fromISODate(row.occurredOn), 'dayMonth')}
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm">{label(row)}</span>
-            {row.kind !== 'transfer' && accountName(row.accountId) ? (
-              <span className="text-text-subtle block truncate text-xs">
-                {accountName(row.accountId)}
+    <div className="space-y-1">
+      {pending.length > 0 ? (
+        <ul className="divide-border-base divide-y">
+          {pending.map((row) => (
+            // Faded, and without the pencil or the bin: there is no row on the
+            // server yet for either of them to act on.
+            <li key={row.key} className="flex items-center gap-3 py-2 opacity-50">
+              <span className="text-text-subtle w-16 shrink-0 text-xs tabular-nums">
+                {format.dateTime(fromISODate(row.occurredOn), 'dayMonth')}
               </span>
-            ) : null}
-          </span>
-          {row.personId ? (
-            <Badge tone="accent">
-              <User className="size-3" />
-              {people.find((person) => person.id === row.personId)?.name ?? '—'}
-            </Badge>
-          ) : null}
-          {row.kind === 'transfer' ? (
-            <Badge>
-              <ArrowRightLeft className="size-3" />
-            </Badge>
-          ) : (
-            <Badge tone={row.kind === 'income' ? 'good' : 'neutral'}>
-              {t(`kinds.${row.kind}`)}
-            </Badge>
-          )}
-          <span className="shrink-0 text-sm font-medium tabular-nums">
-            {row.kind === 'income' ? '+' : row.kind === 'expense' ? '−' : ''}
-            {formatMoney(row.amount, currency, locale)}
-          </span>
-        </li>
-      ))}
-
-      {transactions.map((transaction) => {
-        if (editingId === transaction.id) {
-          return (
-            <li key={transaction.id} className="glass rounded-[var(--radius)] p-2">
-              <TransactionEditor
-                transaction={transaction}
-                accounts={accounts}
-                categories={categories}
-                people={people}
-                pending={busyId === transaction.id}
-                onClose={() => setEditingId(null)}
-                onSave={async (patch) => {
-                  setBusyId(transaction.id)
-                  try {
-                    const result = await saveTransaction({ id: transaction.id, ...patch })
-                    if (!result.ok) {
-                      toast.error(tc('error'))
-                      return
-                    }
-                    setEditingId(null)
-                    toast.success(t('saved'))
-                  } finally {
-                    setBusyId(null)
-                  }
-                }}
-              />
-            </li>
-          )
-        }
-
-        return (
-          <li
-            key={transaction.id}
-            className="group grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 py-2 sm:flex sm:gap-3"
-          >
-            {/* Tapping the row is how you change it; the pencil is for whoever
-                looks for a button instead. */}
-            <button
-              type="button"
-              onClick={() => setEditingId(transaction.id)}
-              className="min-w-0 truncate text-left sm:order-2 sm:flex-1"
-            >
-              <span className="block truncate text-sm">{label(transaction)}</span>
-              {transaction.kind !== 'transfer' && accountName(transaction.accountId) ? (
-                <span className="text-text-subtle block truncate text-xs">
-                  {accountName(transaction.accountId)}
-                </span>
-              ) : null}
-            </button>
-
-            <span
-              className={cn(
-                'text-right text-sm font-medium tabular-nums sm:order-4 sm:shrink-0',
-                transaction.kind === 'income' ? 'text-good' : 'text-text',
-              )}
-            >
-              {transaction.kind === 'income' ? '+' : transaction.kind === 'expense' ? '−' : ''}
-              {formatMoney(Number(transaction.amount), transaction.currency || currency, locale)}
-            </span>
-
-            <span className="flex min-w-0 items-center gap-2 sm:contents">
-              <span className="text-text-subtle shrink-0 text-xs tabular-nums sm:order-1 sm:w-16">
-                {format.dateTime(fromISODate(transaction.occurredOn), 'dayMonth')}
-              </span>
-
-              {transaction.personId ? (
-                <Badge tone="accent" className="min-w-0 sm:order-3">
-                  <User className="size-3 shrink-0" />
-                  <span className="truncate">
-                    {people.find((person) => person.id === transaction.personId)?.name ?? '—'}
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm">{label(row)}</span>
+                {row.kind !== 'transfer' && accountName(row.accountId) ? (
+                  <span className="text-text-subtle block truncate text-xs">
+                    {accountName(row.accountId)}
                   </span>
+                ) : null}
+              </span>
+              {row.personId ? (
+                <Badge tone="accent">
+                  <User className="size-3" />
+                  {people.find((person) => person.id === row.personId)?.name ?? '—'}
                 </Badge>
               ) : null}
-
-              {transaction.kind === 'transfer' ? (
-                <Badge className="sm:order-3">
+              {row.kind === 'transfer' ? (
+                <Badge>
                   <ArrowRightLeft className="size-3" />
                 </Badge>
               ) : (
-                <Badge
-                  tone={transaction.kind === 'income' ? 'good' : 'neutral'}
-                  className="sm:order-3"
-                >
-                  {t(`kinds.${transaction.kind}`)}
+                <Badge tone={row.kind === 'income' ? 'good' : 'neutral'}>
+                  {t(`kinds.${row.kind}`)}
                 </Badge>
               )}
-            </span>
+              <span className="shrink-0 text-sm font-medium tabular-nums">
+                {row.kind === 'income' ? '+' : row.kind === 'expense' ? '−' : ''}
+                {formatMoney(row.amount, currency, locale)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
 
-            {/* Visible on a phone, where there is no hover to reveal them. */}
-            <span className="flex shrink-0 items-center justify-end gap-1 sm:order-5 sm:opacity-0 sm:transition-opacity sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
-              <button
-                type="button"
-                disabled={busyId === transaction.id}
-                aria-label={`${tc('edit')} ${label(transaction)}`}
-                onClick={() => setEditingId(transaction.id)}
-                className="text-text-subtle hover:text-text p-1"
-              >
-                <Pencil className="size-3.5" />
-              </button>
-              <button
-                type="button"
-                disabled={busyId === transaction.id}
-                aria-label={`${tc('delete')} ${label(transaction)}`}
-                onClick={async () => {
-                  setBusyId(transaction.id)
-                  try {
-                    await removeTransaction(transaction.id)
-                  } finally {
-                    setBusyId(null)
-                  }
-                }}
-                className="text-text-subtle hover:text-bad p-1"
-              >
-                <Trash2 className="size-3.5" />
-              </button>
-            </span>
-          </li>
-        )
-      })}
-    </ul>
+      {transactions.length > 0 ? (
+        <div
+          ref={scrollRef}
+          className="max-h-[min(70vh,36rem)] overflow-y-auto"
+          style={{ contain: 'strict' }}
+        >
+          <ul
+            className="divide-border-base relative w-full divide-y"
+            style={{ height: virtualizer.getTotalSize() }}
+          >
+            {virtualizer.getVirtualItems().map((virtualRow) => {
+              const transaction = transactions[virtualRow.index]
+              if (!transaction) return null
+              const editing = editingId === transaction.id
+
+              return (
+                <li
+                  key={transaction.id}
+                  data-index={virtualRow.index}
+                  ref={virtualizer.measureElement}
+                  className={cn(
+                    'absolute top-0 left-0 w-full',
+                    editing
+                      ? 'glass rounded-[var(--radius)] p-2'
+                      : 'group grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 py-2 sm:flex sm:gap-3',
+                  )}
+                  style={{ transform: `translateY(${virtualRow.start}px)` }}
+                >
+                  {editing ? (
+                    <TransactionEditor
+                      transaction={transaction}
+                      accounts={accounts}
+                      categories={categories}
+                      people={people}
+                      pending={busyId === transaction.id}
+                      onClose={() => setEditingId(null)}
+                      onSave={async (patch) => {
+                        setBusyId(transaction.id)
+                        try {
+                          const result = await saveTransaction({ id: transaction.id, ...patch })
+                          if (!result.ok) {
+                            toast.error(tc('error'))
+                            return
+                          }
+                          setEditingId(null)
+                          toast.success(t('saved'))
+                        } finally {
+                          setBusyId(null)
+                        }
+                      }}
+                    />
+                  ) : (
+                    <>
+                      {/* Tapping the row is how you change it; the pencil is for whoever
+                          looks for a button instead. */}
+                      <button
+                        type="button"
+                        onClick={() => setEditingId(transaction.id)}
+                        className="min-w-0 truncate text-left sm:order-2 sm:flex-1"
+                      >
+                        <span className="block truncate text-sm">{label(transaction)}</span>
+                        {transaction.kind !== 'transfer' && accountName(transaction.accountId) ? (
+                          <span className="text-text-subtle block truncate text-xs">
+                            {accountName(transaction.accountId)}
+                          </span>
+                        ) : null}
+                      </button>
+
+                      <span
+                        className={cn(
+                          'text-right text-sm font-medium tabular-nums sm:order-4 sm:shrink-0',
+                          transaction.kind === 'income' ? 'text-good' : 'text-text',
+                        )}
+                      >
+                        {transaction.kind === 'income'
+                          ? '+'
+                          : transaction.kind === 'expense'
+                            ? '−'
+                            : ''}
+                        {formatMoney(
+                          Number(transaction.amount),
+                          transaction.currency || currency,
+                          locale,
+                        )}
+                      </span>
+
+                      <span className="flex min-w-0 items-center gap-2 sm:contents">
+                        <span className="text-text-subtle shrink-0 text-xs tabular-nums sm:order-1 sm:w-16">
+                          {format.dateTime(fromISODate(transaction.occurredOn), 'dayMonth')}
+                        </span>
+
+                        {transaction.personId ? (
+                          <Badge tone="accent" className="min-w-0 sm:order-3">
+                            <User className="size-3 shrink-0" />
+                            <span className="truncate">
+                              {people.find((person) => person.id === transaction.personId)?.name ??
+                                '—'}
+                            </span>
+                          </Badge>
+                        ) : null}
+
+                        {transaction.kind === 'transfer' ? (
+                          <Badge className="sm:order-3">
+                            <ArrowRightLeft className="size-3" />
+                          </Badge>
+                        ) : (
+                          <Badge
+                            tone={transaction.kind === 'income' ? 'good' : 'neutral'}
+                            className="sm:order-3"
+                          >
+                            {t(`kinds.${transaction.kind}`)}
+                          </Badge>
+                        )}
+                      </span>
+
+                      {/* Visible on a phone, where there is no hover to reveal them. */}
+                      <span className="flex shrink-0 items-center justify-end gap-1 sm:order-5 sm:opacity-0 sm:transition-opacity sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
+                        <button
+                          type="button"
+                          disabled={busyId === transaction.id}
+                          aria-label={`${tc('edit')} ${label(transaction)}`}
+                          onClick={() => setEditingId(transaction.id)}
+                          className="text-text-subtle hover:text-text p-1"
+                        >
+                          <Pencil className="size-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busyId === transaction.id}
+                          aria-label={`${tc('delete')} ${label(transaction)}`}
+                          onClick={async () => {
+                            setBusyId(transaction.id)
+                            try {
+                              await removeTransaction(transaction.id)
+                              onRemoved?.(transaction.id)
+                            } finally {
+                              setBusyId(null)
+                            }
+                          }}
+                          className="text-text-subtle hover:text-bad p-1"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </span>
+                    </>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+          <div ref={sentinelRef} className="h-1" aria-hidden />
+          {loadingMore ? (
+            <p className="text-text-subtle py-2 text-center text-xs">{tc('loading')}</p>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
   )
 }
 

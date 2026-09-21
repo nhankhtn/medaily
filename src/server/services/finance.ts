@@ -1,6 +1,6 @@
 import { cache } from 'react'
 import { getCurrentUserId } from '@/lib/auth/current-user'
-import type { Asset, Budget, FinanceCategory, Investment, Transaction } from '@/lib/db/schema'
+import type { Asset, Budget, FinanceCategory, Investment } from '@/lib/db/schema'
 import { addMonthsISO, monthEndOf, monthStartOf, today as todayOf, type ISODate } from '@/lib/dates'
 import type { AccountType } from '@/lib/finance/account-types'
 import { debtBalances, netDebt, type DebtBalance } from '@/lib/finance/debts'
@@ -11,11 +11,12 @@ import {
   findBudgets,
   findCategories,
   findInvestments,
-  findTransactions,
+  findTransactionsPage,
   sumByCategory,
   sumDebtsByPerson,
   type AccountBalance,
   type CategoryTotal,
+  type TransactionPage,
 } from '@/server/repositories/finance'
 import { findPeople } from '@/server/repositories/people'
 import { dayContextOf, getSettings } from '@/server/services/settings'
@@ -36,7 +37,8 @@ export type FinanceData = {
   }[]
   balances: AccountBalance[]
   categories: FinanceCategory[]
-  transactions: Transaction[]
+  /** First ledger page for SSR; further pages load via `listTransactions`. */
+  transactionsPage: TransactionPage
   byCategory: CategoryTotal[]
   budgets: BudgetView[]
   assets: Asset[]
@@ -69,7 +71,7 @@ export const getFinanceData = cache(async (): Promise<FinanceData> => {
     accountRows,
     balances,
     categories,
-    transactions,
+    transactionsPage,
     byCategory,
     previousTotals,
     budgetRows,
@@ -81,7 +83,7 @@ export const getFinanceData = cache(async (): Promise<FinanceData> => {
     findAccounts(userId),
     findAccountBalances(userId),
     findCategories(userId),
-    findTransactions(userId, { start: previousStart, end: monthEnd }),
+    findTransactionsPage(userId),
     sumByCategory(userId, { start: monthStart, end: monthEnd }),
     sumByCategory(userId, { start: previousStart, end: monthEndOf(previousStart) }),
     findBudgets(userId, monthStart),
@@ -91,7 +93,6 @@ export const getFinanceData = cache(async (): Promise<FinanceData> => {
     sumDebtsByPerson(userId),
   ])
 
-  const monthTransactions = transactions.filter((row) => row.occurredOn >= monthStart)
   const sumKind = (kind: string, rows: CategoryTotal[]) =>
     rows.filter((row) => row.kind === kind).reduce((sum, row) => sum + row.total, 0)
 
@@ -139,7 +140,7 @@ export const getFinanceData = cache(async (): Promise<FinanceData> => {
     })),
     balances,
     categories,
-    transactions: monthTransactions,
+    transactionsPage,
     byCategory,
     budgets: budgetRows.map((budget) => ({
       ...budget,

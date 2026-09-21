@@ -863,7 +863,7 @@
     "transactions": "Transactions",
     "addTransaction": "Add",
     "addTransactionTitle": "Add a transaction",
-    "noTransactions": "Nothing recorded this month",
+    "noTransactions": "Nothing recorded yet",
     "noMatchingTransactions": "No transactions match these filters",
     "filterAllAccounts": "All accounts",
     "filterAllCategories": "All categories",
