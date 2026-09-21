@@ -18,7 +18,6 @@ export function DateNav({ date, today }: { date: ISODate; today: ISODate }) {
   const t = useTranslations('common')
   const format = useFormatter()
   const touchStart = useRef<{ x: number; y: number } | null>(null)
-  const dateInputRef = useRef<HTMLInputElement>(null)
 
   const go = (target: ISODate) => {
     if (target > today) return
@@ -68,35 +67,33 @@ export function DateNav({ date, today }: { date: ISODate; today: ISODate }) {
       </Button>
 
       <div className="relative">
-        <button
-          type="button"
-          aria-label={t('pickDate')}
-          onClick={() => {
-            const input = dateInputRef.current
-            if (!input) return
-            try {
-              input.showPicker()
-            } catch {
-              input.focus()
-            }
-          }}
-          className="glass hover:bg-surface-2 flex h-9 items-center gap-2 rounded-[var(--radius)] border-border-strong px-3 text-sm"
+        <div
+          aria-hidden
+          className="glass border-border-strong flex h-9 items-center gap-2 rounded-[var(--radius)] px-3 text-sm"
         >
           <CalendarDays className="text-text-subtle size-4" />
           <span className="tabular-nums">
             {isToday ? t('today') : format.dateTime(fromISODate(date), 'dayMonth')}
           </span>
-        </button>
+        </div>
 
         <input
-          ref={dateInputRef}
           type="date"
           value={date}
           max={today}
-          tabIndex={-1}
-          aria-hidden
+          aria-label={t('pickDate')}
           onChange={(event) => event.target.value && go(event.target.value)}
-          className="pointer-events-none absolute inset-0 opacity-0"
+          className={
+            // Hair of opacity + stretched indicator — `opacity-0` collapses
+            // the WebKit hit region to the tiny calendar glyph (finance DateInput
+            // uses the same trick).
+            'absolute inset-0 z-10 cursor-pointer opacity-[0.01] ' +
+            '[&::-webkit-calendar-picker-indicator]:absolute ' +
+            '[&::-webkit-calendar-picker-indicator]:inset-0 ' +
+            '[&::-webkit-calendar-picker-indicator]:h-full ' +
+            '[&::-webkit-calendar-picker-indicator]:w-full ' +
+            '[&::-webkit-calendar-picker-indicator]:cursor-pointer'
+          }
         />
       </div>
 
