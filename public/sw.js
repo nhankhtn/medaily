@@ -10,7 +10,7 @@
  * Plain JS on purpose: served straight out of `public/`, no build step, no
  * dependency, and readable by whoever has to debug it on a phone.
  */
-const VERSION = 'v3'
+const VERSION = 'v4'
 const SHELL = `medaily-shell-${VERSION}`
 const PAGES = `medaily-pages-${VERSION}`
 

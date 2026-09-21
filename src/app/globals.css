@@ -282,6 +282,8 @@
  * pink all keep the same silhouette without a second logo. No default
  * backdrop-filter: the sidebar already blurs, and a nested one would sample
  * that flat sheet. `.logo-mark-frosted` is for open air (login orbs).
+ * Favicon / home-screen icons bake this look in `lib/brand.ts` `markSvg()` —
+ * they cannot blur a backdrop. Keep path + palette in sync there.
  */
 .logo-mark {
   display: inline-flex;

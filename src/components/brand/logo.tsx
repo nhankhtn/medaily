@@ -12,11 +12,10 @@ import { cn } from '@/lib/utils'
  * Two readings on purpose — the app is one tick a day, and the point of
  * ticking is the line going up. One stroke, so it survives a 16px favicon.
  *
- * The in-app mark is glass like the chrome around it: a translucent accent
- * tile with a specular rim, not the solid gradient the favicon still uses
- * (a 16px icon needs opaque paint). `frosted` adds the real backdrop blur —
- * only when the mark is not nested inside another glass panel, where a
- * second filter would sample a flat sheet and wash out.
+ * The in-app mark is CSS liquid glass (`.logo-mark`). Favicon / home-screen
+ * icons bake the same look via `markSvg` in `@/lib/brand` — opaque paint,
+ * no backdrop to blur. `frosted` adds real backdrop blur only in open air
+ * (login); nested inside another glass panel a second filter washes out.
  */
 export function Logo({
   size = 32,
