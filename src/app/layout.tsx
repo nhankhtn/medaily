@@ -14,6 +14,20 @@ export const metadata: Metadata = {
   title: 'Personal OS',
   description: 'Track daily performance, understand behaviour, manage goals.',
   applicationName: 'Personal OS',
+  /**
+   * What makes "Add to Home Screen" open as an app on iOS, which reads the
+   * manifest for almost nothing — `display: standalone` there is ignored, and
+   * without this the icon opens Safari with its address bar.
+   *
+   * It is also what keeps the offline queue: iOS clears script-writable
+   * storage for a site untouched for about a week, and an installed web app
+   * is outside that rule. On Android the manifest already does this job.
+   *
+   * `default`, not `black-translucent`: translucent puts the page under the
+   * status bar, and nothing here reads `safe-area-inset-top` — the header
+   * would sit behind the clock.
+   */
+  appleWebApp: { title: 'Personal OS', statusBarStyle: 'default' },
 }
 
 export const viewport: Viewport = {
