@@ -31,9 +31,13 @@ export function useCursorPage<T>({
   const [nextCursor, setNextCursor] = useState<string | null>(initialPage.nextCursor)
   const [loading, setLoading] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
-  const skipFirstFetch = useRef(true)
   const loadMoreLock = useRef(false)
   const prevPageKey = useRef('')
+  const fetchPageRef = useRef(fetchPage)
+  fetchPageRef.current = fetchPage
+  const getIdRef = useRef(getId)
+  getIdRef.current = getId
+
   const pageKey = `${initialPage.nextCursor ?? ''}:${initialPage.items[0] ? getId(initialPage.items[0]) : ''}:${initialPage.items.length}:${initialPage.items.at(-1) ? getId(initialPage.items.at(-1)!) : ''}`
   const [seenPageKey, setSeenPageKey] = useState(pageKey)
   const [wasIdle, setWasIdle] = useState(true)
@@ -54,15 +58,13 @@ export function useCursorPage<T>({
     setNextCursor(initialPage.nextCursor)
   }
 
+  // Only refetch when the filter key changes — not when fetchPage identity churns.
   useEffect(() => {
-    if (skipFirstFetch.current) {
-      skipFirstFetch.current = false
-      if (idle) return
-    }
+    if (idle) return
 
     let cancelled = false
     setLoading(true)
-    void fetchPage(null).then((result) => {
+    void fetchPageRef.current(null).then((result) => {
       if (cancelled) return
       if (result.ok) {
         setItems(result.items)
@@ -74,7 +76,7 @@ export function useCursorPage<T>({
     return () => {
       cancelled = true
     }
-  }, [queryKey, idle, fetchPage])
+  }, [queryKey, idle])
 
   // While filters are active, a save/delete refreshes SSR — reload page one.
   useEffect(() => {
@@ -87,7 +89,7 @@ export function useCursorPage<T>({
     if (!bumped) return
 
     let cancelled = false
-    void fetchPage(null).then((result) => {
+    void fetchPageRef.current(null).then((result) => {
       if (cancelled || !result.ok) return
       setItems(result.items)
       setNextCursor(result.nextCursor)
@@ -95,32 +97,31 @@ export function useCursorPage<T>({
     return () => {
       cancelled = true
     }
-  }, [pageKey, idle, fetchPage])
+  }, [pageKey, idle])
 
   const loadMore = useCallback(async () => {
     if (!nextCursor || loading || loadingMore || loadMoreLock.current) return
     loadMoreLock.current = true
     setLoadingMore(true)
     try {
-      const result = await fetchPage(nextCursor)
+      const result = await fetchPageRef.current(nextCursor)
       if (!result.ok) return
+      const idOf = getIdRef.current
       setItems((current) => {
-        const seen = new Set(current.map(getId))
-        return [...current, ...result.items.filter((row) => !seen.has(getId(row)))]
+        const seen = new Set(current.map(idOf))
+        return [...current, ...result.items.filter((row) => !seen.has(idOf(row)))]
       })
       setNextCursor(result.nextCursor)
     } finally {
       loadMoreLock.current = false
       setLoadingMore(false)
     }
-  }, [fetchPage, getId, loading, loadingMore, nextCursor])
+  }, [loading, loadingMore, nextCursor])
 
-  const removeItem = useCallback(
-    (id: string) => {
-      setItems((current) => current.filter((row) => getId(row) !== id))
-    },
-    [getId],
-  )
+  const removeItem = useCallback((id: string) => {
+    const idOf = getIdRef.current
+    setItems((current) => current.filter((row) => idOf(row) !== id))
+  }, [])
 
   return {
     items,

@@ -1,7 +1,7 @@
 'use client'
 
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useState, useRef, type CSSProperties, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 const DEFAULT_ESTIMATE = 56
@@ -32,8 +32,11 @@ export type VirtualInfiniteListProps<T> = {
 }
 
 /**
- * Windowed list with optional infinite scroll. Owns scroll container,
- * virtualizer, and bottom sentinel — callers only render each row.
+ * Windowed list with optional infinite scroll.
+ *
+ * Row markup is client-only. SSR (and the first client paint) render an empty
+ * shell of the same size so TanStack Virtual / locale-formatted cells cannot
+ * hydrate-mismatch the server HTML.
  */
 export function VirtualInfiniteList<T>({
   items,
@@ -53,18 +56,36 @@ export function VirtualInfiniteList<T>({
 }: VirtualInfiniteListProps<T>) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const viewportHeight = estimateSize * maxVisibleRows.sm
+
+  const shellStyle = {
+    ['--vil-h']: `${estimateSize * maxVisibleRows.base}px`,
+    ['--vil-h-sm']: `${viewportHeight}px`,
+  } as CSSProperties
+
+  const shellClass = cn(
+    'max-h-[var(--vil-h)] overflow-y-auto sm:max-h-[var(--vil-h-sm)]',
+    className,
+  )
 
   // TanStack Virtual returns unstable function identities; React Compiler skips this component.
   // eslint-disable-next-line react-hooks/incompatible-library -- useVirtualizer
   const virtualizer = useVirtualizer({
-    count: items.length,
+    count: mounted ? items.length : 0,
     getScrollElement: () => scrollRef.current,
     estimateSize: () => estimateSize,
     overscan,
+    initialRect: { width: 1, height: viewportHeight },
   })
 
   useEffect(() => {
-    if (!hasMore || !onLoadMore || loadingMore) return
+    if (!mounted || !hasMore || !onLoadMore || loadingMore) return
     const root = scrollRef.current
     const target = sentinelRef.current
     if (!root || !target) return
@@ -77,47 +98,56 @@ export function VirtualInfiniteList<T>({
     )
     observer.observe(target)
     return () => observer.disconnect()
-  }, [hasMore, loadingMore, loadMoreMargin, onLoadMore, items.length])
+  }, [mounted, hasMore, loadingMore, loadMoreMargin, onLoadMore, items.length])
 
   if (items.length === 0) {
     return empty ? <>{empty}</> : null
   }
 
+  // Same empty shell on server and on the client's first paint.
+  if (!mounted) {
+    return (
+      <div
+        className={cn(shellClass, 'h-[var(--vil-h)] sm:h-[var(--vil-h-sm)]')}
+        style={shellStyle}
+        aria-hidden
+      />
+    )
+  }
+
+  const virtualItems = virtualizer.getVirtualItems()
+  const useVirtual = virtualItems.length > 0
+
   return (
-    <div
-      ref={scrollRef}
-      className={cn(
-        'max-h-[var(--vil-h)] overflow-y-auto sm:max-h-[var(--vil-h-sm)]',
-        className,
+    <div ref={scrollRef} className={shellClass} style={shellStyle}>
+      {useVirtual ? (
+        <ul
+          className={cn('relative w-full', listClassName)}
+          style={{ height: virtualizer.getTotalSize() }}
+        >
+          {virtualItems.map((virtualRow) => {
+            const item = items[virtualRow.index]
+            if (!item) return null
+            return (
+              <li
+                key={getKey(item)}
+                data-index={virtualRow.index}
+                ref={virtualizer.measureElement}
+                className="absolute top-0 left-0 w-full"
+                style={{ transform: `translateY(${virtualRow.start}px)` }}
+              >
+                {renderItem(item, virtualRow.index)}
+              </li>
+            )
+          })}
+        </ul>
+      ) : (
+        <ul className={cn('w-full', listClassName)}>
+          {items.map((item, index) => (
+            <li key={getKey(item)}>{renderItem(item, index)}</li>
+          ))}
+        </ul>
       )}
-      style={
-        {
-          contain: 'strict',
-          ['--vil-h']: `${estimateSize * maxVisibleRows.base}px`,
-          ['--vil-h-sm']: `${estimateSize * maxVisibleRows.sm}px`,
-        } as CSSProperties
-      }
-    >
-      <ul
-        className={cn('relative w-full', listClassName)}
-        style={{ height: virtualizer.getTotalSize() }}
-      >
-        {virtualizer.getVirtualItems().map((virtualRow) => {
-          const item = items[virtualRow.index]
-          if (!item) return null
-          return (
-            <li
-              key={getKey(item)}
-              data-index={virtualRow.index}
-              ref={virtualizer.measureElement}
-              className="absolute top-0 left-0 w-full"
-              style={{ transform: `translateY(${virtualRow.start}px)` }}
-            >
-              {renderItem(item, virtualRow.index)}
-            </li>
-          )
-        })}
-      </ul>
       <div ref={sentinelRef} className="h-1" aria-hidden />
       {loadingMore && loadingMoreLabel ? (
         <div className="text-text-subtle py-2 text-center text-xs">{loadingMoreLabel}</div>
