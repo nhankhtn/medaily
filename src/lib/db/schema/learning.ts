@@ -126,3 +126,22 @@ export const focusSessionsRelations = relations(focusSessions, ({ one }) => ({
 export type TimerState = typeof timerState.$inferSelect
 export type Topic = typeof topics.$inferSelect
 export type FocusSession = typeof focusSessions.$inferSelect
+
+/**
+ * A completed run that was queued offline and may be filed more than once.
+ * The client picks the id; a second insert is a no-op so a retry cannot
+ * double-count daily minutes.
+ */
+export const timerFilings = pgTable(
+  'timer_filings',
+  {
+    id: uuid('id').primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('idx_timer_filings_user').on(t.userId)],
+)
+
+export type TimerFiling = typeof timerFilings.$inferSelect

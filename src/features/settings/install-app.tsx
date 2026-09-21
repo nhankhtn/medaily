@@ -58,7 +58,7 @@ function isIosSafari(): boolean {
  *
  * Worth more than tidiness on iOS: an installed web app is outside the rule
  * that clears storage for a site untouched for a week, which is what keeps a
- * day or a transaction queued offline from being swept away.
+ * day, a transaction, or a timed run queued offline from being swept away.
  */
 export function InstallApp() {
   const t = useTranslations('settings.install')

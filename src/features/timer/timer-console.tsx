@@ -19,15 +19,10 @@ import {
   type ActivityId,
 } from '@/lib/timer/activities'
 import { cn } from '@/lib/utils'
-import {
-  discardTimer,
-  pauseTimer,
-  resumeTimer,
-  startTimer,
-  stopTimer,
-} from '@/server/actions/timer'
 import type { TimerPageData } from '@/server/services/timer'
 import { useShortcut } from '@/features/shortcuts/provider'
+import { beginRun, dropRun, finishRun, togglePauseRun } from './run-actions'
+import { useEffectiveTimer } from './use-effective-timer'
 import { chime, useElapsedSeconds, useNow, useWakeLock } from './use-run'
 
 /** Where a stopped run lands, for the toast that says so. */
@@ -40,7 +35,7 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
   const format = useFormatter()
   const [pending, startTransition] = useTransition()
 
-  const timer = data.timer
+  const timer = useEffectiveTimer(data.timer)
   const running = timer !== null && timer.pausedAt === null
   const elapsed = useElapsedSeconds(timer)
   const now = useNow()
@@ -69,7 +64,7 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
 
   const begin = () =>
     startTransition(async () => {
-      const result = await startTimer({
+      const result = await beginRun({
         activity,
         mode,
         targetMinutes: minutes,
@@ -81,26 +76,27 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
       if (!result.ok) toast.error(tc('error'))
     })
 
-  const toggle = () =>
-    startTransition(async () => {
-      await (running ? pauseTimer() : resumeTimer())
-    })
+  const toggle = () => startTransition(async () => void (await togglePauseRun()))
 
   const finish = () =>
     startTransition(async () => {
-      const result = await stopTimer({})
+      const result = await finishRun({})
       if (!result.ok) {
         toast[result.error === 'too_short' ? 'info' : 'error'](
           result.error === 'too_short' ? t('tooShort') : tc('error'),
         )
         return
       }
-      toast.success(t('savedTo', { minutes: result.minutes, where: tn(MODULE_OF[result.sink]) }))
+      if (result.queued) {
+        toast.success(t('offline.queued', { minutes: result.minutes }))
+      } else {
+        toast.success(t('savedTo', { minutes: result.minutes, where: tn(MODULE_OF[result.sink]) }))
+      }
       if (result.capped) toast.warning(t('capped'), { duration: 8000 })
       setNote('')
     })
 
-  const drop = () => startTransition(async () => void (await discardTimer()))
+  const drop = () => startTransition(async () => void (await dropRun()))
 
   useChime(done)
   useTabTitle(timer ? formatDuration(countdown ? remaining : elapsed) : null)

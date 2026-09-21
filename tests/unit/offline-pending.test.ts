@@ -62,6 +62,7 @@ describe('isPermanentFailure', () => {
   it('gives up on a rejection that will never pass', () => {
     expect(isPermanentFailure('invalid_input')).toBe(true)
     expect(isPermanentFailure('future_date')).toBe(true)
+    expect(isPermanentFailure('too_short')).toBe(true)
   })
 
   it('keeps anything that might just be the network', () => {
