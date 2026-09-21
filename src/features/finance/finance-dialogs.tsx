@@ -256,7 +256,7 @@ export function CategoryDialog({ category }: { category?: FinanceCategory }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {editing ? (
-          <Button variant="ghost" size="sm" className="h-7 px-1.5" aria-label={t('editCategory')}>
+          <Button variant="ghost" size="sm" className="px-1.5" aria-label={t('editCategory')}>
             <Pencil className="size-3.5" />
           </Button>
         ) : (

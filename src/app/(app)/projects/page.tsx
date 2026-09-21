@@ -72,7 +72,7 @@ export default async function ProjectsPage() {
                     <Clock className="size-3.5" />
                     {Math.round(project.minutesSpent / 60)}h
                   </span>
-                  <Button asChild variant="ghost" size="sm" className="ml-auto h-7 px-2">
+                  <Button asChild variant="ghost" size="sm" className="ml-auto px-2">
                     <Link href={PATHS.project(project.id)}>
                       <ArrowRight className="size-3.5" />
                     </Link>

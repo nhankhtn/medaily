@@ -45,6 +45,12 @@ describe('every theme is readable', () => {
     ['--accent-text', '--accent', 4.5],
     ['--accent', '--bg', 3],
     ['--border-strong', '--surface', 1.4],
+    // The checkmark on a done habit / task / goal. A glyph is a non-text
+    // graphic, so 3 — but it used to be a hardcoded `text-white`, which the
+    // dark palette failed at 2.52 because no token was involved to test.
+    ['--accent-text', '--good', 3],
+    // The danger button's label, which is text.
+    ['--accent-text', '--bad', 4.5],
   ]
 
   for (const theme of THEMES) {
@@ -54,7 +60,9 @@ describe('every theme is readable', () => {
       const read = (name: string) => tokens[name] ?? light[name] ?? ''
 
       it.each(pairs)('%s on %s clears %s:1', (front, back, minimum) => {
-        const ratio = contrastOf(read(front), read(back))
+        // Surfaces are translucent, so they only have a colour once the page
+        // behind them is painted in. Measure the composited stack.
+        const ratio = contrastOf(read(front), read(back), read('--bg'))
         expect(ratio).not.toBeNull()
         expect(Number(ratio?.toFixed(2))).toBeGreaterThanOrEqual(minimum)
       })
@@ -64,8 +72,8 @@ describe('every theme is readable', () => {
 
 describe('the colour maths', () => {
   it('reads an oklch colour, with or without alpha', () => {
-    expect(parseOklch('oklch(55% 0.2 355)')).toEqual({ l: 0.55, c: 0.2, h: 355 })
-    expect(parseOklch('oklch(0% 0 0 / 0.3)')).toEqual({ l: 0, c: 0, h: 0 })
+    expect(parseOklch('oklch(55% 0.2 355)')).toEqual({ l: 0.55, c: 0.2, h: 355, alpha: 1 })
+    expect(parseOklch('oklch(0% 0 0 / 0.3)')).toEqual({ l: 0, c: 0, h: 0, alpha: 0.3 })
     expect(parseOklch('#ff00aa')).toBeNull()
   })
 

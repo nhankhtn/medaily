@@ -71,7 +71,7 @@ export function GettingStarted({ checklist }: { checklist: Checklist }) {
                 <span
                   className={cn(
                     'flex size-5 shrink-0 items-center justify-center rounded-full border',
-                    step.done ? 'border-transparent bg-good text-white' : 'border-border-strong',
+                    step.done ? 'border-transparent bg-good text-accent-text' : 'border-border-strong',
                   )}
                 >
                   {step.done ? <Check className="size-3" /> : null}

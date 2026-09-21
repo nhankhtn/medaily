@@ -84,7 +84,7 @@ export function DayTasks({ tasks, scheduleTo }: { tasks: DayTask[]; scheduleTo?:
               className={cn(
                 'flex size-5 shrink-0 items-center justify-center rounded-full border',
                 done
-                  ? 'bg-good border-transparent text-white'
+                  ? 'bg-good border-transparent text-accent-text'
                   : 'border-border-strong hover:border-accent',
               )}
             >

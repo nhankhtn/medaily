@@ -251,7 +251,7 @@ export function NoteCard({
             resources={resources}
             note={note}
             trigger={
-              <Button variant="ghost" size="sm" className="h-7 px-2">
+              <Button variant="ghost" size="sm" className="px-2">
                 <Pencil className="size-3.5" />
               </Button>
             }

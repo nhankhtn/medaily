@@ -58,7 +58,7 @@ export function HabitRow({ habits, date }: { habits: DashboardHabit[]; date: ISO
               <span
                 className={cn(
                   'flex size-6 shrink-0 items-center justify-center rounded-full border',
-                  done ? 'border-transparent bg-good text-white' : 'border-border-strong',
+                  done ? 'border-transparent bg-good text-accent-text' : 'border-border-strong',
                 )}
               >
                 {done ? <Check className="size-3.5" /> : null}

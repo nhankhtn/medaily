@@ -48,7 +48,7 @@ export default async function JournalPage() {
                     today={data.today}
                     entry={entry}
                     trigger={
-                      <Button variant="ghost" size="sm" className="h-7 px-2">
+                      <Button variant="ghost" size="sm" className="px-2">
                         ···
                       </Button>
                     }

@@ -120,7 +120,7 @@ export function GoalCards({
                   today={today}
                   metrics={metrics}
                   trigger={
-                    <Button variant="ghost" size="sm" className="h-7 px-1.5">
+                    <Button variant="ghost" size="sm" className="px-1.5">
                       <Pencil className="size-3.5" />
                     </Button>
                   }
@@ -217,7 +217,7 @@ export function GoalCards({
                             className={cn(
                               'flex size-5 shrink-0 items-center justify-center rounded-full border',
                               milestone.completed
-                                ? 'bg-good border-transparent text-white'
+                                ? 'bg-good border-transparent text-accent-text'
                                 : 'border-border-strong',
                             )}
                           >

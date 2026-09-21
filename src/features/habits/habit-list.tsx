@@ -79,7 +79,7 @@ export function HabitList({
                 className={cn(
                   'flex size-9 shrink-0 items-center justify-center rounded-full border transition-colors',
                   done
-                    ? 'bg-good border-transparent text-white'
+                    ? 'bg-good border-transparent text-accent-text'
                     : habit.scheduledToday || weekly
                       ? 'border-border-strong hover:bg-surface-2'
                       : 'border-border-base opacity-40',

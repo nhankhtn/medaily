@@ -121,7 +121,7 @@ export function TaskList({ projectId, tasks }: { projectId: string; tasks: Proje
                   }}
                   className={cn(
                     'flex size-5 shrink-0 items-center justify-center rounded-full border',
-                    done ? 'bg-good border-transparent text-white' : 'border-border-strong',
+                    done ? 'bg-good border-transparent text-accent-text' : 'border-border-strong',
                   )}
                 >
                   {done ? <Check className="size-3" /> : null}
