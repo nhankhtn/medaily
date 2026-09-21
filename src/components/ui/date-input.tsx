@@ -60,16 +60,17 @@ export function DateInput({
       className={cn(
         // Height lives on the wrapper so callers (e.g. draft rows with `h-9`)
         // shrink the whole control; the face fills it instead of overflowing.
-        'group relative h-10 w-full sm:h-11',
+        // Wrapper ignores pointers so a near-invisible native input is the
+        // only hit target — otherwise elementFromPoint lands on this box and
+        // the picker never opens.
+        'group pointer-events-none relative h-10 w-full sm:h-11',
         className,
       )}
     >
       <div
         aria-hidden
         className={cn(
-          // Decorative only — must not steal taps from the real input or from
-          // neighbours when a taller face would paint outside this box.
-          'pointer-events-none glass absolute inset-0 flex items-center gap-2 rounded-[var(--radius)] border-border-strong pr-2.5 pl-2.5 text-base tabular-nums sm:pr-3 sm:pl-3',
+          'glass border-border-strong flex h-10 w-full items-center gap-2 rounded-[var(--radius)] pr-2.5 pl-2.5 text-base tabular-nums sm:h-11 sm:pr-3 sm:pl-3',
           'group-focus-within:border-accent group-focus-within:inset-ring-accent group-focus-within:inset-ring-1',
           shown ? 'text-text' : 'text-text-subtle',
           disabled && 'opacity-50',
@@ -92,10 +93,10 @@ export function DateInput({
           onChange?.(event)
         }}
         onBlur={onBlur}
-        onClick={openPicker}
         className={cn(
           // Keep a hair of opacity so WebKit still hit-tests the full box;
           // `opacity-0` collapses the tappable region to the tiny glyph.
+          // Re-enable pointers here — the wrapper turned them off.
           'absolute inset-0 z-10 h-full w-full cursor-pointer opacity-[0.01] disabled:cursor-not-allowed',
           '[&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0',
           '[&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-full',
@@ -106,7 +107,9 @@ export function DateInput({
   )
 }
 
-function stringify(value: React.ComponentProps<'input'>['value'] | React.ComponentProps<'input'>['defaultValue']) {
+function stringify(
+  value: React.ComponentProps<'input'>['value'] | React.ComponentProps<'input'>['defaultValue'],
+) {
   if (value == null) return ''
   return String(value)
 }

@@ -95,8 +95,11 @@ export function CaptureBox({
           </header>
 
           {/* Mounted only while open, so a dismissed panel never reopens
-              holding a half-typed note and its stale drafts. */}
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">
+              holding a half-typed note and its stale drafts.
+              `overflow-hidden` here: the assistant pins its composer and
+              scrolls the transcript itself; other destinations scroll inside
+              CaptureForm. */}
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-4">
             <CaptureForm labelOf={(module) => t(`modules.${module.key}`)} assistant={assistant} />
           </div>
         </section>
@@ -158,9 +161,16 @@ function CaptureForm({
   const atHome = chosen?.key === 'assistant'
 
   return (
-    <div className="space-y-3">
+    <div
+      className={cn(
+        'flex min-h-0 flex-1 flex-col gap-3',
+        // Finance / plan forms are one tall page; the assistant scrolls its
+        // own transcript and keeps the composer on screen.
+        !atHome && 'overflow-y-auto overscroll-contain',
+      )}
+    >
       {chosen ? (
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <Badge tone="accent">
             <chosen.icon className="size-3" />
             {labelOf(chosen)}
@@ -186,7 +196,7 @@ function CaptureForm({
         calls to the service for three changes of mind, measured.
       */}
       {home ? (
-        <div hidden={!atHome}>
+        <div hidden={!atHome} className={cn(atHome && 'flex min-h-0 min-w-0 flex-1 flex-col')}>
           <AssistantChat
             onLeave={() => setModule(null)}
             onFile={(target, text) => {

@@ -30,6 +30,7 @@ export function TransactionList({
   accounts,
   people,
   currency,
+  emptyLabel,
 }: {
   transactions: Transaction[]
   /** Rows sent but not confirmed; they sit above the ledger until it catches up. */
@@ -38,6 +39,8 @@ export function TransactionList({
   accounts: Account[]
   people: Person[]
   currency: string
+  /** Overrides the empty-state copy when filters leave nothing to show. */
+  emptyLabel?: string
 }) {
   const t = useTranslations('finance')
   const tc = useTranslations('common')
@@ -52,7 +55,7 @@ export function TransactionList({
   const [busyId, setBusyId] = useState<string | null>(null)
 
   if (transactions.length === 0 && pending.length === 0) {
-    return <p className="text-text-subtle text-sm">{t('noTransactions')}</p>
+    return <p className="text-text-subtle text-sm">{emptyLabel ?? t('noTransactions')}</p>
   }
 
   const label = (transaction: Titled) => {
@@ -67,6 +70,8 @@ export function TransactionList({
     )
   }
 
+  const accountName = (id: string) => accounts.find((account) => account.id === id)?.name
+
   return (
     <ul className="divide-border-base divide-y">
       {pending.map((row) => (
@@ -76,7 +81,14 @@ export function TransactionList({
           <span className="text-text-subtle w-16 shrink-0 text-xs tabular-nums">
             {format.dateTime(fromISODate(row.occurredOn), 'dayMonth')}
           </span>
-          <span className="min-w-0 flex-1 truncate text-sm">{label(row)}</span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm">{label(row)}</span>
+            {row.kind !== 'transfer' && accountName(row.accountId) ? (
+              <span className="text-text-subtle block truncate text-xs">
+                {accountName(row.accountId)}
+              </span>
+            ) : null}
+          </span>
           {row.personId ? (
             <Badge tone="accent">
               <User className="size-3" />
@@ -139,9 +151,14 @@ export function TransactionList({
             <button
               type="button"
               onClick={() => setEditingId(transaction.id)}
-              className="min-w-0 truncate text-left text-sm sm:order-2 sm:flex-1"
+              className="min-w-0 truncate text-left sm:order-2 sm:flex-1"
             >
-              {label(transaction)}
+              <span className="block truncate text-sm">{label(transaction)}</span>
+              {transaction.kind !== 'transfer' && accountName(transaction.accountId) ? (
+                <span className="text-text-subtle block truncate text-xs">
+                  {accountName(transaction.accountId)}
+                </span>
+              ) : null}
             </button>
 
             <span
