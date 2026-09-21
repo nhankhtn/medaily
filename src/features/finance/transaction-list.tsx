@@ -25,6 +25,8 @@ type Titled = Pick<Transaction, 'kind' | 'merchant' | 'categoryId' | 'accountId'
 }
 
 const ROW_ESTIMATE = 56
+/** ~5 rows on phone, ~10 from `sm` (ROW_ESTIMATE × n). */
+const LIST_MAX_H_CLASS = 'max-h-[280px] sm:max-h-[560px]'
 
 export function TransactionList({
   transactions,
@@ -156,7 +158,7 @@ export function TransactionList({
       {transactions.length > 0 ? (
         <div
           ref={scrollRef}
-          className="max-h-[min(70vh,36rem)] overflow-y-auto"
+          className={cn('overflow-y-auto', LIST_MAX_H_CLASS)}
           style={{ contain: 'strict' }}
         >
           <ul
