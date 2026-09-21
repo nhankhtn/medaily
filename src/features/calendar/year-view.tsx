@@ -90,7 +90,7 @@ function Day({
       <Link
         href={PATHS.calendar({ view: 'week', at: day.date })}
         className={cn(
-          'hover:bg-surface-2 relative flex aspect-square items-center justify-center rounded text-[11px] tabular-nums transition-colors',
+          'hover:bg-surface-2/60 relative flex aspect-square items-center justify-center rounded text-[11px] tabular-nums transition-colors',
           day.date === today ? 'bg-accent text-accent-text font-semibold' : 'text-text-muted',
           day.count > 0 && day.date !== today && 'text-text font-semibold',
         )}
@@ -121,7 +121,7 @@ function Day({
         <span
           role="tooltip"
           className={cn(
-            'border-border-strong bg-surface pointer-events-none absolute bottom-full z-20 mb-1 hidden w-max max-w-44 flex-col gap-0.5 rounded-[var(--radius)] border p-2 text-left shadow-lg group-hover:flex',
+            'glass-strong pointer-events-none absolute bottom-full z-20 mb-1 hidden w-max max-w-44 flex-col gap-0.5 rounded-[var(--radius)] p-2 text-left group-hover:flex',
             anchorOf(column),
           )}
         >

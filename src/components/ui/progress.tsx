@@ -22,7 +22,7 @@ export function Progress({
 
   return (
     <div
-      className={cn('h-2 w-full overflow-hidden rounded-full bg-surface-2', className)}
+      className={cn('h-2 w-full overflow-hidden rounded-full bg-surface-2 backdrop-blur-sm', className)}
       role="progressbar"
       aria-valuenow={value ?? undefined}
       aria-valuemin={0}

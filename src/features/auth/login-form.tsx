@@ -16,7 +16,7 @@ export function LoginForm({ next }: { next?: string }) {
       <input type="hidden" name="next" value={next ?? ''} />
 
       <div className="space-y-1.5">
-        <label htmlFor="username" className="text-sm font-medium">
+        <label htmlFor="username" className="text-sm font-medium text-text">
           {t('username')}
         </label>
         <Input
@@ -30,7 +30,7 @@ export function LoginForm({ next }: { next?: string }) {
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="password" className="text-sm font-medium">
+        <label htmlFor="password" className="text-sm font-medium text-text">
           {t('password')}
         </label>
         <Input
@@ -55,7 +55,7 @@ export function LoginForm({ next }: { next?: string }) {
         </p>
       ) : null}
 
-      <Button type="submit" size="lg" className="w-full" disabled={pending}>
+      <Button type="submit" size="lg" className="mt-1 w-full" disabled={pending}>
         {pending ? <Loader2 className="size-4 animate-spin" /> : <LogIn className="size-4" />}
         {pending ? t('signingIn') : t('submit')}
       </Button>

@@ -21,6 +21,7 @@ import { CustomFields, type CustomValues } from './custom-fields'
 import { Field, FormSection } from './section'
 import { queuePendingSave } from './pending-saves'
 import { useDraft, useUnsavedGuard } from './use-draft'
+import { fieldIsHidden, visibleFields, type HideableField } from '@/lib/daily/hidden-fields'
 import {
   ACTIVITY_FIELDS,
   countFilled,
@@ -40,6 +41,7 @@ export function DailyForm({
   existed,
   customMetrics,
   initialCustom,
+  hiddenFields,
 }: {
   date: ISODate
   initialValues: DailyFormValues
@@ -49,6 +51,7 @@ export function DailyForm({
   existed: boolean
   customMetrics: CustomMetric[]
   initialCustom: CustomValues
+  hiddenFields: readonly string[]
 }) {
   const t = useTranslations('daily')
   const tc = useTranslations('common')
@@ -212,9 +215,20 @@ export function DailyForm({
   const studyFromSessions = (effective?.learningSessionCount ?? 0) > 0
   const deepWorkFromSessions = (effective?.executionSessionCount ?? 0) > 0
 
-  const essentialsFilled = countFilled(values, ESSENTIAL_FIELDS)
-  const activityFilled = countFilled(values, ACTIVITY_FIELDS)
-  const reflectionFilled = countFilled(values, REFLECTION_FIELDS)
+  /*
+   * A field turned off in settings still appears on a day that has a value in
+   * it — the timer fills six of these without anyone typing, and a number you
+   * cannot see is a number you cannot correct. So the section counts are of
+   * what is on screen, not of what exists.
+   */
+  const off = (field: HideableField) => fieldIsHidden(field, hiddenFields, values)
+  const essentials = visibleFields(ESSENTIAL_FIELDS, hiddenFields, values)
+  const activity = visibleFields(ACTIVITY_FIELDS, hiddenFields, values)
+  const reflection = visibleFields(REFLECTION_FIELDS, hiddenFields, values)
+
+  const essentialsFilled = countFilled(values, essentials)
+  const activityFilled = countFilled(values, activity)
+  const reflectionFilled = countFilled(values, reflection)
 
   return (
     <div className="space-y-4 pb-28 md:pb-4">
@@ -240,12 +254,13 @@ export function DailyForm({
         <FormSection
           title={t('sections.essentials')}
           filled={essentialsFilled}
-          total={ESSENTIAL_FIELDS.length}
+          total={essentials.length}
         >
           <Field
             label={t('fields.energy')}
             help={t('fields.energyHelp')}
             copied={copied.has('energy')}
+            off={off('energy')}
           >
             <ScaleInput
               name={t('fields.energy')}
@@ -259,6 +274,7 @@ export function DailyForm({
             hint={medians.sleepHours ? t('medianHint', { value: medians.sleepHours }) : undefined}
             help={t('fields.sleepHelp')}
             copied={copied.has('sleepHours')}
+            off={off('sleepHours')}
           >
             <Stepper
               name={t('fields.sleepHours')}
@@ -282,6 +298,7 @@ export function DailyForm({
             }
             help={t('fields.technicalStudyHelp')}
             copied={copied.has('technicalStudyMinutes')}
+            off={off('technicalStudyMinutes')}
           >
             <MinuteInput
               name={t('fields.technicalStudy')}
@@ -306,6 +323,7 @@ export function DailyForm({
             }
             help={t('fields.deepWorkHelp')}
             copied={copied.has('deepWorkMinutes')}
+            off={off('deepWorkMinutes')}
           >
             <MinuteInput
               name={t('fields.deepWork')}
@@ -330,10 +348,14 @@ export function DailyForm({
       <FormSection
         title={t('sections.activity')}
         filled={activityFilled}
-        total={ACTIVITY_FIELDS.length}
+        total={activity.length}
         defaultOpen={false}
       >
-        <Field label={t('fields.exercise')} copied={copied.has('exerciseMinutes')}>
+        <Field
+          label={t('fields.exercise')}
+          copied={copied.has('exerciseMinutes')}
+          off={off('exerciseMinutes')}
+        >
           <div className="space-y-2">
             <MinuteInput
               name={t('fields.exercise')}
@@ -361,7 +383,7 @@ export function DailyForm({
                           'h-8 shrink-0 rounded-full border px-3 text-xs',
                           values.exerciseType === type
                             ? 'bg-accent text-accent-text border-transparent'
-                            : 'border-border-base bg-surface-2 text-text-muted',
+                            : 'glass text-text-muted',
                         )}
                       >
                         {type}
@@ -374,7 +396,11 @@ export function DailyForm({
           </div>
         </Field>
 
-        <Field label={t('fields.reading')} copied={copied.has('readingMinutes')}>
+        <Field
+          label={t('fields.reading')}
+          copied={copied.has('readingMinutes')}
+          off={off('readingMinutes')}
+        >
           <div className="space-y-2">
             <MinuteInput
               name={t('fields.reading')}
@@ -405,6 +431,7 @@ export function DailyForm({
           label={t('fields.entertainment')}
           help={t('fields.entertainmentHelp')}
           copied={copied.has('entertainmentMinutes')}
+          off={off('entertainmentMinutes')}
         >
           <MinuteInput
             name={t('fields.entertainment')}
@@ -414,7 +441,11 @@ export function DailyForm({
           />
         </Field>
 
-        <Field label={t('fields.english')} copied={copied.has('englishMinutes')}>
+        <Field
+          label={t('fields.english')}
+          copied={copied.has('englishMinutes')}
+          off={off('englishMinutes')}
+        >
           <MinuteInput
             name={t('fields.english')}
             value={values.englishMinutes}
@@ -424,7 +455,7 @@ export function DailyForm({
           />
         </Field>
 
-        <Field label={t('fields.mood')} copied={copied.has('mood')}>
+        <Field label={t('fields.mood')} copied={copied.has('mood')} off={off('mood')}>
           <ScaleInput
             name={t('fields.mood')}
             tone="good"
@@ -443,12 +474,13 @@ export function DailyForm({
       <FormSection
         title={t('sections.reflection')}
         filled={reflectionFilled}
-        total={REFLECTION_FIELDS.length}
+        total={reflection.length}
         defaultOpen={false}
       >
         <MarkdownField
           label={t('fields.dailyWin')}
           copied={copied.has('dailyWin')}
+          off={off('dailyWin')}
           className="min-h-16"
           value={values.dailyWin}
           placeholder={t('fields.dailyWinPlaceholder')}
@@ -457,6 +489,7 @@ export function DailyForm({
         <MarkdownField
           label={t('fields.dailyProblem')}
           copied={copied.has('dailyProblem')}
+          off={off('dailyProblem')}
           className="min-h-16"
           value={values.dailyProblem}
           placeholder={t('fields.dailyProblemPlaceholder')}
@@ -465,6 +498,7 @@ export function DailyForm({
         <MarkdownField
           label={t('fields.tomorrowPriority')}
           copied={copied.has('tomorrowPriority')}
+          off={off('tomorrowPriority')}
           className="min-h-16"
           value={values.tomorrowPriority}
           placeholder={t('fields.tomorrowPriorityPlaceholder')}
@@ -473,6 +507,7 @@ export function DailyForm({
         <MarkdownField
           label={t('fields.note')}
           copied={copied.has('note')}
+          off={off('note')}
           value={values.note}
           placeholder={t('fields.notePlaceholder')}
           onChange={(value) => set('note', value)}
@@ -487,7 +522,7 @@ export function DailyForm({
       ) : null}
 
       {/* Sticky on mobile so Save is always in thumb reach (spec 22.3) */}
-      <div className="border-border-base bg-surface/95 fixed inset-x-0 bottom-14 z-20 border-t p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur md:static md:z-auto md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
+      <div className="glass-chip fixed right-3 left-3 z-20 rounded-[1.5rem] p-3 bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] md:static md:inset-auto md:z-auto md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none">
         <Button size="lg" className="w-full md:w-auto" onClick={submit} disabled={pending}>
           {pending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
           {pending ? tc('saving') : t('saveDay')}

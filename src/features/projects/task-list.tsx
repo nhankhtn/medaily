@@ -41,7 +41,15 @@ export function TaskList({ projectId, tasks }: { projectId: string; tasks: Proje
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
-        <Plus className="text-text-subtle size-4 shrink-0" />
+        <button
+          type="button"
+          onClick={add}
+          disabled={pending || draft.trim() === ''}
+          aria-label={t('addTask')}
+          className="text-text-subtle hover:text-text disabled:text-text-subtle/40 flex size-9 shrink-0 items-center justify-center rounded-[var(--radius)] disabled:opacity-50"
+        >
+          <Plus className="size-4" />
+        </button>
         <Input
           value={draft}
           placeholder={t('addTask')}
@@ -53,13 +61,14 @@ export function TaskList({ projectId, tasks }: { projectId: string; tasks: Proje
               add()
             }
           }}
+          className="min-w-0 flex-1"
         />
         <Input
           type="date"
           value={due}
           onChange={(event) => setDue(event.target.value)}
           aria-label={t('taskDue')}
-          className="w-40 shrink-0"
+          className="w-[7rem] shrink-0 sm:w-[9rem]"
         />
       </div>
 
@@ -72,7 +81,7 @@ export function TaskList({ projectId, tasks }: { projectId: string; tasks: Proje
 
             if (editingId === task.id) {
               return (
-                <li key={task.id} className="bg-surface-2 rounded-[var(--radius)] p-2">
+                <li key={task.id} className="glass rounded-[var(--radius)] p-2">
                   <TaskEditor
                     task={task}
                     onClose={() => setEditingId(null)}
@@ -229,7 +238,7 @@ function TaskEditor({
         value={dueDate}
         aria-label={t('taskDue')}
         onChange={(event) => setDueDate(event.target.value)}
-        className="w-40 shrink-0"
+        className="w-[7rem] shrink-0 sm:w-[9rem]"
       />
       <Select
         value={priority}
@@ -257,7 +266,7 @@ function TaskEditor({
           type="button"
           onClick={onClose}
           aria-label={tc('cancel')}
-          className="text-text-subtle hover:text-text border-border-base flex size-9 items-center justify-center rounded-[var(--radius)] border"
+          className="glass text-text-subtle hover:text-text flex size-9 items-center justify-center rounded-[var(--radius)]"
         >
           <X className="size-4" />
         </button>

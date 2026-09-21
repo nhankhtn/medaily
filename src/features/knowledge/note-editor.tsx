@@ -6,6 +6,7 @@ import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card, CardBody } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { MarkdownEditor } from '@/components/ui/markdown-editor'
@@ -135,7 +136,7 @@ export function NoteEditor({
             </div>
 
             {preview ? (
-              <div className="border-border-base bg-surface-2 min-h-40 rounded-[var(--radius)] border p-3">
+              <div className="glass min-h-40 rounded-[var(--radius)] p-3">
                 <Markdown>{body || '—'}</Markdown>
               </div>
             ) : (
@@ -200,7 +201,8 @@ export function NoteCard({
   const t = useTranslations('knowledge')
 
   return (
-    <div className="border-border-base bg-surface flex h-full flex-col rounded-[var(--radius)] border p-4">
+    <Card className="flex h-full flex-col">
+      <CardBody className="flex h-full flex-col p-4">
       <div className="flex items-start justify-between gap-2">
         <h3 className="min-w-0 truncate font-medium">
           <Link href={PATHS.note(note.id)} className="hover:text-accent hover:underline">
@@ -256,6 +258,7 @@ export function NoteCard({
           />
         </div>
       </div>
-    </div>
+      </CardBody>
+    </Card>
   )
 }

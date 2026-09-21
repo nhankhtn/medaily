@@ -385,6 +385,13 @@
       "signedInWith": "Đăng nhập bằng",
       "since": "Dùng app từ",
       "username": "Đang đăng nhập là {name}",
+      "changePhoto": "Đổi ảnh đại diện",
+      "photoUpdated": "Đã đổi ảnh đại diện",
+      "photoRemoved": "Đã gỡ ảnh đại diện",
+      "removePhoto": "Gỡ ảnh",
+      "photoTooLarge": "Ảnh phải dưới 5MB",
+      "photoInvalid": "Chọn một file ảnh",
+      "uploadDisabled": "Chưa cấu hình lưu ảnh",
       "providers": {
         "google": "Google",
         "password": "Tên đăng nhập và mật khẩu"
@@ -406,6 +413,12 @@
     "scoreWeightsHelp": "Tổng phải bằng 100%.",
     "resetDefaults": "Đặt lại mặc định",
     "savedToast": "Đã lưu cài đặt",
+    "dailyFields": {
+      "title": "Bản ghi ngày hỏi những gì",
+      "help": "Tắt những ô bạn không theo dõi. Cột và mọi thứ đã ghi vẫn còn nguyên — ngày nào đã có số thì ô đó vẫn hiện, không giấu mất cái bạn đã nhập.",
+      "inUse": "{habits, plural, other {# thói quen}} và {goals, plural, other {# mục tiêu}} đang đọc ô này. Tắt đi là chúng ngừng đếm.",
+      "timerFills": "Bấm giờ tự ghi vào đây; ngày nào nó đã ghi thì ô vẫn hiện."
+    },
     "shortcuts": {
       "title": "Phím tắt",
       "help": "Các phím này không chạy khi con trỏ đang ở trong ô nhập liệu, nên gõ chữ s sẽ không vô tình lưu mất ngày.",
@@ -539,7 +552,14 @@
     "nothingInData": "Chưa có gì viết về “{query}”"
   },
   "auth": {
-    "title": "Đăng nhập",
+    "brand": "Personal OS",
+    "headline": "Một chỗ cho ngày vừa qua.",
+    "subtitle": "Ghi năng lượng, thói quen, tiền bạc và tập trung — rồi thấy thứ gì thật sự thay đổi.",
+    "pillarDaily": "Nhật ký ngày",
+    "pillarHabits": "Thói quen & mục tiêu",
+    "pillarInsights": "Phân tích",
+    "title": "Chào bạn quay lại",
+    "titleHint": "Đăng nhập để tiếp tục từ chỗ bạn dừng.",
     "username": "Tên đăng nhập",
     "password": "Mật khẩu",
     "submit": "Đăng nhập",
@@ -834,7 +854,13 @@
     },
     "transactions": "Giao dịch",
     "addTransaction": "Thêm",
+    "addTransactionTitle": "Thêm giao dịch",
     "noTransactions": "Tháng này chưa ghi gì",
+    "noMatchingTransactions": "Không có giao dịch khớp bộ lọc",
+    "filterAllAccounts": "Tất cả tài khoản",
+    "filterAllCategories": "Tất cả danh mục",
+    "filterFrom": "Từ ngày",
+    "filterTo": "Đến ngày",
     "amount": "Số tiền",
     "kind": "Loại",
     "account": "Tài khoản",
@@ -842,7 +868,7 @@
     "category": "Danh mục",
     "merchant": "Nơi chi",
     "date": "Ngày",
-    "noCategory": "Không có danh mục",
+    "noCategory": "Không có",
     "kinds": {
       "income": "Thu",
       "expense": "Chi",
@@ -850,6 +876,10 @@
     },
     "categories": "Danh mục",
     "addCategory": "Danh mục mới",
+    "editCategory": "Sửa danh mục",
+    "categoryNote": "Ghi chú cho AI",
+    "categoryNoteHint": "Mô tả những gì thuộc danh mục này để khi phân loại giao dịch AI chọn đúng hơn.",
+    "categoryNotePlaceholder": "vd. quán cà phê, trà sữa — không gồm đi chợ",
     "budgets": "Ngân sách",
     "addBudget": "Đặt ngân sách",
     "noBudgets": "Tháng này chưa đặt ngân sách",
@@ -918,11 +948,9 @@
     },
     "capture": {
       "title": "Viết như bạn nói",
-      "label": "AI điền",
       "placeholder": "sáng ăn bánh mì 30k, cà phê 25k, trưa cơm gà 55k, hôm qua đổ xăng 100 nghìn",
       "parse": "Xem trước",
       "parsing": "Đang đọc…",
-      "privacy": "Chỉ ghi chú ở trên và tên các danh mục của bạn được gửi đi. Số dư, lịch sử và mọi phần khác không rời khỏi máy này.",
       "reviewHint": "Kiểm tra lại trước khi lưu — chưa có gì được ghi cả.",
       "rewrite": "Sửa ghi chú",
       "intoAccount": "Tài khoản",
@@ -1049,6 +1077,8 @@
     "note": "Ghi chú",
     "blocks": "Khối thời gian",
     "addBlock": "Lên khối thời gian",
+    "editBlock": "Sửa khối thời gian",
+    "blockDeleted": "Đã xóa khối thời gian",
     "noBlocks": "Chưa lên kế hoạch",
     "kind": "Loại",
     "kinds": {
@@ -1214,12 +1244,9 @@
     "generate": "Viết bản tường thuật",
     "regenerate": "Viết lại",
     "generating": "Đang viết…",
-    "disabled": "Đang tắt. Đặt ANTHROPIC_API_KEY rồi khởi động lại để bật.",
-    "privacy": "Chỉ số liệu tổng hợp của kỳ này và các quan sát do quy tắc sinh ra được gửi đi. Ghi chú, nhật ký và tên người không bao giờ rời khỏi máy này.",
-    "generatedBy": "Tạo bởi {model} · {date}",
     "failed": "Không tạo được bản tường thuật",
-    "empty": "Kỳ này chưa có bản tường thuật.",
-    "label": "Do AI tạo"
+    "disabled": "Tổng kết bằng AI chưa bật.",
+    "empty": "Kỳ này chưa có bản tường thuật."
   },
   "onboarding": {
     "welcome": "Chào bạn",
@@ -1344,7 +1371,6 @@
       "save": "{count, plural, other {Lưu # mục}}",
       "saved": "{count, plural, other {Đã lưu # mục}}",
       "someFailed": "{count, plural, other {# dòng chưa lưu được — xem lại rồi thử lại}}",
-      "privacy": "Chỉ đoạn bạn vừa viết được gửi đi. Mục tiêu, việc và mọi thứ bạn đã ghi không rời khỏi máy này.",
       "nothingFound": "Không thấy việc hay mục tiêu nào trong đoạn này",
       "rateLimited": "Gửi quá nhiều lần — đợi một phút rồi thử lại",
       "failed": "Không đọc được đoạn này"
@@ -1362,27 +1388,35 @@
         "lastWeek": "Tuần trước",
         "thisMonth": "Tháng này"
       },
-      "privacy": "Gửi đi: số liệu của kỳ đó và những dòng bạn tự viết trong phần ghi ngày. Nhật ký, ghi chú riêng và tên người khác không rời khỏi máy này.",
       "failed": "Chưa ghép được câu trả lời. Thử lại sau một lát.",
       "rateLimited": "Hỏi dồn quá nhanh — đợi một phút rồi hỏi tiếp."
     },
     "assistant": {
-      "intro": "Hỏi gì về những thứ bạn đã ghi cũng được. Nó nhớ câu chuyện đang nói dở.",
-      "loading": "Đang mở lại câu chuyện…",
       "thinking": "Đang nghĩ…",
+      "filed": {
+        "finance": "Cái này là chi tiêu, mở chỗ ghi ngay đây.",
+        "plan": "Cái này là việc cần làm, mở chỗ ghi ngay đây."
+      },
+      "fileAsSpending": "Ghi vào chi tiêu",
+      "steps": {
+        "route": "Đang đọc câu hỏi…",
+        "load": "Đang lục lại ghi chép…",
+        "respond": "Đang viết câu trả lời…"
+      },
       "send": "Gửi",
-      "placeholder": "Tuần này tôi thế nào?",
-      "placeholderMore": "Hỏi tiếp gì đó…",
+      "placeholder": "Hỏi gì cũng được, hoặc / để ghi vào chỗ khác",
+      "placeholderMore": "Hỏi tiếp, hoặc / để ghi vào chỗ khác",
       "startOver": "Bắt đầu lại",
       "read": "Hiểu câu hỏi là: {reason}",
-      "privacy": "Gửi đi: số liệu của đúng thứ bạn hỏi, và nếu hỏi về một ngày cụ thể thì kèm những dòng bạn tự viết trong phần ghi ngày. Nhật ký, ghi chú riêng và tên người khác không rời khỏi máy này.",
       "failed": "Chưa trả lời được. Thử lại sau một chút.",
       "rateLimited": "Hỏi nhanh quá — đợi một phút nhé.",
       "starters": {
         "thisWeek": "Tuần này tôi thế nào?",
         "spending": "Tháng này tôi tiêu bao nhiêu?",
-        "todo": "Còn việc gì chưa xong?"
+        "todo": "Còn việc gì chưa xong?",
+        "howTo": "Dùng app này thế nào?"
       }
-    }
+    },
+    "backToAssistant": "Về lại trợ lý"
   }
 }

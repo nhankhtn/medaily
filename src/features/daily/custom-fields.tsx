@@ -61,7 +61,7 @@ export function CustomFields({
                 className={
                   value === true
                     ? 'border-accent bg-accent-soft text-accent h-10 rounded-[var(--radius)] border px-3.5 text-sm font-medium sm:h-11 sm:px-4'
-                    : 'border-border-strong bg-surface text-text-muted h-10 rounded-[var(--radius)] border px-3.5 text-sm sm:h-11 sm:px-4'
+                    : 'glass text-text-muted h-10 rounded-[var(--radius)] border-border-strong px-3.5 text-sm sm:h-11 sm:px-4'
                 }
               >
                 {value === true ? t('customDone') : t('customNotDone')}

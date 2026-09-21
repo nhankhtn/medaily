@@ -6,7 +6,7 @@ import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
+import { Input, Textarea } from '@/components/ui/input'
 import { MoneyInput } from '@/components/ui/money-input'
 import { Select } from '@/components/ui/select'
 import { AccountIcon } from '@/features/finance/account-icon'
@@ -22,6 +22,7 @@ import {
   removeAccount,
   saveAccount,
   saveBudget,
+  saveCategory,
 } from '@/server/actions/finance'
 
 function useDialogAction(onDone: () => void) {
@@ -241,10 +242,11 @@ export function AccountEditDialog({
   )
 }
 
-export function CategoryDialog() {
+export function CategoryDialog({ category }: { category?: FinanceCategory }) {
   const t = useTranslations('finance')
   const tc = useTranslations('common')
   const [open, setOpen] = useState(false)
+  const editing = Boolean(category)
   const { pending, run } = useDialogAction(() => {
     toast.success(t('saved'))
     setOpen(false)
@@ -253,31 +255,57 @@ export function CategoryDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline">
-          <Plus className="size-4" />
-          {t('addCategory')}
-        </Button>
+        {editing ? (
+          <Button variant="ghost" size="sm" className="h-7 px-1.5" aria-label={t('editCategory')}>
+            <Pencil className="size-3.5" />
+          </Button>
+        ) : (
+          <Button size="sm" variant="outline">
+            <Plus className="size-4" />
+            {t('addCategory')}
+          </Button>
+        )}
       </DialogTrigger>
-      <DialogContent title={t('addCategory')}>
+      <DialogContent title={editing ? t('editCategory') : t('addCategory')}>
         <form
           action={(formData) =>
-            run(() =>
-              createCategory({
+            run(() => {
+              const payload = {
                 name: String(formData.get('name') ?? ''),
                 kind: formData.get('kind'),
-              }),
-            )
+                note: String(formData.get('note') ?? ''),
+              }
+              return editing && category
+                ? saveCategory({ id: category.id, ...payload })
+                : createCategory(payload)
+            })
           }
           className="space-y-3"
         >
           <Field label={t('accountName')}>
-            <Input name="name" required autoFocus maxLength={120} />
+            <Input
+              name="name"
+              required
+              autoFocus={!editing}
+              maxLength={120}
+              defaultValue={category?.name ?? ''}
+            />
           </Field>
           <Field label={t('kind')}>
-            <Select name="kind" defaultValue="expense">
+            <Select name="kind" defaultValue={category?.kind ?? 'expense'}>
               <option value="expense">{t('kinds.expense')}</option>
               <option value="income">{t('kinds.income')}</option>
             </Select>
+          </Field>
+          <Field label={t('categoryNote')}>
+            <Textarea
+              name="note"
+              rows={3}
+              maxLength={500}
+              defaultValue={category?.note ?? ''}
+              placeholder={t('categoryNotePlaceholder')}
+            />
+            <p className="text-text-subtle text-xs">{t('categoryNoteHint')}</p>
           </Field>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>

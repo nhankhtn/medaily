@@ -1,0 +1,73 @@
+---
+description: Medaily Liquid Glass UI design system — tokens, surfaces, buttons, forms, markdown
+globs: src/**/*.{tsx,css}
+alwaysApply: true
+---
+
+# Medaily UI design system (Liquid Glass)
+
+Follow this when adding or changing UI. Source of truth: `src/app/globals.css` + `src/components/ui/*`.
+
+## Typography
+
+- Body / UI: **Be Vietnam Pro** (`font-sans`) — Latin + Vietnamese.
+- Brand / wordmark / display titles: **Outfit** (`font-brand`). Prefer brand face on English wordmarks; keep Vietnamese body copy on `font-sans` when diacritics matter.
+- Do not hardcode Inter, Roboto, Arial, or raw system stacks in components.
+
+## Tokens only
+
+- Every colour comes from CSS tokens (`bg-surface`, `text-text-muted`, `border-border-base`, `bg-accent`, …). Never hardcode hex/rgb/oklch in components.
+- New theme colours: add the token to **every** theme block in `globals.css` (`:root`, `.dark`, `[data-theme='pink']`).
+
+## Surfaces
+
+Prefer utilities / primitives over hand-rolled chrome:
+
+| Need | Use |
+|------|-----|
+| Panel / card | `<Card>` or class `glass` |
+| Modal / sheet / strong panel | `glass-strong` or `<DialogContent>` |
+| Floating dock, More tiles, Control Center chips | `glass-chip` |
+| Page chrome (header / sidebar) | `glass` + safe-area insets |
+
+```tsx
+// ❌ BAD
+<div className="rounded-xl border border-gray-200 bg-white/80 backdrop-blur-md shadow-lg">
+
+// ✅ GOOD
+import { Card } from '@/components/ui/card'
+<Card className="p-4">…</Card>
+// or
+<div className="glass rounded-[var(--radius)] p-4">…</div>
+```
+
+Do **not** put `backdrop-blur` on a full-screen overlay that wraps glass children — the children then blur a flat sheet and look opaque white. Dim with `bg-black/20` (or `bg-overlay`) and let chips blur the live page.
+
+## Buttons
+
+- Variants live in `button-variants.ts` (no `'use client'`). Import that file from Server Components; import `Button` from `button.tsx` only in Client Components.
+- Shape: **`rounded-full`** (iOS pill / circle). Do not use card radius on buttons.
+- Materials: `primary` / `danger` stay **solid**; `secondary` / `outline` use **`glass`**; `ghost` is text-only.
+- Prefer `<Link className={cn(buttonVariants({…}))}>` over `<Button asChild><Link>` (avoids Slot hydration issues).
+
+## Inputs / selects
+
+- Keep **`rounded-[var(--radius)]`**, not `rounded-full`.
+- Use `Input`, `Select`, `Textarea`, `DateInput` from `components/ui` — they already use `glass`.
+
+## Long-form notes / Markdown
+
+Use `MarkdownEditor` for fields meant as Markdown notes (daily, people notes, habit notes, journal, knowledge, reviews). Plain `Textarea` only for short non-Markdown text (chat compose, capture paste, one-line descriptions).
+
+## Shell / mobile
+
+- Bottom nav is a **floating** `glass-chip` dock (inset from edges + `safe-area`), not flush to the screen bottom.
+- Respect `env(safe-area-inset-*)` / `--safe-*` on sticky headers and fixed chrome. Root viewport uses `viewportFit: 'cover'`.
+- iPhone notch ears: put `glass` / `glass-strong` **on** the sticky/fixed root (Safari 26 samples that node’s `background-color` + `backdrop-filter`). Do **not** move the fill to an absolute child if you want the status-bar ears to tint with the chrome.
+
+## Checklist before shipping UI
+
+1. No raw colour literals.
+2. New panels use `Card` / `glass` / `glass-chip`, not reinvented blur stacks.
+3. Buttons pill-shaped; fields use `--radius`.
+4. Markdown note fields use `MarkdownEditor`.

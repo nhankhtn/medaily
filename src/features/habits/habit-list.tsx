@@ -17,7 +17,7 @@ const CELL_TONE = {
   hit: 'bg-good',
   miss: 'bg-border-strong',
   pending: 'bg-accent-soft border border-accent',
-  not_scheduled: 'bg-surface-2',
+  not_scheduled: 'bg-surface-2 border border-border-base',
 } as const
 
 export function HabitList({
@@ -35,7 +35,7 @@ export function HabitList({
 
   if (habits.length === 0) {
     return (
-      <div className="border-border-strong bg-surface rounded-[var(--radius)] border border-dashed p-6 text-center">
+      <div className="glass rounded-[var(--radius)] border-dashed border-border-strong p-6 text-center">
         <p className="font-medium">{t('noneYet')}</p>
         <p className="text-text-subtle mx-auto mt-1 max-w-prose text-sm">{t('noneYetBody')}</p>
         <div className="mt-4 flex justify-center">
@@ -67,7 +67,7 @@ export function HabitList({
         return (
           <li
             key={habit.id}
-            className="border-border-base bg-surface rounded-[var(--radius)] border p-3"
+            className="glass border-border-strong rounded-[var(--radius)] p-3"
           >
             <div className="flex items-start gap-3">
               <button

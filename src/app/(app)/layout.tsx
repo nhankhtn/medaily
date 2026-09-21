@@ -12,7 +12,7 @@ import { ShortcutProvider } from '@/features/shortcuts/provider'
 import { TourGuide } from '@/features/onboarding/tour-guide'
 import { ShortcutsDialog } from '@/features/settings/shortcuts-panel'
 import { today } from '@/lib/dates'
-import { geminiEnabled } from '@/server/services/gemini'
+import { aiServiceConfigured } from '@/server/services/ai-service'
 import { cn } from '@/lib/utils'
 import { dayContextOf, getShellSettings, getShellTheme } from '@/server/services/settings'
 
@@ -34,13 +34,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col">
           <Header today={logicalToday} theme={theme} />
-          <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-4 pb-24 md:pb-8">
+          <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-4 pb-[calc(8.5rem+env(safe-area-inset-bottom,0px))] md:pb-8">
             {children}
           </main>
         </div>
       </div>
       <BottomNav />
-      <CaptureBox enabled={geminiEnabled()} assistant={assistantEnabled()} />
+      <CaptureBox enabled={aiServiceConfigured()} assistant={assistantEnabled()} />
       <PendingSaves />
       <RegisterServiceWorker />
       {/* In the shell, not on a page: the tour walks from page to page. */}
@@ -55,20 +55,20 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <div
         className={cn(
           'fixed right-4 z-30 max-md:hidden md:right-6',
-          geminiEnabled()
-            ? 'bottom-[calc(8.25rem+env(safe-area-inset-bottom))] md:bottom-[5.25rem]'
-            : 'bottom-[calc(4.5rem+env(safe-area-inset-bottom))] md:bottom-6',
+          aiServiceConfigured()
+            ? 'bottom-[calc(9.5rem+env(safe-area-inset-bottom,0px))] md:bottom-[5.25rem]'
+            : 'bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] md:bottom-6',
         )}
       >
         <ShortcutsDialog
-          captureEnabled={geminiEnabled()}
+          captureEnabled={aiServiceConfigured()}
           global
           trigger={
             <button
               type="button"
               aria-label={t('shortcuts.title')}
               title={t('shortcuts.title')}
-              className="border-border-base bg-surface text-text-muted hover:border-border-strong hover:text-text flex size-10 items-center justify-center rounded-full border shadow-lg transition-colors"
+              className="glass text-text-muted hover:border-border-strong hover:text-text flex size-10 items-center justify-center rounded-full transition-colors"
             >
               <Keyboard className="size-4.5" />
             </button>

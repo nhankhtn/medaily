@@ -6,10 +6,12 @@ import { useTranslations } from 'next-intl'
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button-variants'
 import { ScaleInput } from '@/components/ui/scale-input'
 import { Stepper } from '@/components/ui/stepper'
 import type { ISODate } from '@/lib/dates'
 import { PATHS } from '@/lib/paths'
+import { cn } from '@/lib/utils'
 import { saveDay } from '@/server/actions/daily'
 
 /**
@@ -59,12 +61,10 @@ export function QuickLog({ date }: { date: ISODate }) {
           {pending ? <Loader2 className="size-4 animate-spin" /> : null}
           {t('cta')}
         </Button>
-        <Button asChild variant="outline">
-          <Link href={PATHS.daily}>
-            {t('full')}
-            <ArrowRight className="size-4" />
-          </Link>
-        </Button>
+        <Link href={PATHS.daily} className={cn(buttonVariants({ variant: 'outline' }))}>
+          {t('full')}
+          <ArrowRight className="size-4" />
+        </Link>
       </div>
     </div>
   )

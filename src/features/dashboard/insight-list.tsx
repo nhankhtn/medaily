@@ -48,7 +48,7 @@ export function InsightList({ insights }: { insights: DashboardInsight[] }) {
                 ? 'border-transparent bg-good-soft'
                 : insight.severity === 'high'
                   ? 'border-transparent bg-bad-soft'
-                  : 'border-border-base bg-surface-2',
+                  : 'glass',
             )}
           >
             <Icon

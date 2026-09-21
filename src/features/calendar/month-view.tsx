@@ -49,9 +49,9 @@ function DayCell({ day, today, t, format }: { day: CalendarDay; today: ISODate }
     <Link
       href={PATHS.calendar({ view: 'week', at: day.date })}
       className={cn(
-        'border-border-base hover:bg-surface-2 flex min-h-16 flex-col gap-1 border-r border-b p-1.5 transition-colors sm:min-h-28',
+        'border-border-base hover:bg-surface-2/60 flex min-h-16 flex-col gap-1 border-r border-b p-1.5 transition-colors sm:min-h-28',
         '[&:nth-child(7n)]:border-r-0 [&:nth-last-child(-n+7)]:border-b-0',
-        !day.inMonth && 'bg-surface-2/40',
+        !day.inMonth && 'bg-surface-2/30',
       )}
     >
       <span

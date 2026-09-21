@@ -4,6 +4,7 @@ import { LocaleSwitcher } from '@/components/shell/locale-switcher'
 import { ThemeToggle } from '@/components/shell/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { CustomMetricsPanel } from '@/features/settings/custom-metrics-panel'
+import { DailyFieldsPanel, type MetricUse } from '@/features/settings/daily-fields-panel'
 import { ProfileCard } from '@/features/settings/profile-card'
 import { DataPanel } from '@/features/settings/data-panel'
 import { ReplayOnboardingButton } from '@/features/onboarding/replay-button'
@@ -11,8 +12,10 @@ import { SettingsForm } from '@/features/settings/settings-form'
 import { ShortcutsDialog } from '@/features/settings/shortcuts-panel'
 import { readSession } from '@/lib/auth/current-user'
 import { findUserById } from '@/server/repositories/auth'
-import { geminiEnabled } from '@/server/services/gemini'
+import { aiServiceConfigured } from '@/server/services/ai-service'
 import { findCustomMetrics } from '@/server/repositories/custom-metrics'
+import { findGoals } from '@/server/repositories/goals'
+import { findHabits } from '@/server/repositories/habits'
 import { getSettings } from '@/server/services/settings'
 
 export default async function SettingsPage() {
@@ -23,6 +26,23 @@ export default async function SettingsPage() {
   ])
   const user = await findUserById(settings.userId)
 
+  /*
+   * What reads each metric, so the panel can warn before a field is switched
+   * off rather than leave a habit silently never ticking again.
+   */
+  const [habits, goals] = await Promise.all([
+    findHabits(settings.userId),
+    findGoals(settings.userId),
+  ])
+  const uses: MetricUse = {}
+  const note = (key: string | null, kind: 'habits' | 'goals') => {
+    if (!key) return
+    uses[key] ??= { habits: 0, goals: 0 }
+    uses[key][kind] += 1
+  }
+  for (const habit of habits) note(habit.linkedMetric, 'habits')
+  for (const goal of goals) note(goal.metricKey, 'goals')
+
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold">{t('title')}</h1>
@@ -31,7 +51,7 @@ export default async function SettingsPage() {
         <ProfileCard user={user} provider={session.provider} subject={session.sub} />
       ) : null}
 
-      <section className="border-border-base bg-surface rounded-[var(--radius)] border p-4">
+      <section className="glass rounded-[var(--radius)] p-4">
         <h2 className="text-sm font-semibold">{t('language')}</h2>
         <p className="text-text-subtle mt-0.5 mb-3 text-xs">{t('languageHelp')}</p>
         <div className="flex flex-wrap items-center gap-3">
@@ -43,11 +63,12 @@ export default async function SettingsPage() {
 
       <SettingsForm settings={settings} />
       <CustomMetricsPanel metrics={await findCustomMetrics(settings.userId)} />
-      <section className="border-border-base bg-surface rounded-[var(--radius)] border p-4">
+      <DailyFieldsPanel hidden={settings.hiddenDailyFields} uses={uses} />
+      <section className="glass hidden rounded-[var(--radius)] p-4 sm:block">
         <h2 className="text-sm font-semibold">{t('shortcuts.title')}</h2>
         <p className="text-text-subtle mt-0.5 mb-3 text-xs leading-snug">{t('shortcuts.help')}</p>
         <ShortcutsDialog
-          captureEnabled={geminiEnabled()}
+          captureEnabled={aiServiceConfigured()}
           trigger={
             <Button variant="outline" size="sm">
               <Keyboard className="size-4" />

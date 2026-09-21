@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { DEFAULT_SCORE_WEIGHTS } from '@/lib/defaults'
 import { weightsAreValid } from '@/lib/scoring'
@@ -47,21 +48,25 @@ export function SettingsForm({ settings }: { settings: ResolvedSettings }) {
 
   return (
     <div className="space-y-4">
-      <Section title={t('timezone')} help={t('timezoneHelp')}>
-        <select
-          value={settings.timezone}
-          disabled={pending}
-          aria-label={t('timezone')}
-          onChange={(event) => save({ timezone: event.target.value })}
-          className="h-10 w-full rounded-[var(--radius)] border border-border-strong bg-surface px-2.5 text-base sm:h-11 sm:px-3"
-        >
-          {[...new Set([settings.timezone, ...TIMEZONES])].map((zone) => (
-            <option key={zone} value={zone}>
-              {zone}
-            </option>
-          ))}
-        </select>
-      </Section>
+      {/* Timezone still lives in settings; the control is hidden until we need it. */}
+      <div className="hidden" aria-hidden>
+        <Section title={t('timezone')} help={t('timezoneHelp')}>
+          <select
+            value={settings.timezone}
+            disabled={pending}
+            aria-label={t('timezone')}
+            tabIndex={-1}
+            onChange={(event) => save({ timezone: event.target.value })}
+            className="glass text-text h-10 w-full rounded-[var(--radius)] border-border-strong px-2.5 text-base sm:h-11 sm:px-3"
+          >
+            {[...new Set([settings.timezone, ...TIMEZONES])].map((zone) => (
+              <option key={zone} value={zone}>
+                {zone}
+              </option>
+            ))}
+          </select>
+        </Section>
+      </div>
 
       <Section title={t('dayRollover')} help={t('dayRolloverHelp')}>
         <div className="flex items-center gap-2">
@@ -194,10 +199,10 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <section className="rounded-[var(--radius)] border border-border-base bg-surface p-4">
+    <Card className="p-4">
       <h2 className="text-sm font-semibold">{title}</h2>
       {help ? <p className="mt-0.5 mb-3 text-xs leading-snug text-text-subtle">{help}</p> : <div className="mb-3" />}
       {children}
-    </section>
+    </Card>
   )
 }

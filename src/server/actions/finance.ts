@@ -23,12 +23,13 @@ import {
   insertTransaction,
   insertTransactions,
   updateAccount,
+  updateCategory,
   updateTransaction,
   upsertBudget,
 } from '@/server/repositories/finance'
 import { findPeople } from '@/server/repositories/people'
 import { parseTransactions } from '@/server/services/finance-capture'
-import { geminiEnabled } from '@/server/services/gemini'
+import { aiServiceConfigured } from '@/server/services/ai-service'
 import { dayContextOf, getSettings } from '@/server/services/settings'
 import { createLimit } from '@/lib/rate-limit'
 
@@ -113,11 +114,32 @@ export async function removeAccount(input: unknown) {
 
 export async function createCategory(input: unknown) {
   const parsed = z
-    .object({ name: z.string().min(1).max(120), kind: z.enum(['income', 'expense']) })
+    .object({
+      name: z.string().min(1).max(120),
+      kind: z.enum(['income', 'expense']),
+      note: optionalText,
+    })
     .safeParse(input)
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
   await insertCategory({ ...parsed.data, userId: await getCurrentUserId() })
+  revalidateFinance()
+  return { ok: true as const }
+}
+
+export async function saveCategory(input: unknown) {
+  const parsed = z
+    .object({
+      id: z.string().uuid(),
+      name: z.string().min(1).max(120),
+      kind: z.enum(['income', 'expense']),
+      note: optionalText,
+    })
+    .safeParse(input)
+  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+
+  const { id, ...patch } = parsed.data
+  await updateCategory(await getCurrentUserId(), id, patch)
   revalidateFinance()
   return { ok: true as const }
 }
@@ -287,7 +309,7 @@ export type ParseTransactionsResult =
   | { ok: false; error: 'disabled' | 'invalid_input' | 'rate_limited' | 'failed' }
 
 export async function parseTransactionText(input: unknown): Promise<ParseTransactionsResult> {
-  if (!geminiEnabled()) return { ok: false, error: 'disabled' }
+  if (!aiServiceConfigured()) return { ok: false, error: 'disabled' }
 
   const parsed = z.object({ text: z.string().trim().min(3).max(2000) }).safeParse(input)
   if (!parsed.success) return { ok: false, error: 'invalid_input' }

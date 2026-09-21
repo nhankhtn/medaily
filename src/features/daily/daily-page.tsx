@@ -59,6 +59,7 @@ export async function DailyPage({ date }: { date: ISODate }) {
         existed={data.log !== null}
         customMetrics={data.customMetrics}
         initialCustom={data.customValues}
+        hiddenFields={data.hiddenFields}
       />
     </div>
   )

@@ -17,7 +17,7 @@ export function ComparisonCard({ comparison }: { comparison: ComparisonView }) {
   const { result } = comparison
 
   return (
-    <div className="rounded-[var(--radius)] border border-border-base bg-surface p-4">
+    <div className="glass rounded-[var(--radius)] p-4">
       <p className="text-sm font-medium">{t(`pairs.${comparison.key}.title`)}</p>
 
       {result.passed && result.high && result.low ? (
@@ -53,7 +53,7 @@ export function ComparisonCard({ comparison }: { comparison: ComparisonView }) {
           </div>
 
           {open ? (
-            <div className="mt-2 space-y-1.5 rounded-[var(--radius)] bg-surface-2 p-2.5 text-xs leading-snug text-text-muted">
+            <div className="glass mt-2 space-y-1.5 rounded-[var(--radius)] p-2.5 text-xs leading-snug text-text-muted">
               <p>
                 {t('howCalculatedBody', {
                   n: result.n,

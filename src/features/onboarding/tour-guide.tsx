@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { TOUR_PARAM, TOUR_STEPS, tourHref, tourIndexOf, type TourStep } from '@/lib/onboarding/tour'
 import { markTourSeen } from '@/server/actions/onboarding'
 import { cn } from '@/lib/utils'
@@ -78,7 +79,7 @@ export function TourGuide() {
   const index = tourIndexOf(params.get(TOUR_PARAM))
   const step: TourStep | undefined = index >= 0 ? TOUR_STEPS[index] : undefined
   const rect = useTargetRect(step?.target)
-  const [card, setCard] = useState<HTMLDivElement | null>(null)
+  const [card, setCard] = useState<HTMLElement | null>(null)
   const cardHeight = useCardHeight(card, step?.key)
 
   const leave = useCallback(() => {
@@ -122,7 +123,7 @@ export function TourGuide() {
       {rect ? (
         <div
           aria-hidden
-          className="ring-accent pointer-events-none fixed z-60 rounded-[var(--radius)] shadow-[0_0_0_9999px_rgba(0,0,0,0.55)] ring-2 transition-all duration-200"
+          className="ring-accent pointer-events-none fixed z-60 rounded-[var(--radius)] shadow-[0_0_0_9999px_var(--overlay)] ring-2 transition-all duration-200"
           style={{
             top: rect.top - 6,
             left: rect.left - 6,
@@ -131,15 +132,15 @@ export function TourGuide() {
           }}
         />
       ) : (
-        <div aria-hidden className="fixed inset-0 z-60 bg-black/55" />
+        <div aria-hidden className="bg-overlay fixed inset-0 z-60 backdrop-blur-sm" />
       )}
 
-      <div
+      <Card
         role="dialog"
         aria-modal="false"
         aria-label={t(`tour.${step.key}.title`)}
         className={cn(
-          'border-border-base bg-surface fixed z-70 rounded-[var(--radius)] border p-4 shadow-xl',
+          'fixed z-70 p-4 shadow-xl',
           'inset-x-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] sm:inset-x-auto sm:bottom-auto',
           'sm:w-[22rem]',
         )}
@@ -190,13 +191,13 @@ export function TourGuide() {
             )}
           </div>
         </div>
-      </div>
+      </Card>
     </>
   )
 }
 
 /** The card's own height, remeasured whenever its text changes. */
-function useCardHeight(card: HTMLDivElement | null, stepKey: string | undefined): number {
+function useCardHeight(card: HTMLElement | null, stepKey: string | undefined): number {
   const [height, setHeight] = useState(0)
 
   useEffect(() => {

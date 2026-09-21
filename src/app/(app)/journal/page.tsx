@@ -32,7 +32,7 @@ export default async function JournalPage() {
           {data.entries.map((entry) => (
             <li
               key={entry.id}
-              className="rounded-[var(--radius)] border border-border-base bg-surface p-4"
+              className="glass rounded-[var(--radius)] p-4"
             >
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <h2 className="font-medium">

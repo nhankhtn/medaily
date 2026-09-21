@@ -17,7 +17,7 @@ import {
 import { isoDateSchema } from '@/lib/validation/daily'
 import { saveGoal } from '@/server/actions/goals'
 import { saveTask } from '@/server/actions/projects'
-import { geminiEnabled } from '@/server/services/gemini'
+import { aiServiceConfigured } from '@/server/services/ai-service'
 import { bindableMetrics, canBindMetric } from '@/server/services/metrics'
 import { parsePlan } from '@/server/services/plan-capture'
 import { dayContextOf, getSettings } from '@/server/services/settings'
@@ -45,7 +45,7 @@ export type ParsePlanResult =
   | { ok: false; error: 'disabled' | 'invalid_input' | 'rate_limited' | 'failed' }
 
 export async function parsePlanText(input: unknown): Promise<ParsePlanResult> {
-  if (!geminiEnabled()) return { ok: false, error: 'disabled' }
+  if (!aiServiceConfigured()) return { ok: false, error: 'disabled' }
 
   const parsed = z.object({ text: z.string().trim().min(3).max(2000) }).safeParse(input)
   if (!parsed.success) return { ok: false, error: 'invalid_input' }

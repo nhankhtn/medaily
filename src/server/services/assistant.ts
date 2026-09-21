@@ -1,97 +1,61 @@
-import { env } from '@/lib/env'
-import { log } from '@/lib/log'
+import { aiClient, aiServiceConfigured } from '@/server/services/ai-service'
 
 /**
- * The client for `medaily-ai`, the service that answers with a memory.
+ * The client for `medaily-ai`, the service that answers the capture box.
  *
- * Server-side only. `AI_SERVICE_TOKEN` is a shared secret between the two
- * deploys and must never reach a browser, so every call goes out from a server
- * action rather than from the panel that shows the answer.
+ * Two calls: ask, and throw the thread away. Nothing is read back — each
+ * opening of the panel gets a thread of its own, so what is on screen is the
+ * whole of it.
  *
- * Plain `fetch`, like every other outbound call here. Unset, `assistantEnabled`
- * is false and the destination is not offered at all.
+ * The asking is streamed, so its caller is a route handler rather than a
+ * server action: an action returns a value, and a stream is not one.
+ *
+ * Unset, `assistantEnabled` is false and the destination is not offered at all.
  */
-const TIMEOUT_MS = { ask: 90_000, read: 10_000 } as const
+const TIMEOUT_MS = { ask: 90_000, clear: 10_000 } as const
 
 export function assistantEnabled(): boolean {
-  return Boolean(env.AI_SERVICE_URL && env.AI_SERVICE_TOKEN)
+  return aiServiceConfigured()
 }
 
-export type AssistantTurn = { role: 'user' | 'model'; text: string }
+const client = () => aiClient('assistant')
+
+/*
+ * What the router decided used to be typed here, back when this file read the
+ * answer. The panel reads the stream now and the agent sends it the one field
+ * worth showing, so there is nothing left on this side to give a shape to:
+ *
+ * export type AssistantDecision = { intent: string; period: string; reason: string }
+ */
 
 /**
- * What the router decided. Shown, not logged: a question read the wrong way
- * should be visible to the person who asked it.
+ * A question, answered as it is worked out.
+ *
+ * `/live` is the agent's panel-shaped stream: the step now running, how the
+ * question was read, and the answer. Its sibling `/stream` reports every node
+ * patch instead, which is what to reach for when a nine-second run needs
+ * explaining rather than showing.
+ *
+ * The response is handed back unread. Whoever called this owns the body.
  */
-export type AssistantDecision = { intent: string; period: string; reason: string }
-
-export type AssistantAnswer = { answer: string; decision: AssistantDecision | null }
-
-async function call<T>(path: string, init: RequestInit, timeoutMs: number): Promise<T> {
-  const base = (env.AI_SERVICE_URL ?? '').replace(/\/+$/, '')
-
-  const response = await fetch(`${base}${path}`, {
-    ...init,
-    headers: {
-      ...init.headers,
-      authorization: `Bearer ${env.AI_SERVICE_TOKEN}`,
-    },
-    signal: AbortSignal.timeout(timeoutMs),
-    cache: 'no-store',
-  })
-
-  if (!response.ok) {
-    // The body is the service's own wording and is not for a person to read:
-    // it goes to the console and the caller decides what the panel says.
-    throw new Error(`assistant responded ${response.status}: ${await response.text()}`)
-  }
-  return (await response.json()) as T
-}
-
-export async function sendMessage(input: {
+export async function streamMessage(input: {
   threadId: string
   userId: string
   message: string
   timezone?: string
-}): Promise<AssistantAnswer> {
-  const body = await call<{ answer?: string; decision?: AssistantDecision | null }>(
-    '/chat',
-    {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(input),
-    },
-    TIMEOUT_MS.ask,
-  )
-
-  if (!body.answer) throw new Error('assistant returned no answer')
-  return { answer: body.answer, decision: body.decision ?? null }
+}): Promise<Response> {
+  return client().open('/api/chat/live', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(input),
+    timeoutMs: TIMEOUT_MS.ask,
+  })
 }
 
-/**
- * The conversation as the service has it. This is the whole point of the thing:
- * the panel renders what Postgres remembers, not what this browser happens to
- * still hold, so the same conversation opens on a phone.
- *
- * A thread nobody has written to yet is a 404, which is not a failure — it is
- * the first visit.
- */
-export async function readThread(threadId: string): Promise<AssistantTurn[]> {
-  try {
-    const body = await call<{ messages?: AssistantTurn[] }>(
-      `/threads/${encodeURIComponent(threadId)}`,
-      { method: 'GET' },
-      TIMEOUT_MS.read,
-    )
-    return body.messages ?? []
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('404')) return []
-    await log.error('assistant', 'could not read the thread', error)
-    return []
-  }
-}
-
-/** Starting over. The id is reused, so the next message opens it again, empty. */
+/** The end of a conversation: on the way out of the panel, or on "start over". */
 export async function deleteThread(threadId: string): Promise<void> {
-  await call(`/threads/${encodeURIComponent(threadId)}`, { method: 'DELETE' }, TIMEOUT_MS.read)
+  await client().request(`/api/threads/${encodeURIComponent(threadId)}`, {
+    method: 'DELETE',
+    timeoutMs: TIMEOUT_MS.clear,
+  })
 }

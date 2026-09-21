@@ -5,7 +5,7 @@ import { log } from '@/lib/log'
 import { today as todayOf, type ISODate } from '@/lib/dates'
 import { classify } from '@/lib/reviews/intent'
 import { parsePeriodPhrase } from '@/lib/reviews/period-phrase'
-import { geminiEnabled } from '@/server/services/gemini'
+import { aiServiceConfigured } from '@/server/services/ai-service'
 import {
   ask,
   buildContext,
@@ -40,7 +40,7 @@ export type ReviewChatResult =
   | { ok: false; error: 'disabled' | 'invalid_input' | 'rate_limited' | 'failed' }
 
 export async function askReview(input: unknown): Promise<ReviewChatResult> {
-  if (!geminiEnabled()) return { ok: false, error: 'disabled' }
+  if (!aiServiceConfigured()) return { ok: false, error: 'disabled' }
 
   const parsed = z
     .object({

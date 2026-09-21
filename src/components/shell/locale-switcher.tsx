@@ -22,7 +22,7 @@ export function LocaleSwitcher({
   return (
     <div
       className={cn(
-        'flex items-center gap-1 rounded-full border border-border-base bg-surface-2 p-0.5',
+        'glass flex items-center gap-1 rounded-full p-0.5',
         className,
       )}
       role="group"

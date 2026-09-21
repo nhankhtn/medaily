@@ -1,14 +1,21 @@
 import * as React from 'react'
+import { DateInput } from '@/components/ui/date-input'
 import { cn } from '@/lib/utils'
 
-export function Input({ className, ...props }: React.ComponentProps<'input'>) {
+export function Input({ className, type, ...props }: React.ComponentProps<'input'>) {
+  // Safari paints `type="date"` in the OS locale (long Vietnamese on iPhone).
+  // Route it through DateInput so the visible string is always dd/mm/yyyy.
+  if (type === 'date') {
+    return <DateInput className={className} {...props} />
+  }
+
   return (
     <input
+      type={type}
       className={cn(
-        // Shorter on a phone, but never below 16px type: Safari zooms the whole
-        // page when you focus a field smaller than that, and the zoom is what
-        // makes a floating panel jump out from under your thumb.
-        'border-border-strong bg-surface text-text h-10 w-full rounded-[var(--radius)] border px-2.5 text-base sm:h-11 sm:px-3',
+        // 16px on every viewport: Safari zooms the page when a focused field
+        // is smaller, including landscape phones past the `sm` breakpoint.
+        'glass text-text h-10 w-full rounded-[var(--radius)] border-border-strong px-2.5 text-base sm:h-11 sm:px-3',
         'placeholder:text-text-subtle focus:border-accent focus:inset-ring-accent focus:inset-ring-1 focus:outline-none',
         className,
       )}
@@ -21,7 +28,7 @@ export function Textarea({ className, ...props }: React.ComponentProps<'textarea
   return (
     <textarea
       className={cn(
-        'border-border-strong bg-surface text-text min-h-18 w-full resize-y rounded-[var(--radius)] border px-2.5 py-2 text-base sm:min-h-20 sm:px-3',
+        'glass text-text min-h-18 w-full resize-y rounded-[var(--radius)] border-border-strong px-2.5 py-2 text-base sm:min-h-20 sm:px-3',
         'placeholder:text-text-subtle focus:border-accent focus:inset-ring-accent focus:inset-ring-1 focus:outline-none',
         // Grows with what is typed, so a list is not written through a
         // two-line slit. Browsers without it keep the scrollbar they had.

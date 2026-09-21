@@ -96,7 +96,7 @@ export function SessionList({
           </Select>
         </label>
 
-        <label className="w-40 space-y-1.5">
+        <label className="w-full space-y-1.5 sm:w-40">
           <span className="text-xs font-medium text-text-muted">{t('date')}</span>
           <Input
             type="date"

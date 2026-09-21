@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
  * `prefers-reduced-motion` by the global stylesheet.
  */
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={cn('animate-pulse rounded-md bg-surface-2', className)} />
+  return <div className={cn('animate-pulse rounded-md bg-surface-2 backdrop-blur-sm', className)} />
 }
 
 /**
@@ -34,7 +34,7 @@ export function PageSkeleton({ tiles = 4, cards = 2 }: { tiles?: number; cards?:
       {Array.from({ length: cards }, (_, i) => (
         <div
           key={i}
-          className="space-y-3 rounded-[var(--radius)] border border-border-base bg-surface p-4"
+          className="glass space-y-3 rounded-[var(--radius)] p-4"
         >
           <Skeleton className="h-4 w-32" />
           <Skeleton className="h-3 w-full" />

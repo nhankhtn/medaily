@@ -52,6 +52,12 @@ export const financeCategories = pgTable(
       .references(() => users.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     kind: categoryKindEnum('kind').notNull().default('expense'),
+    /**
+     * Short hint for humans and for AI capture: what belongs in this bucket
+     * ("coffee shops, not groceries"). Optional; classification still keys off
+     * `name` when matching the model's answer back to an id.
+     */
+    note: text('note'),
     parentId: uuid('parent_id'),
     icon: text('icon'),
     color: text('color'),

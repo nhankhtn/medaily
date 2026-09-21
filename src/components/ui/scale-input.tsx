@@ -55,7 +55,7 @@ export function ScaleInput({
                 'h-10 flex-1 rounded-md border text-xs font-medium transition-colors sm:h-11',
                 active
                   ? `${toneClass} border-transparent text-accent-text`
-                  : 'border-border-base bg-surface-2 text-text-subtle hover:border-border-strong',
+                  : 'glass text-text-subtle hover:border-border-strong',
                 selected && 'ring-2 ring-accent ring-offset-1 ring-offset-surface',
               )}
             >

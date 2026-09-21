@@ -76,12 +76,38 @@ export const CAPTURE_MODULES: CaptureModule[] = [
 ]
 
 /**
- * The destinations actually on offer. The assistant answers from a separate
- * service, which a deploy may not have; the others run in this app and are
- * always there.
+ * The destinations the menu offers.
+ *
+ * Never the assistant: the box already opens on it, so listing it would be an
+ * entry for where you already are. It is reached by closing the menu, not by
+ * choosing it. The rest are the places a note gets *filed*, which is a real
+ * choice and the only one worth a list.
  */
-export function availableModules(assistant: boolean): CaptureModule[] {
-  return assistant ? CAPTURE_MODULES : CAPTURE_MODULES.filter((m) => m.key !== 'assistant')
+export const FILING_MODULES: CaptureModule[] = CAPTURE_MODULES.filter(
+  (module) => module.key !== 'assistant',
+)
+
+/**
+ * The two destinations that write something down.
+ *
+ * `review` is in the menu but not here: it reads, like the assistant does, so
+ * there is nothing to hand it. These are the ones the agent can send a note to
+ * without being asked, and a name off a wire is checked before it is believed.
+ */
+export type FilingTarget = Extract<CaptureModuleKey, 'finance' | 'plan'>
+
+export function isFilingTarget(value: unknown): value is FilingTarget {
+  return value === 'finance' || value === 'plan'
+}
+
+/**
+ * Whether the assistant can be the box's home. It answers from a separate
+ * service, which a deploy may not have; without it the menu comes first, as
+ * it did before there was an assistant at all.
+ */
+export function assistantModule(available: boolean): CaptureModule | null {
+  if (!available) return null
+  return CAPTURE_MODULES.find((module) => module.key === 'assistant') ?? null
 }
 
 /**

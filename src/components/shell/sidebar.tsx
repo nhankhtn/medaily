@@ -46,7 +46,10 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        'sticky top-0 hidden h-dvh shrink-0 flex-col border-r border-border-base bg-surface md:flex',
+        // Floating dock on the left — same Control Center inset/radius idea as
+        // the mobile bottom nav, still sticky beside the content column.
+        'sticky top-3 z-20 ml-3 hidden h-[calc(100dvh-1.5rem)] shrink-0 flex-col overflow-hidden md:flex',
+        'glass-chip rounded-[1.75rem]',
         collapsed ? 'w-16' : 'w-60',
         mounted ? 'transition-[width]' : '',
       )}
@@ -57,7 +60,9 @@ export function Sidebar() {
           className="flex items-center gap-2 overflow-hidden rounded-md px-1 py-1 font-semibold"
         >
           <Logo size={32} className="shrink-0 rounded-lg" />
-          {!collapsed ? <span className="truncate text-sm">Personal OS</span> : null}
+          {!collapsed ? (
+            <span className="font-brand truncate text-sm tracking-tight">Personal OS</span>
+          ) : null}
         </Link>
       </div>
 
@@ -72,7 +77,7 @@ export function Sidebar() {
                   {t(labelKey)}
                 </p>
               ) : (
-                <div className="mx-2 my-2 border-t border-border-base" />
+                <div className="border-border-base mx-2 my-2 border-t" />
               )}
               <ul className="space-y-0.5">
                 {items.map((item) => {
@@ -110,7 +115,7 @@ export function Sidebar() {
         type="button"
         onClick={toggle}
         aria-label={collapsed ? t('expand') : t('collapse')}
-        className="flex h-11 items-center justify-center gap-2 border-t border-border-base text-text-subtle hover:text-text"
+        className="border-border-base text-text-subtle hover:text-text flex h-11 items-center justify-center gap-2 border-t"
       >
         {collapsed ? (
           <PanelLeftOpen className="size-4" />

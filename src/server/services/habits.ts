@@ -28,6 +28,7 @@ export type HabitView = {
   linkedMetric: string | null
   linkedOperator: string | null
   linkedThreshold: number | null
+  notes: string | null
   scheduledToday: boolean
   completedToday: boolean
   currentStreak: number
@@ -120,6 +121,7 @@ export const getHabitsView = cache(
         linkedMetric: row.linkedMetric,
         linkedOperator: row.linkedOperator,
         linkedThreshold: row.linkedThreshold === null ? null : Number(row.linkedThreshold),
+        notes: row.notes,
         scheduledToday: isScheduledOn(schedule, today),
         completedToday: (perHabit.get(today) ?? 0) >= row.targetCount,
         currentStreak: streak.current,

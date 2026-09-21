@@ -17,14 +17,6 @@ import { z } from 'zod'
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  ANTHROPIC_API_KEY: z.string().optional(),
-
-  // Gemini backs the natural-language capture in finance. Absent, the
-  // capture box is simply not offered and the manual form is unchanged.
-  GEMINI_API_KEY: z.string().optional(),
-  // A first choice, or a whole comma-separated fallback chain.
-  GEMINI_MODEL: z.string().optional(),
-  GEMINI_MODELS: z.string().optional(),
 
   // Auth is a hard-coded credential pair plus, optionally, Google sign-in
   // (spec 29). Absent values keep the gate closed rather than open.
@@ -77,10 +69,6 @@ export const env: Env = parsed.success
   : {
       DATABASE_URL: process.env.DATABASE_URL ?? '',
       NODE_ENV: (process.env.NODE_ENV as Env['NODE_ENV']) ?? 'development',
-      ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
-      GEMINI_API_KEY: process.env.GEMINI_API_KEY,
-      GEMINI_MODEL: process.env.GEMINI_MODEL,
-      GEMINI_MODELS: process.env.GEMINI_MODELS,
       AUTH_USERNAME: process.env.AUTH_USERNAME,
       AUTH_PASSWORD: process.env.AUTH_PASSWORD,
       AUTH_SECRET: process.env.AUTH_SECRET,

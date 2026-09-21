@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
@@ -28,7 +29,7 @@ export function CustomMetricsPanel({ metrics }: { metrics: CustomMetric[] }) {
   const [pending, startTransition] = useTransition()
 
   return (
-    <section className="border-border-base bg-surface rounded-[var(--radius)] border p-4">
+    <Card className="p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold">{t('title')}</h2>
@@ -76,7 +77,7 @@ export function CustomMetricsPanel({ metrics }: { metrics: CustomMetric[] }) {
           ))}
         </ul>
       )}
-    </section>
+    </Card>
   )
 }
 

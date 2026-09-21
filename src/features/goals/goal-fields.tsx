@@ -137,7 +137,7 @@ export function GoalFields({
       </Field>
 
       {value.progressMode === 'metric' ? (
-        <div className="border-border-base bg-surface-2 space-y-2 rounded-[var(--radius)] border p-2">
+        <div className="glass space-y-2 rounded-[var(--radius)] p-2">
           <Field label={t('metric')}>
             <Select value={metric.key} onChange={(event) => setMetric({ key: event.target.value })}>
               <MetricOptions

@@ -2,13 +2,15 @@
 
 import { CornerDownLeft, Loader2, MessageSquarePlus, Pencil, Sparkles, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { useEffect, useMemo, useState, useTransition } from 'react'
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/input'
 import {
-  availableModules,
+  assistantModule,
+  FILING_MODULES,
+  type FilingTarget,
   matchModules,
   slashQuery,
   type CaptureModule,
@@ -68,13 +70,13 @@ export function CaptureBox({
     <div
       className={cn(
         'fixed right-4 z-40 md:right-6',
-        'bottom-[calc(4.5rem+env(safe-area-inset-bottom))] md:bottom-6',
+        'bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] md:bottom-6',
       )}
     >
       {open ? (
         <section
           aria-label={t('title')}
-          className="border-border-strong bg-surface flex max-h-[min(42rem,calc(100dvh-7rem))] w-[min(26rem,calc(100vw-2rem))] flex-col rounded-2xl border shadow-2xl"
+          className="glass-strong flex max-h-[min(42rem,calc(100dvh-7rem))] w-[min(26rem,calc(100vw-2rem))] flex-col rounded-2xl shadow-2xl"
         >
           <header className="flex shrink-0 items-start justify-between gap-3 px-4 pt-3 pb-2">
             <div className="min-w-0">
@@ -93,12 +95,12 @@ export function CaptureBox({
           </header>
 
           {/* Mounted only while open, so a dismissed panel never reopens
-              holding a half-typed note and its stale drafts. */}
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">
-            <CaptureForm
-              labelOf={(module) => t(`modules.${module.key}`)}
-              modules={availableModules(assistant)}
-            />
+              holding a half-typed note and its stale drafts.
+              `overflow-hidden` here: the assistant pins its composer and
+              scrolls the transcript itself; other destinations scroll inside
+              CaptureForm. */}
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-4">
+            <CaptureForm labelOf={(module) => t(`modules.${module.key}`)} assistant={assistant} />
           </div>
         </section>
       ) : (
@@ -118,46 +120,116 @@ export function CaptureBox({
 
 function CaptureForm({
   labelOf,
-  modules,
+  assistant,
 }: {
   labelOf: (module: CaptureModule) => string
-  modules: CaptureModule[]
+  assistant: boolean
 }) {
   const t = useTranslations('capture')
-  const [module, setModule] = useState<CaptureModuleKey | null>(null)
 
-  const chosen = modules.find((candidate) => candidate.key === module)
+  /*
+   * The assistant is home, not an entry in a list. The box opens on it, `/`
+   * in its input leaves for the menu, and leaving a filing destination comes
+   * back here — so there is always one way out and one way back.
+   *
+   * Without it configured there is no home to return to, and `null` means the
+   * menu, which is how the box worked before the assistant existed.
+   */
+  const home = assistantModule(assistant)
+  const [module, setModule] = useState<CaptureModuleKey | null>(home?.key ?? null)
 
-  if (!chosen) return <ModulePicker labelOf={labelOf} modules={modules} onPick={setModule} />
+  /*
+   * A note the assistant recognised, on its way to the form that writes it
+   * down. It carries the text, so the form arrives with the note already in
+   * it and already being read — the tap that would have chosen the
+   * destination is the tap that is no longer needed.
+   *
+   * Cleared whenever a destination is chosen by hand, or the same note would
+   * be read again the next time that form is opened.
+   */
+  const [handoff, setHandoff] = useState<{ target: FilingTarget; text: string } | null>(null)
+
+  const go = (key: CaptureModuleKey | null) => {
+    setHandoff(null)
+    setModule(key)
+  }
+
+  const chosen = [...FILING_MODULES, ...(home ? [home] : [])].find(
+    (candidate) => candidate.key === module,
+  )
+
+  const atHome = chosen?.key === 'assistant'
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <Badge tone="accent">
-          <chosen.icon className="size-3" />
-          {labelOf(chosen)}
-        </Badge>
-        <button
-          type="button"
-          onClick={() => setModule(null)}
-          className="text-text-subtle hover:text-text inline-flex items-center gap-1 text-xs"
-        >
-          <X className="size-3" />
-          {t('changeTarget')}
-        </button>
-      </div>
+    <div
+      className={cn(
+        'flex min-h-0 flex-1 flex-col gap-3',
+        // Finance / plan forms are one tall page; the assistant scrolls its
+        // own transcript and keeps the composer on screen.
+        !atHome && 'overflow-y-auto overscroll-contain',
+      )}
+    >
+      {chosen ? (
+        <div className="flex shrink-0 items-center gap-2">
+          <Badge tone="accent">
+            <chosen.icon className="size-3" />
+            {labelOf(chosen)}
+          </Badge>
+          {/* Home has no "change": `/` in its own input is how you leave it. */}
+          {atHome ? null : (
+            <button
+              type="button"
+              onClick={() => go(home?.key ?? null)}
+              className="text-text-subtle hover:text-text inline-flex items-center gap-1 text-xs"
+            >
+              <X className="size-3" />
+              {t(home ? 'backToAssistant' : 'changeTarget')}
+            </button>
+          )}
+        </div>
+      ) : null}
+
+      {/*
+        Home is hidden while the menu is open, not unmounted. Typing the slash
+        and deleting it again is one keystroke each way, and a remount would
+        refetch the thread and blink the conversation away every time — seven
+        calls to the service for three changes of mind, measured.
+      */}
+      {home ? (
+        <div hidden={!atHome} className={cn(atHome && 'flex min-h-0 min-w-0 flex-1 flex-col')}>
+          <AssistantChat
+            onLeave={() => setModule(null)}
+            onFile={(target, text) => {
+              setHandoff({ target, text })
+              setModule(target)
+            }}
+          />
+        </div>
+      ) : null}
+
+      {chosen ? null : (
+        <ModulePicker
+          labelOf={labelOf}
+          modules={FILING_MODULES}
+          onPick={go}
+          onCancel={home ? () => go(home.key) : undefined}
+          /* With a home, the only way here is the slash typed to leave it — so
+             the menu arrives already open rather than asking for it twice. */
+          initialText={home ? '/' : ''}
+        />
+      )}
 
       {/* Each destination owns its own input: a note dumped into finance runs
           to several lines, a question about a week is one. */}
-      {chosen.key === 'finance' ? (
-        <FinancePanel />
-      ) : chosen.key === 'plan' ? (
-        <PlanPanel />
-      ) : chosen.key === 'assistant' ? (
-        <AssistantChat />
-      ) : (
-        <ReviewChat />
-      )}
+      {chosen && !atHome ? (
+        chosen.key === 'finance' ? (
+          <FinancePanel handoff={handoff?.target === 'finance' ? handoff.text : undefined} />
+        ) : chosen.key === 'plan' ? (
+          <PlanPanel handoff={handoff?.target === 'plan' ? handoff.text : undefined} />
+        ) : (
+          <ReviewChat />
+        )
+      ) : null}
     </div>
   )
 }
@@ -166,14 +238,34 @@ function ModulePicker({
   labelOf,
   modules,
   onPick,
+  onCancel,
+  initialText = '',
 }: {
   labelOf: (module: CaptureModule) => string
   modules: CaptureModule[]
   onPick: (key: CaptureModuleKey) => void
+  /**
+   * Where deleting the slash goes. Only passed when there is somewhere to go:
+   * with a home, this field exists to hold a slash and nothing else, so a
+   * field without one is a dead end rather than a state worth being in.
+   */
+  onCancel?: () => void
+  /** What the field starts with, so a slash already typed is not typed twice. */
+  initialText?: string
 }) {
   const t = useTranslations('capture')
-  const [text, setText] = useState('')
+  const [text, setText] = useState(initialText)
   const [active, setActive] = useState(0)
+  const field = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    const input = field.current
+    if (!input) return
+    // `autoFocus` leaves the caret in front of the text it was handed. There
+    // Backspace deletes nothing and the next keystroke lands before the slash,
+    // which turns the field into something that looks typed-in but is inert.
+    input.setSelectionRange(input.value.length, input.value.length)
+  }, [])
 
   const query = slashQuery(text)
   const matches = useMemo(
@@ -205,17 +297,24 @@ function ModulePicker({
     <div className="space-y-3">
       <div>
         <Textarea
+          ref={field}
           autoFocus
           value={text}
           onChange={(event) => {
-            setText(event.target.value)
+            const next = event.target.value
+            // Delete the slash and you have undone the thing that brought you
+            // here, so it takes you back rather than leaving you nowhere.
+            if (onCancel && !next.startsWith('/')) {
+              onCancel()
+              return
+            }
+            setText(next)
             setActive(0)
           }}
           onKeyDown={onKeyDown}
           placeholder={t('placeholder')}
           maxLength={200}
           rows={2}
-          className="text-sm"
         />
 
         {menuOpen ? (
@@ -228,7 +327,7 @@ function ModulePicker({
           <ul
             role="listbox"
             aria-label={t('destinations')}
-            className="border-border-strong bg-surface mt-1 overflow-hidden rounded-[var(--radius)] border"
+            className="glass mt-1 overflow-hidden rounded-[var(--radius)]"
           >
             {matches.map((candidate, index) => (
               <li key={candidate.key}>
@@ -257,10 +356,10 @@ function ModulePicker({
   )
 }
 
-function PlanPanel() {
+function PlanPanel({ handoff }: { handoff?: string }) {
   const t = useTranslations('capture')
   const tp = useTranslations('capture.plan')
-  const [text, setText] = useState('')
+  const [text, setText] = useState(handoff ?? '')
   const [read, setRead] = useState<{
     items: PlanItem[]
     today: ISODate
@@ -270,9 +369,9 @@ function PlanPanel() {
 
   const ready = text.trim().length >= 3
 
-  const parse = () =>
+  const parse = (source: string = text) =>
     startReading(async () => {
-      const result = await parsePlanText({ text })
+      const result = await parsePlanText({ text: source })
       if (!result.ok) {
         toast.error(tp(result.error === 'rate_limited' ? 'rateLimited' : 'failed'))
         return
@@ -283,6 +382,8 @@ function PlanPanel() {
       }
       setRead({ items: result.items, today: result.today, metrics: result.metrics })
     })
+
+  useHandoff(handoff, setText, parse)
 
   if (read) {
     return (
@@ -316,11 +417,10 @@ function PlanPanel() {
         maxLength={2000}
         rows={4}
         disabled={reading}
-        className="text-sm"
       />
 
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" size="sm" onClick={parse} disabled={reading || !ready}>
+        <Button type="button" size="sm" onClick={() => parse()} disabled={reading || !ready}>
           {reading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
           {reading ? tp('reading') : tp('read')}
         </Button>
@@ -329,22 +429,46 @@ function PlanPanel() {
           {t('submitHint')}
         </span>
       </div>
-
-      <p className="text-text-subtle text-xs leading-snug">{tp('privacy')}</p>
     </div>
   )
 }
 
-function FinancePanel() {
+/**
+ * A note the assistant already recognised, read the moment the form opens.
+ *
+ * It was written once and routed once; asking for the button as well would be
+ * the same decision made twice. Runs at most once per handoff — `parse` is
+ * deliberately not a dependency, because it is rebuilt on every keystroke and
+ * a note must not be re-read as the rows below it are being corrected.
+ */
+function useHandoff(
+  handoff: string | undefined,
+  setText: (text: string) => void,
+  parse: (source: string) => void,
+) {
+  /* The note already read, rather than a flag: a handoff can arrive a render
+     after the form mounts, and this must survive that without reading twice. */
+  const read = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!handoff || read.current === handoff) return
+    read.current = handoff
+    setText(handoff)
+    parse(handoff)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [handoff])
+}
+
+function FinancePanel({ handoff }: { handoff?: string }) {
   const t = useTranslations('capture')
   const tf = useTranslations('finance.capture')
-  const [text, setText] = useState('')
+  const [text, setText] = useState(handoff ?? '')
   const [parsed, setParsed] = useState<Parsed | null>(null)
   const [parsing, startParsing] = useTransition()
 
-  const parse = () =>
+  const parse = (source: string = text) =>
     startParsing(async () => {
-      const result = await parseTransactionText({ text })
+      const result = await parseTransactionText({ text: source })
       if (!result.ok) {
         toast.error(tf(result.error === 'rate_limited' ? 'rateLimited' : 'failed'))
         return
@@ -355,6 +479,8 @@ function FinancePanel() {
       }
       setParsed({ module: 'finance', result })
     })
+
+  useHandoff(handoff, setText, parse)
 
   const ready = text.trim().length >= 3
 
@@ -411,11 +537,10 @@ function FinancePanel() {
         maxLength={2000}
         rows={3}
         disabled={parsing}
-        className="text-sm"
       />
 
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" size="sm" onClick={parse} disabled={parsing || !ready}>
+        <Button type="button" size="sm" onClick={() => parse()} disabled={parsing || !ready}>
           {parsing ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
           {parsing ? tf('parsing') : tf('parse')}
         </Button>
@@ -424,8 +549,6 @@ function FinancePanel() {
           {t('submitHint')}
         </span>
       </div>
-
-      <p className="text-text-subtle text-xs leading-snug">{tf('privacy')}</p>
     </div>
   )
 }

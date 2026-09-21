@@ -68,7 +68,7 @@ export function FinanceDraftList({
 
   if (accounts.length === 0) {
     return (
-      <div className="border-border-base space-y-2 rounded-[var(--radius)] border p-3">
+      <div className="glass space-y-2 rounded-[var(--radius)] p-3">
         <p className="text-sm">{tf('noAccountsBody')}</p>
         <Button asChild size="sm" variant="outline">
           <Link href={PATHS.finance}>{tf('addAccount')}</Link>
@@ -146,7 +146,7 @@ export function FinanceDraftList({
        * rows can run past the fold, and a save button you have to go looking
        * for is the reason a review step gets skipped.
        */}
-      <div className="bg-surface sticky bottom-0 -mx-4 -mb-4 flex flex-wrap items-center justify-between gap-2 px-4 pt-2 pb-4">
+      <div className="glass sticky bottom-0 -mx-4 -mb-4 flex flex-wrap items-center justify-between gap-2 px-4 pt-2 pb-4">
         <p className="text-text-muted text-xs tabular-nums">
           {t('summary', { count: rows.length })}
           {totals.expense > 0 ? ` · ${t('outgoing')} ${money(totals.expense)}` : ''}
@@ -184,7 +184,7 @@ function DraftRow({
   const relevant = categories.filter((category) => category.kind === kind)
 
   return (
-    <li className="border-border-base bg-surface-2 space-y-2 rounded-[var(--radius)] border p-2">
+    <li className="glass space-y-2 rounded-[var(--radius)] p-2">
       <div className="flex items-center gap-2">
         <Input
           name={`merchant:${draft.id}`}
@@ -246,7 +246,7 @@ function DraftRow({
           name={`occurredOn:${draft.id}`}
           defaultValue={draft.occurredOn}
           aria-label={t('date')}
-          className="h-9 w-36 text-base sm:text-sm"
+          className="h-9 w-full text-base sm:w-36 sm:text-sm"
         />
       </div>
     </li>

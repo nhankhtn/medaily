@@ -105,7 +105,7 @@ export function JournalEditor({
             </div>
 
             {preview ? (
-              <div className="border-border-base bg-surface-2 min-h-48 rounded-[var(--radius)] border p-3">
+              <div className="glass min-h-48 rounded-[var(--radius)] p-3">
                 <Markdown>{body || '—'}</Markdown>
               </div>
             ) : (

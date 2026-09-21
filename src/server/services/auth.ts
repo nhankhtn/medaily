@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { OWNER_USER_ID } from '@/lib/auth/current-user'
 import { emailIsPermitted, readAccessPolicy } from '@/lib/auth/config'
 import type { FirebaseIdentity } from '@/lib/auth/firebase-verify'
+import { isUploadedAvatar } from '@/lib/media/cloudinary'
 import {
   findIdentity,
   findUserById,
@@ -162,9 +163,15 @@ async function afterSignIn(
   identity: FirebaseIdentity,
 ): Promise<void> {
   await touchIdentityLogin(identityId)
+
+  // A photo uploaded in settings lives on Cloudinary under /avatars/. Google
+  // would otherwise overwrite it every sign-in with the account picture.
+  const user = await findUserById(userId)
+  const keepAvatar = isUploadedAvatar(user?.imageUrl, userId)
+
   await updateUserProfile(userId, {
     email: identity.email,
     displayName: identity.displayName,
-    imageUrl: identity.photoUrl,
+    imageUrl: keepAvatar ? undefined : identity.photoUrl,
   })
 }

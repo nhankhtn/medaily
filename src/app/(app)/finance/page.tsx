@@ -14,6 +14,7 @@ import {
   InvestmentDialog,
 } from '@/features/finance/finance-dialogs'
 import { Report } from '@/features/finance/report'
+import { CategoryList } from '@/features/finance/category-list'
 import { TransactionPanel } from '@/features/finance/transaction-panel'
 import { formatMoney } from '@/lib/format/money'
 import { PATHS, type FinanceTab } from '@/lib/paths'
@@ -86,19 +87,14 @@ export default async function FinancePage({
           action={<AccountDialog defaultCurrency={data.currency} />}
         />
       ) : (
-        <Card>
-          <CardHeader title={t('transactions')} />
-          <CardBody className="space-y-4">
-            <TransactionPanel
-              transactions={data.transactions}
-              categories={data.categories}
-              accounts={data.accounts}
-              people={data.people}
-              currency={data.currency}
-              today={data.today}
-            />
-          </CardBody>
-        </Card>
+        <TransactionPanel
+          transactions={data.transactions}
+          categories={data.categories}
+          accounts={data.accounts}
+          people={data.people}
+          currency={data.currency}
+          today={data.today}
+        />
       )}
       <div className="grid gap-4 lg:grid-cols-2">
         {data.debts.length > 0 ? (
@@ -161,16 +157,7 @@ export default async function FinancePage({
             {data.categories.length === 0 ? (
               <p className="text-text-subtle text-sm">{t('noCategories')}</p>
             ) : (
-              <ul className="divide-border-base divide-y">
-                {data.categories.map((category) => (
-                  <li key={category.id} className="flex items-center justify-between gap-2 py-2">
-                    <span className="min-w-0 truncate text-sm">{category.name}</span>
-                    <Badge tone={category.kind === 'income' ? 'good' : 'neutral'}>
-                      {t(`kinds.${category.kind}`)}
-                    </Badge>
-                  </li>
-                ))}
-              </ul>
+              <CategoryList categories={data.categories} />
             )}
           </CardBody>
         </Card>

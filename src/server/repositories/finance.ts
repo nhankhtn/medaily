@@ -117,6 +117,21 @@ export async function insertCategory(
   return row
 }
 
+export async function updateCategory(
+  userId: string,
+  categoryId: string,
+  patch: Partial<typeof financeCategories.$inferInsert>,
+): Promise<FinanceCategory> {
+  const rows = await db
+    .update(financeCategories)
+    .set({ ...patch, updatedAt: new Date() })
+    .where(and(eq(financeCategories.userId, userId), eq(financeCategories.id, categoryId)))
+    .returning()
+  const row = rows[0]
+  if (!row) throw new Error('category not found')
+  return row
+}
+
 export async function findTransactions(
   userId: string,
   range: DateRange,

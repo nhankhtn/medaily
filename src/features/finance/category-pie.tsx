@@ -2,7 +2,8 @@
 
 import { useLocale, useTranslations } from 'next-intl'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
-import { categoryColor } from '@/components/charts/theme'
+import { ChartTooltip } from '@/components/charts/chart-tooltip'
+import { categoryColor, PIE_SLICE_STROKE } from '@/components/charts/theme'
 import { useChartMode } from '@/components/charts/use-chart-mode'
 import type { CategorySlice } from '@/lib/finance/report'
 import { formatMoney } from '@/lib/format/money'
@@ -40,7 +41,7 @@ export function CategoryPie({
             innerRadius="58%"
             outerRadius="88%"
             paddingAngle={slices.length > 1 ? 1 : 0}
-            stroke="var(--surface)"
+            stroke={PIE_SLICE_STROKE}
             strokeWidth={2}
             isAnimationActive={false}
           >
@@ -55,7 +56,7 @@ export function CategoryPie({
               if (!slice) return null
 
               return (
-                <div className="border-border-base bg-surface rounded-md border px-2 py-1 text-xs shadow-[var(--shadow-card)]">
+                <ChartTooltip>
                   <div className="font-medium">
                     {slice.id === null && !slice.rest ? t('noCategory') : slice.name}
                   </div>
@@ -63,7 +64,7 @@ export function CategoryPie({
                   <div className="text-text-subtle tabular-nums">
                     {t('report.share', { percent: Math.round(slice.share) })}
                   </div>
-                </div>
+                </ChartTooltip>
               )
             }}
           />

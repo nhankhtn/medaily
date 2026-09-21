@@ -25,7 +25,7 @@ export function StreakStrip({ streaks }: { streaks: DashboardStreak[] }) {
       {streaks.map((streak) => (
         <li
           key={streak.kind}
-          className="rounded-[var(--radius)] border border-border-base bg-surface-2 px-3 py-2"
+          className="glass rounded-[var(--radius)] px-3 py-2"
         >
           <p className="truncate text-xs text-text-muted">{t(LABEL_KEYS[streak.kind] ?? 'logging')}</p>
           <p className="mt-0.5 flex items-center gap-1.5">

@@ -62,7 +62,7 @@ function ResourceRow({ resource }: { resource: Resource }) {
   }
 
   return (
-    <div className="rounded-[var(--radius)] border border-border-base bg-surface p-3">
+    <div className="glass rounded-[var(--radius)] p-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate font-medium">{resource.title}</p>
