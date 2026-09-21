@@ -4,10 +4,10 @@ import type { CalendarEvent, PlannedBlock } from '@/lib/db/schema'
 import {
   addDays,
   eachDay,
-  fromISODate,
   monthEndOf,
   monthStartOf,
-  toISODate,
+  startOfZonedDay,
+  toISODateInZone,
   today as todayOf,
   weekEndOf,
   weekStartOf,
@@ -59,8 +59,12 @@ export const getPlanningData = cache(async (weekOf?: ISODate): Promise<PlanningD
   const today = todayOf(dayContextOf(settings))
   const weekStart = weekStartOf(weekOf ?? today, settings.weekStart)
   const range = { start: weekStart, end: weekEndOf(weekStart, settings.weekStart) }
+  const { timezone } = settings
 
-  const window = { from: fromISODate(range.start), to: fromISODate(addDays(range.end, 1)) }
+  const window = {
+    from: startOfZonedDay(range.start, timezone),
+    to: startOfZonedDay(addDays(range.end, 1), timezone),
+  }
 
   const [eventRows, blocks, sessions, tasks, projects] = await Promise.all([
     // The window is [start of the first day, start of the day after the last).
@@ -79,7 +83,7 @@ export const getPlanningData = cache(async (weekOf?: ISODate): Promise<PlanningD
     overdue: task.status !== 'done' && task.dueDate !== null && task.dueDate < today,
   })
 
-  const seriesById = new Map(eventRows.map((row) => [row.id, toEventForm(row)]))
+  const seriesById = new Map(eventRows.map((row) => [row.id, toEventForm(row, timezone)]))
 
   const days = eachDay(range).map((date) => {
     const dayBlocks = blocks.filter((block) => block.blockDate === date)
@@ -106,8 +110,8 @@ export const getPlanningData = cache(async (weekOf?: ISODate): Promise<PlanningD
     weekStart,
     events: expandAll(eventRows, window).map((event) => ({
       ...event,
-      key: `${event.id}:${toISODate(event.startsAt)}`,
-      series: seriesById.get(event.id) ?? toEventForm(event),
+      key: `${event.id}:${toISODateInZone(event.startsAt, timezone)}`,
+      series: seriesById.get(event.id) ?? toEventForm(event, timezone),
     })),
     holidays: holidaysIn(range),
     days,
@@ -170,13 +174,17 @@ export type YearCalendar = {
 const YEAR_HOVER_ITEMS = 4
 
 /** The window covering a range of dates end to end, for the timestamp columns. */
-const windowOf = (range: DateRange) => ({
-  from: fromISODate(range.start),
-  to: new Date(`${range.end}T23:59:59.999`),
+const windowOf = (range: DateRange, timezone: string) => ({
+  from: startOfZonedDay(range.start, timezone),
+  to: startOfZonedDay(addDays(range.end, 1), timezone),
 })
 
-async function collectItems(userId: string, range: DateRange): Promise<CalendarItem[]> {
-  const window = windowOf(range)
+async function collectItems(
+  userId: string,
+  range: DateRange,
+  timezone: string,
+): Promise<CalendarItem[]> {
+  const window = windowOf(range, timezone)
   const [eventRows, blocks, tasks] = await Promise.all([
     findEvents(userId, window.from, window.to),
     findPlannedBlocks(userId, range),
@@ -184,8 +192,8 @@ async function collectItems(userId: string, range: DateRange): Promise<CalendarI
   ])
 
   const items: CalendarItem[] = expandAll(eventRows, window).map((event) => ({
-    key: `${event.id}:${toISODate(event.startsAt)}`,
-    date: toISODate(event.startsAt),
+    key: `${event.id}:${toISODateInZone(event.startsAt, timezone)}`,
+    date: toISODateInZone(event.startsAt, timezone),
     at: event.allDay ? null : event.startsAt,
     title: event.title,
     kind: 'event' as const,
@@ -256,10 +264,14 @@ export const getMonthCalendar = cache(async (monthOf?: ISODate): Promise<MonthCa
   const weeks = monthGrid(month, settings.weekStart)
 
   const grid = weeks.flat()
-  const items = await collectItems(userId, {
-    start: grid[0] ?? month,
-    end: grid[grid.length - 1] ?? monthEndOf(month),
-  })
+  const items = await collectItems(
+    userId,
+    {
+      start: grid[0] ?? month,
+      end: grid[grid.length - 1] ?? monthEndOf(month),
+    },
+    settings.timezone,
+  )
 
   const byDate = groupByDate(items)
 
@@ -283,7 +295,11 @@ export const getYearCalendar = cache(async (yearOf?: number): Promise<YearCalend
   const today = todayOf(dayContextOf(settings))
   const year = yearOf ?? Number(today.slice(0, 4))
 
-  const items = await collectItems(userId, { start: `${year}-01-01`, end: `${year}-12-31` })
+  const items = await collectItems(
+    userId,
+    { start: `${year}-01-01`, end: `${year}-12-31` },
+    settings.timezone,
+  )
   const byDate = groupByDate(items)
 
   const months = monthsOfYear(year).map((month) => {

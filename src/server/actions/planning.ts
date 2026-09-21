@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { getCurrentUserId } from '@/lib/auth/current-user'
+import { fromZonedWallClock } from '@/lib/dates'
 import { PATHS } from '@/lib/paths'
 import { RECURRENCE_RULES } from '@/lib/planning/recurrence'
 import { isoDateSchema } from '@/lib/validation/daily'
@@ -14,6 +15,7 @@ import {
   updateEvent,
   updatePlannedBlock,
 } from '@/server/repositories/planning'
+import { getSettings } from '@/server/services/settings'
 
 const timeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/)
 const optionalText = z
@@ -58,8 +60,11 @@ export async function saveEvent(input: unknown) {
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
   const { id, date, startTime, endTime, allDay, recurrenceRule } = parsed.data
-  const startsAt = new Date(`${date}T${allDay ? '00:00' : (startTime ?? '09:00')}:00`)
-  const endsAt = allDay ? null : endTime ? new Date(`${date}T${endTime}:00`) : null
+  const { timezone } = await getSettings()
+  // Wall clock in the user's zone — never the host's. A UTC server used to
+  // treat "19:30" as 19:30Z and show it as 02:30 the next morning in Vietnam.
+  const startsAt = fromZonedWallClock(date, allDay ? '00:00' : (startTime ?? '09:00'), timezone)
+  const endsAt = allDay || !endTime ? null : fromZonedWallClock(date, endTime, timezone)
 
   const row = {
     title: parsed.data.title,

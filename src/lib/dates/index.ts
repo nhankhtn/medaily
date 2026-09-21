@@ -9,7 +9,7 @@ import {
   startOfWeek,
   subHours,
 } from 'date-fns'
-import { toZonedTime } from 'date-fns-tz'
+import { formatInTimeZone, fromZonedTime, toZonedTime } from 'date-fns-tz'
 
 /** A calendar date with no time and no timezone: `yyyy-MM-dd`. */
 export type ISODate = string
@@ -31,6 +31,32 @@ export function isISODate(value: string): value is ISODate {
 
 export function toISODate(date: Date): ISODate {
   return format(date, 'yyyy-MM-dd')
+}
+
+/** The calendar date of an instant in a named timezone (not the server's). */
+export function toISODateInZone(instant: Date, timezone: string): ISODate {
+  return formatInTimeZone(instant, timezone, 'yyyy-MM-dd')
+}
+
+/** `HH:mm` of an instant in a named timezone. */
+export function hhmmInZone(instant: Date, timezone: string): string {
+  return formatInTimeZone(instant, timezone, 'HH:mm')
+}
+
+/**
+ * A wall-clock date and time the user typed, as an instant.
+ *
+ * `new Date('2026-10-13T19:30:00')` uses the *server* zone — on a UTC host that
+ * stores 19:30Z and then shows 02:30 the next morning in Vietnam. Events are
+ * always entered in the user's timezone.
+ */
+export function fromZonedWallClock(date: ISODate, time: string, timezone: string): Date {
+  return fromZonedTime(`${date}T${time}:00`, timezone)
+}
+
+/** Start of a calendar day in the user's timezone, as a UTC instant. */
+export function startOfZonedDay(date: ISODate, timezone: string): Date {
+  return fromZonedWallClock(date, '00:00', timezone)
 }
 
 /** Parses an ISO date into a Date at local midnight — safe for calendar math only. */
