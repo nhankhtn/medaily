@@ -482,6 +482,14 @@
         "count_days": "Days done",
         "latest": "Latest"
       }
+    },
+    "install": {
+      "title": "Add to home screen",
+      "help": "Opens like an app, without the address bar — and keeps anything saved offline from being cleared.",
+      "action": "Add to home screen",
+      "iosIntro": "Safari has no button for this, so it takes two taps.",
+      "iosStepShare": "Tap Share at the bottom of Safari",
+      "iosStepAdd": "Choose Add to Home Screen"
     }
   },
   "analytics": {

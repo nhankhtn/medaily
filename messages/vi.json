@@ -482,6 +482,14 @@
         "count_days": "Số ngày làm",
         "latest": "Mới nhất"
       }
+    },
+    "install": {
+      "title": "Thêm vào màn hình chính",
+      "help": "Mở như một app, không còn thanh địa chỉ — và những gì lưu offline không bị dọn mất.",
+      "action": "Thêm vào màn hình chính",
+      "iosIntro": "Safari không có nút cho việc này nên phải bấm hai bước.",
+      "iosStepShare": "Bấm nút Chia sẻ ở thanh dưới của Safari",
+      "iosStepAdd": "Chọn Thêm vào MH chính"
     }
   },
   "analytics": {

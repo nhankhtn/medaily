@@ -7,6 +7,7 @@ import { CustomMetricsPanel } from '@/features/settings/custom-metrics-panel'
 import { DailyFieldsPanel, type MetricUse } from '@/features/settings/daily-fields-panel'
 import { ProfileCard } from '@/features/settings/profile-card'
 import { DataPanel } from '@/features/settings/data-panel'
+import { InstallApp } from '@/features/settings/install-app'
 import { ReplayOnboardingButton } from '@/features/onboarding/replay-button'
 import { SettingsForm } from '@/features/settings/settings-form'
 import { ShortcutsDialog } from '@/features/settings/shortcuts-panel'
@@ -60,6 +61,10 @@ export default async function SettingsPage() {
           <ReplayOnboardingButton />
         </div>
       </section>
+
+      {/* Renders nothing once the app is on the home screen, or where the
+          browser has no way to put it there. */}
+      <InstallApp />
 
       <SettingsForm settings={settings} />
       <CustomMetricsPanel metrics={await findCustomMetrics(settings.userId)} />
