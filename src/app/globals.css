@@ -50,9 +50,16 @@
   --glass-saturate: 1.8;
   --glass-chip: oklch(100% 0 0 / 0.16);
   --glass-chip-border: oklch(100% 0 0 / 0.38);
-  --glass-chip-blur: 48px;
+  /*
+   * A chip is around 56px tall. A blur wider than the element averages a
+   * region bigger than itself, so every edge behind it is smeared into one
+   * flat tone and the chip reads as paint — the radius has to stay well
+   * under the height for anything to survive the trip through.
+   */
+  --glass-chip-blur: 24px;
   --glass-chip-shadow:
-    0 0.5px 0 oklch(100% 0 0 / 0.55) inset, 0 8px 28px oklch(0% 0 0 / 0.1);
+    0 1px 0 oklch(100% 0 0 / 0.8) inset, 0 -1px 0 oklch(40% 0.02 250 / 0.1) inset,
+    0 10px 30px oklch(0% 0 0 / 0.14);
   --overlay: oklch(20% 0.02 250 / 0.35);
   /*
    * How much colour the page has for the glass to pick up. 0 is a flat sheet
@@ -100,9 +107,10 @@
   --glass-saturate: 1.9;
   --glass-chip: oklch(100% 0 0 / 0.1);
   --glass-chip-border: oklch(100% 0 0 / 0.22);
-  --glass-chip-blur: 48px;
+  --glass-chip-blur: 26px;
   --glass-chip-shadow:
-    0 0.5px 0 oklch(100% 0 0 / 0.2) inset, 0 10px 32px oklch(0% 0 0 / 0.35);
+    0 1px 0 oklch(100% 0 0 / 0.3) inset, 0 -1px 0 oklch(0% 0 0 / 0.3) inset,
+    0 12px 34px oklch(0% 0 0 / 0.4);
   --overlay: oklch(0% 0 0 / 0.5);
   --atmosphere: 0.7;
   --bg-atmosphere:
@@ -148,9 +156,10 @@
   --glass-saturate: 1.85;
   --glass-chip: oklch(100% 0 0 / 0.16);
   --glass-chip-border: oklch(100% 0 0 / 0.4);
-  --glass-chip-blur: 48px;
+  --glass-chip-blur: 24px;
   --glass-chip-shadow:
-    0 0.5px 0 oklch(100% 0 0 / 0.55) inset, 0 8px 28px oklch(40% 0.08 350 / 0.12);
+    0 1px 0 oklch(100% 0 0 / 0.82) inset, 0 -1px 0 oklch(40% 0.06 350 / 0.1) inset,
+    0 10px 30px oklch(40% 0.08 350 / 0.16);
   --overlay: oklch(30% 0.05 350 / 0.35);
   --atmosphere: 0.7;
   --bg-atmosphere:
