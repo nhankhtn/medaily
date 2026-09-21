@@ -1,18 +1,21 @@
 'use client'
 
-import { useCallback, useEffect, useOptimistic, useRef, useState } from 'react'
+import { useCallback, useOptimistic, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Card, CardBody, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import type { FinanceCategory, Transaction } from '@/lib/db/schema'
 import type { ISODate } from '@/lib/dates'
+import { useCursorPage } from '@/lib/hooks/use-cursor-page'
 import { listTransactions } from '@/server/actions/finance'
 import type { TransactionPage } from '@/server/repositories/finance'
 import type { PendingTransaction } from './pending'
 import { useQueuedTransactions } from './pending-transactions'
 import { TransactionForm } from './transaction-form'
 import { TransactionList } from './transaction-list'
+
+const transactionId = (row: Transaction) => row.id
 
 /**
  * Holds the rows that have been sent but not yet confirmed.
@@ -54,18 +57,8 @@ export function TransactionPanel({
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
 
-  const [items, setItems] = useState<Transaction[]>(initialPage.items)
-  const [nextCursor, setNextCursor] = useState<string | null>(initialPage.nextCursor)
-  const [loading, setLoading] = useState(false)
-  const [loadingMore, setLoadingMore] = useState(false)
-  const skipFilterFetch = useRef(true)
-  const loadMoreLock = useRef(false)
-  const pageKey = `${initialPage.nextCursor ?? ''}:${initialPage.items[0]?.id ?? ''}:${initialPage.items.length}:${initialPage.items.at(-1)?.id ?? ''}`
-  const [seenPageKey, setSeenPageKey] = useState(pageKey)
-  const [wasFiltering, setWasFiltering] = useState(false)
-  const prevPageKey = useRef(pageKey)
-
   const filtering = Boolean(accountId || categoryId || from || to)
+  const queryKey = [accountId, categoryId, from, to].filter(Boolean).join('|')
 
   const filterInput = useCallback(() => {
     return {
@@ -76,80 +69,24 @@ export function TransactionPanel({
     }
   }, [accountId, categoryId, from, to])
 
-  // Adopt the SSR first page when filters are idle (React: adjust state during render).
-  if (filtering !== wasFiltering) {
-    setWasFiltering(filtering)
-    if (!filtering) {
-      setItems(initialPage.items)
-      setNextCursor(initialPage.nextCursor)
-      setSeenPageKey(pageKey)
-    }
-  } else if (!filtering && pageKey !== seenPageKey) {
-    setSeenPageKey(pageKey)
-    setItems(initialPage.items)
-    setNextCursor(initialPage.nextCursor)
-  }
-
-  useEffect(() => {
-    if (skipFilterFetch.current) {
-      skipFilterFetch.current = false
-      if (!filtering) return
-    }
-
-    let cancelled = false
-    setLoading(true)
-    void listTransactions(filterInput()).then((result) => {
-      if (cancelled) return
-      if (result.ok) {
-        setItems(result.items)
-        setNextCursor(result.nextCursor)
-      }
-      setLoading(false)
-    })
-
-    return () => {
-      cancelled = true
-    }
-  }, [filterInput, filtering])
-
-  // While filters are active, a save/delete refreshes SSR — reload page one.
-  useEffect(() => {
-    if (!filtering) {
-      prevPageKey.current = pageKey
-      return
-    }
-    const bumped = prevPageKey.current !== pageKey
-    prevPageKey.current = pageKey
-    if (!bumped) return
-
-    let cancelled = false
-    void listTransactions(filterInput()).then((result) => {
-      if (cancelled || !result.ok) return
-      setItems(result.items)
-      setNextCursor(result.nextCursor)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [pageKey, filtering, filterInput])
-
-  const loadMore = useCallback(async () => {
-    if (!nextCursor || loading || loadingMore || loadMoreLock.current) return
-    loadMoreLock.current = true
-    setLoadingMore(true)
-    try {
-      const result = await listTransactions({ ...filterInput(), cursor: nextCursor })
-      if (!result.ok) return
-      setItems((current) => {
-        const seen = new Set(current.map((row) => row.id))
-        return [...current, ...result.items.filter((row) => !seen.has(row.id))]
+  const fetchPage = useCallback(
+    async (cursor: string | null) => {
+      const result = await listTransactions({
+        ...filterInput(),
+        ...(cursor ? { cursor } : {}),
       })
-      setNextCursor(result.nextCursor)
-    } finally {
-      loadMoreLock.current = false
-      setLoadingMore(false)
-    }
-  }, [filterInput, loading, loadingMore, nextCursor])
+      if (!result.ok) return { ok: false as const }
+      return { ok: true as const, items: result.items, nextCursor: result.nextCursor }
+    },
+    [filterInput],
+  )
+
+  const { items, loading, loadingMore, hasMore, loadMore, removeItem } = useCursorPage({
+    initialPage,
+    queryKey,
+    fetchPage,
+    getId: transactionId,
+  })
 
   const names = accounts.map((account) => ({ id: account.id, name: account.name }))
 
@@ -286,9 +223,9 @@ export function TransactionPanel({
               currency={currency}
               emptyLabel={filtering ? t('noMatchingTransactions') : t('noTransactions')}
               loadingMore={loadingMore}
-              hasMore={Boolean(nextCursor)}
+              hasMore={hasMore}
               onLoadMore={loadMore}
-              onRemoved={(id) => setItems((current) => current.filter((row) => row.id !== id))}
+              onRemoved={removeItem}
             />
           )}
         </CardBody>
