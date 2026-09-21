@@ -16,7 +16,13 @@ const PAGES = `medaily-pages-${VERSION}`
 
 /** Only these navigations are worth keeping. The rest are online-only. */
 function isOfflinePage(url) {
-  return url.pathname === '/daily' || url.pathname.startsWith('/daily/')
+  // /finance carries the accounts and categories the form needs to offer, so
+  // caching the page is also what makes adding a transaction offline possible.
+  return (
+    url.pathname === '/daily' ||
+    url.pathname.startsWith('/daily/') ||
+    url.pathname === '/finance'
+  )
 }
 
 /** Hashed and immutable, so a cache hit can never be the wrong version. */
@@ -51,9 +57,10 @@ self.addEventListener('activate', (event) => {
         // Not `cache.add`: it follows redirects, so a signed-out install would
         // store the sign-in page under the /daily key and serve that offline
         // forever after. `redirected` is the check that catches it.
-        const response = await fetch('/daily')
-        if (response.ok && !response.redirected) {
-          await (await caches.open(PAGES)).put('/daily', response)
+        const cache = await caches.open(PAGES)
+        for (const path of ['/daily', '/finance']) {
+          const response = await fetch(path)
+          if (response.ok && !response.redirected) await cache.put(path, response)
         }
       } catch {
         /* no session, or no network. The fetch handler will catch up. */

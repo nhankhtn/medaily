@@ -8,6 +8,7 @@ import { Select } from '@/components/ui/select'
 import type { FinanceCategory, Transaction } from '@/lib/db/schema'
 import type { ISODate } from '@/lib/dates'
 import type { PendingTransaction } from './pending'
+import { useQueuedTransactions } from './pending-transactions'
 import { TransactionForm } from './transaction-form'
 import { TransactionList } from './transaction-list'
 
@@ -44,6 +45,7 @@ export function TransactionPanel({
     [],
     (current, row) => [row, ...current],
   )
+  const queued = useQueuedTransactions()
   const [accountId, setAccountId] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [from, setFrom] = useState('')
@@ -72,7 +74,34 @@ export function TransactionPanel({
   }
 
   const filtered = transactions.filter(matches)
-  const filteredPending = pending.filter(matches)
+
+  /*
+   * Two kinds of row sit above the ledger, and they are not the same thing.
+   * `pending` is optimistic — the save is in flight, and React drops it the
+   * moment the action settles. `queued` is on the device because there was no
+   * network; it has to outlive the action, or a transaction typed with no
+   * signal would blink out while the server has no record of it either.
+   *
+   * A row in both is the same save seen twice: they share the id the form
+   * chose, so the queued copy wins and the optimistic one is dropped.
+   */
+  const queuedRows: PendingTransaction[] = queued.map((entry) => ({
+    key: entry.id,
+    occurredOn: entry.occurredOn,
+    kind: entry.kind,
+    amount: entry.amount,
+    accountId: entry.accountId,
+    counterAccountId: entry.counterAccountId,
+    categoryId: entry.categoryId,
+    personId: entry.personId,
+    merchant: entry.merchant,
+  }))
+
+  const queuedKeys = new Set(queuedRows.map((row) => row.key))
+  const filteredPending = [
+    ...queuedRows,
+    ...pending.filter((row) => !queuedKeys.has(row.key)),
+  ].filter(matches)
   const filtering = Boolean(accountId || categoryId || from || to)
 
   return (

@@ -965,6 +965,11 @@
       "needAmount": "Every transaction needs an amount",
       "rateLimited": "Too many notes in a row — wait a minute",
       "failed": "Could not read that note"
+    },
+    "offline": {
+      "queued": "Saved on this phone. It will go up when you have a connection.",
+      "synced": "{count, plural, one {# transaction sent} other {# transactions sent}}",
+      "notKept": "This phone had no room to keep it. Try again when you have a connection."
     }
   },
   "journal": {

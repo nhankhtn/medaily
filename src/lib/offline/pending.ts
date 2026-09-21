@@ -70,3 +70,27 @@ export function decide(result: SendResult | null): Decision {
   if (result.ok) return 'sent'
   return isPermanentFailure(result.error) ? 'dropped' : 'stop'
 }
+
+/**
+ * A transaction the network would not carry, held until it can be sent.
+ *
+ * It carries its own `id`, generated in the browser. That is what makes
+ * sending it twice safe: the insert does nothing when the row is already
+ * there. A daily log gets this for free from `(user_id, log_date)`; a
+ * transaction has no natural key — two coffees on one afternoon are two rows —
+ * so the id has to be decided before the first attempt, not by the database
+ * after it.
+ */
+export type QueuedTransaction = {
+  id: string
+  occurredOn: ISODate
+  amount: number
+  kind: 'income' | 'expense' | 'transfer'
+  accountId: string
+  counterAccountId: string | null
+  categoryId: string | null
+  personId: string | null
+  merchant: string | null
+  note: string | null
+  queuedAt: number
+}

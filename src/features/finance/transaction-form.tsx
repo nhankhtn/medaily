@@ -11,6 +11,7 @@ import { Select } from '@/components/ui/select'
 import type { FinanceCategory } from '@/lib/db/schema'
 import type { ISODate } from '@/lib/dates'
 import { createTransaction } from '@/server/actions/finance'
+import { queuePendingTransaction } from './pending-transactions'
 import type { PendingTransaction } from './pending'
 
 /**
@@ -50,7 +51,15 @@ export function TransactionForm({
    * until the refresh landed — seconds after the row was already saved.
    */
   const submit = async (formData: FormData) => {
+    /*
+     * Decided here, not by the database, and shared with the optimistic row.
+     * If this save has to be queued, the id is what makes sending it again
+     * land on the same row instead of charging the coffee twice.
+     */
+    const id = crypto.randomUUID()
+
     const input = {
+      id,
       occurredOn: String(formData.get('occurredOn') ?? today),
       amount: Number(formData.get('amount') ?? 0),
       kind,
@@ -63,7 +72,7 @@ export function TransactionForm({
     }
 
     onPending({
-      key: crypto.randomUUID(),
+      key: id,
       occurredOn: input.occurredOn,
       kind,
       amount: input.amount,
@@ -83,8 +92,30 @@ export function TransactionForm({
       }
       toast.success(t('saved'))
     } catch (error) {
+      // The action throws when it cannot reach the server. That one is worth
+      // keeping: the transaction is held on the device and goes up on its own.
       console.error('[finance] could not save the transaction:', error)
-      toast.error(t('notSaved'))
+
+      try {
+        await queuePendingTransaction({
+          id,
+          occurredOn: input.occurredOn,
+          amount: input.amount,
+          kind: input.kind,
+          accountId: input.accountId,
+          counterAccountId: input.counterAccountId,
+          categoryId: input.categoryId,
+          personId: input.personId,
+          merchant: input.merchant.trim() === '' ? null : input.merchant.trim(),
+          note: null,
+        })
+        toast.success(t('offline.queued'))
+      } catch (kept) {
+        // The device would not hold it either. Say so — a transaction
+        // reported as saved and stored nowhere is the worst of both.
+        console.error('[offline] could not keep the transaction on this device:', kept)
+        toast.error(t('offline.notKept'))
+      }
     }
   }
 

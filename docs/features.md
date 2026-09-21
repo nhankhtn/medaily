@@ -259,6 +259,21 @@ Amounts format as you type: `100000` becomes `100.000`. Budgets are a monthly
 limit per category; click a budget's name to change the amount. Investment
 prices are typed by hand — the app fetches no market data.
 
+**With no signal.** Adding a transaction works offline, the way the daily log
+does. Open `/finance` once with a connection and the page is kept; after that
+you can type an expense with no network and it is held on the device, shown
+above the ledger as waiting, and sent on the next connection.
+
+Only *adding*. Editing and deleting still need a connection: two devices
+changing the same row would need a rule for which change wins, and adding does
+not. Quick capture needs a connection too — it asks a model to read your
+sentence, and there is nothing to queue.
+
+Sending the same transaction twice is harmless. The id is decided by the
+browser before the first attempt, so a retry after a reply that never arrived
+lands on the same row rather than charging the coffee again. This is the piece
+the daily log got free from its date, and the reason finance came second.
+
 **Quick capture** can read a sentence like *"banh mi 30k this morning, coffee
 25k, lunch 55k"* and propose the transactions; nothing is saved until you
 confirm.
