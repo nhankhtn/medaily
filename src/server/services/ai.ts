@@ -1,8 +1,10 @@
 import { cache } from 'react'
+import { getLocale } from 'next-intl/server'
 import { getCurrentUserId } from '@/lib/auth/current-user'
 import { addDays, addMonthsISO } from '@/lib/dates'
 import type { AiReport } from '@/lib/db/schema'
 import type { ReviewMetricsSnapshot } from '@/lib/types'
+import { isLocale } from '@/i18n/config'
 import { insertAiReport, findLatestAiReport } from '@/server/repositories/ai'
 import { ServiceError } from '@/server/service-client'
 import { aiClient, aiServiceConfigured } from '@/server/services/ai-service'
@@ -94,18 +96,22 @@ export async function generatePeriodNarrative(
     throw new NarrativeDisabledError('AI_SERVICE is not configured')
   }
 
-  const settings = await getSettings()
+  const [settings, uiLocale] = await Promise.all([getSettings(), getLocale()])
   const view = await getReviewView(period, key)
 
   const previousKey = period === 'weekly' ? addDays(key, -7) : addMonthsISO(key, -1)
   const previousView = await getReviewView(period, previousKey)
   const dashboard = await getDashboardData()
 
+  // Prefer the locale the UI is showing now (cookie), not only the settings
+  // row — so a switcher change is what the model writes in.
+  const locale = isLocale(uiLocale) ? uiLocale : settings.locale
+
   const review = await generateNarrative({
     period,
     periodStart: view.range.start,
     periodEnd: view.range.end,
-    locale: settings.locale,
+    locale,
     metrics: view.metrics,
     previousMetrics: previousView.metrics,
     insights: dashboard.insights.map((insight) => ({
