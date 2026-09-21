@@ -51,7 +51,7 @@ workspace.
 | `AUTH_ALLOWED_EMAILS` | comma-separated addresses that may sign in |
 | `AUTH_ALLOWED_DOMAINS` | comma-separated domains that may sign in |
 | `AUTH_ALLOW_SIGNUP` | `true` lets any permitted address create its own workspace |
-| `NEXT_PUBLIC_FIREBASE_API_KEY`<br>`NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`<br>`NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Firebase web config. Not secrets — they identify the project, they authorise nothing. Absent, the Google button simply does not render. |
+| `NEXT_PUBLIC_FIREBASE_API_KEY`<br>`NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`<br>`NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Firebase web config. Not secrets — they identify the project, they authorise nothing. Absent, the Google button simply does not render. The client uses the **page host** as `authDomain` (with `/__/auth` proxied in `next.config`) so Safari redirect sign-in works; add `https://<your-app>/__/auth/handler` to the Google OAuth client's authorized redirect URIs. |
 
 Set `AUTH_OWNER_EMAIL` to your own Google address before first sign-in.
 Otherwise your Google account is a stranger to the database and gets an empty

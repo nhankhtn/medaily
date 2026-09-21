@@ -1,4 +1,4 @@
-import { getApp, getApps, initializeApp } from 'firebase/app'
+import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app'
 import {
   browserPopupRedirectResolver,
   getAuth,
@@ -19,11 +19,22 @@ import { needsAuthRedirect } from '@/lib/pwa'
  * These values are public by design — Firebase web config is not a secret,
  * it identifies the project. What protects the app is the server verifying
  * the token's signature and the allowlist.
+ *
+ * `authDomain` is the **page host**, not `*.firebaseapp.com`. Safari and
+ * Chromium block the cross-site storage `signInWithRedirect` needs when the
+ * helper lives on another origin. `next.config` already proxies `/__/auth/*`
+ * to the Firebase project, so same-origin authDomain is Option 3 from
+ * https://firebase.google.com/docs/auth/web/redirect-best-practices
  */
-const config = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? '',
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? '',
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? '',
+function firebaseConfig() {
+  return {
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? '',
+    authDomain:
+      typeof window !== 'undefined'
+        ? window.location.host
+        : (process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? ''),
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? '',
+  }
 }
 
 /** Survives the Google redirect round-trip so we land on the intended page. */
@@ -31,12 +42,18 @@ const NEXT_PATH_KEY = 'medaily.auth.next'
 
 /** False when the deploy has no Firebase project: the button then stays hidden. */
 export function firebaseConfigured(): boolean {
-  return config.apiKey.length > 0 && config.authDomain.length > 0 && config.projectId.length > 0
+  const config = firebaseConfig()
+  return config.apiKey.length > 0 && config.projectId.length > 0
+}
+
+function firebaseApp(): FirebaseApp {
+  const config = firebaseConfig()
+  if (getApps().length > 0) return getApp()
+  return initializeApp(config)
 }
 
 function firebaseAuth(): Auth {
-  const app = getApps().length > 0 ? getApp() : initializeApp(config)
-  return getAuth(app)
+  return getAuth(firebaseApp())
 }
 
 export type GoogleSignInFailure = 'cancelled' | 'popup_blocked' | 'failed'
@@ -79,15 +96,16 @@ export function takeAuthNext(): string | undefined {
  * Returns a fresh ID token, or `null` when a full-page redirect was started
  * (iOS / standalone — the page is about to leave).
  *
- * The token is short-lived and used once — the server trades it for a session
- * cookie and never stores it.
+ * Do **not** pass `browserPopupRedirectResolver` into `signInWithRedirect`:
+ * that resolver opens ASWebAuthenticationSession (the sheet with "Done"),
+ * where iOS often focuses the email field and never raises the keyboard.
  */
 export async function signInWithGoogle(): Promise<string | null> {
   const auth = firebaseAuth()
   const provider = googleProvider()
 
   if (needsAuthRedirect()) {
-    await signInWithRedirect(auth, provider, browserPopupRedirectResolver)
+    await signInWithRedirect(auth, provider)
     return null
   }
 
