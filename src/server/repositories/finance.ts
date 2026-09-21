@@ -1,4 +1,4 @@
-import { and, asc, between, desc, eq, isNotNull, isNull, or, sql } from 'drizzle-orm'
+import { and, asc, between, desc, eq, gte, isNotNull, isNull, lt, lte, or, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import {
   accounts,
@@ -16,8 +16,50 @@ import type {
   Investment,
   Transaction,
 } from '@/lib/db/schema'
-import type { DateRange, ISODate } from '@/lib/dates'
+import { ISO_DATE_RE, type DateRange, type ISODate } from '@/lib/dates'
 import { toAccountType, type AccountType } from '@/lib/finance/account-types'
+
+export const TRANSACTION_PAGE_SIZE = 40
+
+export type TransactionCursor = {
+  occurredOn: string
+  id: string
+}
+
+export type TransactionPageFilters = {
+  accountId?: string
+  /** `null` = uncategorized only; omit for any category. */
+  categoryId?: string | null
+  from?: string
+  to?: string
+}
+
+export type TransactionPage = {
+  items: Transaction[]
+  nextCursor: string | null
+}
+
+/** Opaque keyset cursor for `(occurred_on DESC, id DESC)`. */
+export function encodeTransactionCursor(cursor: TransactionCursor): string {
+  return Buffer.from(`${cursor.occurredOn}|${cursor.id}`, 'utf8').toString('base64url')
+}
+
+export function decodeTransactionCursor(raw: string): TransactionCursor | null {
+  try {
+    const decoded = Buffer.from(raw, 'base64url').toString('utf8')
+    const sep = decoded.indexOf('|')
+    if (sep <= 0) return null
+    const occurredOn = decoded.slice(0, sep)
+    const id = decoded.slice(sep + 1)
+    if (!ISO_DATE_RE.test(occurredOn)) return null
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      return null
+    }
+    return { occurredOn, id }
+  } catch {
+    return null
+  }
+}
 
 export async function findAccounts(userId: string): Promise<Account[]> {
   return db
@@ -150,6 +192,84 @@ export async function findTransactions(
     .limit(limit)
 }
 
+<<<<<<< Updated upstream
+=======
+/**
+ * Keyset page for the ledger. Fetches `limit + 1` rows so the caller can tell
+ * whether another page exists without a separate count query.
+ */
+export async function findTransactionsPage(
+  userId: string,
+  opts: {
+    filters?: TransactionPageFilters
+    cursor?: TransactionCursor | null
+    limit?: number
+  } = {},
+): Promise<TransactionPage> {
+  const limit = opts.limit ?? TRANSACTION_PAGE_SIZE
+  const filters = opts.filters ?? {}
+  const conditions = [eq(transactions.userId, userId)]
+
+  if (filters.accountId) {
+    conditions.push(
+      or(
+        eq(transactions.accountId, filters.accountId),
+        eq(transactions.counterAccountId, filters.accountId),
+      )!,
+    )
+  }
+  if (filters.categoryId === null) {
+    conditions.push(isNull(transactions.categoryId))
+  } else if (filters.categoryId) {
+    conditions.push(eq(transactions.categoryId, filters.categoryId))
+  }
+  if (filters.from) {
+    conditions.push(gte(transactions.occurredOn, filters.from))
+  }
+  if (filters.to) {
+    conditions.push(lte(transactions.occurredOn, filters.to))
+  }
+  if (opts.cursor) {
+    const cursor = opts.cursor
+    conditions.push(
+      or(
+        lt(transactions.occurredOn, cursor.occurredOn),
+        and(eq(transactions.occurredOn, cursor.occurredOn), lt(transactions.id, cursor.id)),
+      )!,
+    )
+  }
+
+  const rows = await db
+    .select()
+    .from(transactions)
+    .where(and(...conditions))
+    .orderBy(desc(transactions.occurredOn), desc(transactions.id))
+    .limit(limit + 1)
+
+  const hasMore = rows.length > limit
+  const items = hasMore ? rows.slice(0, limit) : rows
+  const last = items[items.length - 1]
+  return {
+    items,
+    nextCursor:
+      hasMore && last
+        ? encodeTransactionCursor({ occurredOn: last.occurredOn, id: last.id })
+        : null,
+  }
+}
+
+/**
+ * Insert, or do nothing if this row is already here.
+ *
+ * The caller may pass an `id` the browser generated, which is what makes a
+ * transaction queued offline safe to send twice — a retry after a reply that
+ * never arrived lands on the same primary key and writes nothing. Without it
+ * a replay is a duplicate, and a duplicate here is money.
+ *
+ * Returns null when the row already existed, so a caller can tell "saved" from
+ * "was already saved" rather than guessing.
+ */
+>>>>>>> Stashed changes
 export async function insertTransaction(
   values: typeof transactions.$inferInsert,
 ): Promise<Transaction> {

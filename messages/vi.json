@@ -855,7 +855,7 @@
     "transactions": "Giao dịch",
     "addTransaction": "Thêm",
     "addTransactionTitle": "Thêm giao dịch",
-    "noTransactions": "Tháng này chưa ghi gì",
+    "noTransactions": "Chưa ghi giao dịch nào",
     "noMatchingTransactions": "Không có giao dịch khớp bộ lọc",
     "filterAllAccounts": "Tất cả tài khoản",
     "filterAllCategories": "Tất cả danh mục",

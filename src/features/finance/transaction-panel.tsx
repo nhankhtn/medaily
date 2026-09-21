@@ -1,12 +1,14 @@
 'use client'
 
-import { useOptimistic, useState } from 'react'
+import { useCallback, useEffect, useOptimistic, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Card, CardBody, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import type { FinanceCategory, Transaction } from '@/lib/db/schema'
 import type { ISODate } from '@/lib/dates'
+import { listTransactions } from '@/server/actions/finance'
+import type { TransactionPage } from '@/server/repositories/finance'
 import type { PendingTransaction } from './pending'
 import { TransactionForm } from './transaction-form'
 import { TransactionList } from './transaction-list'
@@ -19,20 +21,20 @@ import { TransactionList } from './transaction-list'
  * second on the deploy and rather more from a laptop. `useOptimistic` fills
  * that gap: its setter applies on the current frame even inside the transition
  * the form action runs in, and the list empties itself when the refreshed
- * `transactions` prop makes it redundant.
+ * first page makes it redundant.
  *
- * The form is its own card so adding a row is not buried under the ledger, and
- * the list card carries the account / category / date filters for the month's history.
+ * Confirmed rows are cursor-paged from the server; changing a filter resets
+ * the list and loads page one again.
  */
 export function TransactionPanel({
-  transactions,
+  initialPage,
   categories,
   accounts,
   people,
   currency,
   today,
 }: {
-  transactions: Transaction[]
+  initialPage: TransactionPage
   categories: FinanceCategory[]
   accounts: { id: string; name: string; type: string; currency: string }[]
   people: { id: string; name: string }[]
@@ -40,6 +42,7 @@ export function TransactionPanel({
   today: ISODate
 }) {
   const t = useTranslations('finance')
+  const tc = useTranslations('common')
   const [pending, addPending] = useOptimistic<PendingTransaction[], PendingTransaction>(
     [],
     (current, row) => [row, ...current],
@@ -49,9 +52,106 @@ export function TransactionPanel({
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
 
+  const [items, setItems] = useState<Transaction[]>(initialPage.items)
+  const [nextCursor, setNextCursor] = useState<string | null>(initialPage.nextCursor)
+  const [loading, setLoading] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const skipFilterFetch = useRef(true)
+  const loadMoreLock = useRef(false)
+  const pageKey = `${initialPage.nextCursor ?? ''}:${initialPage.items[0]?.id ?? ''}:${initialPage.items.length}:${initialPage.items.at(-1)?.id ?? ''}`
+  const [seenPageKey, setSeenPageKey] = useState(pageKey)
+  const [wasFiltering, setWasFiltering] = useState(false)
+  const prevPageKey = useRef(pageKey)
+
+  const filtering = Boolean(accountId || categoryId || from || to)
+
+  const filterInput = useCallback(() => {
+    return {
+      ...(accountId ? { accountId } : {}),
+      ...(categoryId ? { categoryId } : {}),
+      ...(from ? { from } : {}),
+      ...(to ? { to } : {}),
+    }
+  }, [accountId, categoryId, from, to])
+
+  // Adopt the SSR first page when filters are idle (React: adjust state during render).
+  if (filtering !== wasFiltering) {
+    setWasFiltering(filtering)
+    if (!filtering) {
+      setItems(initialPage.items)
+      setNextCursor(initialPage.nextCursor)
+      setSeenPageKey(pageKey)
+    }
+  } else if (!filtering && pageKey !== seenPageKey) {
+    setSeenPageKey(pageKey)
+    setItems(initialPage.items)
+    setNextCursor(initialPage.nextCursor)
+  }
+
+  useEffect(() => {
+    if (skipFilterFetch.current) {
+      skipFilterFetch.current = false
+      if (!filtering) return
+    }
+
+    let cancelled = false
+    setLoading(true)
+    void listTransactions(filterInput()).then((result) => {
+      if (cancelled) return
+      if (result.ok) {
+        setItems(result.items)
+        setNextCursor(result.nextCursor)
+      }
+      setLoading(false)
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [filterInput, filtering])
+
+  // While filters are active, a save/delete refreshes SSR — reload page one.
+  useEffect(() => {
+    if (!filtering) {
+      prevPageKey.current = pageKey
+      return
+    }
+    const bumped = prevPageKey.current !== pageKey
+    prevPageKey.current = pageKey
+    if (!bumped) return
+
+    let cancelled = false
+    void listTransactions(filterInput()).then((result) => {
+      if (cancelled || !result.ok) return
+      setItems(result.items)
+      setNextCursor(result.nextCursor)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [pageKey, filtering, filterInput])
+
+  const loadMore = useCallback(async () => {
+    if (!nextCursor || loading || loadingMore || loadMoreLock.current) return
+    loadMoreLock.current = true
+    setLoadingMore(true)
+    try {
+      const result = await listTransactions({ ...filterInput(), cursor: nextCursor })
+      if (!result.ok) return
+      setItems((current) => {
+        const seen = new Set(current.map((row) => row.id))
+        return [...current, ...result.items.filter((row) => !seen.has(row.id))]
+      })
+      setNextCursor(result.nextCursor)
+    } finally {
+      loadMoreLock.current = false
+      setLoadingMore(false)
+    }
+  }, [filterInput, loading, loadingMore, nextCursor])
+
   const names = accounts.map((account) => ({ id: account.id, name: account.name }))
 
-  const matches = (row: {
+  const matchesPending = (row: {
     accountId: string
     counterAccountId: string | null
     categoryId: string | null
@@ -71,9 +171,39 @@ export function TransactionPanel({
     return true
   }
 
+<<<<<<< Updated upstream
   const filtered = transactions.filter(matches)
   const filteredPending = pending.filter(matches)
   const filtering = Boolean(accountId || categoryId || from || to)
+=======
+  /*
+   * Two kinds of row sit above the ledger, and they are not the same thing.
+   * `pending` is optimistic — the save is in flight, and React drops it the
+   * moment the action settles. `queued` is on the device because there was no
+   * network; it has to outlive the action, or a transaction typed with no
+   * signal would blink out while the server has no record of it either.
+   *
+   * A row in both is the same save seen twice: they share the id the form
+   * chose, so the queued copy wins and the optimistic one is dropped.
+   */
+  const queuedRows: PendingTransaction[] = queued.map((entry) => ({
+    key: entry.id,
+    occurredOn: entry.occurredOn,
+    kind: entry.kind,
+    amount: entry.amount,
+    accountId: entry.accountId,
+    counterAccountId: entry.counterAccountId,
+    categoryId: entry.categoryId,
+    personId: entry.personId,
+    merchant: entry.merchant,
+  }))
+
+  const queuedKeys = new Set(queuedRows.map((row) => row.key))
+  const filteredPending = [
+    ...queuedRows,
+    ...pending.filter((row) => !queuedKeys.has(row.key)),
+  ].filter(matchesPending)
+>>>>>>> Stashed changes
 
   return (
     <div className="space-y-4">
@@ -148,15 +278,23 @@ export function TransactionPanel({
             </label>
           </div>
 
-          <TransactionList
-            transactions={filtered}
-            pending={filteredPending}
-            categories={categories}
-            accounts={names}
-            people={people}
-            currency={currency}
-            emptyLabel={filtering ? t('noMatchingTransactions') : t('noTransactions')}
-          />
+          {loading ? (
+            <p className="text-text-subtle text-sm">{tc('loading')}</p>
+          ) : (
+            <TransactionList
+              transactions={items}
+              pending={filteredPending}
+              categories={categories}
+              accounts={names}
+              people={people}
+              currency={currency}
+              emptyLabel={filtering ? t('noMatchingTransactions') : t('noTransactions')}
+              loadingMore={loadingMore}
+              hasMore={Boolean(nextCursor)}
+              onLoadMore={loadMore}
+              onRemoved={(id) => setItems((current) => current.filter((row) => row.id !== id))}
+            />
+          )}
         </CardBody>
       </Card>
     </div>
