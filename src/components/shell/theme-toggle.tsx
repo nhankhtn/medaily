@@ -1,6 +1,6 @@
 'use client'
 
-import { Heart, Monitor, Moon, Sun, type LucideIcon } from 'lucide-react'
+import { Heart, Moon, Sun, type LucideIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useTransition } from 'react'
 import { cn } from '@/lib/utils'
@@ -11,9 +11,8 @@ import {
 } from '@/lib/themes'
 import { setTheme } from '@/server/actions/settings'
 
-/** One icon per preference. A theme without one falls back to the palette dot. */
-const ICONS: Record<string, LucideIcon> = {
-  system: Monitor,
+/** One icon per preference. A theme without one falls back to the sun. */
+const ICONS: Record<ThemePreference, LucideIcon> = {
   light: Sun,
   dark: Moon,
   pink: Heart,
@@ -32,31 +31,21 @@ export function ThemeToggle({
   const apply = (value: ThemePreference) => {
     // Paint immediately, persist in the background — the toggle must feel instant.
     const root = document.documentElement
-    const id =
-      value === 'system'
-        ? window.matchMedia('(prefers-color-scheme: dark)').matches
-          ? 'dark'
-          : 'light'
-        : value
-
     root.setAttribute('data-theme-pref', value)
-    root.setAttribute('data-theme', id)
-    root.classList.toggle('dark', DARK_THEME_IDS.includes(id))
+    root.setAttribute('data-theme', value)
+    root.classList.toggle('dark', DARK_THEME_IDS.includes(value))
     startTransition(() => setTheme(value))
   }
 
   return (
     <div
-      className={cn(
-        'glass flex items-center gap-0.5 rounded-full p-0.5',
-        className,
-      )}
+      className={cn('glass flex items-center gap-0.5 rounded-full p-0.5', className)}
       role="group"
       aria-label={t('theme')}
     >
       {THEME_PREFERENCES.map((value) => {
-        const Icon = ICONS[value] ?? Monitor
-        const label = t(value === 'system' ? 'themeSystem' : `theme${cap(value)}`)
+        const Icon = ICONS[value]
+        const label = t(`theme${cap(value)}`)
 
         return (
           <button

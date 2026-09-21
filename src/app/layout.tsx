@@ -52,8 +52,7 @@ export const viewport: Viewport = {
 }
 
 /**
- * The theme is applied before first paint to avoid a flash. `system` is
- * resolved in the browser, because the server cannot know the OS preference.
+ * The theme is applied before first paint to avoid a flash.
  */
 const themeScript = themeBootScript()
 
