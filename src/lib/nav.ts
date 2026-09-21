@@ -60,6 +60,14 @@ export const NAV_GROUPS: { group: NavGroup; labelKey: string }[] = [
   { group: 'insight', labelKey: 'groupInsight' },
 ]
 
-export const BOTTOM_NAV_ITEMS = NAV_ITEMS.filter((i) => i.bottomBar)
+/** Mobile dock order — independent of the sidebar registry order. */
+const BOTTOM_BAR_KEYS = ['home', 'finance', 'daily', 'timer'] as const
+
+export const BOTTOM_NAV_ITEMS = BOTTOM_BAR_KEYS.map((key) => {
+  const item = NAV_ITEMS.find((entry) => entry.key === key)
+  if (!item) throw new Error(`bottom bar names unknown nav key: ${key}`)
+  return item
+})
+
 export const MORE_NAV_ITEMS = NAV_ITEMS.filter((i) => !i.bottomBar)
 export const ACTIVITY_ICON = Activity
