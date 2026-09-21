@@ -40,6 +40,12 @@ export function MarkdownEditor({
   placeholder,
   label,
   disabled,
+  /**
+   * Show the Markdown source as typed (`# `, `- `) instead of dressing lines.
+   * Use with a separate View mode — hiding markers there looks like the body
+   * already rendered while you are still editing.
+   */
+  source = false,
   className,
 }: {
   value: string
@@ -47,6 +53,7 @@ export function MarkdownEditor({
   placeholder?: string
   label: string
   disabled?: boolean
+  source?: boolean
   className?: string
 }) {
   const ref = useRef<HTMLDivElement>(null)
@@ -227,24 +234,27 @@ export function MarkdownEditor({
         // The placeholder, since an empty contenteditable has no `::placeholder`.
         'empty:before:text-text-subtle empty:before:content-[attr(data-placeholder)]',
         '[&>[data-line]]:min-h-[1lh]',
-        // The marker is out of sight except on the line being edited, where
-        // the raw source comes back so it can be deleted like any other text.
-        '[&_[data-mark]]:hidden',
-        '[&>[data-line][data-active]_[data-mark]]:inline',
-        // …and its stand-in is shown the other way round, so a line never
-        // carries both a `- ` and a bullet. It sits in the indent rather than
-        // in the text, which keeps every line of a list starting in the same
-        // column however wide its marker is.
-        '[&>[data-label]]:relative',
-        '[&>[data-label]]:before:text-text-subtle [&>[data-label]]:before:absolute [&>[data-label]]:before:left-0 [&>[data-label]]:before:content-[attr(data-label)]',
-        '[&>[data-label][data-active]]:before:hidden',
-        '[&>[data-style=h1]]:text-lg [&>[data-style=h1]]:font-semibold',
-        '[&>[data-style=h2]]:text-base [&>[data-style=h2]]:font-semibold',
-        '[&>[data-style=h3]]:text-sm [&>[data-style=h3]]:font-semibold',
-        '[&>[data-style=bullet]]:pl-6 [&>[data-style=ordered]]:pl-6 [&>[data-style=task]]:pl-6',
-        '[&>[data-style=quote]]:border-border-strong [&>[data-style=quote]]:text-text-muted [&>[data-style=quote]]:border-l-2 [&>[data-style=quote]]:pl-2',
-        '[&>[data-style=code]]:text-text-muted [&>[data-style=code]]:font-mono [&>[data-style=code]]:text-sm',
-        '[&>[data-style=rule]]:border-border-strong [&>[data-style=rule]]:border-b',
+        !source && [
+          // The marker is out of sight except on the line being edited, where
+          // the raw source comes back so it can be deleted like any other text.
+          '[&_[data-mark]]:hidden',
+          '[&>[data-line][data-active]_[data-mark]]:inline',
+          // …and its stand-in is shown the other way round, so a line never
+          // carries both a `- ` and a bullet. It sits in the indent rather than
+          // in the text, which keeps every line of a list starting in the same
+          // column however wide its marker is.
+          '[&>[data-label]]:relative',
+          '[&>[data-label]]:before:text-text-subtle [&>[data-label]]:before:absolute [&>[data-label]]:before:left-0 [&>[data-label]]:before:content-[attr(data-label)]',
+          '[&>[data-label][data-active]]:before:hidden',
+          '[&>[data-style=h1]]:text-lg [&>[data-style=h1]]:font-semibold',
+          '[&>[data-style=h2]]:text-base [&>[data-style=h2]]:font-semibold',
+          '[&>[data-style=h3]]:text-sm [&>[data-style=h3]]:font-semibold',
+          '[&>[data-style=bullet]]:pl-6 [&>[data-style=ordered]]:pl-6 [&>[data-style=task]]:pl-6',
+          '[&>[data-style=quote]]:border-border-strong [&>[data-style=quote]]:text-text-muted [&>[data-style=quote]]:border-l-2 [&>[data-style=quote]]:pl-2',
+          '[&>[data-style=code]]:text-text-muted [&>[data-style=code]]:font-mono [&>[data-style=code]]:text-sm',
+          '[&>[data-style=rule]]:border-border-strong [&>[data-style=rule]]:border-b',
+        ],
+        source && 'font-mono text-sm leading-relaxed whitespace-pre-wrap',
         className,
       )}
     />

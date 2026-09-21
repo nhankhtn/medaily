@@ -114,42 +114,44 @@ export function NoteEditor({
 
         {viewing && note ? (
           <div className="flex min-h-0 flex-1 flex-col gap-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge tone={note.type === 'bookmark' ? 'accent' : 'neutral'}>
-                {t(`types.${note.type}`)}
-              </Badge>
-              {note.tagNames.map((tag) => (
-                <Badge key={tag}>#{tag}</Badge>
-              ))}
-            </div>
+            <div className="glass flex min-h-0 flex-1 flex-col gap-3 overflow-hidden rounded-[var(--radius)] p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge tone={note.type === 'bookmark' ? 'accent' : 'neutral'}>
+                  {t(`types.${note.type}`)}
+                </Badge>
+                {note.tagNames.map((tag) => (
+                  <Badge key={tag}>#{tag}</Badge>
+                ))}
+              </div>
 
-            {note.topicName || note.resourceTitle || note.learnedOn ? (
-              <p className="text-text-subtle flex flex-wrap items-center gap-x-2 text-xs">
-                {note.topicName ? <span>{note.topicName}</span> : null}
-                {note.topicName && note.resourceTitle ? <span aria-hidden>·</span> : null}
-                {note.resourceTitle ? <span className="truncate">{note.resourceTitle}</span> : null}
-                {note.learnedOn ? (
-                  <>
-                    {(note.topicName || note.resourceTitle) && <span aria-hidden>·</span>}
-                    <span>{note.learnedOn}</span>
-                  </>
-                ) : null}
-              </p>
-            ) : null}
+              {note.topicName || note.resourceTitle || note.learnedOn ? (
+                <p className="text-text-subtle flex flex-wrap items-center gap-x-2 text-xs">
+                  {note.topicName ? <span>{note.topicName}</span> : null}
+                  {note.topicName && note.resourceTitle ? <span aria-hidden>·</span> : null}
+                  {note.resourceTitle ? <span className="truncate">{note.resourceTitle}</span> : null}
+                  {note.learnedOn ? (
+                    <>
+                      {(note.topicName || note.resourceTitle) && <span aria-hidden>·</span>}
+                      <span>{note.learnedOn}</span>
+                    </>
+                  ) : null}
+                </p>
+              ) : null}
 
-            {note.url ? (
-              <a
-                href={note.url}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="text-accent block truncate text-sm hover:underline"
-              >
-                {note.url}
-              </a>
-            ) : null}
+              {note.url ? (
+                <a
+                  href={note.url}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="text-accent block truncate text-sm hover:underline"
+                >
+                  {note.url}
+                </a>
+              ) : null}
 
-            <div className="glass min-h-[min(28rem,55dvh)] flex-1 overflow-y-auto rounded-[var(--radius)] p-3 sm:min-h-[min(36rem,60dvh)]">
-              <Markdown targets={targets}>{body || '—'}</Markdown>
+              <div className="min-h-0 flex-1 overflow-y-auto">
+                <Markdown targets={targets}>{body || '—'}</Markdown>
+              </div>
             </div>
 
             <div className="flex shrink-0 justify-between gap-2 pb-1">
@@ -229,16 +231,6 @@ export function NoteEditor({
               </Field>
             </div>
 
-            <div className="flex min-h-0 flex-1 flex-col gap-1.5">
-              <span className="shrink-0 text-sm font-medium">{t('body')}</span>
-              <MarkdownEditor
-                label={t('body')}
-                value={body}
-                onChange={setBody}
-                className="min-h-[min(28rem,55dvh)] flex-1 sm:min-h-[min(36rem,60dvh)]"
-              />
-            </div>
-
             <Field label={t('tags')}>
               <Input
                 name="tags"
@@ -246,6 +238,22 @@ export function NoteEditor({
                 placeholder={t('tagsHint')}
               />
             </Field>
+
+            {/*
+             * Body fills what is left and scrolls inside its own box. Without
+             * overflow clipping, a flex-grown contenteditable paints over the
+             * fields below and looks like one big grey slab that swallowed them.
+             */}
+            <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-hidden">
+              <span className="shrink-0 text-sm font-medium">{t('body')}</span>
+              <MarkdownEditor
+                label={t('body')}
+                value={body}
+                onChange={setBody}
+                source
+                className="min-h-48 flex-1 overflow-y-auto sm:min-h-56"
+              />
+            </div>
 
             <div className="flex shrink-0 justify-between gap-2 pb-1">
               {note ? (

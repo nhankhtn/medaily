@@ -71,8 +71,8 @@ export function DialogContent({
 
         <div
           className={cn(
-            'min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[max(1rem,env(safe-area-inset-bottom))]',
-            drawer && 'flex flex-col',
+            'min-h-0 flex-1 px-4 pb-[max(1rem,env(safe-area-inset-bottom))]',
+            drawer ? 'flex flex-col overflow-hidden' : 'overflow-y-auto overscroll-contain',
           )}
         >
           {children}
