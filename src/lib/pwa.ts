@@ -24,8 +24,9 @@ export function isIosSafari(): boolean {
 }
 
 /**
- * Popup Google sign-in has no reliable soft keyboard in a standalone PWA (and
- * is flaky in iOS Safari). Full-page redirect is the path that works.
+ * Popup Google sign-in opens ASWebAuthenticationSession on iOS (sheet with
+ * Done) where the soft keyboard often never appears. Full-page redirect on
+ * the app origin — with authDomain = page host — is the path that works.
  */
 export function needsAuthRedirect(): boolean {
   return isStandalone() || isIosSafari()

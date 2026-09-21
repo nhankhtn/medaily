@@ -21,7 +21,14 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   async headers() {
-    return [{ source: '/:path*', headers: securityHeaders }]
+    return [
+      // Skip `/__/auth/*` — Firebase's helper is iframed on this origin once
+      // authDomain is the app host; DENY would blank that frame.
+      {
+        source: '/:path((?!__/auth).*)*',
+        headers: securityHeaders,
+      },
+    ]
   },
   async rewrites() {
     const project =
