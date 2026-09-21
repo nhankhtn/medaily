@@ -29,6 +29,50 @@ Prefer utilities / primitives over hand-rolled chrome:
 | Modal / sheet / strong panel | `glass-strong` or `<DialogContent>` |
 | Floating dock, More tiles, Control Center chips | `glass-chip` |
 | Page chrome (header / sidebar) | `glass` + safe-area insets |
+| A control **inside** any of the above | `glass-inset` |
+
+### One blurred layer per branch
+
+`glass`, `glass-strong` and `glass-chip` are level 1: the surface that sits on
+the page and blurs it. Everything nested inside one is level 2 and uses
+`glass-inset` — fill and rim, no `backdrop-filter`.
+
+This is not a style preference. A nested `backdrop-filter` samples what its
+parent already composited, not the page, so a glass field inside a glass card
+blurs a flat sheet: it cannot reveal anything the card did not already show,
+and all it contributes is another coat of fill. Two coats of a 32% white read
+as 54%, three as 69%, and the panel that was supposed to be glass is opaque
+white. This is the same mechanism as the overlay note below — it just costs
+you the whole screen instead of one modal.
+
+```tsx
+// ❌ BAD — the field blurs the card, which is already a flat sheet
+<Card>
+  <input className="glass rounded-[var(--radius)]" />
+</Card>
+
+// ✅ GOOD
+<Card>
+  <input className="glass-inset rounded-[var(--radius)]" />
+</Card>
+```
+
+`Input`, `Textarea`, `Select`, `DateInput`, `MinuteInput`, `Stepper`,
+`ScaleInput`, `Badge` and `Progress` already do this — reach for the primitive
+and you cannot get it wrong.
+
+`globals.css` carries a safety net (`:is(.glass,…) :is(.glass,…)`) that strips
+the filter from anything nested anyway, because the mistake is invisible in a
+diff and only shows up as a washed-out screen. Do not lean on it: it cannot
+know whether you *meant* level 2, and it leaves the extra fill behind.
+
+### Glass needs something to look through
+
+A translucent surface over a flat background is just an opaque one. What makes
+the panels read as glass is `--bg-atmosphere` on `body::before` — coloured
+blooms that the blur has something to pick up and the `saturate()` has
+something to amplify. If a screen paints its own opaque full-bleed background
+over that, every panel on it goes dead. Let the atmosphere through.
 
 ```tsx
 // ❌ BAD

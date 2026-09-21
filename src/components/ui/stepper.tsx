@@ -42,7 +42,7 @@ export function Stepper({
         type="button"
         onClick={() => bump(-step)}
         aria-label={`${name} -${step}`}
-        className="glass text-text-muted hover:bg-surface-2 flex size-10 items-center justify-center rounded-[var(--radius)] border-border-strong sm:size-11"
+        className="glass-inset text-text-muted hover:bg-inset-hover flex size-10 items-center justify-center rounded-[var(--radius)] border-border-strong sm:size-11"
       >
         <Minus className="size-4" />
       </button>
@@ -63,7 +63,7 @@ export function Stepper({
             if (Number.isNaN(parsed)) return
             onChange(Math.min(max, Math.max(min, parsed)))
           }}
-          className="glass text-text focus:border-accent focus:inset-ring-accent h-10 w-full rounded-[var(--radius)] border-border-strong px-2.5 text-center text-base tabular-nums focus:inset-ring-1 focus:outline-none sm:h-11 sm:px-3"
+          className="glass-inset text-text focus:border-accent focus:inset-ring-accent h-10 w-full rounded-[var(--radius)] border-border-strong px-2.5 text-center text-base tabular-nums focus:inset-ring-1 focus:outline-none sm:h-11 sm:px-3"
         />
         {suffix ? (
           <span className="text-text-subtle pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs">
@@ -75,7 +75,7 @@ export function Stepper({
         type="button"
         onClick={() => bump(step)}
         aria-label={`${name} +${step}`}
-        className="glass text-text-muted hover:bg-surface-2 flex size-10 items-center justify-center rounded-[var(--radius)] border-border-strong sm:size-11"
+        className="glass-inset text-text-muted hover:bg-inset-hover flex size-10 items-center justify-center rounded-[var(--radius)] border-border-strong sm:size-11"
       >
         <Plus className="size-4" />
       </button>

@@ -284,7 +284,7 @@ export function CommandPalette({ today }: { today: ISODate }) {
       {trigger}
       {createPortal(
         <div
-          className="fixed inset-0 z-[60] flex items-start justify-center bg-overlay/80 p-4 pt-[max(7dvh,calc(env(safe-area-inset-top,0px)+1rem))] backdrop-blur-sm pr-[max(1rem,env(safe-area-inset-right,0px))] pl-[max(1rem,env(safe-area-inset-left,0px))]"
+          className="fixed inset-0 z-[60] flex items-start justify-center bg-overlay/80 p-4 pt-[max(7dvh,calc(env(safe-area-inset-top,0px)+1rem))] pr-[max(1rem,env(safe-area-inset-right,0px))] pl-[max(1rem,env(safe-area-inset-left,0px))]"
           onClick={() => setOpen(false)}
           role="presentation"
         >

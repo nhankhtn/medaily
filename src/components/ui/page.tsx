@@ -83,7 +83,7 @@ export function TabNav({ tabs, current }: { tabs: Tab[]; current: string }) {
           className={cn(
             'rounded-full px-3 py-1 text-sm transition-colors',
             tab.key === current
-              ? 'glass-strong font-medium text-text'
+              ? 'glass-inset font-medium text-text shadow-sm'
               : 'text-text-muted hover:text-text',
           )}
         >

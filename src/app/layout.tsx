@@ -41,9 +41,13 @@ export const viewport: Viewport = {
   // The soft keyboard shrinks the layout viewport, so a bottom sheet stays
   // above it and `dvh` means what it says while someone is typing.
   interactiveWidget: 'resizes-content',
+  // Browser chrome behind the page, so it tracks the top of `--bg-atmosphere`
+  // rather than a flat grey — at a third of the bloom, because this paints
+  // solid UI and the full value is a wash. Not a token: a meta tag is read
+  // before any stylesheet, so this is the one place a colour is written out.
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#f5f6f8' },
-    { media: '(prefers-color-scheme: dark)', color: '#1a1a22' },
+    { media: '(prefers-color-scheme: light)', color: '#dadfff' },
+    { media: '(prefers-color-scheme: dark)', color: '#1d1e43' },
   ],
 }
 
