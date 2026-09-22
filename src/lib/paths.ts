@@ -19,6 +19,8 @@ export type LearningTab = 'sessions' | 'notes'
 export const PATHS = {
   home: '/',
   login: '/login',
+  /** Google sign-in that must run in Safari (iOS PWA keyboard workaround). */
+  loginGoogleSafari: '/login/google-safari',
 
   daily: '/daily',
   dailyOn: (date: ISODate) => `/daily/${date}`,
@@ -85,6 +87,7 @@ export const PATHS = {
   api: {
     health: '/api/health',
     googleAuth: '/api/auth/google',
+    authHandoff: '/api/auth/handoff',
     calendarIcs: '/api/calendar.ics',
     exportJson: '/api/export?format=json',
     exportCsv: (table: string) => `/api/export?format=csv&table=${table}`,
@@ -136,6 +139,7 @@ export const PUBLIC_PATHS = [
   PATHS.login,
   PATHS.api.health,
   PATHS.api.googleAuth,
+  PATHS.api.authHandoff,
   PATHS.manifest,
   PATHS.serviceWorker,
   PATHS.firebaseAuthHandler,
