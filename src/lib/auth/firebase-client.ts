@@ -2,14 +2,11 @@ import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app'
 import {
   browserPopupRedirectResolver,
   getAuth,
-  getRedirectResult,
   GoogleAuthProvider,
   signInWithPopup,
-  signInWithRedirect,
   signOut,
   type Auth,
 } from 'firebase/auth'
-import { needsAuthRedirect } from '@/lib/pwa'
 
 /**
  * Browser-side Firebase, used for exactly one thing: obtaining a Google ID
@@ -20,11 +17,14 @@ import { needsAuthRedirect } from '@/lib/pwa'
  * it identifies the project. What protects the app is the server verifying
  * the token's signature and the allowlist.
  *
- * `authDomain` is the **page host**, not `*.firebaseapp.com`. Safari and
- * Chromium block the cross-site storage `signInWithRedirect` needs when the
- * helper lives on another origin. `next.config` already proxies `/__/auth/*`
- * to the Firebase project, so same-origin authDomain is Option 3 from
+ * `authDomain` is the **page host**, not `*.firebaseapp.com`. The popup loads
+ * Firebase's helper from authDomain, so on the default domain it is reading
+ * and writing storage cross-site — the thing Safari's ITP and Chromium's
+ * partitioning keep narrowing. `next.config` proxies `/__/auth/*` to the
+ * project, which is Option 3 from
  * https://firebase.google.com/docs/auth/web/redirect-best-practices
+ * It also puts the app's own domain on Google's consent screen rather than a
+ * firebaseapp.com address nobody recognises.
  */
 function firebaseConfig() {
   return {
@@ -37,9 +37,6 @@ function firebaseConfig() {
   }
 }
 
-/** Survives the Google redirect round-trip so we land on the intended page. */
-const NEXT_PATH_KEY = 'medaily.auth.next'
-
 /** False when the deploy has no Firebase project: the button then stays hidden. */
 export function firebaseConfigured(): boolean {
   const config = firebaseConfig()
@@ -47,9 +44,8 @@ export function firebaseConfigured(): boolean {
 }
 
 function firebaseApp(): FirebaseApp {
-  const config = firebaseConfig()
   if (getApps().length > 0) return getApp()
-  return initializeApp(config)
+  return initializeApp(firebaseConfig())
 }
 
 function firebaseAuth(): Auth {
@@ -65,49 +61,16 @@ export class GoogleSignInError extends Error {
   }
 }
 
-function googleProvider(): GoogleAuthProvider {
+/**
+ * Returns a fresh ID token. The token is short-lived and used once — the
+ * server trades it for a session cookie and never stores it.
+ */
+export async function signInWithGoogle(): Promise<string> {
+  const auth = firebaseAuth()
   const provider = new GoogleAuthProvider()
   // Always show the chooser: on a shared machine, silently reusing the last
   // Google account is a surprising way to open someone's private journal.
   provider.setCustomParameters({ prompt: 'select_account' })
-  return provider
-}
-
-export function rememberAuthNext(next: string | undefined): void {
-  try {
-    if (next) sessionStorage.setItem(NEXT_PATH_KEY, next)
-    else sessionStorage.removeItem(NEXT_PATH_KEY)
-  } catch {
-    /* private mode */
-  }
-}
-
-export function takeAuthNext(): string | undefined {
-  try {
-    const value = sessionStorage.getItem(NEXT_PATH_KEY) ?? undefined
-    sessionStorage.removeItem(NEXT_PATH_KEY)
-    return value
-  } catch {
-    return undefined
-  }
-}
-
-/**
- * Returns a fresh ID token, or `null` when a full-page redirect was started
- * (iOS / standalone — the page is about to leave).
- *
- * Do **not** pass `browserPopupRedirectResolver` into `signInWithRedirect`:
- * that resolver opens ASWebAuthenticationSession (the sheet with "Done"),
- * where iOS often focuses the email field and never raises the keyboard.
- */
-export async function signInWithGoogle(): Promise<string | null> {
-  const auth = firebaseAuth()
-  const provider = googleProvider()
-
-  if (needsAuthRedirect()) {
-    await signInWithRedirect(auth, provider)
-    return null
-  }
 
   try {
     const credential = await signInWithPopup(auth, provider, browserPopupRedirectResolver)
@@ -118,25 +81,6 @@ export async function signInWithGoogle(): Promise<string | null> {
       throw new GoogleSignInError('cancelled')
     }
     if (code === 'auth/popup-blocked') throw new GoogleSignInError('popup_blocked')
-    throw new GoogleSignInError('failed')
-  }
-}
-
-/**
- * After `signInWithRedirect` returns to `/login`, pull the credential once.
- * Resolves `null` on a normal visit with no pending redirect.
- */
-export async function completeGoogleRedirect(): Promise<string | null> {
-  if (!firebaseConfigured()) return null
-  try {
-    const credential = await getRedirectResult(firebaseAuth())
-    if (!credential) return null
-    return await credential.user.getIdToken()
-  } catch (error) {
-    const code = (error as { code?: string }).code ?? ''
-    if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
-      throw new GoogleSignInError('cancelled')
-    }
     throw new GoogleSignInError('failed')
   }
 }
