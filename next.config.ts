@@ -21,7 +21,22 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   async headers() {
-    return [{ source: '/:path*', headers: securityHeaders }]
+    return [
+      // Everything except the Firebase auth helper.
+      {
+        source: '/((?!__/auth(?:/|$)).*)',
+        headers: securityHeaders,
+      },
+      // Auth helper is iframed and builds the Google OAuth URL — DENY / no-referrer
+      // here breaks sign-in (blank iframe or Google 400 malformed).
+      {
+        source: '/__/auth/:path*',
+        headers: [
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+        ],
+      },
+    ]
   },
   async rewrites() {
     const project =

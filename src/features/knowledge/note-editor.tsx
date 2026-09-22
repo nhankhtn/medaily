@@ -104,12 +104,7 @@ export function NoteEditor({
         description={viewing ? undefined : t('wikiHint')}
       >
         {note ? (
-          <ModeSwitch
-            mode={mode}
-            onChange={setMode}
-            viewLabel={t('view')}
-            editLabel={t('edit')}
-          />
+          <ModeSwitch mode={mode} onChange={setMode} viewLabel={t('view')} editLabel={t('edit')} />
         ) : null}
 
         {viewing && note ? (
@@ -128,7 +123,9 @@ export function NoteEditor({
                 <p className="text-text-subtle flex flex-wrap items-center gap-x-2 text-xs">
                   {note.topicName ? <span>{note.topicName}</span> : null}
                   {note.topicName && note.resourceTitle ? <span aria-hidden>·</span> : null}
-                  {note.resourceTitle ? <span className="truncate">{note.resourceTitle}</span> : null}
+                  {note.resourceTitle ? (
+                    <span className="truncate">{note.resourceTitle}</span>
+                  ) : null}
                   {note.learnedOn ? (
                     <>
                       {(note.topicName || note.resourceTitle) && <span aria-hidden>·</span>}
@@ -250,7 +247,6 @@ export function NoteEditor({
                 label={t('body')}
                 value={body}
                 onChange={setBody}
-                source
                 className="min-h-48 flex-1 overflow-y-auto sm:min-h-56"
               />
             </div>
@@ -327,7 +323,7 @@ function ModeSwitch({
           className={cn(
             'inline-flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-colors',
             mode === option.id
-              ? 'glass-strong font-medium text-text'
+              ? 'glass-strong text-text font-medium'
               : 'text-text-muted hover:text-text',
           )}
         >

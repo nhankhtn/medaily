@@ -1,4 +1,4 @@
-import { getApp, getApps, initializeApp } from 'firebase/app'
+import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app'
 import {
   browserPopupRedirectResolver,
   getAuth,
@@ -16,21 +16,40 @@ import {
  * These values are public by design — Firebase web config is not a secret,
  * it identifies the project. What protects the app is the server verifying
  * the token's signature and the allowlist.
+ *
+ * `authDomain` is the **page host**, not `*.firebaseapp.com`. The popup loads
+ * Firebase's helper from authDomain, so on the default domain it is reading
+ * and writing storage cross-site — the thing Safari's ITP and Chromium's
+ * partitioning keep narrowing. `next.config` proxies `/__/auth/*` to the
+ * project, which is Option 3 from
+ * https://firebase.google.com/docs/auth/web/redirect-best-practices
+ * It also puts the app's own domain on Google's consent screen rather than a
+ * firebaseapp.com address nobody recognises.
  */
-const config = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? '',
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? '',
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? '',
+function firebaseConfig() {
+  return {
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? '',
+    authDomain:
+      typeof window !== 'undefined'
+        ? window.location.host
+        : (process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? ''),
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? '',
+  }
 }
 
 /** False when the deploy has no Firebase project: the button then stays hidden. */
 export function firebaseConfigured(): boolean {
-  return config.apiKey.length > 0 && config.authDomain.length > 0 && config.projectId.length > 0
+  const config = firebaseConfig()
+  return config.apiKey.length > 0 && config.projectId.length > 0
+}
+
+function firebaseApp(): FirebaseApp {
+  if (getApps().length > 0) return getApp()
+  return initializeApp(firebaseConfig())
 }
 
 function firebaseAuth(): Auth {
-  const app = getApps().length > 0 ? getApp() : initializeApp(config)
-  return getAuth(app)
+  return getAuth(firebaseApp())
 }
 
 export type GoogleSignInFailure = 'cancelled' | 'popup_blocked' | 'failed'

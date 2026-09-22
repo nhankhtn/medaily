@@ -90,7 +90,7 @@ export function GoogleButton({ next }: { next?: string }) {
         disabled={pending}
       >
         {pending ? <Loader2 className="size-4 animate-spin" /> : <GoogleMark />}
-        {t('continueWithGoogle')}
+        {pending ? t('signingIn') : t('continueWithGoogle')}
       </Button>
 
       {error ? (

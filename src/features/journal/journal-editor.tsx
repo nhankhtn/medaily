@@ -1,6 +1,6 @@
 'use client'
 
-import { Eye, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { MarkdownEditor } from '@/components/ui/markdown-editor'
-import { Markdown } from '@/components/ui/markdown'
 import { Field } from '@/features/projects/project-dialog'
 import type { JournalEntry } from '@/lib/db/schema'
 import type { ISODate } from '@/lib/dates'
@@ -29,7 +28,6 @@ export function JournalEditor({
   const tc = useTranslations('common')
   const [open, setOpen] = useState(false)
   const [body, setBody] = useState(entry?.bodyMd ?? '')
-  const [preview, setPreview] = useState(false)
   const [pending, startTransition] = useTransition()
 
   const submit = (formData: FormData) => {
@@ -92,30 +90,13 @@ export function JournalEditor({
           </div>
 
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">{t('body')}</span>
-              <button
-                type="button"
-                onClick={() => setPreview((prev) => !prev)}
-                className="text-accent flex items-center gap-1 text-xs hover:underline"
-              >
-                {preview ? <Pencil className="size-3" /> : <Eye className="size-3" />}
-                {preview ? tc('edit') : t('preview')}
-              </button>
-            </div>
-
-            {preview ? (
-              <div className="glass min-h-48 rounded-[var(--radius)] p-3">
-                <Markdown>{body || '—'}</Markdown>
-              </div>
-            ) : (
-              <MarkdownEditor
-                label={t('body')}
-                value={body}
-                onChange={setBody}
-                className="min-h-64"
-              />
-            )}
+            <span className="text-sm font-medium">{t('body')}</span>
+            <MarkdownEditor
+              label={t('body')}
+              value={body}
+              onChange={setBody}
+              className="min-h-64"
+            />
           </div>
 
           <div className="grid grid-cols-3 gap-3">

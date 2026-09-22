@@ -1,7 +1,8 @@
 'use client'
 
-import { LogOut } from 'lucide-react'
+import { Loader2, LogOut } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { useFormStatus } from 'react-dom'
 import { clearPendingSaves } from '@/features/daily/pending-saves'
 import { clearPendingTransactions } from '@/features/finance/pending-transactions'
 import { clearPendingStops } from '@/features/timer/pending-stops'
@@ -12,52 +13,67 @@ import { logout } from '@/server/actions/auth'
 
 /** `card` matches the route tiles in the mobile More sheet. */
 export function SignOutButton({ variant = 'icon' }: { variant?: 'icon' | 'card' }) {
-  const t = useTranslations('auth')
-
-  /**
-   * Clear the Firebase session in this browser before dropping our cookie.
-   * Our cookie is what governs access, but leaving Firebase signed in means
-   * the next "continue with Google" walks straight back in with no chooser.
-   */
   const signOut = async () => {
-    await signOutFirebase()
-    // Three copies of this person's own day live on the device: the cache as
-    // a rendered page, the queue as a save not yet sent, and the draft as
-    // words typed and not saved. None may be there for whoever signs in next
-    // — the queue would deliver a day into their account, and the draft would
-    // reappear in their form.
-    await clearOfflineCaches()
-    await clearPendingSaves()
-    await clearPendingTransactions()
-    await clearPendingStops()
-    clearDailyDrafts()
-    await logout()
-  }
+    await Promise.allSettled([
+      signOutFirebase(),
+      clearOfflineCaches(),
+      clearPendingSaves(),
+      clearPendingTransactions(),
+      clearPendingStops(),
+      Promise.resolve().then(clearDailyDrafts),
+    ])
 
-  if (variant === 'card') {
-    return (
-      <form action={signOut}>
-        <button
-          type="submit"
-          className="glass-chip flex aspect-square w-full flex-col items-center justify-center gap-2 rounded-[1.35rem] p-2 text-center"
-        >
-          <LogOut className="size-6 text-text-subtle" />
-          <span className="text-xs leading-tight text-text-muted">{t('signOut')}</span>
-        </button>
-      </form>
-    )
+    await logout()
   }
 
   return (
     <form action={signOut}>
+      <SignOutTrigger variant={variant} />
+    </form>
+  )
+}
+
+/**
+ * Its own component so it can read `useFormStatus`, which only reports on a
+ * form above it in the tree.
+ *
+ * Worth the split: even in parallel this is a Firebase round trip and a
+ * redirect, so without it the icon is unchanged after the tap and the tap gets
+ * repeated. `pending` from the form covers the whole chain without a
+ * `useState` that would have to guess when it is over.
+ */
+function SignOutTrigger({ variant }: { variant: 'icon' | 'card' }) {
+  const t = useTranslations('auth')
+  const { pending } = useFormStatus()
+
+  if (variant === 'card') {
+    return (
       <button
         type="submit"
-        title={t('signOut')}
-        aria-label={t('signOut')}
-        className="flex size-9 items-center justify-center rounded-full text-text-subtle hover:bg-surface-2 hover:text-text"
+        disabled={pending}
+        aria-busy={pending}
+        className="glass-chip flex aspect-square w-full flex-col items-center justify-center gap-2 rounded-[1.35rem] p-2 text-center disabled:opacity-50"
       >
-        <LogOut className="size-4" />
+        {pending ? (
+          <Loader2 className="size-6 animate-spin text-text-subtle" />
+        ) : (
+          <LogOut className="size-6 text-text-subtle" />
+        )}
+        <span className="text-xs leading-tight text-text-muted">{t('signOut')}</span>
       </button>
-    </form>
+    )
+  }
+
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      aria-busy={pending}
+      title={t('signOut')}
+      aria-label={t('signOut')}
+      className="flex size-9 items-center justify-center rounded-full text-text-subtle hover:bg-surface-2 hover:text-text disabled:opacity-50 disabled:hover:bg-transparent"
+    >
+      {pending ? <Loader2 className="size-4 animate-spin" /> : <LogOut className="size-4" />}
+    </button>
   )
 }
