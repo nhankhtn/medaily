@@ -22,11 +22,19 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   async headers() {
     return [
-      // Skip `/__/auth/*` — Firebase's helper is iframed on this origin once
-      // authDomain is the app host; DENY would blank that frame.
+      // Everything except the Firebase auth helper.
       {
-        source: '/:path((?!__/auth).*)*',
+        source: '/((?!__/auth(?:/|$)).*)',
         headers: securityHeaders,
+      },
+      // Auth helper is iframed and builds the Google OAuth URL — DENY / no-referrer
+      // here breaks sign-in (blank iframe or Google 400 malformed).
+      {
+        source: '/__/auth/:path*',
+        headers: [
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+        ],
       },
     ]
   },
