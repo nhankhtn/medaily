@@ -1,39 +1,135 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
-import { lineInfo } from '@/lib/markdown'
+import { Extension } from '@tiptap/core'
+import { DragHandle } from '@tiptap/extension-drag-handle-react'
+import { TaskItem, TaskList } from '@tiptap/extension-list'
+import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table'
+import { Placeholder } from '@tiptap/extensions'
+import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
+import { EditorContent, useEditor, type Editor } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
+import { GripVertical, Plus } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import { useEffect, useMemo, useRef } from 'react'
+import { Markdown } from 'tiptap-markdown'
+import { BubbleToolbar } from '@/components/ui/editor/bubble-toolbar'
+import {
+  blockCommands,
+  createSlashCommand,
+  type BlockCommand,
+} from '@/components/ui/editor/slash-command'
 import { cn } from '@/lib/utils'
 
-const TAB = '    '
+/** What the editor shows in words, read at call time so a locale can change. */
+type Wording = {
+  commands: BlockCommand[]
+  empty: string
+  slash: string
+  heading: string
+  field: string | undefined
+}
 
 /**
- * A Markdown box that dresses each line as you write it: `# ` makes the line a
- * heading there and then, `- ` indents a bullet, `> ` sets a quote off.
+ * A box the editor reads its wording out of, written to from an effect.
  *
- * It edits plain text — the value in and out is the Markdown source, marks and
- * all. What changes is how a line is drawn, never what it says, which is the
- * whole reason this can be done without fighting the caret: a class on a line
- * does not move it, and rewriting the line's contents would.
+ * Not a ref and not state: the extensions are built once with the editor and
+ * keep whatever they closed over, so a locale or placeholder that changes
+ * later has to arrive through something they can read again — and rebuilding
+ * them instead would throw away the document and the caret.
+ */
+function wordingBox(initial: Wording) {
+  let held = initial
+  return { read: () => held, write: (next: Wording) => void (held = next) }
+}
+
+/**
+ * Built outside the component on purpose: these closures read the wording when
+ * the reader opens the `/` menu or lands on an empty line, never while React
+ * is rendering.
+ */
+function buildExtensions(wording: ReturnType<typeof wordingBox>) {
+  return [
+    StarterKit.configure({
+      heading: { levels: [1, 2, 3] },
+      // Markdown has no underline, and a `<u>` in the stored text would not
+      // survive the round trip through the reader.
+      underline: false,
+      codeBlock: { HTMLAttributes: { spellcheck: 'false' } },
+      link: { openOnClick: false, autolink: true },
+    }),
+    TaskList,
+    TaskItem.configure({ nested: true }),
+    TightTaskList,
+    Table.configure({ resizable: false }),
+    TableRow,
+    TableHeader,
+    TableCell,
+    Placeholder.configure({
+      showOnlyCurrent: false,
+      placeholder: ({ editor, node, hasAnchor }) => {
+        const say = wording.read()
+        if (editor.isEmpty) return say.field || say.slash
+        if (!hasAnchor) return ''
+        return node.type.name === 'heading' ? say.heading : say.slash
+      },
+    }),
+    // `html: false` keeps the editor to the same subset the reader renders —
+    // raw HTML shows as text there, so it must not become live nodes here.
+    Markdown.configure({ html: false, transformPastedText: true, linkify: true }),
+    createSlashCommand({
+      commands: () => wording.read().commands,
+      empty: () => wording.read().empty,
+    }),
+  ]
+}
+
+/**
+ * A to-do list written back as a *tight* list, without a blank line between
+ * items.
  *
- * The leading marker — the `# `, the `- ` — is wrapped and hidden, with a
- * bullet or a number shown in its place. It is hidden only on the lines the
- * caret is *not* in: the line being edited always shows its raw source, so a
- * `#` can be deleted, backspace behaves, and the caret never has to sit inside
- * something invisible. The text itself is untouched either way, so what gets
- * saved is still the Markdown that was typed.
+ * tiptap-markdown marks its bullet and ordered lists tight but not its task
+ * lists, and prosemirror-markdown then spaces every item out. Nothing renders
+ * differently for it, but a note saved untouched would come back rewritten,
+ * which makes every diff of a note unreadable.
+ */
+const TightTaskList = Extension.create({
+  name: 'tightTaskList',
+  addGlobalAttributes() {
+    return [
+      {
+        types: ['taskList'],
+        attributes: {
+          tight: { default: true, parseHTML: () => true, renderHTML: () => ({}) },
+        },
+      },
+    ]
+  },
+})
+
+/** tiptap-markdown hangs its serializer off the editor without typing it. */
+type MarkdownStorage = { getMarkdown: () => string }
+
+function markdownOf(editor: Editor): string {
+  return (editor.storage as unknown as { markdown: MarkdownStorage }).markdown.getMarkdown()
+}
+
+/**
+ * A block editor in the shape people already know from Notion, storing plain
+ * Markdown.
  *
- * `source` skips the dressing and draws plain line elements, so typing a
- * heading or a third list item does not rebuild spans under the caret.
+ * What is on screen is the finished block, never its source: typing `# ` turns
+ * the line into a heading and the `# ` is gone, `**bold**` closes into bold
+ * text. `/` opens a block picker, a selection raises a formatting bar, and
+ * hovering a block brings out a grip to drag it and a `+` to add one under it.
  *
- * Two things this has to respect:
+ * The value in and out is still Markdown, so nothing else in the app has to
+ * know: the document is parsed from Markdown on the way in and serialised back
+ * on every edit. A value echoed straight back by the parent is ignored rather
+ * than re-parsed — reparsing would rebuild the document under the caret.
  *
- * - **Typing Vietnamese.** Telex composes a letter over several keystrokes,
- *   and touching the DOM mid-composition drops the tone mark. Nothing is
- *   restyled between `compositionstart` and `compositionend`.
- * - **The caret.** The line elements are rebuilt only when the shape of the
- *   text changes — a line added, removed, or newly turned into a heading — and
- *   the caret is put back by character offset when that happens. Ordinary
- *   typing inside a line touches nothing.
+ * Typing Vietnamese is ProseMirror's own concern here, and it handles
+ * composition natively; the one thing that would break Telex is replacing the
+ * document mid-word, which the echo guard above prevents.
  */
 export function MarkdownEditor({
   value,
@@ -41,12 +137,6 @@ export function MarkdownEditor({
   placeholder,
   label,
   disabled,
-  /**
-   * Show the Markdown source as typed (`# `, `- `) instead of dressing lines.
-   * Use with a separate View mode — hiding markers there looks like the body
-   * already rendered while you are still editing.
-   */
-  source = false,
   className,
 }: {
   value: string
@@ -54,517 +144,134 @@ export function MarkdownEditor({
   placeholder?: string
   label: string
   disabled?: boolean
-  source?: boolean
   className?: string
 }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const composing = useRef(false)
+  const t = useTranslations('editor')
+
   /** What we last handed up, so a value echoed back is not a reason to redraw. */
   const emitted = useRef<string | null>(null)
-  const sourceRef = useRef(source)
-  sourceRef.current = source
-
-  // Seed on mount, and follow the value when it changes from elsewhere — a
-  // restored draft, a day copied from yesterday, an undo.
-  useEffect(() => {
-    const root = ref.current
-    if (!root || composing.current) return
-    if (value === emitted.current) return
-
-    draw(root, value, source)
-    emitted.current = value
-  }, [value, source])
-
-  // Which line the caret is in. Nothing is redrawn for this — one attribute
-  // moves from one line element to another, and CSS does the rest.
-  useEffect(() => {
-    const root = ref.current
-    if (!root) return
-
-    const sync = () => markActive(root)
-    document.addEventListener('selectionchange', sync)
-    return () => document.removeEventListener('selectionchange', sync)
+  const [wording, extensions] = useMemo(() => {
+    const box = wordingBox({
+      commands: blockCommands(t),
+      empty: t('noBlock'),
+      slash: t('slashHint'),
+      heading: t('headingHint'),
+      field: placeholder,
+    })
+    return [box, buildExtensions(box)] as const
+    // Seeded once; every later change arrives through `write` below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const commit = (next: string, caret: number, caretEnd = caret) => {
-    const root = ref.current
-    if (!root) return
-    draw(root, next, sourceRef.current)
-    placeCaret(root, caret, caretEnd)
-    markActive(root)
-    emitted.current = next
-    onChange(next)
-  }
+  useEffect(() => {
+    wording.write({
+      commands: blockCommands(t),
+      empty: t('noBlock'),
+      slash: t('slashHint'),
+      heading: t('headingHint'),
+      field: placeholder,
+    })
+  }, [wording, t, placeholder])
 
-  const read = () => {
-    const root = ref.current
-    if (!root) return
+  /** The block under the pointer, for the `+` to insert after. */
+  const hovered = useRef<{ node: ProseMirrorNode | null; pos: number }>({ node: null, pos: 0 })
 
-    const text = textOf(root)
+  const editor = useEditor({
+    extensions,
+    content: value,
+    editable: !disabled,
+    immediatelyRender: false,
+    editorProps: {
+      attributes: {
+        role: 'textbox',
+        'aria-multiline': 'true',
+        'aria-label': label,
+        class: 'md-content',
+      },
+    },
+    onCreate: () => {
+      // The value as handed in, not as the editor would write it back.
+      // Parsing normalises — a four-space list indent comes back as two — and
+      // recording the normalised form here would make the sync effect below
+      // see a difference and re-parse the document it had just built.
+      emitted.current = value
+    },
+    onUpdate: ({ editor: changed }) => {
+      const next = markdownOf(changed)
+      emitted.current = next
+      onChange(next)
+    },
+  })
 
-    if (shapeOf(text, sourceRef.current) !== shapeOf(emitted.current ?? '', sourceRef.current)) {
-      const caret = selectionRange(root)
-      draw(root, text, sourceRef.current)
-      if (caret) placeCaret(root, caret.end)
-      markActive(root)
-    }
+  // Follow the value when it changes from elsewhere — a restored draft, a day
+  // copied from yesterday, a dialog reopened on another note.
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return
+    if (value === emitted.current) return
+    emitted.current = value
+    editor.commands.setContent(value, { emitUpdate: false })
+  }, [editor, value])
 
-    emitted.current = text
-    onChange(text)
-  }
+  useEffect(() => {
+    if (editor && !editor.isDestroyed) editor.setEditable(!disabled)
+  }, [editor, disabled])
 
-  /**
-   * Home, taken over from the browser.
-   *
-   * With the marker in an element of its own, a browser's Home leaves the DOM
-   * caret after that element while drawing it before — and then deletes the
-   * marker when told to delete forwards. Measured, not guessed at: the caret
-   * read as character 2 of `# abc` and `Delete` took out the `#`.
-   *
-   * So the app decides. Home goes to where the line's words start, which is
-   * what the key is wanted for; pressing it again goes to the very start,
-   * where the marker can be reached and deleted.
-   */
-  const goToLineStart = () => {
-    const root = ref.current
-    if (!root) return
-
-    const at = selectionRange(root)
-    if (!at) return
-
-    const text = textOf(root)
-    const start = text.lastIndexOf('\n', Math.max(0, at.end - 1)) + 1
-    const break_ = text.indexOf('\n', start)
-    const line = break_ === -1 ? text.slice(start) : text.slice(start, break_)
-    const words = start + lineInfo(line).marker.length
-
-    placeCaret(root, at.end === words ? start : words)
-    markActive(root)
-  }
-
-  /**
-   * Splitting and joining lines is done here rather than left to the browser.
-   * Chrome answers one Enter with two empty line elements, and the redraw
-   * turned the spare one into a line of its own — press Enter four times and
-   * the box grew seven lines. Owning the structural edits keeps the browser to
-   * what it is good at: typing inside a line.
-   */
-  const replaceSelection = (inserted: string) => {
-    const root = ref.current
-    if (!root) return
-
-    const at = selectionRange(root) ?? { start: 0, end: 0 }
-    const text = textOf(root)
-    const next = text.slice(0, at.start) + inserted + text.slice(at.end)
-    commit(next, at.start + inserted.length)
-  }
-
-  /** Enter continues a list / quote; an empty item exits it. */
-  const handleEnter = () => {
-    const root = ref.current
-    if (!root) return
-
-    const at = selectionRange(root) ?? { start: 0, end: 0 }
-    const text = textOf(root)
-    const lineStart = text.lastIndexOf('\n', Math.max(0, at.start - 1)) + 1
-    const lineBreak = text.indexOf('\n', at.start)
-    const lineEnd = lineBreak === -1 ? text.length : lineBreak
-    const line = text.slice(lineStart, lineEnd)
-    const prefix = listPrefix(line)
-
-    // Empty list / quote / task line → drop the marker and leave a blank line.
-    if (prefix && line.slice(prefix.length).trim() === '') {
-      const next = text.slice(0, lineStart) + text.slice(lineEnd)
-      commit(next, lineStart)
-      return
-    }
-
-    if (prefix) {
-      const nextPrefix = nextListPrefix(prefix)
-      const next = text.slice(0, at.start) + '\n' + nextPrefix + text.slice(at.end)
-      commit(next, at.start + 1 + nextPrefix.length)
-      return
-    }
-
-    replaceSelection('\n')
-  }
-
-  /** Tab indents each selected line by four spaces — not a jump to the next field. */
-  const indent = () => {
-    const root = ref.current
-    if (!root) return
-
-    const at = selectionRange(root) ?? { start: 0, end: 0 }
-    const text = textOf(root)
-    const blockStart = text.lastIndexOf('\n', Math.max(0, at.start - 1)) + 1
-    const blockEnd = (() => {
-      const break_ = text.indexOf('\n', Math.max(at.start, at.end))
-      return break_ === -1 ? text.length : break_
-    })()
-    const block = text.slice(blockStart, blockEnd)
-    const indented = block
-      .split('\n')
-      .map((line) => TAB + line)
-      .join('\n')
-    const next = text.slice(0, blockStart) + indented + text.slice(blockEnd)
-    const lines = block.split('\n').length
-    commit(next, at.start + TAB.length, at.end + TAB.length * lines)
-  }
-
-  /** Shift+Tab peels one indent level (four spaces) off each selected line. */
-  const outdent = () => {
-    const root = ref.current
-    if (!root) return
-
-    const at = selectionRange(root) ?? { start: 0, end: 0 }
-    const text = textOf(root)
-    const blockStart = text.lastIndexOf('\n', Math.max(0, at.start - 1)) + 1
-    const blockEnd = (() => {
-      const break_ = text.indexOf('\n', Math.max(at.start, at.end))
-      return break_ === -1 ? text.length : break_
-    })()
-    const block = text.slice(blockStart, blockEnd)
-    let removedBeforeStart = 0
-    let removedBeforeEnd = 0
-    let removed = 0
-    let offset = 0
-    const outdented = block
-      .split('\n')
-      .map((line) => {
-        const lead = line.slice(0, TAB.length)
-        const n =
-          lead === TAB ? TAB.length : (line.match(/^ {1,3}/)?.[0].length ?? 0)
-        const lineAbs = blockStart + offset
-        if (lineAbs < at.start) removedBeforeStart += n
-        if (lineAbs < at.end) removedBeforeEnd += n
-        removed += n
-        offset += line.length + 1
-        return line.slice(n)
-      })
-      .join('\n')
-    if (removed === 0) return
-
-    const next = text.slice(0, blockStart) + outdented + text.slice(blockEnd)
-    commit(
-      next,
-      Math.max(blockStart, at.start - removedBeforeStart),
-      Math.max(blockStart, at.end - removedBeforeEnd),
-    )
+  const addBelow = () => {
+    if (!editor) return
+    const { node, pos } = hovered.current
+    if (!node) return
+    const after = pos + node.nodeSize
+    editor
+      .chain()
+      .focus()
+      .insertContentAt(after, { type: 'paragraph', content: [{ type: 'text', text: '/' }] })
+      .run()
   }
 
   return (
     <div
-      ref={ref}
-      // `plaintext-only` is what keeps this a text editor: the browser inserts
-      // text and line breaks and never markup, so a paste from a web page
-      // arrives as the words it was.
-      contentEditable={disabled ? false : 'plaintext-only'}
-      suppressContentEditableWarning
-      role="textbox"
-      aria-multiline="true"
-      aria-label={label}
-      aria-disabled={disabled || undefined}
-      data-placeholder={placeholder}
-      onInput={read}
-      onKeyDown={(event) => {
-        if (composing.current) return
-
-        if (event.key === 'Enter') {
-          event.preventDefault()
-          handleEnter()
-          return
-        }
-
-        if (event.key === 'Tab') {
-          event.preventDefault()
-          if (event.shiftKey) outdent()
-          else indent()
-          return
-        }
-
-        if (event.key === 'Home' && !event.shiftKey) {
-          event.preventDefault()
-          goToLineStart()
-        }
-      }}
-      onPaste={(event) => {
-        // Whatever was copied, what lands is its text.
-        event.preventDefault()
-        replaceSelection(event.clipboardData.getData('text/plain').replace(/\r\n/g, '\n'))
-      }}
-      // Leaving the box is not a line being edited, and a browser keeps the
-      // selection where it was — so the markers have to be put away by hand.
-      onBlur={() => {
-        const root = ref.current
-        if (root) for (const line of root.children) line.removeAttribute('data-active')
-      }}
-      onCompositionStart={() => {
-        composing.current = true
-      }}
-      onCompositionEnd={() => {
-        composing.current = false
-        read()
-      }}
       className={cn(
-        'glass-inset text-text min-h-20 w-full rounded-[var(--radius)] border-border-strong px-3 py-2 text-base',
-        'focus:border-accent focus:inset-ring-accent focus:inset-ring-1 focus:outline-none',
+        'glass-inset text-text border-border-strong relative w-full rounded-[var(--radius)] px-3 py-2',
+        'focus-within:border-accent focus-within:inset-ring-accent focus-within:inset-ring-1',
         disabled && 'text-text-muted bg-surface-2',
-        // The placeholder, since an empty contenteditable has no `::placeholder`.
-        'empty:before:text-text-subtle empty:before:content-[attr(data-placeholder)]',
-        '[&>[data-line]]:min-h-[1lh]',
-        !source && [
-          // The marker is out of sight except on the line being edited, where
-          // the raw source comes back so it can be deleted like any other text.
-          '[&_[data-mark]]:hidden',
-          '[&>[data-line][data-active]_[data-mark]]:inline',
-          // …and its stand-in is shown the other way round, so a line never
-          // carries both a `- ` and a bullet. It sits in the indent rather than
-          // in the text, which keeps every line of a list starting in the same
-          // column however wide its marker is.
-          '[&>[data-label]]:relative',
-          '[&>[data-label]]:before:text-text-subtle [&>[data-label]]:before:absolute [&>[data-label]]:before:left-0 [&>[data-label]]:before:content-[attr(data-label)]',
-          '[&>[data-label][data-active]]:before:hidden',
-          '[&>[data-style=h1]]:text-lg [&>[data-style=h1]]:font-semibold',
-          '[&>[data-style=h2]]:text-base [&>[data-style=h2]]:font-semibold',
-          '[&>[data-style=h3]]:text-sm [&>[data-style=h3]]:font-semibold',
-          '[&>[data-style=bullet]]:pl-6 [&>[data-style=ordered]]:pl-6 [&>[data-style=task]]:pl-6',
-          '[&>[data-style=quote]]:border-border-strong [&>[data-style=quote]]:text-text-muted [&>[data-style=quote]]:border-l-2 [&>[data-style=quote]]:pl-2',
-          '[&>[data-style=code]]:text-text-muted [&>[data-style=code]]:font-mono [&>[data-style=code]]:text-sm',
-          '[&>[data-style=rule]]:border-border-strong [&>[data-style=rule]]:border-b',
-        ],
-        source && 'font-mono text-sm leading-relaxed whitespace-pre-wrap',
+        'md-editor',
         className,
       )}
-    />
+    >
+      <EditorContent editor={editor} />
+      {editor && !disabled ? (
+        <>
+          <BubbleToolbar editor={editor} />
+          <DragHandle
+            editor={editor}
+            nested
+            onNodeChange={({ node, pos }) => {
+              hovered.current = { node, pos }
+            }}
+            className="md-handle flex items-center gap-0.5 pr-1"
+          >
+            <button
+              type="button"
+              draggable={false}
+              onDragStart={(event) => event.preventDefault()}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={addBelow}
+              aria-label={t('addBlock')}
+              title={t('addBlock')}
+              className="text-text-subtle hover:text-text hover:bg-inset-hover flex size-5 items-center justify-center rounded"
+            >
+              <Plus className="size-4" />
+            </button>
+            <span
+              aria-hidden
+              title={t('dragBlock')}
+              className="text-text-subtle hover:text-text hover:bg-inset-hover flex size-5 cursor-grab items-center justify-center rounded active:cursor-grabbing"
+            >
+              <GripVertical className="size-4" />
+            </span>
+          </DragHandle>
+        </>
+      ) : null}
+    </div>
   )
-}
-
-/**
- * Everything that forces a redraw. In source mode only the line count matters
- * — restyling a heading under the caret is what made `#` / list typing jump.
- */
-function shapeOf(text: string, source: boolean): string {
-  if (source) return `lines:${text.split('\n').length}`
-  return text
-    .split('\n')
-    .map((line) => {
-      const { style, marker, label } = lineInfo(line)
-      return `${style ?? '.'}:${marker.length}:${label}`
-    })
-    .join('|')
-}
-
-/**
- * The text as the line elements hold it.
- *
- * Not `innerText`: it counts the `<br>` filler inside an empty line as a break
- * of its own, so an empty last line came back as two, and redrawing from that
- * grew another empty line on every keystroke. The elements are drawn here, so
- * reading them back is exact. Before the first draw the browser may still have
- * a bare text node, and then `innerText` is right.
- */
-function textOf(root: HTMLElement): string {
-  const children = [...root.childNodes]
-  if (children.length === 0) return ''
-  if (children.every((node) => node.nodeType === Node.ELEMENT_NODE)) {
-    return children.map((node) => node.textContent ?? '').join('\n')
-  }
-  return root.innerText.replace(/\r\n/g, '\n')
-}
-
-function draw(root: HTMLElement, text: string, source: boolean): void {
-  // Truly empty, so `:empty` matches and the placeholder shows.
-  if (text === '') {
-    root.replaceChildren()
-    return
-  }
-
-  const fragment = document.createDocumentFragment()
-
-  for (const line of text.split('\n')) {
-    const element = document.createElement('div')
-    element.setAttribute('data-line', '')
-
-    if (source) {
-      if (line === '') element.append(document.createElement('br'))
-      else element.append(document.createTextNode(line))
-      fragment.append(element)
-      continue
-    }
-
-    const { style, marker, label } = lineInfo(line)
-    if (style) element.setAttribute('data-style', style)
-    if (label) element.setAttribute('data-label', label)
-
-    if (line === '') {
-      // An empty line still needs a box to put the caret in.
-      element.append(document.createElement('br'))
-    } else if (marker === '') {
-      element.append(document.createTextNode(line))
-    } else {
-      // Exactly the marker, so hiding it hides nothing else.
-      const mark = document.createElement('span')
-      mark.setAttribute('data-mark', '')
-      mark.append(document.createTextNode(marker))
-      element.append(mark)
-
-      const rest = line.slice(marker.length)
-      if (rest !== '') element.append(document.createTextNode(rest))
-    }
-
-    fragment.append(element)
-  }
-
-  root.replaceChildren(fragment)
-}
-
-/**
- * Where a point in the DOM falls, counted in characters from the start with
- * the newlines between lines included.
- *
- * Walks child *nodes*, not children: before the first draw the box holds a
- * bare text node rather than line elements, and reading only elements then
- * returned nothing — the caret was dropped and the next keystrokes landed at
- * the start of the box.
- */
-function offsetOf(root: HTMLElement, container: Node, within: number): number | null {
-  if (!root.contains(container)) return null
-  const children = [...root.childNodes]
-
-  // A point can sit between lines rather than inside one.
-  if (container === root) {
-    return children.slice(0, within).reduce((sum, node) => sum + lengthOf(node), 0)
-  }
-
-  let offset = 0
-  for (const node of children) {
-    if (node === container || node.contains(container)) {
-      const upTo = document.createRange()
-      upTo.selectNodeContents(node)
-      upTo.setEnd(container, within)
-      return offset + upTo.toString().length
-    }
-    offset += lengthOf(node)
-  }
-
-  return null
-}
-
-/**
- * Puts `data-active` on the line holding the caret, and takes it off the rest.
- * That line shows its marker; the others hide theirs.
- */
-function markActive(root: HTMLElement): void {
-  for (const line of root.children) line.removeAttribute('data-active')
-
-  const node = window.getSelection()?.focusNode
-  if (!node || !root.contains(node) || node === root) return
-
-  let line = node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement
-  while (line && line !== root && line.parentElement !== root) line = line.parentElement
-  if (line && line !== root && line.parentElement === root) line.setAttribute('data-active', '')
-}
-
-/** A line element carries the newline that follows it; a bare text node does not. */
-function lengthOf(node: ChildNode): number {
-  const text = (node.textContent ?? '').length
-  return node.nodeType === Node.ELEMENT_NODE ? text + 1 : text
-}
-
-/** What is selected, as character offsets. Collapsed when nothing is. */
-function selectionRange(root: HTMLElement): { start: number; end: number } | null {
-  const selection = window.getSelection()
-  if (!selection || selection.rangeCount === 0) return null
-
-  const range = selection.getRangeAt(0)
-  const start = offsetOf(root, range.startContainer, range.startOffset)
-  const end = offsetOf(root, range.endContainer, range.endOffset)
-  if (start === null || end === null) return null
-
-  return start <= end ? { start, end } : { start: end, end: start }
-}
-
-function pointAt(root: HTMLElement, offset: number): { node: Node; offset: number } | null {
-  let remaining = Math.max(0, offset)
-  const lines = [...root.children]
-  if (lines.length === 0) return null
-
-  for (let index = 0; index < lines.length; index++) {
-    const line = lines[index]!
-    const length = (line.textContent ?? '').length
-    const isLast = index === lines.length - 1
-
-    if (remaining > length && !isLast) {
-      remaining -= length + 1
-      continue
-    }
-
-    const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT)
-    let seen = 0
-
-    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-      const size = node.textContent?.length ?? 0
-      if (seen + size >= remaining) {
-        return { node, offset: remaining - seen }
-      }
-      seen += size
-    }
-
-    // An empty line has no text node to sit in; clamp past-end onto this line.
-    return { node: line, offset: line.childNodes.length }
-  }
-
-  return null
-}
-
-function placeCaret(root: HTMLElement, start: number, end = start): void {
-  const from = pointAt(root, start)
-  const to = end === start ? from : pointAt(root, end)
-  if (!from || !to) return
-
-  const range = document.createRange()
-  range.setStart(from.node, from.offset)
-  range.setEnd(to.node, to.offset)
-  select(range)
-}
-
-function select(range: Range): void {
-  const selection = window.getSelection()
-  selection?.removeAllRanges()
-  selection?.addRange(range)
-}
-
-/**
- * Leading marker of a list / quote / task line, including an *empty* one
- * (`- ` with nothing after) that `lineInfo` does not yet call a bullet.
- */
-function listPrefix(line: string): string | null {
-  const info = lineInfo(line)
-  if (
-    info.marker &&
-    (info.style === 'bullet' ||
-      info.style === 'ordered' ||
-      info.style === 'task' ||
-      info.style === 'quote')
-  ) {
-    return info.marker
-  }
-
-  const empty =
-    /^(\s*[-*+]\s+)$/.exec(line) ??
-    /^(\s*\d+[.)]\s+)$/.exec(line) ??
-    /^(\s*>\s?)$/.exec(line) ??
-    /^(\s*[-*+]\s+\[[ xX]\]\s+)$/.exec(line)
-  return empty?.[1] ?? null
-}
-
-/** Same indent and marker kind; ordered lists bump the number. */
-function nextListPrefix(prefix: string): string {
-  const ordered = /^(\s*)(\d+)([.)]\s+)$/.exec(prefix)
-  if (ordered) return `${ordered[1]}${Number(ordered[2]) + 1}${ordered[3]}`
-
-  const task = /^(\s*[-*+]\s+)\[.\]\s+$/.exec(prefix)
-  if (task) return `${task[1]}[ ] `
-
-  return prefix
 }
