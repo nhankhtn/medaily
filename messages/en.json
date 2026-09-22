@@ -572,6 +572,7 @@
     "password": "Password",
     "submit": "Sign in",
     "signingIn": "Signing in…",
+    "signingOut": "Signing out…",
     "signOut": "Sign out",
     "invalid": "Wrong username or password.",
     "rateLimited": "Too many attempts. Wait a few minutes and try again.",
