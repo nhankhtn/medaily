@@ -152,8 +152,8 @@
     {
       "idx": 21,
       "version": "7",
-      "when": 1789920000000,
-      "tag": "0021_auth_handoffs",
+      "when": 1790000000000,
+      "tag": "0021_drop_auth_handoffs",
       "breakpoints": true
     }
   ]

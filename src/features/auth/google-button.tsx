@@ -5,7 +5,6 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import {
   completeGoogleRedirect,
   firebaseConfigured,
@@ -15,8 +14,7 @@ import {
   signOutFirebase,
   takeAuthNext,
 } from '@/lib/auth/firebase-client'
-import { isStandalone } from '@/lib/pwa'
-import { PATHS, safeNextPath } from '@/lib/paths'
+import { safeNextPath } from '@/lib/paths'
 
 /** Google's mark, inlined: an external image would be blocked and would leak a request. */
 function GoogleMark() {
@@ -48,16 +46,7 @@ export function GoogleButton({ next }: { next?: string }) {
   const router = useRouter()
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [iosFlow, setIosFlow] = useState(false)
-  const [handoffCode, setHandoffCode] = useState('')
-  const [claiming, setClaiming] = useState(false)
   const finishingRedirect = useRef(false)
-
-  useEffect(() => {
-    // Only the home-screen app needs the Safari detour — iOS Safari itself
-    // can complete a full-page redirect with a working keyboard.
-    setIosFlow(isStandalone())
-  }, [])
 
   const exchange = async (idToken: string, nextPath: string | undefined) => {
     const response = await fetch('/api/auth/google', {
@@ -78,7 +67,7 @@ export function GoogleButton({ next }: { next?: string }) {
   }
 
   useEffect(() => {
-    if (!configured || iosFlow || finishingRedirect.current) return
+    if (!configured || finishingRedirect.current) return
     finishingRedirect.current = true
 
     let cancelled = false
@@ -100,18 +89,20 @@ export function GoogleButton({ next }: { next?: string }) {
     return () => {
       cancelled = true
     }
+    // Mount once: redirect result is consumed on the first read.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [configured, iosFlow])
+  }, [configured])
 
   if (!configured) return null
 
-  const startDesktop = async () => {
+  const start = async () => {
     setError(null)
     setPending(true)
     rememberAuthNext(next)
 
     try {
       const idToken = await signInWithGoogle()
+      // Redirect path: the page is leaving; keep pending until unload.
       if (!idToken) return
       await exchange(idToken, next)
     } catch (cause) {
@@ -126,85 +117,19 @@ export function GoogleButton({ next }: { next?: string }) {
     }
   }
 
-  const claim = async () => {
-    setError(null)
-    setClaiming(true)
-    try {
-      const response = await fetch('/api/auth/handoff', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ code: handoffCode }),
-      })
-      const result = (await response.json()) as { ok: boolean; error?: string }
-      if (!result.ok) {
-        setError(t(result.error === 'invalid_code' ? 'handoffInvalid' : 'googleFailed'))
-        return
-      }
-      router.replace(safeNextPath(next))
-      router.refresh()
-    } catch {
-      setError(t('googleFailed'))
-    } finally {
-      setClaiming(false)
-    }
-  }
-
   return (
     <div className="space-y-3">
-      {iosFlow ? (
-        <>
-          {/*
-            A real <a target=_blank> opens Safari from a home-screen PWA.
-            Firebase inside the PWA uses ASWebAuthenticationSession (sheet
-            with Done) where iOS focuses the email field and never raises
-            the keyboard.
-          */}
-          <Button type="button" variant="outline" size="lg" className="w-full" asChild>
-            <a href={PATHS.loginGoogleSafari} target="_blank" rel="noopener noreferrer">
-              <GoogleMark />
-              {t('continueWithGoogleSafari')}
-            </a>
-          </Button>
-          <p className="text-text-subtle text-center text-xs leading-relaxed">{t('safariOpenHint')}</p>
-
-          <div className="space-y-2 pt-1">
-            <label htmlFor="handoff-code" className="text-sm font-medium text-text">
-              {t('handoffLabel')}
-            </label>
-            <div className="flex gap-2">
-              <Input
-                id="handoff-code"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                placeholder="123456"
-                value={handoffCode}
-                onChange={(event) => setHandoffCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
-                className="tabular-nums tracking-widest"
-              />
-              <Button
-                type="button"
-                size="lg"
-                disabled={claiming || handoffCode.length !== 6}
-                onClick={claim}
-              >
-                {claiming ? <Loader2 className="size-4 animate-spin" /> : t('handoffSubmit')}
-              </Button>
-            </div>
-          </div>
-        </>
-      ) : (
-        <Button
-          type="button"
-          variant="outline"
-          size="lg"
-          className="w-full"
-          onClick={startDesktop}
-          disabled={pending}
-        >
-          {pending ? <Loader2 className="size-4 animate-spin" /> : <GoogleMark />}
-          {pending ? t('signingIn') : t('continueWithGoogle')}
-        </Button>
-      )}
+      <Button
+        type="button"
+        variant="outline"
+        size="lg"
+        className="w-full"
+        onClick={start}
+        disabled={pending}
+      >
+        {pending ? <Loader2 className="size-4 animate-spin" /> : <GoogleMark />}
+        {pending ? t('signingIn') : t('continueWithGoogle')}
+      </Button>
 
       {error ? (
         <p role="alert" className="rounded-[var(--radius)] bg-bad-soft px-3 py-2 text-sm text-bad">
@@ -212,6 +137,11 @@ export function GoogleButton({ next }: { next?: string }) {
         </p>
       ) : null}
 
+      {/*
+        The separator belongs to this component, not the page: when Firebase
+        is unconfigured the button returns null above, and a page that owned
+        the divider would leave an "or" hanging over nothing.
+      */}
       <div className="flex items-center gap-3 pt-1 text-xs text-text-subtle">
         <span className="h-px flex-1 bg-border-base" />
         {t('or')}
