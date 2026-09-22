@@ -1,6 +1,6 @@
 /**
- * Home-screen / install detection. Shared by install UI, shell chrome, and
- * auth — Firebase popups break in standalone WebKit, so sign-in needs this too.
+ * Home-screen / install detection. Shared by the install UI and the shell
+ * chrome, which both have to know whether the browser's own controls are there.
  */
 
 /** Already launched from the home-screen icon (no browser chrome). */
@@ -21,13 +21,4 @@ export function isIosSafari(): boolean {
   const iPad = /ipad/i.test(ua) || (/macintosh/i.test(ua) && window.navigator.maxTouchPoints > 1)
   if (!iPhone && !iPad) return false
   return !/crios|fxios|edgios/i.test(ua)
-}
-
-/**
- * Popup Google sign-in opens ASWebAuthenticationSession on iOS (sheet with
- * Done) where the soft keyboard often never appears. Full-page redirect on
- * the app origin — with authDomain = page host — is the path that works.
- */
-export function needsAuthRedirect(): boolean {
-  return isStandalone() || isIosSafari()
 }

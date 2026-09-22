@@ -3,16 +3,13 @@
 import { Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
-  completeGoogleRedirect,
   firebaseConfigured,
   GoogleSignInError,
-  rememberAuthNext,
   signInWithGoogle,
   signOutFirebase,
-  takeAuthNext,
 } from '@/lib/auth/firebase-client'
 import { safeNextPath } from '@/lib/paths'
 
@@ -41,70 +38,35 @@ function GoogleMark() {
 }
 
 export function GoogleButton({ next }: { next?: string }) {
-  const configured = firebaseConfigured()
   const t = useTranslations('auth')
   const router = useRouter()
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const finishingRedirect = useRef(false)
 
-  const exchange = async (idToken: string, nextPath: string | undefined) => {
-    const response = await fetch('/api/auth/google', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ idToken }),
-    })
-    const result = (await response.json()) as { ok: boolean; error?: string }
-
-    if (!result.ok) {
-      await signOutFirebase()
-      setError(t(errorKey(result.error)))
-      return
-    }
-
-    router.replace(safeNextPath(nextPath))
-    router.refresh()
-  }
-
-  useEffect(() => {
-    if (!configured || finishingRedirect.current) return
-    finishingRedirect.current = true
-
-    let cancelled = false
-    ;(async () => {
-      try {
-        const idToken = await completeGoogleRedirect()
-        if (cancelled || !idToken) return
-        setPending(true)
-        await exchange(idToken, takeAuthNext() ?? next)
-      } catch (cause) {
-        if (cancelled) return
-        if (cause instanceof GoogleSignInError && cause.reason === 'cancelled') return
-        setError(t('googleFailed'))
-      } finally {
-        if (!cancelled) setPending(false)
-      }
-    })()
-
-    return () => {
-      cancelled = true
-    }
-    // Mount once: redirect result is consumed on the first read.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [configured])
-
-  if (!configured) return null
+  if (!firebaseConfigured()) return null
 
   const start = async () => {
     setError(null)
     setPending(true)
-    rememberAuthNext(next)
 
     try {
       const idToken = await signInWithGoogle()
-      // Redirect path: the page is leaving; keep pending until unload.
-      if (!idToken) return
-      await exchange(idToken, next)
+
+      const response = await fetch('/api/auth/google', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      })
+      const result = (await response.json()) as { ok: boolean; error?: string }
+
+      if (!result.ok) {
+        await signOutFirebase()
+        setError(t(errorKey(result.error)))
+        return
+      }
+
+      router.replace(safeNextPath(next))
+      router.refresh()
     } catch (cause) {
       if (cause instanceof GoogleSignInError) {
         if (cause.reason === 'cancelled') return
