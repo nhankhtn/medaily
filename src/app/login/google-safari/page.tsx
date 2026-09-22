@@ -4,6 +4,7 @@ import { Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useEffect, useRef, useState } from 'react'
 import { Logo } from '@/components/brand/logo'
+import { Button } from '@/components/ui/button'
 import {
   completeGoogleRedirect,
   firebaseConfigured,
@@ -13,20 +14,23 @@ import {
 } from '@/lib/auth/firebase-client'
 
 /**
- * Runs Google sign-in inside Safari (opened from the PWA via target=_blank).
- * Safari raises the keyboard; the system auth sheet inside the PWA does not.
- * After the session cookie is set here, we mint a 6-digit code for the PWA.
+ * Google sign-in that runs outside the home-screen PWA.
+ *
+ * iOS opens `target=_blank` as SFSafariViewController (back label "Personal OS"),
+ * not full Safari — that sheet still has a working keyboard, unlike the auth
+ * sheet Firebase opens inside the PWA. Auto-starting OAuth on mount produced
+ * Google 400 malformed; start only from a tap.
  */
 export default function GoogleSafariPage() {
   const t = useTranslations('auth')
-  const [phase, setPhase] = useState<'working' | 'code' | 'error'>('working')
+  const [phase, setPhase] = useState<'ready' | 'working' | 'code' | 'error'>('working')
   const [code, setCode] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const started = useRef(false)
+  const finishing = useRef(false)
 
   useEffect(() => {
-    if (started.current) return
-    started.current = true
+    if (finishing.current) return
+    finishing.current = true
 
     let cancelled = false
     ;(async () => {
@@ -37,41 +41,13 @@ export default function GoogleSafariPage() {
       }
 
       try {
-        let idToken = await completeGoogleRedirect()
-        if (!idToken) {
-          idToken = await signInWithGoogle()
-          // Redirect path — page is leaving.
-          if (!idToken) return
-        }
+        const idToken = await completeGoogleRedirect()
         if (cancelled) return
-
-        const exchange = await fetch('/api/auth/google', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ idToken }),
-        })
-        const exchanged = (await exchange.json()) as { ok: boolean; error?: string }
-        if (!exchanged.ok) {
-          await signOutFirebase()
-          setError(t(exchanged.error === 'not_allowed' ? 'notAllowed' : 'googleFailed'))
-          setPhase('error')
+        if (!idToken) {
+          setPhase('ready')
           return
         }
-
-        const handoff = await fetch('/api/auth/handoff', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({}),
-        })
-        const minted = (await handoff.json()) as { ok: boolean; code?: string }
-        if (!minted.ok || !minted.code) {
-          setError(t('googleFailed'))
-          setPhase('error')
-          return
-        }
-
-        setCode(minted.code)
-        setPhase('code')
+        await finishWithToken(idToken)
       } catch (cause) {
         if (cancelled) return
         if (cause instanceof GoogleSignInError && cause.reason === 'cancelled') {
@@ -87,7 +63,57 @@ export default function GoogleSafariPage() {
     return () => {
       cancelled = true
     }
-  }, [t])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const finishWithToken = async (idToken: string) => {
+    setPhase('working')
+    const exchange = await fetch('/api/auth/google', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ idToken }),
+    })
+    const exchanged = (await exchange.json()) as { ok: boolean; error?: string }
+    if (!exchanged.ok) {
+      await signOutFirebase()
+      setError(t(exchanged.error === 'not_allowed' ? 'notAllowed' : 'googleFailed'))
+      setPhase('error')
+      return
+    }
+
+    const handoff = await fetch('/api/auth/handoff', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({}),
+    })
+    const minted = (await handoff.json()) as { ok: boolean; code?: string }
+    if (!minted.ok || !minted.code) {
+      setError(t('googleFailed'))
+      setPhase('error')
+      return
+    }
+
+    setCode(minted.code)
+    setPhase('code')
+  }
+
+  const start = async () => {
+    setError(null)
+    setPhase('working')
+    try {
+      const idToken = await signInWithGoogle()
+      if (!idToken) return
+      await finishWithToken(idToken)
+    } catch (cause) {
+      if (cause instanceof GoogleSignInError && cause.reason === 'cancelled') {
+        setError(t('safariCancelled'))
+        setPhase('error')
+        return
+      }
+      setError(t('googleFailed'))
+      setPhase('error')
+    }
+  }
 
   return (
     <div className="login-page relative flex min-h-dvh flex-col items-center justify-center gap-6 overflow-hidden px-6">
@@ -100,6 +126,16 @@ export default function GoogleSafariPage() {
           <>
             <Loader2 className="mx-auto size-6 animate-spin text-accent" />
             <p className="text-sm text-text-muted">{t('safariWorking')}</p>
+          </>
+        ) : null}
+
+        {phase === 'ready' ? (
+          <>
+            <h1 className="font-brand text-xl font-semibold tracking-tight">{t('safariReadyTitle')}</h1>
+            <p className="text-sm text-text-muted">{t('safariReadyHint')}</p>
+            <Button type="button" size="lg" className="w-full" onClick={start}>
+              {t('continueWithGoogle')}
+            </Button>
           </>
         ) : null}
 
