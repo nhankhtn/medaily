@@ -97,7 +97,6 @@ export function TransactionForm({
       personId: emptyToNull(formData.get('personId')),
       payeePersonId: emptyToNull(formData.get('payeePersonId')),
       merchant: String(formData.get('merchant') ?? ''),
-      note: '',
     }
 
     onPending({
@@ -149,7 +148,6 @@ export function TransactionForm({
             personId: input.personId,
             payeePersonId: input.payeePersonId,
             merchant: input.merchant.trim() === '' ? null : input.merchant.trim(),
-            note: null,
           })
           toast.success(t('offline.queued'))
         } catch (kept) {
@@ -314,6 +312,7 @@ export function TransactionForm({
           {kind === 'transfer' || !reachable ? null : (
             <Button type="button" variant="outline" onClick={startTransfer}>
               <Send className="size-4" />
+              {t('transfer.title')}
             </Button>
           )}
         </div>

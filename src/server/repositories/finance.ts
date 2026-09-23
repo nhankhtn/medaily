@@ -326,8 +326,13 @@ export async function updateTransaction(
   return row
 }
 
-export async function deleteTransaction(userId: string, id: string): Promise<void> {
-  await db.delete(transactions).where(and(eq(transactions.userId, userId), eq(transactions.id, id)))
+/** Returns the row it removed, so the caller can offer to put it back. */
+export async function deleteTransaction(userId: string, id: string): Promise<Transaction | null> {
+  const rows = await db
+    .delete(transactions)
+    .where(and(eq(transactions.userId, userId), eq(transactions.id, id)))
+    .returning()
+  return rows[0] ?? null
 }
 
 export type CategoryTotal = { categoryId: string | null; kind: string; total: number }

@@ -91,7 +91,6 @@ export function FinanceDraftList({
         kind: String(data.get(`kind:${row.id}`) ?? 'expense') as DraftKind,
         categoryId: emptyToNull(data.get(`categoryId:${row.id}`)),
         merchant: emptyToNull(data.get(`merchant:${row.id}`)),
-        note: row.note,
       }))
 
       if (payload.some((row) => !(row.amount > 0))) {

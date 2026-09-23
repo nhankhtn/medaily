@@ -17,6 +17,7 @@ import { transferNote } from '@/lib/finance/vietqr'
 import {
   markTransactionTransferred,
   removeTransaction,
+  restoreTransaction,
   saveTransaction,
 } from '@/server/actions/finance'
 import { TransferDialog } from './transfer-dialog'
@@ -44,6 +45,7 @@ export function TransactionList({
   hasMore = false,
   onLoadMore,
   onRemoved,
+  onRestored,
 }: {
   transactions: Transaction[]
   /** Rows sent but not confirmed; they sit above the ledger until it catches up. */
@@ -58,6 +60,8 @@ export function TransactionList({
   hasMore?: boolean
   onLoadMore?: () => void
   onRemoved?: (id: string) => void
+  /** Puts an undone delete back in the list without waiting for a refetch. */
+  onRestored?: (transaction: Transaction) => void
 }) {
   const t = useTranslations('finance')
   const tc = useTranslations('common')
@@ -307,8 +311,24 @@ export function TransactionList({
                       onClick={async () => {
                         setBusyId(transaction.id)
                         try {
-                          await removeTransaction(transaction.id)
+                          const result = await removeTransaction(transaction.id)
                           onRemoved?.(transaction.id)
+                          const removed = result.removed
+                          if (!removed) return
+                          toast.success(t('transactionDeleted', { what: label(transaction) }), {
+                            action: {
+                              label: tc('undo'),
+                              onClick: () => {
+                                void restoreTransaction({
+                                  ...removed,
+                                  amount: Number(removed.amount),
+                                }).then((undone) => {
+                                  if (undone.ok) onRestored?.(removed)
+                                  else toast.error(tc('error'))
+                                })
+                              },
+                            },
+                          })
                         } finally {
                           setBusyId(null)
                         }
@@ -356,7 +376,6 @@ type Patch = {
   personId: string | null
   payeePersonId: string | null
   merchant: string | null
-  note: string | null
 }
 
 /**
@@ -424,9 +443,6 @@ function TransactionEditor({
       personId: kind === 'transfer' ? null : text('personId'),
       payeePersonId: kind === 'transfer' ? null : text('payeePersonId'),
       merchant: text('merchant'),
-      // Kept as it was: the note is not in this row, and leaving it out of the
-      // patch would quietly wipe whatever the capture box wrote there.
-      note: transaction.note,
     })
   }
 

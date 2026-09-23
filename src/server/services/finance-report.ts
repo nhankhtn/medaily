@@ -128,7 +128,7 @@ export const getFinanceReport = cache(async (raw: string | undefined): Promise<F
       id: row.id,
       occurredOn: row.occurredOn,
       amount: Number(row.amount),
-      label: row.merchant ?? row.note ?? '',
+      label: row.merchant ?? '',
       categoryName: nameOf(row.categoryId),
     })),
     totals: {

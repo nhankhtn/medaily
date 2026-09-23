@@ -96,7 +96,6 @@ export type QueuedTransaction = {
    */
   payeePersonId?: string | null
   merchant: string | null
-  note: string | null
   queuedAt: number
 }
 

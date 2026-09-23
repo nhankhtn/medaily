@@ -96,12 +96,25 @@ export function TransactionPanel({
     [filterInput],
   )
 
-  const { items, loading, loadingMore, hasMore, loadMore, removeItem } = useCursorPage({
+  const { items, setItems, loading, loadingMore, hasMore, loadMore, removeItem } = useCursorPage({
     initialPage,
     queryKey,
     fetchPage,
     getId: transactionId,
   })
+
+  // An undone delete slots back in by date rather than at the top, so the row
+  // reappears where the eye left it. The ledger is newest first.
+  const restoreItem = useCallback(
+    (row: Transaction) => {
+      setItems((current) =>
+        current.some((item) => transactionId(item) === row.id)
+          ? current
+          : [...current, row].sort((a, b) => b.occurredOn.localeCompare(a.occurredOn)),
+      )
+    },
+    [setItems],
+  )
 
   const names = accounts.map((account) => ({ id: account.id, name: account.name }))
 
@@ -260,6 +273,7 @@ export function TransactionPanel({
               hasMore={hasMore}
               onLoadMore={loadMore}
               onRemoved={removeItem}
+              onRestored={restoreItem}
             />
           )}
         </CardBody>

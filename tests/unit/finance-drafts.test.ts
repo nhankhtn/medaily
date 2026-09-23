@@ -45,6 +45,27 @@ describe('matchCategoryId', () => {
 describe('toDrafts', () => {
   const drafts = (parsed: Record<string, unknown>[]) => toDrafts({ parsed, categories, today })
 
+  it('folds the note into the merchant, which is the only line the ledger shows', () => {
+    expect(
+      drafts([
+        {
+          occurred_on: '2026-09-12',
+          amount: 40000,
+          kind: 'expense',
+          merchant: 'bánh mì',
+          note: 'sáng ăn',
+        },
+      ])[0]?.merchant,
+    ).toBe('bánh mì — sáng ăn')
+  })
+
+  it('keeps a note that arrives without a merchant', () => {
+    expect(
+      drafts([{ occurred_on: '2026-09-12', amount: 40000, kind: 'expense', note: 'sáng ăn' }])[0]
+        ?.merchant,
+    ).toBe('sáng ăn')
+  })
+
   it('maps a well-formed row through', () => {
     expect(
       drafts([
@@ -65,7 +86,6 @@ describe('toDrafts', () => {
         kind: 'expense',
         categoryId: 'cat-food',
         merchant: 'Phở Thìn',
-        note: null,
       },
     ])
   })
