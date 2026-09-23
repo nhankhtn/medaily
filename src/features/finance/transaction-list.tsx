@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowRightLeft, Check, Pencil, Trash2, User, X } from 'lucide-react'
+import { ArrowRightLeft, Check, Pencil, Send, Trash2, User, X } from 'lucide-react'
 import { useFormatter, useLocale, useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -12,12 +12,19 @@ import { VirtualInfiniteList } from '@/components/ui/virtual-infinite-list'
 import type { FinanceCategory, Transaction } from '@/lib/db/schema'
 import { fromISODate } from '@/lib/dates'
 import { formatMoney } from '@/lib/format/money'
-import { removeTransaction, saveTransaction } from '@/server/actions/finance'
+import { canReceive, type Payee } from '@/lib/finance/payee'
+import { transferNote } from '@/lib/finance/vietqr'
+import {
+  markTransactionTransferred,
+  removeTransaction,
+  restoreTransaction,
+  saveTransaction,
+} from '@/server/actions/finance'
+import { TransferDialog } from './transfer-dialog'
 import { cn } from '@/lib/utils'
 import type { PendingTransaction } from './pending'
 
 type Account = { id: string; name: string }
-type Person = { id: string; name: string }
 
 /** Everything the row's title needs, which a pending row also has. */
 type Titled = Pick<Transaction, 'kind' | 'merchant' | 'categoryId' | 'accountId'> & {
@@ -38,13 +45,14 @@ export function TransactionList({
   hasMore = false,
   onLoadMore,
   onRemoved,
+  onRestored,
 }: {
   transactions: Transaction[]
   /** Rows sent but not confirmed; they sit above the ledger until it catches up. */
   pending: PendingTransaction[]
   categories: FinanceCategory[]
   accounts: Account[]
-  people: Person[]
+  people: Payee[]
   currency: string
   /** Overrides the empty-state copy when filters leave nothing to show. */
   emptyLabel?: string
@@ -52,12 +60,21 @@ export function TransactionList({
   hasMore?: boolean
   onLoadMore?: () => void
   onRemoved?: (id: string) => void
+  /** Puts an undone delete back in the list without waiting for a refetch. */
+  onRestored?: (transaction: Transaction) => void
 }) {
   const t = useTranslations('finance')
   const tc = useTranslations('common')
   const locale = useLocale()
   const format = useFormatter()
   const [editingId, setEditingId] = useState<string | null>(null)
+  /** The row whose money has not been handed over yet, while its sheet is open. */
+  const [transfer, setTransfer] = useState<{
+    id: string
+    payee: Payee
+    amount: number
+    reference: string
+  } | null>(null)
   /**
    * Which row is mid-write. Plain state rather than `useTransition`, whose
    * pending flag also covers the page refresh that follows the write and so
@@ -78,6 +95,19 @@ export function TransactionList({
   }
 
   const accountName = (id: string) => accounts.find((account) => account.id === id)?.name
+
+  /** `2026-09-22` as `22/09`, which is what fits a bank reference line. */
+  const dayMonth = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`
+
+  /**
+   * The person still waiting to be paid back for this row, or null when there
+   * is nobody, the hand-off is done, or their details have since been removed.
+   */
+  const payeeOf = (transaction: Transaction): Payee | null => {
+    if (!transaction.payeePersonId || transaction.transferredAt) return null
+    const payee = people.find((person) => person.id === transaction.payeePersonId)
+    return payee && canReceive(payee) ? payee : null
+  }
 
   if (transactions.length === 0 && pending.length === 0) {
     return <p className="text-text-subtle text-sm">{emptyLabel ?? t('noTransactions')}</p>
@@ -171,20 +201,24 @@ export function TransactionList({
                 />
               ) : (
                 <>
-                  {/* Tapping the row is how you change it; the pencil is for whoever
-                      looks for a button instead. */}
-                  <button
-                    type="button"
-                    onClick={() => setEditingId(transaction.id)}
-                    className="min-w-0 truncate text-left sm:order-2 sm:flex-1"
-                  >
-                    <span className="block truncate text-sm">{label(transaction)}</span>
+                  {/* The slot holds the row's width; only the name inside it is
+                      the button. Stretching the button across the slot made the
+                      empty space beside the badges open the editor, which is
+                      how a tap aimed at something else landed here. */}
+                  <span className="min-w-0 sm:order-2 sm:flex-1">
+                    <button
+                      type="button"
+                      onClick={() => setEditingId(transaction.id)}
+                      className="hover:text-accent inline-block max-w-full truncate align-top text-left text-sm"
+                    >
+                      {label(transaction)}
+                    </button>
                     {transaction.kind !== 'transfer' && accountName(transaction.accountId) ? (
                       <span className="text-text-subtle block truncate text-xs">
                         {accountName(transaction.accountId)}
                       </span>
                     ) : null}
-                  </button>
+                  </span>
 
                   <span
                     className={cn(
@@ -234,7 +268,33 @@ export function TransactionList({
                   </span>
 
                   {/* Visible on a phone, where there is no hover to reveal them. */}
-                  <span className="flex shrink-0 items-center justify-end gap-1 sm:order-5 sm:opacity-0 sm:transition-opacity sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
+                  <span className="flex shrink-0 items-center justify-end gap-1 sm:order-5">
+                    {/* Stays lit rather than hiding behind hover like edit and
+                        delete: it is the row asking for something, not an
+                        action offered on a row that is already settled. */}
+                    {payeeOf(transaction) ? (
+                      <button
+                        type="button"
+                        aria-label={`${t('transfer.title')} ${label(transaction)}`}
+                        onClick={() => {
+                          const payee = payeeOf(transaction)
+                          if (!payee) return
+                          setTransfer({
+                            id: transaction.id,
+                            payee,
+                            amount: Number(transaction.amount),
+                            reference: transferNote(
+                              [transaction.merchant, dayMonth(transaction.occurredOn)],
+                              transaction.id,
+                            ),
+                          })
+                        }}
+                        className="text-accent hover:bg-surface-2 rounded-full p-1"
+                      >
+                        <Send className="size-3.5" />
+                      </button>
+                    ) : null}
+                    <span className="flex items-center gap-1 sm:opacity-0 sm:transition-opacity sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
                     <button
                       type="button"
                       disabled={busyId === transaction.id}
@@ -251,8 +311,24 @@ export function TransactionList({
                       onClick={async () => {
                         setBusyId(transaction.id)
                         try {
-                          await removeTransaction(transaction.id)
+                          const result = await removeTransaction(transaction.id)
                           onRemoved?.(transaction.id)
+                          const removed = result.removed
+                          if (!removed) return
+                          toast.success(t('transactionDeleted', { what: label(transaction) }), {
+                            action: {
+                              label: tc('undo'),
+                              onClick: () => {
+                                void restoreTransaction({
+                                  ...removed,
+                                  amount: Number(removed.amount),
+                                }).then((undone) => {
+                                  if (undone.ok) onRestored?.(removed)
+                                  else toast.error(tc('error'))
+                                })
+                              },
+                            },
+                          })
                         } finally {
                           setBusyId(null)
                         }
@@ -261,11 +337,29 @@ export function TransactionList({
                     >
                       <Trash2 className="size-3.5" />
                     </button>
+                    </span>
                   </span>
                 </>
               )}
             </div>
           )
+        }}
+      />
+
+      <TransferDialog
+        open={transfer !== null}
+        onOpenChange={(next) => {
+          if (!next) setTransfer(null)
+        }}
+        payees={people}
+        payee={transfer?.payee ?? null}
+        amount={transfer?.amount ?? 0}
+        reference={transfer?.reference ?? ''}
+        currency={currency}
+        onTransferred={async () => {
+          if (!transfer) return
+          const result = await markTransactionTransferred({ id: transfer.id })
+          if (!result.ok) toast.error(tc('error'))
         }}
       />
     </div>
@@ -280,8 +374,8 @@ type Patch = {
   counterAccountId: string | null
   categoryId: string | null
   personId: string | null
+  payeePersonId: string | null
   merchant: string | null
-  note: string | null
 }
 
 /**
@@ -304,7 +398,7 @@ function TransactionEditor({
   transaction: Transaction
   accounts: Account[]
   categories: FinanceCategory[]
-  people: Person[]
+  people: Payee[]
   onSave: (patch: Patch) => Promise<void>
   onClose: () => void
   pending: boolean
@@ -312,6 +406,8 @@ function TransactionEditor({
   const t = useTranslations('finance')
   const tc = useTranslations('common')
   const [kind, setKind] = useState(transaction.kind)
+  /** Only contacts money can actually be sent to; the rest would be a dead end. */
+  const payable = people.filter(canReceive)
   const [accountId, setAccountId] = useState(transaction.accountId)
 
   const relevant = categories.filter((category) =>
@@ -345,10 +441,8 @@ function TransactionEditor({
       counterAccountId: kind === 'transfer' ? text('counterAccountId') : null,
       categoryId: kind === 'transfer' ? null : text('categoryId'),
       personId: kind === 'transfer' ? null : text('personId'),
+      payeePersonId: kind === 'transfer' ? null : text('payeePersonId'),
       merchant: text('merchant'),
-      // Kept as it was: the note is not in this row, and leaving it out of the
-      // patch would quietly wipe whatever the capture box wrote there.
-      note: transaction.note,
     })
   }
 
@@ -433,6 +527,22 @@ function TransactionEditor({
           <Select name="personId" defaultValue={transaction.personId ?? ''}>
             <option value="">{t('notDebt')}</option>
             {people.map((person) => (
+              <option key={person.id} value={person.id}>
+                {person.name}
+              </option>
+            ))}
+          </Select>
+        </label>
+      )}
+
+      {/* The way a row saved with plain Save can still be pointed at someone.
+          Without it the payee could only ever be set as the row was created. */}
+      {kind === 'transfer' || payable.length === 0 ? null : (
+        <label className="min-w-36 flex-1 space-y-1.5">
+          <span className="text-text-muted text-xs font-medium">{t('transfer.title')}</span>
+          <Select name="payeePersonId" defaultValue={transaction.payeePersonId ?? ''}>
+            <option value="">{t('transfer.nobodyShort')}</option>
+            {payable.map((person) => (
               <option key={person.id} value={person.id}>
                 {person.name}
               </option>

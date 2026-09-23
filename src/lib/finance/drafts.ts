@@ -34,7 +34,6 @@ export type TransactionDraft = {
   kind: DraftKind
   categoryId: string | null
   merchant: string | null
-  note: string | null
 }
 
 export type CategoryOption = {
@@ -43,6 +42,16 @@ export type CategoryOption = {
   kind: string
   /** Optional hint used by AI capture when choosing among similarly named buckets. */
   note?: string | null
+}
+
+/**
+ * One line per row, because the ledger shows one. The model still answers with
+ * a merchant and a note, and dropping the note would lose the half that says
+ * what the money was actually for — "bánh mì" without "sáng ăn".
+ */
+function mergeMerchant(merchant: string | null, note: string | null): string | null {
+  const parts = [merchant, note].filter((part): part is string => Boolean(part?.trim()))
+  return parts.length === 0 ? null : parts.join(' — ').slice(0, 200)
 }
 
 /**
@@ -119,8 +128,7 @@ export function toDrafts({
       amount,
       kind,
       categoryId: matchCategoryId(asString(row.category), categories, kind),
-      merchant: asString(row.merchant)?.slice(0, 200) ?? null,
-      note: asString(row.note)?.slice(0, 500) ?? null,
+      merchant: mergeMerchant(asString(row.merchant), asString(row.note)),
     })
   }
 

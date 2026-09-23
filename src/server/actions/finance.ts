@@ -12,8 +12,10 @@ import { PATHS } from '@/lib/paths'
 import { isoDateSchema } from '@/lib/validation/daily'
 import {
   countAccountTransactions,
+  countCategoryUsage,
   decodeTransactionCursor,
   deleteAccount,
+  deleteCategory,
   deleteTransaction,
   findAccounts,
   findCategories,
@@ -146,6 +148,29 @@ export async function saveCategory(input: unknown) {
   return { ok: true as const }
 }
 
+/**
+ * Same two meanings as removing an account, decided the same way. A category
+ * nobody filed anything under is simply gone; one that is in use is hidden,
+ * because deleting it would take every budget filed under it with it and leave
+ * its transactions and recurring rows with no category at all — a year of
+ * "groceries" quietly becoming uncategorised is not what a delete button
+ * should mean.
+ */
+export async function removeCategory(input: unknown) {
+  const parsed = z.object({ id: z.string().uuid() }).safeParse(input)
+  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+
+  const userId = await getCurrentUserId()
+  const used = await countCategoryUsage(userId, parsed.data.id)
+  const total = used.transactions + used.recurring + used.budgets
+
+  if (total > 0) await updateCategory(userId, parsed.data.id, { archivedAt: new Date() })
+  else await deleteCategory(userId, parsed.data.id)
+
+  revalidateFinance()
+  return { ok: true as const, hidden: total > 0, ...used }
+}
+
 const transactionFields = {
   occurredOn: isoDateSchema,
   amount: money,
@@ -154,8 +179,8 @@ const transactionFields = {
   counterAccountId: z.string().uuid().nullable().optional(),
   categoryId: z.string().uuid().nullable().optional(),
   personId: z.string().uuid().nullable().optional(),
+  payeePersonId: z.string().uuid().nullable().optional(),
   merchant: optionalText,
-  note: optionalText,
 } as const
 
 type TransactionInput = {
@@ -200,6 +225,23 @@ const transactionSchema = z
   .refine(debtRule, debtMessage)
 
 /**
+ * The shape `removeTransaction` hands back, on its way to being re-inserted.
+ * `createdAt` is left out on purpose: the restored row is written now, and
+ * pretending otherwise would put a row in the ledger the database never saw.
+ */
+const restoreSchema = z
+  .object({
+    id: z.uuid(),
+    currency: z.string().min(1).max(10),
+    fxRate: z.string().max(30).nullable().default(null),
+    transferredAt: z.coerce.date().nullable().default(null),
+    tags: z.array(z.string().max(100)).max(50).nullable().default(null),
+    ...transactionFields,
+  })
+  .refine(transferRule, transferMessage)
+  .refine(debtRule, debtMessage)
+
+/**
  * A well-formed uuid still has to name a row this user owns (spec 29). Returns
  * the id when it does and null when it does not, so a stale or forged id
  * becomes "none" rather than a write against someone else's row.
@@ -220,7 +262,9 @@ export async function createTransaction(input: unknown) {
     getSettings(),
     findAccounts(userId),
     findCategories(userId),
-    findPeople(userId),
+    // Archived included: re-saving an old transaction must not silently drop
+    // the debt link to someone who has since been removed from the list.
+    findPeople(userId, { includeArchived: true }),
   ])
 
   const transfer = parsed.data.kind === 'transfer'
@@ -241,8 +285,8 @@ export async function createTransaction(input: unknown) {
     counterAccountId,
     categoryId: transfer ? null : ownedBy(parsed.data.categoryId, categories),
     personId: transfer ? null : ownedBy(parsed.data.personId, people),
+    payeePersonId: ownedBy(parsed.data.payeePersonId, people),
     merchant: parsed.data.merchant ?? null,
-    note: parsed.data.note ?? null,
   })
 
   revalidateFinance()
@@ -259,6 +303,30 @@ export async function createTransaction(input: unknown) {
  * Every id is checked against this user's own accounts and categories. A
  * well-formed uuid still has to name a row this user owns (spec 29).
  */
+/**
+ * Records that the money has reached whoever covered the bill — or that it
+ * never will, which this column cannot tell apart and does not need to. Either
+ * way the row stops asking.
+ *
+ * Nothing else is written. The expense left the account when it was recorded;
+ * where it went afterwards changes no total, so there is no second row here.
+ */
+export async function markTransactionTransferred(input: unknown) {
+  const parsed = z.object({ id: z.string().uuid() }).safeParse(input)
+  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+
+  const userId = await getCurrentUserId()
+  try {
+    await updateTransaction(userId, parsed.data.id, { transferredAt: new Date() })
+  } catch {
+    // Someone else's row, or one deleted between the list rendering and the tap.
+    return { ok: false as const, error: 'not_found' as const }
+  }
+
+  revalidateFinance()
+  return { ok: true as const }
+}
+
 export async function saveTransaction(input: unknown) {
   const parsed = z
     .object({ id: z.string().uuid(), ...transactionFields })
@@ -272,7 +340,9 @@ export async function saveTransaction(input: unknown) {
     getSettings(),
     findAccounts(userId),
     findCategories(userId),
-    findPeople(userId),
+    // Archived included: re-saving an old transaction must not silently drop
+    // the debt link to someone who has since been removed from the list.
+    findPeople(userId, { includeArchived: true }),
   ])
 
   const transfer = parsed.data.kind === 'transfer'
@@ -290,8 +360,8 @@ export async function saveTransaction(input: unknown) {
     counterAccountId,
     categoryId: transfer ? null : ownedBy(parsed.data.categoryId, categories),
     personId: transfer ? null : ownedBy(parsed.data.personId, people),
+    payeePersonId: ownedBy(parsed.data.payeePersonId, people),
     merchant: parsed.data.merchant ?? null,
-    note: parsed.data.note ?? null,
   })
 
   revalidateFinance()
@@ -375,7 +445,6 @@ export async function createTransactions(input: unknown) {
             kind: z.enum(['income', 'expense']),
             categoryId: z.uuid().nullable().optional(),
             merchant: optionalText,
-            note: optionalText,
           }),
         )
         .min(1)
@@ -409,7 +478,6 @@ export async function createTransactions(input: unknown) {
       counterAccountId: null,
       categoryId: ownedCategory(row.categoryId),
       merchant: row.merchant ?? null,
-      note: row.note ?? null,
     })),
   )
 
@@ -419,9 +487,60 @@ export async function createTransactions(input: unknown) {
 
 export async function removeTransaction(input: unknown) {
   const id = z.string().uuid().parse(input)
-  await deleteTransaction(await getCurrentUserId(), id)
+  // The row goes back to the caller so the toast can offer to undo the delete;
+  // nothing else keeps a copy, and the table has no archived flag to hide it.
+  const removed = await deleteTransaction(await getCurrentUserId(), id)
   revalidateFinance()
-  return { ok: true }
+  return { ok: true as const, removed }
+}
+
+/**
+ * Puts a deleted row back, id and all. Every field is re-checked the way a new
+ * transaction is — the caller is a browser, and a row it hands back is a
+ * request, not a record. `currency`, `fxRate`, `transferredAt` and `tags` ride
+ * along because unlike a create this is meant to restore, not to re-enter:
+ * dropping them would return a different transaction than the one deleted.
+ */
+export async function restoreTransaction(input: unknown) {
+  const parsed = restoreSchema.safeParse(input)
+  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+
+  const userId = await getCurrentUserId()
+  const [accounts, categories, people] = await Promise.all([
+    findAccounts(userId),
+    findCategories(userId),
+    findPeople(userId, { includeArchived: true }),
+  ])
+
+  const transfer = parsed.data.kind === 'transfer'
+  const accountId = ownedBy(parsed.data.accountId, accounts)
+  const counterAccountId = transfer ? ownedBy(parsed.data.counterAccountId, accounts) : null
+  if (accountId === null || (transfer && counterAccountId === null)) {
+    return { ok: false as const, error: 'invalid_input' as const }
+  }
+
+  // `insertTransaction` ignores a conflicting id, so a second tap on Undo is a
+  // no-op rather than an error.
+  await insertTransaction({
+    id: parsed.data.id,
+    userId,
+    occurredOn: parsed.data.occurredOn,
+    amount: String(parsed.data.amount),
+    currency: parsed.data.currency,
+    fxRate: parsed.data.fxRate,
+    kind: parsed.data.kind,
+    accountId,
+    counterAccountId,
+    categoryId: transfer ? null : ownedBy(parsed.data.categoryId, categories),
+    personId: transfer ? null : ownedBy(parsed.data.personId, people),
+    payeePersonId: ownedBy(parsed.data.payeePersonId, people),
+    transferredAt: parsed.data.transferredAt,
+    merchant: parsed.data.merchant ?? null,
+    tags: parsed.data.tags,
+  })
+
+  revalidateFinance()
+  return { ok: true as const }
 }
 
 const listTransactionsSchema = z.object({
@@ -430,6 +549,7 @@ const listTransactionsSchema = z.object({
   categoryId: z.union([z.string().uuid(), z.literal('__none__')]).optional(),
   from: isoDateSchema.optional(),
   to: isoDateSchema.optional(),
+  search: z.string().max(100).optional(),
 })
 
 /** Cursor page for the ledger; filters run in SQL, not on a client-side dump. */
@@ -457,6 +577,7 @@ export async function listTransactions(input: unknown) {
       categoryId,
       from: parsed.data.from,
       to: parsed.data.to,
+      search: parsed.data.search?.trim() || undefined,
     },
   })
 

@@ -1,12 +1,14 @@
 'use client'
 
-import { useCallback, useOptimistic, useState } from 'react'
+import { useCallback, useEffect, useOptimistic, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Card, CardBody, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import type { FinanceCategory, Transaction } from '@/lib/db/schema'
 import type { ISODate } from '@/lib/dates'
+import type { Payee } from '@/lib/finance/payee'
+import { foldText } from '@/lib/text'
 import { useCursorPage } from '@/lib/hooks/use-cursor-page'
 import { listTransactions } from '@/server/actions/finance'
 import type { TransactionPage } from '@/server/repositories/finance'
@@ -41,7 +43,7 @@ export function TransactionPanel({
   initialPage: TransactionPage
   categories: FinanceCategory[]
   accounts: { id: string; name: string; type: string; currency: string }[]
-  people: { id: string; name: string }[]
+  people: Payee[]
   currency: string
   today: ISODate
 }) {
@@ -56,9 +58,21 @@ export function TransactionPanel({
   const [categoryId, setCategoryId] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
+  const [search, setSearch] = useState('')
+  /*
+   * What the query actually runs on. Every keystroke changes `queryKey`, and
+   * without the delay each one would throw away the page in flight and ask
+   * for another.
+   */
+  const [settledSearch, setSettledSearch] = useState('')
 
-  const filtering = Boolean(accountId || categoryId || from || to)
-  const queryKey = [accountId, categoryId, from, to].filter(Boolean).join('|')
+  useEffect(() => {
+    const timer = setTimeout(() => setSettledSearch(search.trim()), 300)
+    return () => clearTimeout(timer)
+  }, [search])
+
+  const filtering = Boolean(accountId || categoryId || from || to || settledSearch)
+  const queryKey = [accountId, categoryId, from, to, settledSearch].filter(Boolean).join('|')
 
   const filterInput = useCallback(() => {
     return {
@@ -66,8 +80,9 @@ export function TransactionPanel({
       ...(categoryId ? { categoryId } : {}),
       ...(from ? { from } : {}),
       ...(to ? { to } : {}),
+      ...(settledSearch ? { search: settledSearch } : {}),
     }
-  }, [accountId, categoryId, from, to])
+  }, [accountId, categoryId, from, to, settledSearch])
 
   const fetchPage = useCallback(
     async (cursor: string | null) => {
@@ -81,21 +96,42 @@ export function TransactionPanel({
     [filterInput],
   )
 
-  const { items, loading, loadingMore, hasMore, loadMore, removeItem } = useCursorPage({
+  const { items, setItems, loading, loadingMore, hasMore, loadMore, removeItem } = useCursorPage({
     initialPage,
     queryKey,
     fetchPage,
     getId: transactionId,
   })
 
+  // An undone delete slots back in by date rather than at the top, so the row
+  // reappears where the eye left it. The ledger is newest first.
+  const restoreItem = useCallback(
+    (row: Transaction) => {
+      setItems((current) =>
+        current.some((item) => transactionId(item) === row.id)
+          ? current
+          : [...current, row].sort((a, b) => b.occurredOn.localeCompare(a.occurredOn)),
+      )
+    },
+    [setItems],
+  )
+
   const names = accounts.map((account) => ({ id: account.id, name: account.name }))
 
   const matchesPending = (row: {
+    key: string
     accountId: string
     counterAccountId: string | null
     categoryId: string | null
     occurredOn: string
+    merchant: string | null
   }) => {
+    if (settledSearch) {
+      const needle = foldText(settledSearch)
+      const merchant = foldText(row.merchant ?? '')
+      const reference = row.key.replace(/-/g, '').toLowerCase()
+      if (!merchant.includes(needle) && !reference.startsWith(needle)) return false
+    }
     if (accountId) {
       const hit = row.accountId === accountId || row.counterAccountId === accountId
       if (!hit) return false
@@ -147,6 +183,7 @@ export function TransactionPanel({
             accounts={names}
             categories={categories}
             people={people}
+            currency={currency}
             today={today}
             onPending={addPending}
           />
@@ -190,6 +227,16 @@ export function TransactionPanel({
               </Select>
             </label>
 
+            <label className="min-w-36 flex-1 space-y-1.5 sm:max-w-56">
+              <span className="text-text-muted text-xs font-medium">{t('search')}</span>
+              <Input
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder={t('searchPlaceholder')}
+              />
+            </label>
+
             <label className="w-36 space-y-1.5 sm:w-40">
               <span className="text-text-muted text-xs font-medium">{t('filterFrom')}</span>
               <Input
@@ -226,6 +273,7 @@ export function TransactionPanel({
               hasMore={hasMore}
               onLoadMore={loadMore}
               onRemoved={removeItem}
+              onRestored={restoreItem}
             />
           )}
         </CardBody>

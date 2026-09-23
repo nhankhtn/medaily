@@ -27,7 +27,6 @@ const input = (id: string, amount = 30_000): Omit<QueuedTransaction, 'queuedAt'>
   categoryId: null,
   personId: null,
   merchant: null,
-  note: null,
 })
 
 const tx = (id: string, queuedAt: number, amount = 30_000): QueuedTransaction => ({

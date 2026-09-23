@@ -1,3 +1,4 @@
+import { networkInterfaces } from 'node:os'
 import type { NextConfig } from 'next'
 import createNextIntlPlugin from 'next-intl/plugin'
 
@@ -10,6 +11,30 @@ const securityHeaders = [
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
 ]
 
+/**
+ * Phone-on-Wi-Fi hits the machine by LAN IP. Server Actions compare `Origin`
+ * to `x-forwarded-host` and abort when they disagree — and iOS often sends
+ * `Origin: null`. Allow those only for local/dev (never on Vercel).
+ */
+function localActionOrigins(): string[] {
+  if (process.env.VERCEL) return []
+  const hosts = new Set<string>(['localhost', '127.0.0.1', 'null'])
+  for (const list of Object.values(networkInterfaces())) {
+    for (const entry of list ?? []) {
+      if (entry.family !== 'IPv4' || entry.internal) continue
+      hosts.add(entry.address)
+    }
+  }
+  const origins: string[] = []
+  for (const host of hosts) {
+    origins.push(host)
+    if (host !== 'null') origins.push(`${host}:3000`)
+  }
+  return origins
+}
+
+const lanOrigins = localActionOrigins()
+
 const nextConfig: NextConfig = {
   /**
    * Standalone output is for the Docker image (spec 34). Vercel does its own
@@ -20,6 +45,13 @@ const nextConfig: NextConfig = {
   turbopack: { root: import.meta.dirname },
   poweredByHeader: false,
   reactStrictMode: true,
+  // Dev assets / HMR when the page is opened as http://192.168.x.x:3000
+  allowedDevOrigins: lanOrigins.filter((origin) => !origin.includes(':') && origin !== 'null'),
+  experimental: {
+    serverActions: {
+      allowedOrigins: lanOrigins,
+    },
+  },
   async headers() {
     return [
       // Everything except the Firebase auth helper.

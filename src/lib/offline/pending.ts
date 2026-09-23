@@ -90,8 +90,12 @@ export type QueuedTransaction = {
   counterAccountId: string | null
   categoryId: string | null
   personId: string | null
+  /**
+   * Optional because entries written before transfers existed are still in the
+   * store, and a drain that choked on them would strand real money.
+   */
+  payeePersonId?: string | null
   merchant: string | null
-  note: string | null
   queuedAt: number
 }
 

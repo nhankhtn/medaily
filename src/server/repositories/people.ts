@@ -4,11 +4,18 @@ import { interactions, people, reminders } from '@/lib/db/schema'
 import type { Interaction, Person, PersonInsert, Reminder } from '@/lib/db/schema'
 import type { ISODate } from '@/lib/dates'
 
-export async function findPeople(userId: string): Promise<Person[]> {
+export async function findPeople(
+  userId: string,
+  { includeArchived = false }: { includeArchived?: boolean } = {},
+): Promise<Person[]> {
   return db
     .select()
     .from(people)
-    .where(and(eq(people.userId, userId), isNull(people.archivedAt)))
+    .where(
+      includeArchived
+        ? eq(people.userId, userId)
+        : and(eq(people.userId, userId), isNull(people.archivedAt)),
+    )
     .orderBy(asc(people.name))
 }
 

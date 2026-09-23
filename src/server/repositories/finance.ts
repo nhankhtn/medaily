@@ -6,6 +6,7 @@ import {
   budgets,
   financeCategories,
   investments,
+  recurringTransactions,
   transactions,
 } from '@/lib/db/schema'
 import type {
@@ -32,7 +33,16 @@ export type TransactionPageFilters = {
   categoryId?: string | null
   from?: string
   to?: string
+  /** Where the money went, or the reference a bank statement prints. */
+  search?: string
 }
+
+/**
+ * Worth trying the id on. The predicate has to rewrite every id to compare it,
+ * so it cannot use the primary key — running that for each word of an ordinary
+ * search would scan the whole ledger to match nothing.
+ */
+const REFERENCE_RE = /^[0-9a-f-]{4,}$/
 
 export type TransactionPage = {
   items: Transaction[]
@@ -174,6 +184,51 @@ export async function updateCategory(
   return row
 }
 
+/**
+ * What a category is holding up, counted separately because the three answer
+ * to different rules: a transaction and a recurring row only lose their
+ * category when it goes, but a budget is filed *under* it and cascades away
+ * with it. Any of them being non-zero is what makes a delete a hide instead.
+ */
+export type CategoryUsage = { transactions: number; recurring: number; budgets: number }
+
+export async function countCategoryUsage(
+  userId: string,
+  categoryId: string,
+): Promise<CategoryUsage> {
+  const [tx, rec, bud] = await Promise.all([
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(transactions)
+      .where(and(eq(transactions.userId, userId), eq(transactions.categoryId, categoryId))),
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(recurringTransactions)
+      .where(
+        and(
+          eq(recurringTransactions.userId, userId),
+          eq(recurringTransactions.categoryId, categoryId),
+        ),
+      ),
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(budgets)
+      .where(and(eq(budgets.userId, userId), eq(budgets.categoryId, categoryId))),
+  ])
+
+  return {
+    transactions: tx[0]?.n ?? 0,
+    recurring: rec[0]?.n ?? 0,
+    budgets: bud[0]?.n ?? 0,
+  }
+}
+
+export async function deleteCategory(userId: string, categoryId: string): Promise<void> {
+  await db
+    .delete(financeCategories)
+    .where(and(eq(financeCategories.userId, userId), eq(financeCategories.id, categoryId)))
+}
+
 export async function findTransactions(
   userId: string,
   range: DateRange,
@@ -226,6 +281,20 @@ export async function findTransactionsPage(
   }
   if (filters.to) {
     conditions.push(lte(transactions.occurredOn, filters.to))
+  }
+  if (filters.search) {
+    const needle = filters.search.toLowerCase()
+    const matches = [
+      sql`f_unaccent(lower(coalesce(${transactions.merchant}, ''))) LIKE f_unaccent(${`%${needle}%`})`,
+    ]
+    if (REFERENCE_RE.test(needle)) {
+      // A prefix, because that is the end of the id a transfer reference
+      // carries — `ref 4f3a9c` pasted back out of a statement.
+      matches.push(
+        sql`replace(${transactions.id}::text, '-', '') LIKE ${`${needle.replace(/-/g, '')}%`}`,
+      )
+    }
+    conditions.push(or(...matches)!)
   }
   if (opts.cursor) {
     const cursor = opts.cursor
@@ -303,8 +372,13 @@ export async function updateTransaction(
   return row
 }
 
-export async function deleteTransaction(userId: string, id: string): Promise<void> {
-  await db.delete(transactions).where(and(eq(transactions.userId, userId), eq(transactions.id, id)))
+/** Returns the row it removed, so the caller can offer to put it back. */
+export async function deleteTransaction(userId: string, id: string): Promise<Transaction | null> {
+  const rows = await db
+    .delete(transactions)
+    .where(and(eq(transactions.userId, userId), eq(transactions.id, id)))
+    .returning()
+  return rows[0] ?? null
 }
 
 export type CategoryTotal = { categoryId: string | null; kind: string; total: number }

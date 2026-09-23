@@ -18,6 +18,7 @@ import {
   type CategoryTotal,
   type TransactionPage,
 } from '@/server/repositories/finance'
+import type { Payee } from '@/lib/finance/payee'
 import { findPeople } from '@/server/repositories/people'
 import { dayContextOf, getSettings } from '@/server/services/settings'
 
@@ -43,8 +44,8 @@ export type FinanceData = {
   budgets: BudgetView[]
   assets: Asset[]
   investments: (Investment & { marketValue: number | null; unrealized: number | null })[]
-  /** Contacts a transaction can be a debt with. */
-  people: { id: string; name: string }[]
+  /** Contacts a transaction can be a debt with, or be owed a transfer to. */
+  people: Payee[]
   /** Who is still out of balance with you, biggest either way first. */
   debts: DebtBalance[]
   totals: {
@@ -89,7 +90,7 @@ export const getFinanceData = cache(async (): Promise<FinanceData> => {
     findBudgets(userId, monthStart),
     findAssets(userId),
     findInvestments(userId),
-    findPeople(userId),
+    findPeople(userId, { includeArchived: true }),
     sumDebtsByPerson(userId),
   ])
 
@@ -120,6 +121,8 @@ export const getFinanceData = cache(async (): Promise<FinanceData> => {
 
   const categoryName = (id: string) => categories.find((row) => row.id === id)?.name ?? '—'
 
+  // Archived people are fetched too: a debt keeps the name it was run up with
+  // even after the contact is removed. The picker below stays to the living.
   const debts = debtBalances(
     debtRows,
     (id) => personRows.find((person) => person.id === id)?.name ?? '—',
@@ -151,7 +154,17 @@ export const getFinanceData = cache(async (): Promise<FinanceData> => {
     })),
     assets,
     investments: investmentViews,
-    people: personRows.map((person) => ({ id: person.id, name: person.name })),
+    people: personRows
+      .filter((person) => person.archivedAt === null)
+      .map((person) => ({
+        id: person.id,
+        name: person.name,
+        bankBin: person.bankBin,
+        bankAccountNumber: person.bankAccountNumber,
+        bankAccountName: person.bankAccountName,
+        momoPhone: person.momoPhone,
+        paymentQr: person.paymentQr,
+      })),
     debts,
     totals: {
       income,
