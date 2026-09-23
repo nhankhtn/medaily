@@ -68,9 +68,8 @@ export function TransferDialog({
     onPick?.(next)
   }
 
-  const copy = async (value: string, label: string) => {
-    const copied = await copyText(value)
-    if (copied) toast.success(t('transfer.copied', { what: label }))
+  const copy = async (value: string, done: string) => {
+    if (await copyText(value)) toast.success(done)
     else toast.error(t('transfer.copyFailed'))
   }
 
@@ -81,7 +80,7 @@ export function TransferDialog({
      * await. A pasted receive link needs no clipboard — it carries the payee
      * itself; a bare number does, because the app opens on its home screen.
      */
-    if (!isMomoLink(momo)) void copy(momo, t('transfer.momoNumber'))
+    if (!isMomoLink(momo)) void copy(momo, t('transfer.copiedMomo'))
     window.location.href = momoLink(momo)
   }
 
@@ -96,7 +95,13 @@ export function TransferDialog({
   }
 
   const target = chosen ? bankTarget(chosen) : null
-  const payload = target ? vietQrPayload({ ...target, amount, message: reference }) : null
+  /** Built here, so it carries this transaction's amount and reference. */
+  const built = target ? vietQrPayload({ ...target, amount, message: reference }) : null
+  /*
+   * Otherwise the code the payee sent. That one is fixed — whatever it was made
+   * with — so the sum has to be typed into whichever app scans it.
+   */
+  const payload = built ?? chosen?.paymentQr ?? null
 
   return (
     <Dialog open={open} onOpenChange={close}>
@@ -150,7 +155,7 @@ export function TransferDialog({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => copy(target.accountNumber, t('transfer.account'))}
+                  onClick={() => copy(target.accountNumber, t('transfer.copiedAccount'))}
                 >
                   <Copy className="size-4" />
                   {t('transfer.copyAccount')}
@@ -163,6 +168,10 @@ export function TransferDialog({
                 </Button>
               ) : null}
             </div>
+
+            {payload && !built ? (
+              <p className="text-text-subtle text-xs">{t('transfer.staticQr')}</p>
+            ) : null}
 
             {chosen.momoPhone && !isMomoLink(chosen.momoPhone) ? (
               <p className="text-text-subtle text-xs">{t('transfer.momoOnly')}</p>

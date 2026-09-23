@@ -1,6 +1,6 @@
 'use client'
 
-import { Cake, Check, MessageCircle, Plus, Trash2 } from 'lucide-react'
+import { Cake, Check, MessageCircle, Plus, Trash2, Upload } from 'lucide-react'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
@@ -11,7 +11,10 @@ import { Input, Textarea } from '@/components/ui/input'
 import { MarkdownEditor } from '@/components/ui/markdown-editor'
 import { Select } from '@/components/ui/select'
 import { Field } from '@/features/projects/project-dialog'
-import { BANKS } from '@/lib/finance/banks'
+import { BANKS, isSupportedBank } from '@/lib/finance/banks'
+import { readQrFromFile } from '@/lib/finance/read-qr'
+import { parseVietQr } from '@/lib/finance/vietqr'
+import { QrCode } from '@/components/ui/qr-code'
 import { fromISODate, type ISODate } from '@/lib/dates'
 import {
   archivePerson,
@@ -26,12 +29,22 @@ import type { PeopleData, PersonView } from '@/server/services/people'
 const RELATIONSHIPS = ['partner', 'family', 'friend', 'colleague', 'mentor', 'other'] as const
 const CHANNELS = ['in_person', 'call', 'message', 'email', 'other'] as const
 
-export function PersonDialog({ person, trigger }: { person?: PersonView; trigger?: React.ReactNode }) {
+export function PersonDialog({
+  person,
+  trigger,
+}: {
+  person?: PersonView
+  trigger?: React.ReactNode
+}) {
   const t = useTranslations('people')
   const tc = useTranslations('common')
   const [open, setOpen] = useState(false)
   const [pending, startTransition] = useTransition()
   const [notes, setNotes] = useState(person?.notes ?? '')
+  const [paymentQr, setPaymentQr] = useState(person?.paymentQr ?? '')
+  const [bankBin, setBankBin] = useState(person?.bankBin ?? '')
+  const [accountNumber, setAccountNumber] = useState(person?.bankAccountNumber ?? '')
+  const [qrRead, setQrRead] = useState<boolean | null>(null)
   const [confirming, setConfirming] = useState(false)
 
   return (
@@ -40,7 +53,13 @@ export function PersonDialog({ person, trigger }: { person?: PersonView; trigger
       onOpenChange={(next) => {
         setOpen(next)
         setConfirming(false)
-        if (next) setNotes(person?.notes ?? '')
+        if (next) {
+          setNotes(person?.notes ?? '')
+          setPaymentQr(person?.paymentQr ?? '')
+          setBankBin(person?.bankBin ?? '')
+          setAccountNumber(person?.bankAccountNumber ?? '')
+          setQrRead(null)
+        }
       }}
     >
       <DialogTrigger asChild>
@@ -71,6 +90,7 @@ export function PersonDialog({ person, trigger }: { person?: PersonView; trigger
                 bankAccountNumber: String(formData.get('bankAccountNumber') ?? ''),
                 bankAccountName: String(formData.get('bankAccountName') ?? ''),
                 momoPhone: String(formData.get('momoPhone') ?? ''),
+                paymentQr,
               })
               if (!result.ok) {
                 toast.error(tc('error'))
@@ -136,7 +156,11 @@ export function PersonDialog({ person, trigger }: { person?: PersonView; trigger
             <p className="text-text-subtle text-xs">{t('paymentHint')}</p>
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label={t('bank')}>
-                <Select name="bankBin" defaultValue={person?.bankBin ?? ''}>
+                <Select
+                  name="bankBin"
+                  value={bankBin}
+                  onChange={(event) => setBankBin(event.target.value)}
+                >
                   <option value="">—</option>
                   {BANKS.map((bank) => (
                     <option key={bank.bin} value={bank.bin}>
@@ -148,7 +172,8 @@ export function PersonDialog({ person, trigger }: { person?: PersonView; trigger
               <Field label={t('accountNumber')}>
                 <Input
                   name="bankAccountNumber"
-                  defaultValue={person?.bankAccountNumber ?? ''}
+                  value={accountNumber}
+                  onChange={(event) => setAccountNumber(event.target.value)}
                   inputMode="numeric"
                   maxLength={40}
                   className="tabular-nums"
@@ -172,6 +197,67 @@ export function PersonDialog({ person, trigger }: { person?: PersonView; trigger
                 />
               </Field>
             </div>
+
+            <div className="min-w-0 space-y-1.5">
+              <span className="block text-sm font-medium">{t('paymentQrLabel')}</span>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <label
+                  htmlFor="payment-qr"
+                  className="glass-chip inline-flex h-9 cursor-pointer items-center gap-2 rounded-full px-3 text-sm"
+                >
+                  <Upload className="size-4" />
+                  {t('paymentQrPick')}
+                </label>
+                <input
+                  id="payment-qr"
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={async (event) => {
+                    const file = event.target.files?.[0]
+                    event.target.value = ''
+                    if (!file) return
+                    const payload = await readQrFromFile(file)
+                    setQrRead(payload !== null)
+                    if (payload === null) return
+                    setPaymentQr(payload)
+                    const account = parseVietQr(payload)
+                    if (account && isSupportedBank(account.bin)) {
+                      setBankBin(account.bin)
+                      setAccountNumber(account.accountNumber)
+                    }
+                  }}
+                />
+
+                {paymentQr ? (
+                  <>
+                    <QrCode value={paymentQr} className="size-13 rounded-[var(--radius)]" />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setPaymentQr('')
+                        setQrRead(null)
+                      }}
+                    >
+                      {tc('delete')}
+                    </Button>
+                  </>
+                ) : null}
+              </div>
+
+              <p className="text-text-subtle text-xs">
+                {qrRead === false
+                  ? t('paymentQrUnreadable')
+                  : !paymentQr
+                    ? t('paymentQrHint')
+                    : isSupportedBank(parseVietQr(paymentQr)?.bin)
+                      ? t('paymentQrWithAmount')
+                      : t('paymentQrNoAmount')}
+              </p>
+            </div>
           </div>
 
           <Field label={t('notes')}>
@@ -182,7 +268,7 @@ export function PersonDialog({ person, trigger }: { person?: PersonView; trigger
               onChange={setNotes}
               className="min-h-40"
             />
-            <p className="mt-1 text-xs text-text-subtle">{t('notesHint')}</p>
+            <p className="text-text-subtle mt-1 text-xs">{t('notesHint')}</p>
           </Field>
 
           <div className="flex items-center justify-between gap-2">
@@ -397,22 +483,24 @@ export function ReminderPanel({
       </Dialog>
 
       {reminders.length === 0 ? (
-        <p className="text-sm text-text-subtle">{t('noReminders')}</p>
+        <p className="text-text-subtle text-sm">{t('noReminders')}</p>
       ) : (
-        <ul className="divide-y divide-border-base">
+        <ul className="divide-border-base divide-y">
           {reminders.map((reminder) => (
             <li key={reminder.id} className="flex items-center gap-3 py-2">
               <button
                 type="button"
                 disabled={pending}
                 aria-label={t('markDone')}
-                onClick={() => startTransition(async () => void (await markReminderDone(reminder.id)))}
-                className="flex size-5 shrink-0 items-center justify-center rounded-full border border-border-strong hover:bg-good hover:text-accent-text"
+                onClick={() =>
+                  startTransition(async () => void (await markReminderDone(reminder.id)))
+                }
+                className="border-border-strong hover:bg-good hover:text-accent-text flex size-5 shrink-0 items-center justify-center rounded-full border"
               >
                 <Check className="size-3" />
               </button>
               <span className="min-w-0 flex-1 truncate text-sm">{reminder.title}</span>
-              <span className="shrink-0 text-xs tabular-nums text-text-subtle">
+              <span className="text-text-subtle shrink-0 text-xs tabular-nums">
                 {format.dateTime(fromISODate(reminder.dueOn), 'dayMonth')}
               </span>
             </li>
@@ -427,14 +515,14 @@ export function BirthdayList({ people }: { people: PersonView[] }) {
   const t = useTranslations('people')
 
   if (people.length === 0) {
-    return <p className="text-sm text-text-subtle">{t('noBirthdays')}</p>
+    return <p className="text-text-subtle text-sm">{t('noBirthdays')}</p>
   }
 
   return (
     <ul className="space-y-1.5">
       {people.map((person) => (
         <li key={person.id} className="flex items-center gap-2 text-sm">
-          <Cake className="size-4 shrink-0 text-accent" />
+          <Cake className="text-accent size-4 shrink-0" />
           <span className="min-w-0 flex-1 truncate">{person.name}</span>
           <Badge tone={person.birthdayInDays === 0 ? 'good' : 'neutral'}>
             {person.birthdayInDays}d

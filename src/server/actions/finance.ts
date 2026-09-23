@@ -12,8 +12,10 @@ import { PATHS } from '@/lib/paths'
 import { isoDateSchema } from '@/lib/validation/daily'
 import {
   countAccountTransactions,
+  countCategoryUsage,
   decodeTransactionCursor,
   deleteAccount,
+  deleteCategory,
   deleteTransaction,
   findAccounts,
   findCategories,
@@ -144,6 +146,29 @@ export async function saveCategory(input: unknown) {
   await updateCategory(await getCurrentUserId(), id, patch)
   revalidateFinance()
   return { ok: true as const }
+}
+
+/**
+ * Same two meanings as removing an account, decided the same way. A category
+ * nobody filed anything under is simply gone; one that is in use is hidden,
+ * because deleting it would take every budget filed under it with it and leave
+ * its transactions and recurring rows with no category at all — a year of
+ * "groceries" quietly becoming uncategorised is not what a delete button
+ * should mean.
+ */
+export async function removeCategory(input: unknown) {
+  const parsed = z.object({ id: z.string().uuid() }).safeParse(input)
+  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+
+  const userId = await getCurrentUserId()
+  const used = await countCategoryUsage(userId, parsed.data.id)
+  const total = used.transactions + used.recurring + used.budgets
+
+  if (total > 0) await updateCategory(userId, parsed.data.id, { archivedAt: new Date() })
+  else await deleteCategory(userId, parsed.data.id)
+
+  revalidateFinance()
+  return { ok: true as const, hidden: total > 0, ...used }
 }
 
 const transactionFields = {

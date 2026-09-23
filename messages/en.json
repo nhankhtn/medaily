@@ -849,6 +849,9 @@
     "editAccount": "Edit account",
     "removeAccount": "Delete account",
     "accountDeleted": "Account deleted.",
+    "removeCategory": "Delete category",
+    "categoryHidden": "Category hidden. The {count} entries filed under it keep it.",
+    "categoryDeleted": "Category deleted.",
     "accountHidden": "Account hidden. Its {count} transactions are still in the ledger.",
     "accountType": "Type",
     "currency": "Currency",
@@ -986,23 +989,23 @@
       "notKept": "This phone had no room to keep it. Try again when you have a connection."
     },
     "search": "Search",
-    "searchPlaceholder": "Where it went, or a ref",
+    "searchPlaceholder": "Where it went, or a code",
     "transfer": {
       "title": "Send money",
       "pick": "Who are you sending it to?",
-      "nobody": "Nobody has an account number saved yet. Add one on a contact and they will show up here.",
-      "nobodyShort": "Nobody",
+      "nobody": "No one can be paid yet. Add an account number on a contact under People.",
+      "nobodyShort": "No one",
       "needAmount": "Enter the amount first.",
       "reference": "Reference",
-      "account": "account number",
       "copyAccount": "Copy account number",
-      "copied": "Copied the {what}",
       "copyFailed": "Could not copy. Select the number and copy it by hand.",
       "openMomo": "Open MoMo",
-      "momoOnly": "MoMo opens on its home screen — the number is copied, so paste it and type the amount.",
+      "momoOnly": "Number copied. Open MoMo and paste it.",
       "done": "Sent",
       "later": "Later",
-      "momoNumber": "MoMo number"
+      "staticQr": "Type the amount when you scan.",
+      "copiedAccount": "Account number copied",
+      "copiedMomo": "MoMo number copied"
     }
   },
   "journal": {
@@ -1237,11 +1240,17 @@
     "photoRemoved": "Photo removed",
     "photoTooLarge": "Each photo must be under 15MB",
     "photoOf": "Photo of {name}",
-    "paymentHint": "Where money you send this person lands. Fill either one and they show up when you pay a transaction back.",
+    "paymentHint": "So you can send them money. One of these is enough.",
     "bank": "Bank",
     "accountNumber": "Account number",
     "accountName": "Account holder",
-    "momo": "MoMo number or receive link"
+    "momo": "MoMo number or receive link",
+    "paymentQrLabel": "QR code",
+    "paymentQrPick": "Choose a picture",
+    "paymentQrHint": "A picture of the code they gave you.",
+    "paymentQrUnreadable": "No code in that picture. Try a clearer one.",
+    "paymentQrWithAmount": "Account number read from it. Every transfer will have its amount filled in.",
+    "paymentQrNoAmount": "It scans, but you type the amount yourself."
   },
   "career": {
     "title": "Career",

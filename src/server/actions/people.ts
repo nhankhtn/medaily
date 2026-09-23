@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { getCurrentUserId } from '@/lib/auth/current-user'
+import { isSupportedBank } from '@/lib/finance/banks'
 import { PATHS } from '@/lib/paths'
 import { isoDateSchema } from '@/lib/validation/daily'
 import {
@@ -26,7 +27,7 @@ const bankBinSchema = z
   .string()
   .max(20)
   .transform((value) => value.replace(/\D/g, ''))
-  .refine((value) => value === '' || value.length === 6, { message: 'bank bin is six digits' })
+  .refine((value) => value === '' || isSupportedBank(value), { message: 'unknown bank' })
   .transform((value) => (value === '' ? null : value))
   .nullable()
   .optional()
@@ -69,6 +70,7 @@ export async function savePerson(input: unknown) {
       bankAccountNumber: accountNumberSchema,
       bankAccountName: optionalText,
       momoPhone: optionalText,
+      paymentQr: optionalText,
     })
     .safeParse(input)
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }

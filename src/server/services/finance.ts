@@ -163,6 +163,7 @@ export const getFinanceData = cache(async (): Promise<FinanceData> => {
         bankAccountNumber: person.bankAccountNumber,
         bankAccountName: person.bankAccountName,
         momoPhone: person.momoPhone,
+        paymentQr: person.paymentQr,
       })),
     debts,
     totals: {

@@ -849,6 +849,9 @@
     "editAccount": "Sửa tài khoản",
     "removeAccount": "Xoá tài khoản",
     "accountDeleted": "Đã xoá tài khoản.",
+    "removeCategory": "Xoá danh mục",
+    "categoryHidden": "Đã ẩn danh mục. {count} mục đang xếp vào đây vẫn giữ nguyên.",
+    "categoryDeleted": "Đã xoá danh mục.",
     "accountHidden": "Đã ẩn tài khoản. {count} giao dịch của nó vẫn nằm trong sổ.",
     "accountType": "Loại",
     "currency": "Tiền tệ",
@@ -986,23 +989,23 @@
       "notKept": "Máy không còn chỗ để giữ lại. Có mạng rồi thử lưu lại nhé."
     },
     "search": "Tìm",
-    "searchPlaceholder": "Nơi chi, hoặc mã ref",
+    "searchPlaceholder": "Nơi chi, hoặc mã giao dịch",
     "transfer": {
       "title": "Chuyển tiền",
       "pick": "Chuyển cho ai?",
-      "nobody": "Chưa ai có số tài khoản. Thêm cho một người trong danh bạ là họ hiện ra đây.",
-      "nobodyShort": "Không ai",
+      "nobody": "Chưa ai nhận tiền được. Thêm số tài khoản cho một người ở mục Quan hệ.",
+      "nobodyShort": "Không chuyển ai",
       "needAmount": "Nhập số tiền trước đã.",
       "reference": "Nội dung",
-      "account": "số tài khoản",
       "copyAccount": "Chép số tài khoản",
-      "copied": "Đã chép {what}",
       "copyFailed": "Không chép được. Bạn bôi đen rồi chép tay nhé.",
       "openMomo": "Mở MoMo",
-      "momoOnly": "MoMo chỉ mở ở trang chủ — số đã được chép, bạn dán vào rồi nhập số tiền.",
+      "momoOnly": "Đã chép số. Mở MoMo rồi dán vào.",
       "done": "Đã chuyển",
       "later": "Để sau",
-      "momoNumber": "số MoMo"
+      "staticQr": "Số tiền bạn tự nhập lúc quét.",
+      "copiedAccount": "Đã chép số tài khoản",
+      "copiedMomo": "Đã chép số MoMo"
     }
   },
   "journal": {
@@ -1237,11 +1240,17 @@
     "photoRemoved": "Đã xóa ảnh",
     "photoTooLarge": "Mỗi ảnh phải dưới 15MB",
     "photoOf": "Ảnh của {name}",
-    "paymentHint": "Tiền bạn chuyển cho người này sẽ vào đâu. Điền một trong hai là họ xuất hiện khi bạn trả lại một giao dịch.",
+    "paymentHint": "Để chuyển tiền cho người này. Điền một cái là đủ.",
     "bank": "Ngân hàng",
     "accountNumber": "Số tài khoản",
     "accountName": "Tên chủ tài khoản",
-    "momo": "Số MoMo hoặc link nhận tiền"
+    "momo": "Số MoMo hoặc link nhận tiền",
+    "paymentQrLabel": "Mã QR",
+    "paymentQrPick": "Chọn ảnh",
+    "paymentQrHint": "Ảnh mã người đó đưa bạn.",
+    "paymentQrUnreadable": "Ảnh này không có mã. Thử ảnh rõ hơn nhé.",
+    "paymentQrWithAmount": "Đã lấy được số tài khoản. Mỗi lần chuyển sẽ có sẵn số tiền.",
+    "paymentQrNoAmount": "Quét được, nhưng số tiền bạn tự nhập."
   },
   "career": {
     "title": "Sự nghiệp",

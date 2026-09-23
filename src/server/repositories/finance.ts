@@ -6,6 +6,7 @@ import {
   budgets,
   financeCategories,
   investments,
+  recurringTransactions,
   transactions,
 } from '@/lib/db/schema'
 import type {
@@ -181,6 +182,51 @@ export async function updateCategory(
   const row = rows[0]
   if (!row) throw new Error('category not found')
   return row
+}
+
+/**
+ * What a category is holding up, counted separately because the three answer
+ * to different rules: a transaction and a recurring row only lose their
+ * category when it goes, but a budget is filed *under* it and cascades away
+ * with it. Any of them being non-zero is what makes a delete a hide instead.
+ */
+export type CategoryUsage = { transactions: number; recurring: number; budgets: number }
+
+export async function countCategoryUsage(
+  userId: string,
+  categoryId: string,
+): Promise<CategoryUsage> {
+  const [tx, rec, bud] = await Promise.all([
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(transactions)
+      .where(and(eq(transactions.userId, userId), eq(transactions.categoryId, categoryId))),
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(recurringTransactions)
+      .where(
+        and(
+          eq(recurringTransactions.userId, userId),
+          eq(recurringTransactions.categoryId, categoryId),
+        ),
+      ),
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(budgets)
+      .where(and(eq(budgets.userId, userId), eq(budgets.categoryId, categoryId))),
+  ])
+
+  return {
+    transactions: tx[0]?.n ?? 0,
+    recurring: rec[0]?.n ?? 0,
+    budgets: bud[0]?.n ?? 0,
+  }
+}
+
+export async function deleteCategory(userId: string, categoryId: string): Promise<void> {
+  await db
+    .delete(financeCategories)
+    .where(and(eq(financeCategories.userId, userId), eq(financeCategories.id, categoryId)))
 }
 
 export async function findTransactions(

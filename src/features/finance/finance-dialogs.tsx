@@ -20,6 +20,7 @@ import {
   createCategory,
   createInvestment,
   removeAccount,
+  removeCategory,
   saveAccount,
   saveBudget,
   saveCategory,
@@ -251,6 +252,23 @@ export function CategoryDialog({ category }: { category?: FinanceCategory }) {
     toast.success(t('saved'))
     setOpen(false)
   })
+  const [removing, startRemoving] = useTransition()
+
+  const remove = () =>
+    startRemoving(async () => {
+      if (!category) return
+      const result = await removeCategory({ id: category.id })
+      if (!result.ok) {
+        toast.error(tc('error'))
+        return
+      }
+      toast.success(
+        result.hidden
+          ? t('categoryHidden', { count: result.transactions + result.recurring + result.budgets })
+          : t('categoryDeleted'),
+      )
+      setOpen(false)
+    })
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -307,11 +325,23 @@ export function CategoryDialog({ category }: { category?: FinanceCategory }) {
             />
             <p className="text-text-subtle text-xs">{t('categoryNoteHint')}</p>
           </Field>
-          <div className="flex justify-end gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {editing ? (
+              <Button
+                type="button"
+                variant="danger"
+                className="mr-auto"
+                disabled={pending || removing}
+                onClick={remove}
+              >
+                <Trash2 className="size-4" />
+                {t('removeCategory')}
+              </Button>
+            ) : null}
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
               {tc('cancel')}
             </Button>
-            <Button type="submit" disabled={pending}>
+            <Button type="submit" disabled={pending || removing}>
               {tc('save')}
             </Button>
           </div>

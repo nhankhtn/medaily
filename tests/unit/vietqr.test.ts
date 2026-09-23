@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { crc16, transferNote, transferReference, vietQrPayload } from '@/lib/finance/vietqr'
+import { BANKS, isSupportedBank } from '@/lib/finance/banks'
+import {
+  crc16,
+  parseVietQr,
+  transferNote,
+  transferReference,
+  vietQrPayload,
+} from '@/lib/finance/vietqr'
 
 /** Walks the EMVCo tag-length-value string back into a map, one level deep. */
 function parse(payload: string): Record<string, string> {
@@ -110,5 +117,52 @@ describe('transferNote', () => {
 describe('transferReference', () => {
   it('is six hex digits of the row id, dashes dropped', () => {
     expect(transferReference('4F3A9C12-0000-4000-8000-000000000000')).toBe('4f3a9c')
+  })
+})
+
+describe('parseVietQr', () => {
+  it('reads back the account a code it built points at', () => {
+    const payload = vietQrPayload({
+      bin: '970436',
+      accountNumber: '001234567890',
+      amount: 25000,
+      message: 'an trua',
+    }) as string
+    expect(parseVietQr(payload)).toEqual({ bin: '970436', accountNumber: '001234567890' })
+  })
+
+  it('reads a static code, which carries no amount', () => {
+    const payload = vietQrPayload({ bin: '970418', accountNumber: '99887766' }) as string
+    expect(parseVietQr(payload)).toEqual({ bin: '970418', accountNumber: '99887766' })
+  })
+
+  it('is null for a code from somewhere other than Napas', () => {
+    expect(parseVietQr('https://me.momo.vn/someone')).toBeNull()
+    expect(parseVietQr('')).toBeNull()
+    expect(parseVietQr('00020101021163041234')).toBeNull()
+  })
+
+  it('is null rather than guessing when the payload is truncated', () => {
+    const payload = vietQrPayload({ bin: '970436', accountNumber: '001234567890' }) as string
+    expect(parseVietQr(payload.slice(0, 30))).toBeNull()
+  })
+})
+
+describe('isSupportedBank', () => {
+  it('accepts a bank the app can build a code for', () => {
+    expect(isSupportedBank('970436')).toBe(true)
+  })
+
+  it('rejects a well-formed code the list does not carry, and empty input', () => {
+    expect(isSupportedBank('999999')).toBe(false)
+    expect(isSupportedBank('')).toBe(false)
+    expect(isSupportedBank(null)).toBe(false)
+    expect(isSupportedBank(undefined)).toBe(false)
+  })
+
+  it('every listed bank is a six-digit Napas code, unique in the list', () => {
+    const bins = BANKS.map((bank) => bank.bin)
+    expect(bins.every((bin) => /^\d{6}$/.test(bin))).toBe(true)
+    expect(new Set(bins).size).toBe(bins.length)
   })
 })

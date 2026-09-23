@@ -11,6 +11,8 @@ export type Payee = {
   bankAccountNumber: string | null
   bankAccountName: string | null
   momoPhone: string | null
+  /** A QR the payee sent, kept as the string it decodes to. */
+  paymentQr: string | null
 }
 
 /** A bank account complete enough to build a VietQR from. */
@@ -24,7 +26,7 @@ export function bankTarget(payee: Payee): { bin: string; accountNumber: string }
  * the contact list would be a dead end at the one moment it matters.
  */
 export function canReceive(payee: Payee): boolean {
-  return bankTarget(payee) !== null || Boolean(payee.momoPhone)
+  return bankTarget(payee) !== null || Boolean(payee.momoPhone) || Boolean(payee.paymentQr)
 }
 
 /** A receive link the payee got from MoMo, as opposed to a bare phone number. */

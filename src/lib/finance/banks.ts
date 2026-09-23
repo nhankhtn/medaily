@@ -28,3 +28,8 @@ export function bankName(bin: string | null | undefined): string | null {
   if (!bin) return null
   return BANKS.find((bank) => bank.bin === bin)?.name ?? null
 }
+
+/** Whether a code names a bank this app can build a QR for. */
+export function isSupportedBank(bin: string | null | undefined): boolean {
+  return Boolean(bin) && BANKS.some((bank) => bank.bin === bin)
+}

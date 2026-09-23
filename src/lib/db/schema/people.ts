@@ -43,6 +43,7 @@ export const people = pgTable(
     /** Shown before the transfer so a wrong row is caught by eye, not by the bank. */
     bankAccountName: text('bank_account_name'),
     momoPhone: text('momo_phone'),
+    paymentQr: text('payment_qr'),
     /** Desired cadence: anyone past it appears in the "reach out" list (spec 15). */
     contactIntervalDays: smallint('contact_interval_days'),
     archivedAt: timestamp('archived_at', { withTimezone: true }),

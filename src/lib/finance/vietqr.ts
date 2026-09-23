@@ -121,3 +121,38 @@ export function vietQrPayload(input: VietQrInput): string | null {
   payload += '6304'
   return payload + crc16(payload)
 }
+
+/** Walks one level of tag-length-value into a map. Malformed input gives up. */
+function untlv(payload: string): Record<string, string> | null {
+  const out: Record<string, string> = {}
+  let i = 0
+  while (i < payload.length) {
+    const id = payload.slice(i, i + 2)
+    const length = Number(payload.slice(i + 2, i + 4))
+    if (id.length < 2 || !Number.isInteger(length)) return null
+    const value = payload.slice(i + 4, i + 4 + length)
+    if (value.length < length) return null
+    out[id] = value
+    i += 4 + length
+  }
+  return out
+}
+
+/**
+ * The account a scanned VietQR points at, or null for anything else.
+ *
+ * This is what makes a picture worth reading rather than keeping: a code the
+ * payee sent is fixed, but the account inside it is not — knowing it, a fresh
+ * code can be built for each transfer carrying that transfer's amount.
+ */
+export function parseVietQr(payload: string): { bin: string; accountNumber: string } | null {
+  const top = untlv(payload)
+  const merchant = top?.['38'] ? untlv(top['38']) : null
+  if (merchant?.['00'] !== 'A000000727' || !merchant['01']) return null
+
+  const beneficiary = untlv(merchant['01'])
+  const bin = beneficiary?.['00'] ?? ''
+  const accountNumber = beneficiary?.['01'] ?? ''
+  if (!/^\d{6}$/.test(bin) || accountNumber === '') return null
+  return { bin, accountNumber }
+}

@@ -169,6 +169,13 @@
       "when": 1790128779132,
       "tag": "0023_lively_sphinx",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1790165238803,
+      "tag": "0024_payment_qr",
+      "breakpoints": true
     }
   ]
 }
