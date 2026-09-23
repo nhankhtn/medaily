@@ -79,7 +79,7 @@ export async function savePerson(input: unknown) {
   if (id) await updatePerson(userId, id, values)
   else await insertPerson({ ...values, userId })
 
-  revalidatePeople()
+  revalidatePeopleAndFinance()
   return { ok: true as const }
 }
 
