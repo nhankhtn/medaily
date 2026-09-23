@@ -18,6 +18,10 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 
+  // The address people actually share, for `metadataBase` and the preview card
+  // built from it. Absent, the deployment's own hostname is used instead.
+  SITE_URL: z.string().optional(),
+
   // Auth is a hard-coded credential pair plus, optionally, Google sign-in
   // (spec 29). Absent values keep the gate closed rather than open.
   AUTH_USERNAME: z.string().optional(),
@@ -69,6 +73,7 @@ export const env: Env = parsed.success
   : {
       DATABASE_URL: process.env.DATABASE_URL ?? '',
       NODE_ENV: (process.env.NODE_ENV as Env['NODE_ENV']) ?? 'development',
+      SITE_URL: process.env.SITE_URL,
       AUTH_USERNAME: process.env.AUTH_USERNAME,
       AUTH_PASSWORD: process.env.AUTH_PASSWORD,
       AUTH_SECRET: process.env.AUTH_SECRET,

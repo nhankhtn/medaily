@@ -5,6 +5,7 @@ import { readAuthConfig, readGoogleConfig } from '@/lib/auth/config'
 import { FirebaseVerifyError, verifyFirebaseIdToken } from '@/lib/auth/firebase-verify'
 import { sessionCookieOptions, SESSION_COOKIE, signSession } from '@/lib/auth/session'
 import { resolveGoogleIdentity } from '@/server/services/auth'
+import { DEFAULT_LOCALE, isLocale, LOCALE_COOKIE, type Locale } from '@/i18n/config'
 import { clientKey } from '@/lib/client-ip'
 import { createLimit } from '@/lib/rate-limit'
 
@@ -24,12 +25,7 @@ export const runtime = 'nodejs'
 const bodySchema = z.object({ idToken: z.string().min(1).max(8192) })
 
 /** Shares the shape of the credential login errors so the form can reuse them. */
-type Failure =
-  | 'not_configured'
-  | 'invalid_token'
-  | 'not_allowed'
-  | 'rate_limited'
-  | 'server_error'
+type Failure = 'not_configured' | 'invalid_token' | 'not_allowed' | 'rate_limited' | 'server_error'
 
 /**
  * A forged token cannot pass verification, so this exists to bound the cost of
@@ -46,6 +42,21 @@ function fail(error: Failure, status: number, retryAfterMs = 0) {
 }
 
 const nostore = { 'cache-control': 'no-store' } as const
+
+/**
+ * What the visitor was reading the sign-in page in, for the starter rows.
+ * Read off the header rather than `cookies()`, because this handler takes a
+ * plain `Request` and there is no reason for a locale to change that.
+ */
+function localeOf(headers: Headers): Locale {
+  for (const part of (headers.get('cookie') ?? '').split(';')) {
+    const [name, ...rest] = part.trim().split('=')
+    if (name !== LOCALE_COOKIE) continue
+    const value = decodeURIComponent(rest.join('='))
+    return isLocale(value) ? value : DEFAULT_LOCALE
+  }
+  return DEFAULT_LOCALE
+}
 
 export async function POST(request: Request) {
   const auth = readAuthConfig()
@@ -69,7 +80,7 @@ export async function POST(request: Request) {
 
   try {
     const identity = await verifyFirebaseIdToken(idToken, google.projectId)
-    const resolved = await resolveGoogleIdentity(identity)
+    const resolved = await resolveGoogleIdentity(identity, localeOf(request.headers))
 
     // `not_allowed` and `signup_closed` are reported identically on purpose:
     // telling a stranger which addresses exist is a free directory.
@@ -80,7 +91,10 @@ export async function POST(request: Request) {
       auth.secret,
     )
 
-    const response = NextResponse.json({ ok: true, created: resolved.created }, { headers: nostore })
+    const response = NextResponse.json(
+      { ok: true, created: resolved.created },
+      { headers: nostore },
+    )
     response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions())
     return response
   } catch (error) {

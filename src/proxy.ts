@@ -70,10 +70,18 @@ export async function proxy(request: NextRequest) {
   if (session) return forward()
 
   const url = request.nextUrl.clone()
-  url.pathname = PATHS.login
-  // Come back to where the user was heading once they are signed in.
-  url.search =
-    pathname === PATHS.home ? '' : `?next=${encodeURIComponent(pathname + request.nextUrl.search)}`
+
+  // Someone typing the bare address has not been turned away from anything —
+  // they may never have heard of this app. They get the page that says what it
+  // is; a deep link still goes to sign-in, and comes back afterwards.
+  if (pathname === PATHS.home) {
+    url.pathname = PATHS.welcome
+    url.search = ''
+  } else {
+    url.pathname = PATHS.login
+    // Come back to where the user was heading once they are signed in.
+    url.search = `?next=${encodeURIComponent(pathname + request.nextUrl.search)}`
+  }
   const redirect = NextResponse.redirect(url)
   redirect.headers.set(REQUEST_ID_HEADER, requestId)
   return redirect
@@ -83,5 +91,11 @@ export const config = {
   // Static files under `public/` reach the proxy like any other path, so the
   // ones that are nobody's personal data are named here — otherwise every
   // brand mark costs a session check and can never be cached at the edge.
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|icon.svg|icon-maskable|apple-icon|brands/).*)'],
+  //
+  // `opengraph-image` is in that list for a second reason: the scraper that
+  // fetches it to build a link preview has no session and never will, so
+  // behind the gate it gets a redirect and the card comes out blank.
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|icon.svg|icon-maskable|apple-icon|opengraph-image|brands/).*)',
+  ],
 }

@@ -7,6 +7,7 @@ import { CustomMetricsPanel } from '@/features/settings/custom-metrics-panel'
 import { DailyFieldsPanel, type MetricUse } from '@/features/settings/daily-fields-panel'
 import { ProfileCard } from '@/features/settings/profile-card'
 import { DataPanel } from '@/features/settings/data-panel'
+import { DeleteAccount } from '@/features/settings/delete-account'
 import { InstallApp } from '@/features/settings/install-app'
 import { ReplayOnboardingButton } from '@/features/onboarding/replay-button'
 import { SettingsForm } from '@/features/settings/settings-form'
@@ -83,6 +84,7 @@ export default async function SettingsPage() {
         />
       </section>
       <DataPanel />
+      {session ? <DeleteAccount subject={session.sub} /> : null}
     </div>
   )
 }

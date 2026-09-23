@@ -12,6 +12,15 @@ export async function findPersonPhotos(userId: string, personIds: string[]): Pro
     .orderBy(desc(personPhotos.createdAt))
 }
 
+/** Every asset this user owns, for the pass that erases them from Cloudinary. */
+export async function findAllPhotoPublicIds(userId: string): Promise<string[]> {
+  const rows = await db
+    .select({ publicId: personPhotos.publicId })
+    .from(personPhotos)
+    .where(eq(personPhotos.userId, userId))
+  return rows.map((row) => row.publicId)
+}
+
 export async function insertPersonPhoto(
   values: typeof personPhotos.$inferInsert,
 ): Promise<PersonPhoto> {
