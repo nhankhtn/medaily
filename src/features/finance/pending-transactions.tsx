@@ -116,6 +116,7 @@ export function PendingTransactions() {
             counterAccountId: entry.counterAccountId,
             categoryId: entry.categoryId,
             personId: entry.personId,
+            payeePersonId: entry.payeePersonId ?? null,
             merchant: entry.merchant,
             note: entry.note,
             // `null` is the action never reaching the server, which the drain

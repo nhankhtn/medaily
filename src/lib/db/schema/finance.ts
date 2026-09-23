@@ -103,6 +103,26 @@ export const transactions = pgTable(
      * it.
      */
     personId: uuid('person_id').references(() => people.id, { onDelete: 'set null' }),
+    /**
+     * Who the money is handed to, when paying for the thing and settling up
+     * with whoever covered it are two separate moments — lunch is recorded at
+     * noon, the transfer happens that evening.
+     *
+     * Deliberately not `personId`. That one is a debt and moves a balance;
+     * this one moves nothing. The expense already left the account when it was
+     * recorded, and whether it reached the restaurant or the colleague who
+     * paid the bill changes no total.
+     */
+    payeePersonId: uuid('payee_person_id').references(() => people.id, { onDelete: 'set null' }),
+    /**
+     * Set once the transfer is made — or waved off, which is the same thing to
+     * this column. Null is the only state that still asks for something.
+     *
+     * A flag rather than something derived, because unlike a debt there is no
+     * movement to derive it from: the transfer happens in another app and
+     * leaves no row behind.
+     */
+    transferredAt: timestamp('transferred_at', { withTimezone: true }),
     merchant: text('merchant'),
     note: text('note'),
     tags: text('tags').array(),

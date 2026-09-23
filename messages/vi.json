@@ -983,6 +983,25 @@
       "queued": "Đã lưu trên máy này. Có mạng là nó tự gửi lên.",
       "synced": "Đã gửi {count} giao dịch",
       "notKept": "Máy không còn chỗ để giữ lại. Có mạng rồi thử lưu lại nhé."
+    },
+    "search": "Tìm",
+    "searchPlaceholder": "Nơi chi, hoặc mã ref",
+    "transfer": {
+      "title": "Chuyển tiền",
+      "pick": "Chuyển cho ai?",
+      "nobody": "Chưa ai có số tài khoản. Thêm cho một người trong danh bạ là họ hiện ra đây.",
+      "nobodyShort": "Không ai",
+      "needAmount": "Nhập số tiền trước đã.",
+      "reference": "Nội dung",
+      "account": "số tài khoản",
+      "copyAccount": "Chép số tài khoản",
+      "copied": "Đã chép {what}",
+      "copyFailed": "Không chép được. Bạn bôi đen rồi chép tay nhé.",
+      "openMomo": "Mở MoMo",
+      "momoOnly": "MoMo chỉ mở ở trang chủ — số đã được chép, bạn dán vào rồi nhập số tiền.",
+      "done": "Đã chuyển",
+      "later": "Để sau",
+      "momoNumber": "số MoMo"
     }
   },
   "journal": {
@@ -1197,6 +1216,8 @@
     "noPeople": "Chưa có ai ở đây",
     "noPeopleBody": "Thêm một người, trang này sẽ báo khi đã quá lâu chưa liên lạc.",
     "saved": "Đã lưu",
+    "personRemoved": "Đã xóa {name}",
+    "confirmRemove": "Xóa thật chứ?",
     "daysOverdue": "Quá hạn {days} ngày",
     "reminders": "Nhắc việc",
     "addReminder": "Nhắc việc mới",
@@ -1214,7 +1235,12 @@
     "photosAdded": "Đã thêm {count} ảnh",
     "photoRemoved": "Đã xóa ảnh",
     "photoTooLarge": "Mỗi ảnh phải dưới 15MB",
-    "photoOf": "Ảnh của {name}"
+    "photoOf": "Ảnh của {name}",
+    "paymentHint": "Tiền bạn chuyển cho người này sẽ vào đâu. Điền một trong hai là họ xuất hiện khi bạn trả lại một giao dịch.",
+    "bank": "Ngân hàng",
+    "accountNumber": "Số tài khoản",
+    "accountName": "Tên chủ tài khoản",
+    "momo": "Số MoMo hoặc link nhận tiền"
   },
   "career": {
     "title": "Sự nghiệp",

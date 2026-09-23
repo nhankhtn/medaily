@@ -154,6 +154,7 @@ const transactionFields = {
   counterAccountId: z.string().uuid().nullable().optional(),
   categoryId: z.string().uuid().nullable().optional(),
   personId: z.string().uuid().nullable().optional(),
+  payeePersonId: z.string().uuid().nullable().optional(),
   merchant: optionalText,
   note: optionalText,
 } as const
@@ -220,7 +221,9 @@ export async function createTransaction(input: unknown) {
     getSettings(),
     findAccounts(userId),
     findCategories(userId),
-    findPeople(userId),
+    // Archived included: re-saving an old transaction must not silently drop
+    // the debt link to someone who has since been removed from the list.
+    findPeople(userId, { includeArchived: true }),
   ])
 
   const transfer = parsed.data.kind === 'transfer'
@@ -241,6 +244,7 @@ export async function createTransaction(input: unknown) {
     counterAccountId,
     categoryId: transfer ? null : ownedBy(parsed.data.categoryId, categories),
     personId: transfer ? null : ownedBy(parsed.data.personId, people),
+    payeePersonId: ownedBy(parsed.data.payeePersonId, people),
     merchant: parsed.data.merchant ?? null,
     note: parsed.data.note ?? null,
   })
@@ -259,6 +263,30 @@ export async function createTransaction(input: unknown) {
  * Every id is checked against this user's own accounts and categories. A
  * well-formed uuid still has to name a row this user owns (spec 29).
  */
+/**
+ * Records that the money has reached whoever covered the bill — or that it
+ * never will, which this column cannot tell apart and does not need to. Either
+ * way the row stops asking.
+ *
+ * Nothing else is written. The expense left the account when it was recorded;
+ * where it went afterwards changes no total, so there is no second row here.
+ */
+export async function markTransactionTransferred(input: unknown) {
+  const parsed = z.object({ id: z.string().uuid() }).safeParse(input)
+  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+
+  const userId = await getCurrentUserId()
+  try {
+    await updateTransaction(userId, parsed.data.id, { transferredAt: new Date() })
+  } catch {
+    // Someone else's row, or one deleted between the list rendering and the tap.
+    return { ok: false as const, error: 'not_found' as const }
+  }
+
+  revalidateFinance()
+  return { ok: true as const }
+}
+
 export async function saveTransaction(input: unknown) {
   const parsed = z
     .object({ id: z.string().uuid(), ...transactionFields })
@@ -272,7 +300,9 @@ export async function saveTransaction(input: unknown) {
     getSettings(),
     findAccounts(userId),
     findCategories(userId),
-    findPeople(userId),
+    // Archived included: re-saving an old transaction must not silently drop
+    // the debt link to someone who has since been removed from the list.
+    findPeople(userId, { includeArchived: true }),
   ])
 
   const transfer = parsed.data.kind === 'transfer'
@@ -290,6 +320,7 @@ export async function saveTransaction(input: unknown) {
     counterAccountId,
     categoryId: transfer ? null : ownedBy(parsed.data.categoryId, categories),
     personId: transfer ? null : ownedBy(parsed.data.personId, people),
+    payeePersonId: ownedBy(parsed.data.payeePersonId, people),
     merchant: parsed.data.merchant ?? null,
     note: parsed.data.note ?? null,
   })
@@ -430,6 +461,7 @@ const listTransactionsSchema = z.object({
   categoryId: z.union([z.string().uuid(), z.literal('__none__')]).optional(),
   from: isoDateSchema.optional(),
   to: isoDateSchema.optional(),
+  search: z.string().max(100).optional(),
 })
 
 /** Cursor page for the ledger; filters run in SQL, not on a client-side dump. */
@@ -457,6 +489,7 @@ export async function listTransactions(input: unknown) {
       categoryId,
       from: parsed.data.from,
       to: parsed.data.to,
+      search: parsed.data.search?.trim() || undefined,
     },
   })
 

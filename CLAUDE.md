@@ -31,6 +31,17 @@ piece of work looks finished.
 
 The same goes for `git push`, with the deploy rule above on top of it.
 
+**Commit only the files you touched.** Someone else is usually working in this
+tree at the same time, so `git add -A` sweeps up their half-finished work. Name
+the paths.
+
+**Never rewrite a branch that has an upstream.** No `rebase`, no `reset --hard`,
+no `push --force`. Compare the checked-out branch against **its own** upstream
+(`@{u}`) — measuring it against a different branch is how a rebase onto the
+wrong base happens. If the state looks wrong, or a `pull` would merge someone
+else's work into yours, say what you see and ask. A history you rewrote is a
+history they cannot get back, even when the files come out identical.
+
 # How big a control is
 
 Phone first, and on a phone everything is one size smaller. A phone screen is

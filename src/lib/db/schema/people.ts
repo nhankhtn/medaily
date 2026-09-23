@@ -30,6 +30,19 @@ export const people = pgTable(
     email: text('email'),
     socials: text('socials'),
     notes: text('notes'),
+    /**
+     * Where money sent to this person lands. Flat columns rather than a table
+     * of its own: one account each covers everyone this is for, and a second
+     * bank per person can earn the table on the day it exists.
+     *
+     * `bank_bin` is the Napas code the VietQR payload is built from — the same
+     * six digits a bank app shows beside its name, not the SWIFT code.
+     */
+    bankBin: text('bank_bin'),
+    bankAccountNumber: text('bank_account_number'),
+    /** Shown before the transfer so a wrong row is caught by eye, not by the bank. */
+    bankAccountName: text('bank_account_name'),
+    momoPhone: text('momo_phone'),
     /** Desired cadence: anyone past it appears in the "reach out" list (spec 15). */
     contactIntervalDays: smallint('contact_interval_days'),
     archivedAt: timestamp('archived_at', { withTimezone: true }),

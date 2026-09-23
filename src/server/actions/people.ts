@@ -7,6 +7,7 @@ import { PATHS } from '@/lib/paths'
 import { isoDateSchema } from '@/lib/validation/daily'
 import {
   completeReminder,
+  findPerson,
   insertInteraction,
   insertPerson,
   insertReminder,
@@ -20,9 +21,33 @@ const optionalText = z
   .nullable()
   .optional()
 
+/** Napas codes are exactly six digits; anything else would build a QR that scans wrong. */
+const bankBinSchema = z
+  .string()
+  .max(20)
+  .transform((value) => value.replace(/\D/g, ''))
+  .refine((value) => value === '' || value.length === 6, { message: 'bank bin is six digits' })
+  .transform((value) => (value === '' ? null : value))
+  .nullable()
+  .optional()
+
+const accountNumberSchema = z
+  .string()
+  .max(40)
+  .transform((value) => value.replace(/[^a-zA-Z0-9]/g, ''))
+  .transform((value) => (value === '' ? null : value))
+  .nullable()
+  .optional()
+
 function revalidatePeople() {
   revalidatePath(PATHS.people)
   revalidatePath(PATHS.home)
+}
+
+/** Archiving also moves who the payee picker and the debt list can name. */
+function revalidatePeopleAndFinance() {
+  revalidatePeople()
+  revalidatePath(PATHS.finance)
 }
 
 export async function savePerson(input: unknown) {
@@ -40,6 +65,10 @@ export async function savePerson(input: unknown) {
       email: optionalText,
       notes: optionalText,
       contactIntervalDays: z.number().int().min(1).max(3650).nullable().optional(),
+      bankBin: bankBinSchema,
+      bankAccountNumber: accountNumberSchema,
+      bankAccountName: optionalText,
+      momoPhone: optionalText,
     })
     .safeParse(input)
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
@@ -51,6 +80,39 @@ export async function savePerson(input: unknown) {
   else await insertPerson({ ...values, userId })
 
   revalidatePeople()
+  return { ok: true as const }
+}
+
+/**
+ * Archived, never deleted: the interactions, photos and debts filed under a
+ * person would cascade away with the row, and last year's ledger should not
+ * lose a name because the friendship did.
+ */
+export async function archivePerson(input: unknown) {
+  const parsed = z.object({ id: z.string().uuid() }).safeParse(input)
+  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+
+  const userId = await getCurrentUserId()
+  if (!(await findPerson(userId, parsed.data.id))) {
+    return { ok: false as const, error: 'not_found' as const }
+  }
+
+  await updatePerson(userId, parsed.data.id, { archivedAt: new Date() })
+  revalidatePeopleAndFinance()
+  return { ok: true as const }
+}
+
+export async function restorePerson(input: unknown) {
+  const parsed = z.object({ id: z.string().uuid() }).safeParse(input)
+  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+
+  const userId = await getCurrentUserId()
+  if (!(await findPerson(userId, parsed.data.id))) {
+    return { ok: false as const, error: 'not_found' as const }
+  }
+
+  await updatePerson(userId, parsed.data.id, { archivedAt: null })
+  revalidatePeopleAndFinance()
   return { ok: true as const }
 }
 

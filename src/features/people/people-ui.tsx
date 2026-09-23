@@ -1,6 +1,6 @@
 'use client'
 
-import { Cake, Check, MessageCircle, Plus } from 'lucide-react'
+import { Cake, Check, MessageCircle, Plus, Trash2 } from 'lucide-react'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
@@ -11,8 +11,16 @@ import { Input, Textarea } from '@/components/ui/input'
 import { MarkdownEditor } from '@/components/ui/markdown-editor'
 import { Select } from '@/components/ui/select'
 import { Field } from '@/features/projects/project-dialog'
+import { BANKS } from '@/lib/finance/banks'
 import { fromISODate, type ISODate } from '@/lib/dates'
-import { createReminder, logInteraction, markReminderDone, savePerson } from '@/server/actions/people'
+import {
+  archivePerson,
+  createReminder,
+  logInteraction,
+  markReminderDone,
+  restorePerson,
+  savePerson,
+} from '@/server/actions/people'
 import type { PeopleData, PersonView } from '@/server/services/people'
 
 const RELATIONSHIPS = ['partner', 'family', 'friend', 'colleague', 'mentor', 'other'] as const
@@ -24,12 +32,14 @@ export function PersonDialog({ person, trigger }: { person?: PersonView; trigger
   const [open, setOpen] = useState(false)
   const [pending, startTransition] = useTransition()
   const [notes, setNotes] = useState(person?.notes ?? '')
+  const [confirming, setConfirming] = useState(false)
 
   return (
     <Dialog
       open={open}
       onOpenChange={(next) => {
         setOpen(next)
+        setConfirming(false)
         if (next) setNotes(person?.notes ?? '')
       }}
     >
@@ -57,6 +67,10 @@ export function PersonDialog({ person, trigger }: { person?: PersonView; trigger
                 email: String(formData.get('email') ?? ''),
                 notes: String(formData.get('notes') ?? ''),
                 contactIntervalDays: interval === '' ? null : Number(interval),
+                bankBin: String(formData.get('bankBin') ?? ''),
+                bankAccountNumber: String(formData.get('bankAccountNumber') ?? ''),
+                bankAccountName: String(formData.get('bankAccountName') ?? ''),
+                momoPhone: String(formData.get('momoPhone') ?? ''),
               })
               if (!result.ok) {
                 toast.error(tc('error'))
@@ -116,6 +130,50 @@ export function PersonDialog({ person, trigger }: { person?: PersonView; trigger
             <Input type="email" name="email" defaultValue={person?.email ?? ''} maxLength={200} />
           </Field>
 
+          {/* Only what a transfer needs. Filling any of it is what puts this
+              person in the picker when a transaction is paid back. */}
+          <div className="border-border-base space-y-3 border-t pt-3">
+            <p className="text-text-subtle text-xs">{t('paymentHint')}</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label={t('bank')}>
+                <Select name="bankBin" defaultValue={person?.bankBin ?? ''}>
+                  <option value="">—</option>
+                  {BANKS.map((bank) => (
+                    <option key={bank.bin} value={bank.bin}>
+                      {bank.name}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label={t('accountNumber')}>
+                <Input
+                  name="bankAccountNumber"
+                  defaultValue={person?.bankAccountNumber ?? ''}
+                  inputMode="numeric"
+                  maxLength={40}
+                  className="tabular-nums"
+                />
+              </Field>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label={t('accountName')}>
+                <Input
+                  name="bankAccountName"
+                  defaultValue={person?.bankAccountName ?? ''}
+                  maxLength={200}
+                />
+              </Field>
+              <Field label={t('momo')}>
+                <Input
+                  name="momoPhone"
+                  defaultValue={person?.momoPhone ?? ''}
+                  maxLength={200}
+                  placeholder="09… / me.momo.vn/…"
+                />
+              </Field>
+            </div>
+          </div>
+
           <Field label={t('notes')}>
             <input type="hidden" name="notes" value={notes} />
             <MarkdownEditor
@@ -127,13 +185,50 @@ export function PersonDialog({ person, trigger }: { person?: PersonView; trigger
             <p className="mt-1 text-xs text-text-subtle">{t('notesHint')}</p>
           </Field>
 
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-              {tc('cancel')}
-            </Button>
-            <Button type="submit" disabled={pending}>
-              {tc('save')}
-            </Button>
+          <div className="flex items-center justify-between gap-2">
+            {person ? (
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={pending}
+                // Two taps: the row is only hidden, but the interactions and
+                // photos under it go with it and nothing on screen says so.
+                onClick={() => {
+                  if (!confirming) {
+                    setConfirming(true)
+                    return
+                  }
+                  startTransition(async () => {
+                    const result = await archivePerson({ id: person.id })
+                    if (!result.ok) {
+                      toast.error(tc('error'))
+                      return
+                    }
+                    toast.success(t('personRemoved', { name: person.name }), {
+                      action: {
+                        label: tc('undo'),
+                        onClick: () => void restorePerson({ id: person.id }),
+                      },
+                    })
+                    setOpen(false)
+                  })
+                }}
+              >
+                <Trash2 className="size-4" />
+                {confirming ? t('confirmRemove') : tc('delete')}
+              </Button>
+            ) : (
+              <span />
+            )}
+
+            <div className="flex gap-2">
+              <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+                {tc('cancel')}
+              </Button>
+              <Button type="submit" disabled={pending}>
+                {tc('save')}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>

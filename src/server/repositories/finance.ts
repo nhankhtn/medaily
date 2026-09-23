@@ -32,7 +32,16 @@ export type TransactionPageFilters = {
   categoryId?: string | null
   from?: string
   to?: string
+  /** Where the money went, or the reference a bank statement prints. */
+  search?: string
 }
+
+/**
+ * Worth trying the id on. The predicate has to rewrite every id to compare it,
+ * so it cannot use the primary key — running that for each word of an ordinary
+ * search would scan the whole ledger to match nothing.
+ */
+const REFERENCE_RE = /^[0-9a-f-]{4,}$/
 
 export type TransactionPage = {
   items: Transaction[]
@@ -226,6 +235,20 @@ export async function findTransactionsPage(
   }
   if (filters.to) {
     conditions.push(lte(transactions.occurredOn, filters.to))
+  }
+  if (filters.search) {
+    const needle = filters.search.toLowerCase()
+    const matches = [
+      sql`f_unaccent(lower(coalesce(${transactions.merchant}, ''))) LIKE f_unaccent(${`%${needle}%`})`,
+    ]
+    if (REFERENCE_RE.test(needle)) {
+      // A prefix, because that is the end of the id a transfer reference
+      // carries — `ref 4f3a9c` pasted back out of a statement.
+      matches.push(
+        sql`replace(${transactions.id}::text, '-', '') LIKE ${`${needle.replace(/-/g, '')}%`}`,
+      )
+    }
+    conditions.push(or(...matches)!)
   }
   if (opts.cursor) {
     const cursor = opts.cursor

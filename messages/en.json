@@ -983,6 +983,25 @@
       "queued": "Saved on this phone. It will go up when you have a connection.",
       "synced": "{count, plural, one {# transaction sent} other {# transactions sent}}",
       "notKept": "This phone had no room to keep it. Try again when you have a connection."
+    },
+    "search": "Search",
+    "searchPlaceholder": "Where it went, or a ref",
+    "transfer": {
+      "title": "Send money",
+      "pick": "Who are you sending it to?",
+      "nobody": "Nobody has an account number saved yet. Add one on a contact and they will show up here.",
+      "nobodyShort": "Nobody",
+      "needAmount": "Enter the amount first.",
+      "reference": "Reference",
+      "account": "account number",
+      "copyAccount": "Copy account number",
+      "copied": "Copied the {what}",
+      "copyFailed": "Could not copy. Select the number and copy it by hand.",
+      "openMomo": "Open MoMo",
+      "momoOnly": "MoMo opens on its home screen — the number is copied, so paste it and type the amount.",
+      "done": "Sent",
+      "later": "Later",
+      "momoNumber": "MoMo number"
     }
   },
   "journal": {
@@ -1197,6 +1216,8 @@
     "noPeople": "No one here yet",
     "noPeopleBody": "Add someone and this page tells you when it has been too long.",
     "saved": "Saved",
+    "personRemoved": "Removed {name}",
+    "confirmRemove": "Remove for good?",
     "daysOverdue": "{days} days overdue",
     "reminders": "Reminders",
     "addReminder": "New reminder",
@@ -1214,7 +1235,12 @@
     "photosAdded": "Added {count} photos",
     "photoRemoved": "Photo removed",
     "photoTooLarge": "Each photo must be under 15MB",
-    "photoOf": "Photo of {name}"
+    "photoOf": "Photo of {name}",
+    "paymentHint": "Where money you send this person lands. Fill either one and they show up when you pay a transaction back.",
+    "bank": "Bank",
+    "accountNumber": "Account number",
+    "accountName": "Account holder",
+    "momo": "MoMo number or receive link"
   },
   "career": {
     "title": "Career",
