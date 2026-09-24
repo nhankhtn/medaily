@@ -843,6 +843,7 @@
     "vsLastMonth": "so với tháng trước",
     "accounts": "Tài khoản",
     "addAccount": "Tài khoản mới",
+    "addAccountShort": "Tài khoản",
     "noAccounts": "Chưa có tài khoản nào",
     "noAccountsBody": "Tài khoản là nơi tiền nằm. Giao dịch cần có nó.",
     "accountName": "Tên",
@@ -873,8 +874,7 @@
     "addTransactionTitle": "Thêm giao dịch",
     "noTransactions": "Chưa ghi giao dịch nào",
     "noMatchingTransactions": "Không có giao dịch khớp bộ lọc",
-    "filterAllAccounts": "Tất cả tài khoản",
-    "filterAllCategories": "Tất cả danh mục",
+    "filterAll": "Tất cả",
     "filterFrom": "Từ ngày",
     "filterTo": "Đến ngày",
     "amount": "Số tiền",
@@ -892,6 +892,7 @@
     },
     "categories": "Danh mục",
     "addCategory": "Danh mục mới",
+    "addCategoryShort": "Danh mục",
     "editCategory": "Sửa danh mục",
     "categoryNote": "Ghi chú cho AI",
     "categoryNoteHint": "Mô tả những gì thuộc danh mục này để khi phân loại giao dịch AI chọn đúng hơn.",
@@ -932,7 +933,9 @@
     "debtHint": "Tiền cho mượn không phải là tiền đã tiêu — nó vẫn nằm trong tài sản của bạn cho tới khi đòi về. Muốn xoá một khoản nợ thì ghi lại lần trả.",
     "tabs": {
       "overview": "Tổng quan",
-      "report": "Báo cáo"
+      "report": "Báo cáo",
+      "accounts": "Tài khoản",
+      "budgets": "Ngân sách"
     },
     "report": {
       "year": "Năm",
@@ -1006,7 +1009,8 @@
       "staticQr": "Số tiền bạn tự nhập lúc quét.",
       "copiedAccount": "Đã chép số tài khoản",
       "copiedMomo": "Đã chép số MoMo"
-    }
+    },
+    "filters": "Lọc"
   },
   "journal": {
     "title": "Nhật ký",

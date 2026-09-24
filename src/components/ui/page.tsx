@@ -74,14 +74,17 @@ export type Tab = { key: string; label: string; href: string }
  */
 export function TabNav({ tabs, current }: { tabs: Tab[]; current: string }) {
   return (
-    <nav className="glass flex w-fit rounded-full p-0.5">
+    <nav className="glass flex w-full rounded-full p-0.5">
       {tabs.map((tab) => (
         <Link
           key={tab.key}
           href={tab.href}
           aria-current={tab.key === current ? 'page' : undefined}
           className={cn(
-            'rounded-full px-3 py-1 text-sm transition-colors',
+            // Four Vietnamese labels do not fit a phone at text-sm, and a label
+            // that wraps makes the bar two lines tall for one tab and one for
+            // the rest. Smaller and unbroken, so the row keeps its height.
+            'flex-1 rounded-full px-2.5 py-1 text-center text-xs whitespace-nowrap transition-colors sm:px-3 sm:text-sm',
             tab.key === current
               ? 'glass-inset font-medium text-text shadow-sm'
               : 'text-text-muted hover:text-text',

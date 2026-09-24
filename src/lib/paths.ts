@@ -12,7 +12,7 @@ import type { ISODate } from '@/lib/dates'
 
 export type CalendarView = 'day' | 'week' | 'month' | 'year'
 
-export type FinanceTab = 'overview' | 'report'
+export type FinanceTab = 'overview' | 'accounts' | 'budgets' | 'report'
 
 export type LearningTab = 'sessions' | 'notes'
 

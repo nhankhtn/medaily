@@ -843,6 +843,7 @@
     "vsLastMonth": "vs last month",
     "accounts": "Accounts",
     "addAccount": "New account",
+    "addAccountShort": "Account",
     "noAccounts": "No accounts yet",
     "noAccountsBody": "An account is where money sits. Transactions need one.",
     "accountName": "Name",
@@ -873,8 +874,7 @@
     "addTransactionTitle": "Add a transaction",
     "noTransactions": "Nothing recorded yet",
     "noMatchingTransactions": "No transactions match these filters",
-    "filterAllAccounts": "All accounts",
-    "filterAllCategories": "All categories",
+    "filterAll": "All",
     "filterFrom": "From",
     "filterTo": "To",
     "amount": "Amount",
@@ -892,6 +892,7 @@
     },
     "categories": "Categories",
     "addCategory": "New category",
+    "addCategoryShort": "Category",
     "editCategory": "Edit category",
     "categoryNote": "Note for AI",
     "categoryNoteHint": "Describe what belongs here so capture can pick this category more accurately.",
@@ -932,7 +933,9 @@
     "debtHint": "Money you lend is not money you spent — it stays in your net worth until it comes back. To settle a debt, record the repayment.",
     "tabs": {
       "overview": "Overview",
-      "report": "Report"
+      "report": "Report",
+      "accounts": "Accounts",
+      "budgets": "Budgets"
     },
     "report": {
       "year": "Year",
@@ -1006,7 +1009,8 @@
       "staticQr": "Type the amount when you scan.",
       "copiedAccount": "Account number copied",
       "copiedMomo": "MoMo number copied"
-    }
+    },
+    "filters": "Filters"
   },
   "journal": {
     "title": "Journal",
