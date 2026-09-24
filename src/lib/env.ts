@@ -22,6 +22,17 @@ const envSchema = z.object({
   // built from it. Absent, the deployment's own hostname is used instead.
   SITE_URL: z.string().optional(),
 
+  // Printed in the privacy notice as where a deletion request goes. Validated
+  // as an address rather than taken on trust: a typo here is published on a
+  // public page as the only way to reach anyone.
+  LEGAL_CONTACT_EMAIL: z.email('LEGAL_CONTACT_EMAIL must be an email address').optional(),
+
+  // Whether anything is counted at all. Public, because the decision has to be
+  // the same in the browser as on the server — a provider mounted on one side
+  // and not the other is a hydration mismatch. Absent means nothing is sent,
+  // which is what every environment but the deployed one should be.
+  NEXT_PUBLIC_ANALYTICS_ENABLED: z.string().optional(),
+
   // Auth is a hard-coded credential pair plus, optionally, Google sign-in
   // (spec 29). Absent values keep the gate closed rather than open.
   AUTH_USERNAME: z.string().optional(),
@@ -74,6 +85,8 @@ export const env: Env = parsed.success
       DATABASE_URL: process.env.DATABASE_URL ?? '',
       NODE_ENV: (process.env.NODE_ENV as Env['NODE_ENV']) ?? 'development',
       SITE_URL: process.env.SITE_URL,
+      LEGAL_CONTACT_EMAIL: process.env.LEGAL_CONTACT_EMAIL,
+      NEXT_PUBLIC_ANALYTICS_ENABLED: process.env.NEXT_PUBLIC_ANALYTICS_ENABLED,
       AUTH_USERNAME: process.env.AUTH_USERNAME,
       AUTH_PASSWORD: process.env.AUTH_PASSWORD,
       AUTH_SECRET: process.env.AUTH_SECRET,

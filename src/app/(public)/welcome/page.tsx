@@ -6,7 +6,9 @@ import { Logo } from '@/components/brand/logo'
 import { LocaleSwitcher } from '@/components/shell/locale-switcher'
 import { ThemeToggle } from '@/components/shell/theme-toggle'
 import { Button } from '@/components/ui/button'
+import { SupportDialog } from '@/features/support/support-dialog'
 import { PATHS } from '@/lib/paths'
+import { alertsEnabled } from '@/server/services/alerts'
 import { getShellTheme } from '@/server/services/settings'
 
 const FEATURES = [
@@ -30,6 +32,9 @@ export const metadata: Metadata = {
 
 export default async function WelcomePage() {
   const [t, theme] = await Promise.all([getTranslations('welcome'), getShellTheme()])
+  // Offered only where there is a chat to forward to: a button that swallows
+  // what somebody wrote is worse than no button.
+  const canWriteIn = alertsEnabled()
 
   return (
     <div className="login-page relative flex min-h-dvh flex-col overflow-hidden">
@@ -89,6 +94,16 @@ export default async function WelcomePage() {
         <Link href={PATHS.legal('terms')} className="hover:text-text">
           {t('termsLink')}
         </Link>
+        {canWriteIn ? (
+          <SupportDialog
+            signedIn={false}
+            trigger={
+              <button type="button" className="hover:text-text">
+                {t('contact')}
+              </button>
+            }
+          />
+        ) : null}
         <Link href={PATHS.login} className="hover:text-text ml-auto">
           {t('signIn')}
         </Link>

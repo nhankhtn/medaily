@@ -53,4 +53,21 @@ describe('siteUrl', () => {
     const url = await load({ SITE_URL: '   ', VERCEL_PROJECT_PRODUCTION_URL: undefined })
     expect(url.origin).toBe('http://localhost:3000')
   })
+
+  /**
+   * This is read while the root layout builds its metadata, so a throw here is
+   * not a wrong canonical — it is every page failing to render.
+   */
+  it('falls through a typo instead of throwing', async () => {
+    const url = await load({
+      SITE_URL: 'https://not a domain',
+      VERCEL_PROJECT_PRODUCTION_URL: 'project.vercel.app',
+    })
+    expect(url.origin).toBe('https://project.vercel.app')
+  })
+
+  it('still lands somewhere when every value is unusable', async () => {
+    const url = await load({ SITE_URL: 'h t t p', VERCEL_PROJECT_PRODUCTION_URL: '%%%' })
+    expect(url.origin).toBe('http://localhost:3000')
+  })
 })

@@ -13,15 +13,28 @@ import { env } from '@/lib/env'
  * loads rather than to a domain this build is not serving.
  */
 export function siteUrl(): URL {
-  const configured = env.SITE_URL?.trim()
-  if (configured) return new URL(withScheme(configured))
+  // A typo is skipped rather than thrown. This is read while the root layout
+  // builds its metadata, so a `new URL()` that throws is not a bad canonical —
+  // it is every page in the app failing to render.
+  const configured = parse(env.SITE_URL)
+  if (configured) return configured
 
   // Injected by the platform rather than configured by hand, so it is read
   // straight from the environment instead of going through the schema.
-  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim()
-  if (vercel) return new URL(withScheme(vercel))
+  const vercel = parse(process.env.VERCEL_PROJECT_PRODUCTION_URL)
+  if (vercel) return vercel
 
   return new URL('http://localhost:3000')
+}
+
+function parse(value: string | undefined): URL | null {
+  const trimmed = value?.trim()
+  if (!trimmed) return null
+  try {
+    return new URL(withScheme(trimmed))
+  } catch {
+    return null
+  }
 }
 
 /** Vercel hands over a bare hostname; a person pasting one usually does too. */

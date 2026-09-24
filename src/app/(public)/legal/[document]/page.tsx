@@ -10,6 +10,7 @@ import {
   type LegalDocument,
 } from '@/lib/legal/documents'
 import { PATHS } from '@/lib/paths'
+import { alertsEnabled } from '@/server/services/alerts'
 
 type Params = { params: Promise<{ document: string }> }
 
@@ -46,7 +47,9 @@ export default async function LegalPage({ params }: Params) {
   if (!isDocument(document)) notFound()
 
   const [locale, t] = await Promise.all([getLocale(), getTranslations('legal')])
-  const { title, body } = legalDocument(isLocale(locale) ? locale : DEFAULT_LOCALE, document)
+  const { title, body } = legalDocument(isLocale(locale) ? locale : DEFAULT_LOCALE, document, {
+    supportForm: alertsEnabled(),
+  })
 
   return (
     <article className="mx-auto w-full max-w-2xl px-4 py-10 pr-[max(1rem,var(--safe-right))] pb-[max(2.5rem,var(--safe-bottom))] pl-[max(1rem,var(--safe-left))] sm:py-16">

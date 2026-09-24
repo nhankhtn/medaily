@@ -1566,6 +1566,20 @@
     "privacyBody": "Không quảng cáo, không đo đạc hành vi, không bán cho ai. Tải hết về dạng JSON hay CSV lúc nào cũng được, và xoá tài khoản — kèm mọi bản ghi thuộc về nó — trong một lần.",
     "privacyLink": "Quyền riêng tư",
     "termsLink": "Điều khoản",
+    "contact": "Liên hệ",
     "signIn": "Đăng nhập"
+  },
+  "support": {
+    "title": "Liên hệ",
+    "body": "Có gì hỏng, hay thiếu gì đó? Viết vào đây, tin sẽ tới người vận hành.",
+    "message": "Chuyện gì đã xảy ra",
+    "placeholder": "Trang tài chính không tải nữa sau khi tôi thêm một danh mục…",
+    "replyTo": "Trả lời bạn ở đâu",
+    "replyToHint": "Bỏ trống thì tin đi một chiều — không ai hồi âm được.",
+    "send": "Gửi",
+    "sent": "Đã gửi. Cảm ơn bạn.",
+    "tooShort": "Viết thêm vài chữ nữa nhé — kể xem chuyện gì đã xảy ra.",
+    "tooMany": "Gửi hơi dồn rồi. Một tiếng nữa viết tiếp nhé.",
+    "unavailable": "Chưa gửi được. Lát nữa thử lại."
   }
 }

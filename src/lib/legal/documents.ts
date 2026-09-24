@@ -1,3 +1,4 @@
+import { env } from '@/lib/env'
 import type { Locale } from '@/i18n/config'
 
 /**
@@ -47,14 +48,29 @@ birthdays and bank account details.
 
 **Pictures you upload**, if you add any.
 
-**Nothing else.** There is no analytics, no advertising, no tracking pixel and
-no third-party script watching what you do.
+**How the pages are used**, if this deployment has measurement switched on.
+Vercel Web Analytics and Speed Insights record which pages were opened and how
+quickly they loaded. They do not use cookies, do not build a profile, and
+cannot see anything you typed — a page address and a loading time, never the
+contents of a journal entry or a transaction. Where it is off, nothing is sent
+and no script is loaded.
+
+**What you write in**, if you use the contact form. The note, the page you
+were on, and either your account name or the address you gave for an answer,
+are passed to a **Telegram** chat read by whoever runs this. Nothing is stored
+here: the note is forwarded and no record of it is kept in the database. Don't
+put a password in it — nothing ever needs one.
+
+**Nothing else.** There is no advertising, nothing sold to anyone, and no
+third-party script reading what you write.
 
 ## Where it is kept
 
 - The database is hosted by **Neon**, in the United States.
 - The app runs on **Vercel**.
 - Pictures are stored by **Cloudinary**.
+- Page and speed measurements, where they are on, go to **Vercel**.
+- Notes sent through the contact form go to **Telegram**.
 - Sign-in is handled by **Google Firebase**, which verifies who you are. Your
   password, if you have one with Google, is never seen by this app.
 
@@ -88,8 +104,10 @@ with it.
 
 ## Getting in touch
 
-Questions about any of this, or a request you cannot carry out from inside the
-app, go to **{contactEmail}**.
+Exporting your data and deleting your account are both in Settings and need
+nobody's permission, so most of what this page grants you is already a button.
+For anything else — a question about the above, or a request you cannot carry
+out yourself — {contact}
 `
 
 const PRIVACY_VI = `
@@ -111,14 +129,30 @@ trong đó, có thể có số điện thoại, email, ngày sinh và số tài 
 
 **Ảnh bạn tải lên**, nếu có.
 
-**Không gì khác nữa.** Không có đo đạc hành vi, không quảng cáo, không pixel
-theo dõi, không script của bên thứ ba nào quan sát bạn.
+**Cách các trang được dùng**, nếu bản cài này có bật đo đạc.
+Vercel Web Analytics và Speed Insights ghi lại trang nào được mở và tải nhanh
+chậm ra sao.
+Chúng không dùng cookie, không dựng hồ sơ về bạn, và không thấy được thứ bạn
+gõ vào — chỉ là địa chỉ trang và thời gian tải, không bao giờ là nội dung một
+ghi chép hay một giao dịch. Chỗ nào tắt thì không gửi gì và cũng không nạp
+script nào.
+
+**Những gì bạn viết vào form liên hệ**, nếu bạn dùng nó. Nội dung, trang bạn
+đang mở, cùng tên tài khoản hoặc địa chỉ bạn để lại, được chuyển tới một đoạn
+chat **Telegram** do người vận hành đọc. Ở đây không lưu gì cả: tin được
+chuyển đi và không bản ghi nào nằm lại trong cơ sở dữ liệu. Đừng viết mật khẩu
+vào đó — không bao giờ cần tới.
+
+**Không gì khác nữa.** Không quảng cáo, không bán cho ai, không script của bên
+thứ ba nào đọc những gì bạn viết.
 
 ## Dữ liệu nằm ở đâu
 
 - Cơ sở dữ liệu đặt tại **Neon**, ở Mỹ.
 - App chạy trên **Vercel**.
 - Ảnh lưu ở **Cloudinary**.
+- Số liệu trang và tốc độ, chỗ nào bật, gửi về **Vercel**.
+- Tin gửi qua form liên hệ đi tới **Telegram**.
 - Đăng nhập do **Google Firebase** xử lý để xác minh bạn là ai. Mật khẩu
   Google của bạn không bao giờ đi qua app này.
 
@@ -150,8 +184,9 @@ là mất khỏi cơ sở dữ liệu, và xoá tài khoản thì mang theo tấ
 
 ## Liên hệ
 
-Thắc mắc về bất cứ điều gì ở trên, hoặc yêu cầu mà bạn không tự làm được trong
-app, xin gửi tới **{contactEmail}**.
+Tải dữ liệu về và xoá tài khoản đều nằm trong Cài đặt và không phải xin phép
+ai, nên phần lớn những gì trang này cho bạn đã là một nút bấm. Còn lại — thắc
+mắc về những điều trên, hoặc yêu cầu bạn không tự làm được — {contact}
 `
 
 const TERMS_EN = `
@@ -264,20 +299,64 @@ const DOCUMENTS: Record<Locale, Record<LegalDocument, Document>> = {
  * reader — a privacy notice that cannot be replied to is the one promise here
  * that has to be visibly missing rather than quietly broken.
  */
-export function legalDocument(locale: Locale, document: LegalDocument): Document {
-  const { title, body } = DOCUMENTS[locale][document]
-  const contact = process.env.LEGAL_CONTACT_EMAIL?.trim()
+/**
+ * Whether the in-app contact form is offered. Passed in rather than read here,
+ * because knowing it means asking a server service, and these documents are
+ * plain text that a unit test should be able to render without a database.
+ */
+export type LegalChannels = { supportForm?: boolean }
 
-  return {
-    title,
-    body: body.replace(
-      /\{contactEmail\}/g,
-      contact && contact.length > 0 ? contact : MISSING_CONTACT[locale],
-    ),
-  }
+export function legalDocument(
+  locale: Locale,
+  document: LegalDocument,
+  channels: LegalChannels = {},
+): Document {
+  const { title, body } = DOCUMENTS[locale][document]
+
+  return { title, body: body.replace(/\{contact\}/g, contactSentence(locale, channels)) }
 }
 
-const MISSING_CONTACT: Record<Locale, string> = {
-  en: 'an address that has not been set yet',
-  vi: 'một địa chỉ chưa được điền',
+/**
+ * How to reach anyone, written from what is actually configured.
+ *
+ * A notice that names a channel nobody set up is a promise that breaks the
+ * first time somebody tries it — and the person most likely to try is the one
+ * who cannot sign in or has already deleted their account. So each route is
+ * named only where it exists, and where none does the page says so rather than
+ * implying one.
+ *
+ * `env` collects a bad value rather than throwing, and the fallback it hands
+ * back on a parse failure is the raw string — so the address is shape-checked
+ * again here. Publishing "hello@" as the only way to reach anyone is worse
+ * than admitting there is no way.
+ */
+function contactSentence(locale: Locale, { supportForm = false }: LegalChannels): string {
+  const email = env.LEGAL_CONTACT_EMAIL?.trim()
+  const address = email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null
+
+  const routes = CONTACT_COPY[locale]
+  if (supportForm && address) return routes.both(address)
+  if (supportForm) return routes.form
+  if (address) return routes.email(address)
+  return routes.none
+}
+
+const CONTACT_COPY: Record<
+  Locale,
+  { both: (email: string) => string; form: string; email: (email: string) => string; none: string }
+> = {
+  en: {
+    both: (email) =>
+      `use the contact form, which is on the front page and needs no account, or write to **${email}**.`,
+    form: 'use the contact form. It is on the front page and needs no account, so it still works after an account is gone.',
+    email: (email) => `write to **${email}**.`,
+    none: 'there is no channel set up on this deployment yet. Whoever runs it has to add one.',
+  },
+  vi: {
+    both: (email) =>
+      `dùng form liên hệ ở trang đầu, không cần tài khoản, hoặc gửi thư tới **${email}**.`,
+    form: 'dùng form liên hệ ở trang đầu. Nó không cần tài khoản, nên xoá tài khoản rồi vẫn gửi được.',
+    email: (email) => `gửi thư tới **${email}**.`,
+    none: 'bản cài này chưa mở kênh nào cả. Người vận hành phải thêm vào.',
+  },
 }

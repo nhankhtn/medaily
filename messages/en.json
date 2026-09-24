@@ -1566,6 +1566,20 @@
     "privacyBody": "No ads, no analytics, nothing sold. Export everything as JSON or CSV whenever you like, and delete the account — with every record under it — in one go.",
     "privacyLink": "Privacy",
     "termsLink": "Terms",
+    "contact": "Contact",
     "signIn": "Sign in"
+  },
+  "support": {
+    "title": "Get in touch",
+    "body": "Something broken, or something missing? Write it here and it reaches whoever runs this.",
+    "message": "What happened",
+    "placeholder": "The finance page stopped loading after I added a category…",
+    "replyTo": "Where to answer you",
+    "replyToHint": "Leave it blank and this goes one way — nobody can write back.",
+    "send": "Send",
+    "sent": "Sent. Thank you.",
+    "tooShort": "A few more words would help — say what happened.",
+    "tooMany": "That is a few in a row. Give it an hour and write again.",
+    "unavailable": "That did not send. Try again in a moment."
   }
 }
