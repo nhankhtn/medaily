@@ -4,17 +4,45 @@ import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
 import { Toaster } from 'sonner'
 import { RequestIdProvider } from '@/components/shell/request-id'
+import { AnalyticsMount } from '@/lib/analytics'
 import { FORMATS } from '@/lib/format/dates'
 import { fontBrand, fontSans } from '@/lib/fonts'
 import { REQUEST_ID_HEADER } from '@/lib/request-id'
+import { siteUrl } from '@/lib/site'
 import { themeBootScript } from '@/lib/themes'
 import { getShellSettings, getShellTheme } from '@/server/services/settings'
 import './globals.css'
 
+const TITLE = 'Personal OS'
+const DESCRIPTION = 'Track daily performance, understand behaviour, manage goals.'
+
 export const metadata: Metadata = {
-  title: 'Personal OS',
-  description: 'Track daily performance, understand behaviour, manage goals.',
-  applicationName: 'Personal OS',
+  /**
+   * Nothing here is a relative URL by choice — this is what lets the Open
+   * Graph tags below resolve, and Next warns on every render without it.
+   */
+  metadataBase: siteUrl(),
+  title: TITLE,
+  description: DESCRIPTION,
+  applicationName: TITLE,
+  /**
+   * Not for search rank — there is one public page and it is a sign-in form.
+   * This is what a link pasted into a chat reads from, which today comes out
+   * as an empty card. The picture is left to `opengraph-image.tsx`: naming one
+   * here would override the file convention rather than add to it.
+   */
+  openGraph: {
+    type: 'website',
+    siteName: TITLE,
+    title: TITLE,
+    description: DESCRIPTION,
+  },
+  /**
+   * `robots.txt` already tells a crawler not to fetch anything but sign-in.
+   * This is the other half: a URL someone links to can be listed without ever
+   * being fetched, and only a `noindex` on the page keeps it out.
+   */
+  robots: { index: false, follow: false },
   /**
    * What makes "Add to Home Screen" open as an app on iOS, which reads the
    * manifest for almost nothing — `display: standalone` there is ignored, and
@@ -94,6 +122,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             mobileOffset="calc(env(safe-area-inset-top, 0px) + 12px)"
           />
         </NextIntlClientProvider>
+        {/* Last in the body: it measures the page, it is not part of it. */}
+        <AnalyticsMount />
       </body>
     </html>
   )

@@ -12,6 +12,12 @@ import { generateReview } from '@/server/actions/ai'
  * Offered when the AI service is configured. The narrative itself is the
  * product; no privacy footnote or model/date chrome.
  */
+/** Waiting a moment fixes one of these and not the other, so they read apart. */
+const MESSAGE: Partial<Record<string, string>> = {
+  disabled: 'disabled',
+  rate_limited: 'rateLimited',
+}
+
 export function AiReview({
   period,
   periodKey,
@@ -35,7 +41,7 @@ export function AiReview({
     startTransition(async () => {
       const result = await generateReview({ period, key: periodKey })
       if (!result.ok) {
-        toast.error(result.error === 'disabled' ? t('disabled') : t('failed'))
+        toast.error(t(MESSAGE[result.error] ?? 'failed'))
         return
       }
       setContent(result.contentMd)

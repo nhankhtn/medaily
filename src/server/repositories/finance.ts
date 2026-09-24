@@ -1,5 +1,5 @@
 import { and, asc, between, desc, eq, gte, isNotNull, isNull, lt, lte, or, sql } from 'drizzle-orm'
-import { db } from '@/lib/db'
+import { db, type DbOrTx } from '@/lib/db'
 import {
   accounts,
   assets,
@@ -167,6 +167,23 @@ export async function insertCategory(
   const row = rows[0]
   if (!row) throw new Error('failed to insert category')
   return row
+}
+
+/** One statement per table, so a new workspace is opened whole or not at all. */
+export async function insertCategories(
+  values: (typeof financeCategories.$inferInsert)[],
+  tx: DbOrTx = db,
+): Promise<void> {
+  if (values.length === 0) return
+  await tx.insert(financeCategories).values(values)
+}
+
+export async function insertAccounts(
+  values: (typeof accounts.$inferInsert)[],
+  tx: DbOrTx = db,
+): Promise<void> {
+  if (values.length === 0) return
+  await tx.insert(accounts).values(values)
 }
 
 export async function updateCategory(

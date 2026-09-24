@@ -1,8 +1,12 @@
-import { db } from '@/lib/db'
+import { db, type DbOrTx } from '@/lib/db'
 import { OWNER_USER_ID } from '@/lib/auth/current-user'
 import { emailIsPermitted, readAccessPolicy } from '@/lib/auth/config'
 import type { FirebaseIdentity } from '@/lib/auth/firebase-verify'
-import { isUploadedAvatar } from '@/lib/media/cloudinary'
+import {
+  isUploadedAvatar,
+  publicIdFromDeliveryUrl,
+  readCloudinaryConfig,
+} from '@/lib/media/cloudinary'
 import {
   findIdentity,
   findUserById,
@@ -13,12 +17,18 @@ import {
   updateUserProfile,
 } from '@/server/repositories/auth'
 import { findSettings, insertUserSettings } from '@/server/repositories/settings'
+import { deleteUser, findUserById as findUser } from '@/server/repositories/auth'
+import { findAllPhotoPublicIds } from '@/server/repositories/media'
+import { destroyAsset } from '@/server/services/media'
+import { log } from '@/lib/log'
+import { insertAccounts, insertCategories } from '@/server/repositories/finance'
+import { starterFor } from '@/lib/onboarding/starter'
+import { DEFAULT_LOCALE, type Locale } from '@/i18n/config'
 
 export type ResolveFailure = 'not_allowed' | 'signup_closed'
 
 export type ResolveResult =
-  | { ok: true; userId: string; created: boolean }
-  | { ok: false; error: ResolveFailure }
+  { ok: true; userId: string; created: boolean } | { ok: false; error: ResolveFailure }
 
 /**
  * Turns a verified Google account into the `users.id` its session will act as,
@@ -28,7 +38,15 @@ export type ResolveResult =
  * so signing in with Google for the first time lands in the workspace that
  * already holds your data instead of an empty one beside it.
  */
-export async function resolveGoogleIdentity(identity: FirebaseIdentity): Promise<ResolveResult> {
+export async function resolveGoogleIdentity(
+  identity: FirebaseIdentity,
+  /**
+   * Which language the starter categories are written in. Taken from whatever
+   * the visitor was reading the sign-in page in, because that is the only
+   * signal there is before a workspace exists to hold a preference.
+   */
+  locale: Locale = DEFAULT_LOCALE,
+): Promise<ResolveResult> {
   const existing = await findIdentity('google', identity.uid)
   if (existing) {
     await afterSignIn(existing.id, existing.userId, identity)
@@ -54,7 +72,7 @@ export async function resolveGoogleIdentity(identity: FirebaseIdentity): Promise
 
   if (!policy.allowSignup) return { ok: false, error: 'signup_closed' }
 
-  return provision(identity)
+  return provision(identity, locale)
 }
 
 /**
@@ -106,7 +124,7 @@ async function linkTo(userId: string, identity: FirebaseIdentity): Promise<strin
  * A brand new workspace: user, settings and identity in one transaction, so a
  * failure halfway cannot leave a user that every page then fails to render.
  */
-async function provision(identity: FirebaseIdentity): Promise<ResolveResult> {
+async function provision(identity: FirebaseIdentity, locale: Locale): Promise<ResolveResult> {
   try {
     const userId = await db.transaction(async (tx) => {
       const user = await insertUser(
@@ -118,6 +136,7 @@ async function provision(identity: FirebaseIdentity): Promise<ResolveResult> {
         tx,
       )
       await insertUserSettings(user.id, tx)
+      await seedWorkspace(user.id, locale, tx)
       await insertIdentity(
         {
           userId: user.id,
@@ -138,6 +157,57 @@ async function provision(identity: FirebaseIdentity): Promise<ResolveResult> {
     await afterSignIn(row.id, row.userId, identity)
     return { ok: true, userId: row.userId, created: false }
   }
+}
+
+/**
+ * The rows a workspace opens with. Inside the caller's transaction, so a
+ * workspace is never half furnished — and with the settings row, whose
+ * currency these accounts are recorded in.
+ */
+async function seedWorkspace(userId: string, locale: Locale, tx: DbOrTx): Promise<void> {
+  const starter = starterFor(locale)
+
+  await insertCategories(
+    starter.categories.map((category) => ({ userId, name: category.name, kind: category.kind })),
+    tx,
+  )
+  await insertAccounts(
+    starter.accounts.map((account) => ({ userId, name: account.name, type: account.type })),
+    tx,
+  )
+}
+
+/**
+ * Erasing an account, in the order that cannot strand anything.
+ *
+ * The pictures go first. They live on Cloudinary, which knows nothing about
+ * this database — delete the rows and their public ids go with them, and the
+ * files stay uploaded forever with no record that they were ever anyone's.
+ * A failure there is logged rather than thrown: a photo that outlives its
+ * owner is a problem, but an account that cannot be deleted is a worse one,
+ * and the person asking has a right to the delete either way.
+ */
+export async function eraseAccount(userId: string): Promise<void> {
+  const publicIds = await findAllPhotoPublicIds(userId)
+
+  // The avatar is not in `person_photos`; it is only ever a delivery URL on
+  // the user row, so its public id has to be read back out of the URL.
+  const user = await findUser(userId)
+  const cloudName = readCloudinaryConfig().cloudName
+  if (user?.imageUrl && isUploadedAvatar(user.imageUrl, userId)) {
+    const avatarId = publicIdFromDeliveryUrl(user.imageUrl, cloudName)
+    if (avatarId) publicIds.push(avatarId)
+  }
+
+  for (const publicId of publicIds) {
+    try {
+      await destroyAsset(publicId)
+    } catch (error) {
+      await log.error('auth', `could not erase asset ${publicId}`, error)
+    }
+  }
+
+  await deleteUser(userId)
 }
 
 /**

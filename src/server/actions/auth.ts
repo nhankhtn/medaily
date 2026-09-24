@@ -5,7 +5,8 @@ import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { readAuthConfig } from '@/lib/auth/config'
 import { safeEqual, SESSION_COOKIE, sessionCookieOptions, signSession } from '@/lib/auth/session'
-import { resolvePasswordIdentity } from '@/server/services/auth'
+import { eraseAccount, resolvePasswordIdentity } from '@/server/services/auth'
+import { readSession } from '@/lib/auth/current-user'
 import { PATHS, safeNextPath } from '@/lib/paths'
 import { clientKey } from '@/lib/client-ip'
 import { createLimit } from '@/lib/rate-limit'
@@ -43,7 +44,6 @@ export async function login(_previous: LoginState, formData: FormData): Promise<
   // A correct password says this caller was never the one being kept out.
   signIns.refill(key)
 
-
   const userId = await resolvePasswordIdentity(auth.username)
 
   const token = await signSession(
@@ -54,6 +54,33 @@ export async function login(_previous: LoginState, formData: FormData): Promise<
   cookieStore.set(SESSION_COOKIE, token, sessionCookieOptions())
 
   redirect(safeNextPath(parsed.data.next))
+}
+
+/**
+ * Erasure, not archival. Everything this account holds — the journal, the
+ * ledger, the health log, the people and the photos — goes, and nothing is
+ * kept to make coming back easy.
+ *
+ * Confirmed by typing the account's own name, because there is no undo and no
+ * copy left behind afterwards to restore from. Whoever wants one takes it
+ * first, through the export on this same page.
+ */
+export async function deleteMyAccount(input: unknown) {
+  const parsed = z.object({ confirmation: z.string().max(400) }).safeParse(input)
+  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+
+  const session = await readSession()
+  if (!session) return { ok: false as const, error: 'not_signed_in' as const }
+
+  if (parsed.data.confirmation.trim().toLowerCase() !== session.sub.trim().toLowerCase()) {
+    return { ok: false as const, error: 'confirmation_mismatch' as const }
+  }
+
+  await eraseAccount(session.uid)
+
+  const cookieStore = await cookies()
+  cookieStore.delete(SESSION_COOKIE)
+  return { ok: true as const }
 }
 
 export async function logout() {

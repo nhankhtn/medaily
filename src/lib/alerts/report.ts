@@ -26,6 +26,49 @@ export type ErrorReport = {
 }
 
 /**
+ * Someone writing in from inside the app.
+ *
+ * A type of its own rather than an `ErrorReport` with prose in `message`: the
+ * two are read differently at the other end — a crash is triaged, a person is
+ * answered — and they are throttled by different rules. Sharing the shape
+ * would mean one of them wearing fields that never apply.
+ */
+export type SupportMessage = {
+  /** What they wrote. The only field the app did not fill in itself. */
+  body: string
+  /** Where to answer. Absent when whoever wrote it was not signed in. */
+  replyTo?: string | null
+  /** Who, if there was a session: a name is easier to answer than an id. */
+  from?: string | null
+  /** Which page they were on when they gave up and wrote. */
+  path?: string | null
+  environment: string
+  requestId?: string | null
+}
+
+/**
+ * The chat message for a support note.
+ *
+ * `redact` runs over the body for the same reason it runs over an exception:
+ * a person describing a problem pastes whatever was on their screen, and that
+ * is sometimes a connection string.
+ */
+export function supportText(message: SupportMessage): string {
+  const who = [message.from, message.replyTo].filter(Boolean).join(' · ')
+
+  const lines = [
+    `💬 medaily (${message.environment})`,
+    [who || 'not signed in', message.path].filter(Boolean).join(' · '),
+    '',
+    redact(message.body),
+  ]
+
+  if (message.requestId) lines.push('', `req ${message.requestId}`)
+
+  return truncate(lines.join('\n'), TELEGRAM_LIMIT)
+}
+
+/**
  * What two reports must share to count as the same incident. Deliberately not
  * the stack: the same failure from two routes is two things worth knowing,
  * the same failure fifty times in a minute is one.

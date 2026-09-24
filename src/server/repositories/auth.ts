@@ -68,6 +68,16 @@ export async function insertUser(
  * changed Google display name or avatar current. Never clears an existing
  * value with a null.
  */
+/**
+ * Erases the account. Every one of the 39 tables that names a user cascades
+ * from here, so one delete takes the journal, the ledger, the health log and
+ * the identities with it. Nothing is archived: this is the request to be
+ * forgotten, not to be hidden.
+ */
+export async function deleteUser(userId: string, tx: DbOrTx = db): Promise<void> {
+  await tx.delete(users).where(eq(users.id, userId))
+}
+
 export async function updateUserProfile(
   userId: string,
   patch: { email?: string | null; displayName?: string | null; imageUrl?: string | null },

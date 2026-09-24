@@ -1,12 +1,16 @@
-import { Keyboard } from 'lucide-react'
+import { Keyboard, LifeBuoy } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
 import { LocaleSwitcher } from '@/components/shell/locale-switcher'
 import { ThemeToggle } from '@/components/shell/theme-toggle'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { CustomMetricsPanel } from '@/features/settings/custom-metrics-panel'
 import { DailyFieldsPanel, type MetricUse } from '@/features/settings/daily-fields-panel'
 import { ProfileCard } from '@/features/settings/profile-card'
 import { DataPanel } from '@/features/settings/data-panel'
+import { DeleteAccount } from '@/features/settings/delete-account'
+import { SupportDialog } from '@/features/support/support-dialog'
+import { alertsEnabled } from '@/server/services/alerts'
 import { InstallApp } from '@/features/settings/install-app'
 import { ReplayOnboardingButton } from '@/features/onboarding/replay-button'
 import { SettingsForm } from '@/features/settings/settings-form'
@@ -20,8 +24,9 @@ import { findHabits } from '@/server/repositories/habits'
 import { getSettings } from '@/server/services/settings'
 
 export default async function SettingsPage() {
-  const [t, settings, session] = await Promise.all([
+  const [t, tSupport, settings, session] = await Promise.all([
     getTranslations('settings'),
+    getTranslations('support'),
     getSettings(),
     readSession(),
   ])
@@ -83,6 +88,24 @@ export default async function SettingsPage() {
         />
       </section>
       <DataPanel />
+      {alertsEnabled() ? (
+        <Card className="space-y-3 p-4">
+          <div>
+            <h2 className="text-sm font-semibold">{tSupport('title')}</h2>
+            <p className="text-text-subtle mt-0.5 text-xs leading-snug">{tSupport('body')}</p>
+          </div>
+          <SupportDialog
+            signedIn={Boolean(session)}
+            trigger={
+              <Button size="sm" variant="outline">
+                <LifeBuoy className="size-4" />
+                {tSupport('send')}
+              </Button>
+            }
+          />
+        </Card>
+      ) : null}
+      {session ? <DeleteAccount subject={session.sub} /> : null}
     </div>
   )
 }

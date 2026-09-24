@@ -73,6 +73,23 @@ export const PATHS = {
 
   manifest: '/manifest.webmanifest',
   /**
+   * Public, and it has to be: behind the gate a crawler asking for it is
+   * redirected and served the sign-in page as HTML, which tells it nothing
+   * and reads as a site with no rules at all.
+   */
+  robots: '/robots.txt',
+
+  /**
+   * Terms and privacy. Public for the same reason: these are what someone
+   * reads to decide whether to hand over a journal and a ledger, and a page
+   * you must first sign up to read cannot inform that decision.
+   */
+  legal: (document: 'terms' | 'privacy') => `/legal/${document}`,
+  legalRoot: '/legal',
+
+  /** What a stranger meets at `/`, before there is an account to sign in to. */
+  welcome: '/welcome',
+  /**
    * The offline worker. Public, and it has to be: a browser refuses to
    * register a worker whose script was redirected, so leaving it behind the
    * sign-in gate turns offline support off without saying so. Nothing in it
@@ -137,6 +154,9 @@ export const PUBLIC_PATHS = [
   PATHS.api.health,
   PATHS.api.googleAuth,
   PATHS.manifest,
+  PATHS.robots,
+  PATHS.legalRoot,
+  PATHS.welcome,
   PATHS.serviceWorker,
   PATHS.firebaseAuthHandler,
 ] as const

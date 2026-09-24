@@ -1300,6 +1300,7 @@
     "regenerate": "Write it again",
     "generating": "Writing…",
     "failed": "Could not generate the review",
+    "rateLimited": "A few in a row — wait a minute and try again.",
     "disabled": "AI review is not available.",
     "empty": "No narrative for this period yet."
   },
@@ -1518,5 +1519,67 @@
     "dividerHint": "A line between sections",
     "table": "Table",
     "tableHint": "A simple grid"
+  },
+  "account": {
+    "deleteTitle": "Delete this account",
+    "deleteBody": "Everything goes: the journal, the ledger, the health log, the people and the photos. There is no undo and no copy kept — take an export first if you want one.",
+    "typeToConfirm": "Type {name} to confirm",
+    "nameMismatch": "That is not the name on this account. Check it and try again.",
+    "deleteAction": "Delete account"
+  },
+  "legal": {
+    "updatedOn": "Last updated {date}",
+    "terms": "Terms",
+    "privacy": "Privacy"
+  },
+  "welcome": {
+    "brand": "Personal OS",
+    "headline": "One place for the day that just happened.",
+    "subtitle": "Log energy, habits, money and focus in one app — then see what actually moves the needle. Built for one person: you.",
+    "start": "Get started",
+    "freeNote": "Free, and your data exports in one click.",
+    "featureDaily": {
+      "title": "Daily log",
+      "body": "A minute an evening: energy, mood, what got done, what got in the way."
+    },
+    "featureHabits": {
+      "title": "Habits and goals",
+      "body": "Streaks that survive a bad week, and goals that know what feeds them."
+    },
+    "featureMoney": {
+      "title": "Money",
+      "body": "Accounts, budgets, and who still owes whom — in dong, without the spreadsheet."
+    },
+    "featureHealth": {
+      "title": "Health",
+      "body": "Sleep, weight, workouts. A notebook that adds up, not a diagnosis."
+    },
+    "featurePeople": {
+      "title": "People",
+      "body": "Birthdays, last time you talked, and a nudge when it has been too long."
+    },
+    "featureInsights": {
+      "title": "Insights",
+      "body": "What your own numbers correlate with, once there are enough of them."
+    },
+    "privacyTitle": "Your data stays yours",
+    "privacyBody": "No ads, no analytics, nothing sold. Export everything as JSON or CSV whenever you like, and delete the account — with every record under it — in one go.",
+    "privacyLink": "Privacy",
+    "termsLink": "Terms",
+    "contact": "Contact",
+    "signIn": "Sign in"
+  },
+  "support": {
+    "title": "Get in touch",
+    "body": "Something broken, or something missing? Write it here and it reaches whoever runs this.",
+    "message": "What happened",
+    "placeholder": "The finance page stopped loading after I added a category…",
+    "replyTo": "Where to answer you",
+    "replyToHint": "Leave it blank and this goes one way — nobody can write back.",
+    "send": "Send",
+    "sent": "Sent. Thank you.",
+    "tooShort": "A few more words would help — say what happened.",
+    "tooMany": "That is a few in a row. Give it an hour and write again.",
+    "unavailable": "That did not send. Try again in a moment."
   }
 }

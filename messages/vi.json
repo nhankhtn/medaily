@@ -1300,6 +1300,7 @@
     "regenerate": "Viết lại",
     "generating": "Đang viết…",
     "failed": "Không tạo được bản tường thuật",
+    "rateLimited": "Viết dồn quá nhanh — đợi một phút rồi thử lại.",
     "disabled": "Tổng kết bằng AI chưa bật.",
     "empty": "Kỳ này chưa có bản tường thuật."
   },
@@ -1518,5 +1519,67 @@
     "dividerHint": "Vạch ngăn giữa các mục",
     "table": "Bảng",
     "tableHint": "Lưới đơn giản"
+  },
+  "account": {
+    "deleteTitle": "Xoá tài khoản này",
+    "deleteBody": "Mất hết: nhật ký, sổ chi tiêu, theo dõi sức khoẻ, danh bạ và ảnh. Không hoàn tác được và không giữ lại bản nào — muốn giữ thì tải dữ liệu về trước.",
+    "typeToConfirm": "Gõ {name} để xác nhận",
+    "nameMismatch": "Tên này không khớp với tài khoản. Xem lại rồi thử lại nhé.",
+    "deleteAction": "Xoá tài khoản"
+  },
+  "legal": {
+    "updatedOn": "Cập nhật lần cuối {date}",
+    "terms": "Điều khoản",
+    "privacy": "Quyền riêng tư"
+  },
+  "welcome": {
+    "brand": "Personal OS",
+    "headline": "Một chỗ cho ngày vừa qua.",
+    "subtitle": "Ghi năng lượng, thói quen, tiền bạc và tập trung trong một app — rồi thấy thứ gì thật sự thay đổi. Làm cho một người: bạn.",
+    "start": "Bắt đầu",
+    "freeNote": "Miễn phí, và tải hết dữ liệu về chỉ bằng một cú bấm.",
+    "featureDaily": {
+      "title": "Nhật ký ngày",
+      "body": "Mỗi tối một phút: năng lượng, tâm trạng, làm được gì, vướng gì."
+    },
+    "featureHabits": {
+      "title": "Thói quen và mục tiêu",
+      "body": "Chuỗi ngày sống sót qua một tuần tệ, và mục tiêu biết thứ gì nuôi nó."
+    },
+    "featureMoney": {
+      "title": "Tiền bạc",
+      "body": "Tài khoản, ngân sách, ai còn nợ ai — bằng tiền Việt, khỏi cần bảng tính."
+    },
+    "featureHealth": {
+      "title": "Sức khoẻ",
+      "body": "Giấc ngủ, cân nặng, tập luyện. Một cuốn sổ biết cộng, không phải chẩn đoán."
+    },
+    "featurePeople": {
+      "title": "Quan hệ",
+      "body": "Sinh nhật, lần nói chuyện gần nhất, và lời nhắc khi đã lâu quá rồi."
+    },
+    "featureInsights": {
+      "title": "Phân tích",
+      "body": "Số liệu của chính bạn liên quan tới nhau ra sao, khi đã đủ nhiều."
+    },
+    "privacyTitle": "Dữ liệu vẫn là của bạn",
+    "privacyBody": "Không quảng cáo, không đo đạc hành vi, không bán cho ai. Tải hết về dạng JSON hay CSV lúc nào cũng được, và xoá tài khoản — kèm mọi bản ghi thuộc về nó — trong một lần.",
+    "privacyLink": "Quyền riêng tư",
+    "termsLink": "Điều khoản",
+    "contact": "Liên hệ",
+    "signIn": "Đăng nhập"
+  },
+  "support": {
+    "title": "Liên hệ",
+    "body": "Có gì hỏng, hay thiếu gì đó? Viết vào đây, tin sẽ tới người vận hành.",
+    "message": "Chuyện gì đã xảy ra",
+    "placeholder": "Trang tài chính không tải nữa sau khi tôi thêm một danh mục…",
+    "replyTo": "Trả lời bạn ở đâu",
+    "replyToHint": "Bỏ trống thì tin đi một chiều — không ai hồi âm được.",
+    "send": "Gửi",
+    "sent": "Đã gửi. Cảm ơn bạn.",
+    "tooShort": "Viết thêm vài chữ nữa nhé — kể xem chuyện gì đã xảy ra.",
+    "tooMany": "Gửi hơi dồn rồi. Một tiếng nữa viết tiếp nhé.",
+    "unavailable": "Chưa gửi được. Lát nữa thử lại."
   }
 }
