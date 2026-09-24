@@ -27,6 +27,17 @@ export function Markdown({
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
+          // Cloudinary already serves these through `f_auto,q_auto,c_limit`,
+          // so next/image would re-optimise an optimised file and bill for it.
+          img: ({ src, alt }) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={typeof src === 'string' ? src : undefined}
+              alt={alt ?? ''}
+              loading="lazy"
+              className="my-2 h-auto max-w-full rounded-[var(--radius)]"
+            />
+          ),
           a: ({ href, children, ...props }) => {
             const external = Boolean(href && /^https?:\/\//.test(href))
             return (

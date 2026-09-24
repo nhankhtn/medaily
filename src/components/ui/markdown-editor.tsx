@@ -2,6 +2,7 @@
 
 import { Extension } from '@tiptap/core'
 import { DragHandle } from '@tiptap/extension-drag-handle-react'
+import Image from '@tiptap/extension-image'
 import { TaskItem, TaskList } from '@tiptap/extension-list'
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table'
 import { Placeholder } from '@tiptap/extensions'
@@ -13,6 +14,7 @@ import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useRef } from 'react'
 import { Markdown } from 'tiptap-markdown'
 import { BubbleToolbar } from '@/components/ui/editor/bubble-toolbar'
+import { createImageUpload } from '@/components/ui/editor/image-upload'
 import {
   blockCommands,
   createSlashCommand,
@@ -27,6 +29,8 @@ type Wording = {
   slash: string
   heading: string
   field: string | undefined
+  imageTooLarge: string
+  imageFailed: string
 }
 
 /**
@@ -59,6 +63,10 @@ function buildExtensions(wording: ReturnType<typeof wordingBox>) {
     }),
     TaskList,
     TaskItem.configure({ nested: true }),
+    // `allowBase64: false`: a pasted picture goes to Cloudinary and the
+    // Markdown keeps a URL. Inlining the bytes would put a few megabytes of
+    // base64 into a text column that every read of the note drags along.
+    Image.configure({ allowBase64: false }),
     TightTaskList,
     Table.configure({ resizable: false }),
     TableRow,
@@ -79,6 +87,10 @@ function buildExtensions(wording: ReturnType<typeof wordingBox>) {
     createSlashCommand({
       commands: () => wording.read().commands,
       empty: () => wording.read().empty,
+    }),
+    createImageUpload(() => {
+      const say = wording.read()
+      return { tooLarge: say.imageTooLarge, failed: say.imageFailed }
     }),
   ]
 }
@@ -157,6 +169,8 @@ export function MarkdownEditor({
       slash: t('slashHint'),
       heading: t('headingHint'),
       field: placeholder,
+      imageTooLarge: t('imageTooLarge'),
+      imageFailed: t('imageFailed'),
     })
     return [box, buildExtensions(box)] as const
     // Seeded once; every later change arrives through `write` below.
@@ -170,6 +184,8 @@ export function MarkdownEditor({
       slash: t('slashHint'),
       heading: t('headingHint'),
       field: placeholder,
+      imageTooLarge: t('imageTooLarge'),
+      imageFailed: t('imageFailed'),
     })
   }, [wording, t, placeholder])
 

@@ -1487,6 +1487,8 @@
     "backToAssistant": "Về lại trợ lý"
   },
   "editor": {
+    "imageTooLarge": "Ảnh này nặng quá, tối đa 15 MB.",
+    "imageFailed": "Chưa tải được ảnh lên, thử lại nhé.",
     "slashHint": "Gõ ‘/’ để chèn khối",
     "headingHint": "Tiêu đề",
     "noBlock": "Không có khối nào khớp",

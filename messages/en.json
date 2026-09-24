@@ -1487,6 +1487,8 @@
     "backToAssistant": "Back to the assistant"
   },
   "editor": {
+    "imageTooLarge": "That picture is too large. The limit is 15 MB.",
+    "imageFailed": "Could not upload that picture. Try again.",
     "slashHint": "Type ‘/’ for blocks",
     "headingHint": "Heading",
     "noBlock": "No block matches",
