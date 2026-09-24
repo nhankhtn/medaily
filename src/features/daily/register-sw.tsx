@@ -30,9 +30,12 @@ export function RegisterServiceWorker() {
 
     // Registering from localhost is fine; anywhere else needs HTTPS, and the
     // browser refuses rather than warns, so there is nothing to handle here.
-    navigator.serviceWorker.register(PATHS.serviceWorker).catch((error) => {
-      console.error('[offline] service worker registration failed:', error)
-    })
+    navigator.serviceWorker
+      .register(PATHS.serviceWorker)
+      .then(primeOfflineCaches)
+      .catch((error) => {
+        console.error('[offline] service worker registration failed:', error)
+      })
   }, [])
 
   return null
@@ -77,4 +80,9 @@ export async function clearOfflineCaches(): Promise<void> {
   } catch {
     /* signing out must not depend on the worker answering */
   }
+}
+
+
+function primeOfflineCaches(registration: ServiceWorkerRegistration): void {
+  registration.active?.postMessage('prime-caches')
 }
