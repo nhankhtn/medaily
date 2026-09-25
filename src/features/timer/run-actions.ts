@@ -38,11 +38,20 @@ export type FinishResult =
     }
   | { ok: false; error: 'too_short' | 'invalid_input' | 'error' }
 
+/** A run the server had to file to make room for this one. */
+export type FiledOnStart = {
+  minutes: number
+  activity: ActivityId
+  sink: ReturnType<typeof activityOf>['sink']
+}
+
+export type BeginResult = { ok: true; filed: FiledOnStart | null } | { ok: false }
+
 /**
  * Starts a run on this device first, then mirrors to the server when it can.
  * Offline is not a failure — the clock keeps going and sync catches up.
  */
-export async function beginRun(input: BeginInput): Promise<{ ok: true } | { ok: false }> {
+export async function beginRun(input: BeginInput): Promise<BeginResult> {
   const now = new Date()
   const runId = crypto.randomUUID()
   const targetSeconds = input.mode === 'countdown' ? input.targetMinutes * 60 : null
@@ -92,10 +101,10 @@ export async function beginRun(input: BeginInput): Promise<{ ok: true } | { ok: 
       serverHasRun: true,
       dirty: false,
     })
-    return { ok: true }
+    return { ok: true, filed: result.filed ?? null }
   } catch (error) {
     console.error('[timer] start did not reach the server; running offline:', error)
-    return { ok: true }
+    return { ok: true, filed: null }
   }
 }
 

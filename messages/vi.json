@@ -738,6 +738,7 @@
     "tooShort": "Chưa đủ 30 giây nên không ghi lại",
     "capped": "Phiên bị bỏ quên nên chỉ tính tối đa 8 tiếng",
     "savedTo": "Đã lưu {minutes} phút vào {where}",
+    "previousSaved": "Phiên đang chạy dở ({activity}, {minutes} phút) đã được lưu vào {where} trước.",
     "savedShort": "Đã lưu {minutes} phút",
     "offline": {
       "queued": "Đã lưu {minutes} phút trên máy này. Có mạng là nó tự gửi lên.",

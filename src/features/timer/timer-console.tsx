@@ -73,7 +73,22 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
         workoutType: workoutType || null,
         note: note || null,
       })
-      if (!result.ok) toast.error(tc('error'))
+      if (!result.ok) {
+        toast.error(tc('error'))
+        return
+      }
+      // A run was still going somewhere else; say where its minutes went
+      // rather than filing them silently.
+      if (result.filed) {
+        toast.info(
+          t('previousSaved', {
+            minutes: result.filed.minutes,
+            activity: labelOf(result.filed.activity),
+            where: tn(MODULE_OF[result.filed.sink]),
+          }),
+          { duration: 8000 },
+        )
+      }
     })
 
   const toggle = () => startTransition(async () => void (await togglePauseRun()))

@@ -738,6 +738,7 @@
     "tooShort": "Under 30 seconds, so nothing was recorded",
     "capped": "The run was left going, so it was capped at 8 hours",
     "savedTo": "Saved {minutes} min to {where}",
+    "previousSaved": "The run still going ({activity}, {minutes} min) was saved to {where} first.",
     "savedShort": "Saved {minutes} min",
     "offline": {
       "queued": "Saved {minutes} min on this device. It will upload when you are back online.",

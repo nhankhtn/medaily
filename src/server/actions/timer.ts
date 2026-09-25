@@ -49,6 +49,57 @@ const startSchema = z.object({
   note: optionalText,
 })
 
+type FiledRun = {
+  minutes: number
+  activity: ActivityId
+  sink: ReturnType<typeof activityOf>['sink']
+  capped: boolean
+  date: string
+}
+
+/**
+ * Files whatever run the server is holding, and clears it.
+ *
+ * Running or paused makes no difference: `elapsedSeconds` already counts a
+ * paused run's accumulated time, so both are filed for what they actually ran.
+ */
+async function fileHeldRun(
+  settings: Awaited<ReturnType<typeof getSettings>>,
+  overrides?: { note?: string | null; rpe?: number | null },
+): Promise<FiledRun | 'not_running' | 'too_short'> {
+  const timer = await findTimer(settings.userId)
+  if (!timer) return 'not_running'
+
+  const seconds = elapsedSeconds(timer)
+  if (tooShort(seconds)) {
+    await clearTimer(settings.userId)
+    return 'too_short'
+  }
+
+  const minutes = minutesOf(seconds)
+  const date = logicalDateOf(timer.startedAt, dayContextOf(settings))
+  // A run started by the previous release has no activity; its `kind` says it.
+  const activity = activityOf(isActivityId(timer.activity) ? timer.activity : timer.kind)
+
+  await fileToSink({
+    userId: settings.userId,
+    weekStart: settings.weekStart,
+    activity,
+    date,
+    minutes,
+    startedAt: timer.startedAt,
+    endedAt: new Date(),
+    workoutType: timer.workoutType,
+    topicId: timer.topicId,
+    projectId: timer.projectId,
+    note: overrides?.note ?? timer.note,
+    rpe: overrides?.rpe ?? null,
+  })
+
+  await clearTimer(settings.userId)
+  return { minutes, activity: activity.id, sink: activity.sink, capped: wasCapped(seconds), date }
+}
+
 export async function startTimer(input: unknown) {
   const parsed = startSchema.safeParse(input)
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
@@ -56,7 +107,8 @@ export async function startTimer(input: unknown) {
   const { activity: id, mode, targetMinutes, workoutType, topicId, projectId, note } = parsed.data
   const activity = activityOf(id)
   const isFocus = activity.sink === 'focus'
-  const userId = await getCurrentUserId()
+  const settings = await getSettings()
+  const userId = settings.userId
 
   // Refuse an activity pointing at a metric that is gone: the run would count
   // an hour and then have nowhere to put it.
@@ -66,6 +118,15 @@ export async function startTimer(input: unknown) {
       return { ok: false as const, error: 'invalid_input' as const }
     }
   }
+
+  /*
+   * There is one row per person, so starting a run used to overwrite whatever
+   * was in it — a run left going on another device was destroyed rather than
+   * counted. File it instead. This happens after the checks above, so a start
+   * that is going to be refused cannot take the previous run down with it.
+   */
+  const previous = await fileHeldRun(settings)
+  const filed = typeof previous === 'string' ? null : previous
 
   await persistTimer({
     userId,
@@ -86,8 +147,13 @@ export async function startTimer(input: unknown) {
     note: note ?? null,
   })
 
-  revalidateTimer()
-  return { ok: true as const }
+  revalidateTimer(filed?.date)
+  return {
+    ok: true as const,
+    // What the start had to put away first, so the screen can say so rather
+    // than filing minutes behind the person's back.
+    filed: filed ? { minutes: filed.minutes, activity: filed.activity, sink: filed.sink } : null,
+  }
 }
 
 export async function pauseTimer() {
@@ -141,46 +207,21 @@ export async function stopTimer(input?: unknown) {
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
   const settings = await getSettings()
-  const timer = await findTimer(settings.userId)
-  if (!timer) return { ok: false as const, error: 'not_running' as const }
+  const filed = await fileHeldRun(settings, parsed.data)
 
-  const seconds = elapsedSeconds(timer)
-  const minutes = minutesOf(seconds)
-  const date = logicalDateOf(timer.startedAt, dayContextOf(settings))
-
-  if (tooShort(seconds)) {
-    await clearTimer(settings.userId)
+  if (filed === 'not_running') return { ok: false as const, error: 'not_running' as const }
+  if (filed === 'too_short') {
     revalidateTimer()
     return { ok: false as const, error: 'too_short' as const }
   }
 
-  const note = parsed.data?.note ?? timer.note
-  // A run started by the previous release has no activity; its `kind` says it.
-  const activity = activityOf(isActivityId(timer.activity) ? timer.activity : timer.kind)
-
-  await fileToSink({
-    userId: settings.userId,
-    weekStart: settings.weekStart,
-    activity,
-    date,
-    minutes,
-    startedAt: timer.startedAt,
-    endedAt: new Date(),
-    workoutType: timer.workoutType,
-    topicId: timer.topicId,
-    projectId: timer.projectId,
-    note,
-    rpe: parsed.data?.rpe ?? null,
-  })
-
-  await clearTimer(settings.userId)
-  revalidateTimer(date)
+  revalidateTimer(filed.date)
   return {
     ok: true as const,
-    minutes,
-    activity: activity.id,
-    sink: activity.sink,
-    capped: wasCapped(seconds),
+    minutes: filed.minutes,
+    activity: filed.activity,
+    sink: filed.sink,
+    capped: filed.capped,
   }
 }
 
