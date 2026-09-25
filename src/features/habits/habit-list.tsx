@@ -2,12 +2,14 @@
 
 import { Check, Flame, Link2, Pencil, Snowflake } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { HabitDialog } from '@/features/habits/habit-dialog'
 import type { ISODate } from '@/lib/dates'
+import { PATHS } from '@/lib/paths'
 import { toggleHabit } from '@/server/actions/habits'
 import type { BindableMetric } from '@/lib/metrics/bindable'
 import type { HabitView } from '@/server/services/habits'
@@ -30,12 +32,13 @@ export function HabitList({
   metrics: BindableMetric[]
 }) {
   const t = useTranslations('habits')
+  const router = useRouter()
   const [optimistic, setOptimistic] = useState<Record<string, boolean>>({})
   const [pending, startTransition] = useTransition()
 
   if (habits.length === 0) {
     return (
-      <div className="glass rounded-[var(--radius)] border-dashed border-border-strong p-6 text-center">
+      <div className="glass border-border-strong rounded-[var(--radius)] border-dashed p-6 text-center">
         <p className="font-medium">{t('noneYet')}</p>
         <p className="text-text-subtle mx-auto mt-1 max-w-prose text-sm">{t('noneYetBody')}</p>
         <div className="mt-4 flex justify-center">
@@ -47,7 +50,9 @@ export function HabitList({
 
   const toggle = (habit: HabitView) => {
     if (habit.linkedMetric) {
-      toast.info(t('derivedFromLog'))
+      toast.info(t('derivedHint'), {
+        action: { label: t('openDailyLog'), onClick: () => router.push(PATHS.dailyOn(today)) },
+      })
       return
     }
     const next = !(optimistic[habit.id] ?? habit.completedToday)
@@ -65,10 +70,7 @@ export function HabitList({
         const weekly = habit.frequencyType === 'weekly'
 
         return (
-          <li
-            key={habit.id}
-            className="glass border-border-strong rounded-[var(--radius)] p-3"
-          >
+          <li key={habit.id} className="glass border-border-strong rounded-[var(--radius)] p-3">
             <div className="flex items-start gap-3">
               <button
                 type="button"
@@ -79,7 +81,7 @@ export function HabitList({
                 className={cn(
                   'flex size-9 shrink-0 items-center justify-center rounded-full border transition-colors',
                   done
-                    ? 'bg-good border-transparent text-accent-text'
+                    ? 'bg-good text-accent-text border-transparent'
                     : habit.scheduledToday || weekly
                       ? 'border-border-strong hover:bg-surface-2'
                       : 'border-border-base opacity-40',

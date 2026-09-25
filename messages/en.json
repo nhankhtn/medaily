@@ -246,6 +246,8 @@
     "completionRate": "{rate}% in 30 days",
     "scheduledPerWeek": "{count}× per week",
     "derivedFromLog": "From daily log",
+    "derivedHint": "This one ticks itself from the daily log — record it there and it follows.",
+    "openDailyLog": "Open the daily log",
     "notScheduled": "Not scheduled today",
     "edit": "Edit habit",
     "name": "Name",

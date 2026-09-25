@@ -246,6 +246,8 @@
     "completionRate": "{rate}% trong 30 ngày",
     "scheduledPerWeek": "{count} lần/tuần",
     "derivedFromLog": "Từ bản ghi ngày",
+    "derivedHint": "Thói quen này tự đánh dấu từ bản ghi ngày — ghi ở đó là nó theo.",
+    "openDailyLog": "Mở bản ghi ngày",
     "notScheduled": "Hôm nay không có lịch",
     "edit": "Sửa thói quen",
     "name": "Tên",
