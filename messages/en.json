@@ -1492,6 +1492,7 @@
   "editor": {
     "imageTooLarge": "That picture is too large. The limit is 15 MB.",
     "imageFailed": "Could not upload that picture. Try again.",
+    "imageUploading": "Uploading…",
     "slashHint": "Type ‘/’ for blocks",
     "headingHint": "Heading",
     "noBlock": "No block matches",

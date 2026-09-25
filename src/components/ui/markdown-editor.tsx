@@ -31,6 +31,7 @@ type Wording = {
   field: string | undefined
   imageTooLarge: string
   imageFailed: string
+  imageUploading: string
 }
 
 /**
@@ -90,7 +91,11 @@ function buildExtensions(wording: ReturnType<typeof wordingBox>) {
     }),
     createImageUpload(() => {
       const say = wording.read()
-      return { tooLarge: say.imageTooLarge, failed: say.imageFailed }
+      return {
+        tooLarge: say.imageTooLarge,
+        failed: say.imageFailed,
+        uploading: say.imageUploading,
+      }
     }),
   ]
 }
@@ -171,6 +176,7 @@ export function MarkdownEditor({
       field: placeholder,
       imageTooLarge: t('imageTooLarge'),
       imageFailed: t('imageFailed'),
+      imageUploading: t('imageUploading'),
     })
     return [box, buildExtensions(box)] as const
     // Seeded once; every later change arrives through `write` below.
@@ -186,6 +192,7 @@ export function MarkdownEditor({
       field: placeholder,
       imageTooLarge: t('imageTooLarge'),
       imageFailed: t('imageFailed'),
+      imageUploading: t('imageUploading'),
     })
   }, [wording, t, placeholder])
 
