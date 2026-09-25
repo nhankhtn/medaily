@@ -2,9 +2,11 @@
 
 import { Check, Link2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import type { ISODate } from '@/lib/dates'
+import { PATHS } from '@/lib/paths'
 import { toggleHabit } from '@/server/actions/habits'
 import type { DashboardHabit } from '@/server/services/dashboard'
 import { cn } from '@/lib/utils'
@@ -15,18 +17,23 @@ import { cn } from '@/lib/utils'
  */
 export function HabitRow({ habits, date }: { habits: DashboardHabit[]; date: ISODate }) {
   const t = useTranslations('habits')
+  const router = useRouter()
   const [optimistic, setOptimistic] = useState<Record<string, boolean>>({})
   const [pending, startTransition] = useTransition()
 
   const scheduled = habits.filter((habit) => habit.scheduledToday)
 
   if (scheduled.length === 0) {
-    return <p className="px-4 pb-4 text-sm text-text-subtle">{t('notScheduled')}</p>
+    return <p className="text-text-subtle px-4 pb-4 text-sm">{t('notScheduled')}</p>
   }
 
   const toggle = (habit: DashboardHabit) => {
     if (habit.derived) {
-      toast.info(t('derivedFromLog'))
+      // The badge says what this habit *is*; someone who just tapped it needs
+      // to know why nothing moved and where to go instead.
+      toast.info(t('derivedHint'), {
+        action: { label: t('openDailyLog'), onClick: () => router.push(PATHS.dailyOn(date)) },
+      })
       return
     }
     const next = !(optimistic[habit.id] ?? habit.completedToday)
@@ -50,15 +57,13 @@ export function HabitRow({ habits, date }: { habits: DashboardHabit[]; date: ISO
               aria-pressed={done}
               className={cn(
                 'flex w-full items-center gap-3 rounded-[var(--radius)] border px-3 py-2.5 text-left transition-colors',
-                done
-                  ? 'border-transparent bg-good-soft'
-                  : 'glass hover:bg-surface-2',
+                done ? 'bg-good-soft border-transparent' : 'glass hover:bg-surface-2',
               )}
             >
               <span
                 className={cn(
                   'flex size-6 shrink-0 items-center justify-center rounded-full border',
-                  done ? 'border-transparent bg-good text-accent-text' : 'border-border-strong',
+                  done ? 'bg-good text-accent-text border-transparent' : 'border-border-strong',
                 )}
               >
                 {done ? <Check className="size-3.5" /> : null}
@@ -69,7 +74,7 @@ export function HabitRow({ habits, date }: { habits: DashboardHabit[]; date: ISO
                   {habit.name}
                 </span>
                 {habit.monthlyRate !== null ? (
-                  <span className="block text-xs text-text-subtle">
+                  <span className="text-text-subtle block text-xs">
                     {t('completionRate', { rate: Math.round(habit.monthlyRate * 100) })}
                   </span>
                 ) : null}
@@ -77,7 +82,7 @@ export function HabitRow({ habits, date }: { habits: DashboardHabit[]; date: ISO
 
               {habit.derived ? (
                 <span
-                  className="flex items-center gap-1 text-xs text-text-subtle"
+                  className="text-text-subtle flex items-center gap-1 text-xs"
                   title={t('derivedFromLog')}
                 >
                   <Link2 className="size-3.5" />
@@ -85,7 +90,7 @@ export function HabitRow({ habits, date }: { habits: DashboardHabit[]; date: ISO
               ) : null}
 
               {habit.currentStreak > 0 ? (
-                <span className="shrink-0 text-xs tabular-nums text-text-subtle">
+                <span className="text-text-subtle shrink-0 text-xs tabular-nums">
                   {habit.currentStreak}
                 </span>
               ) : null}

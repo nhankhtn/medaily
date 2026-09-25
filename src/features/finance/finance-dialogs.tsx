@@ -63,7 +63,7 @@ export function AccountDialog({ defaultCurrency }: { defaultCurrency: string }) 
       <DialogTrigger asChild>
         <Button size="sm" data-tour="account-new">
           <Plus className="size-4" />
-          {t('addAccount')}
+          {t('addAccountShort')}
         </Button>
       </DialogTrigger>
       <DialogContent title={t('addAccount')}>
@@ -280,7 +280,7 @@ export function CategoryDialog({ category }: { category?: FinanceCategory }) {
         ) : (
           <Button size="sm" variant="outline">
             <Plus className="size-4" />
-            {t('addCategory')}
+            {t('addCategoryShort')}
           </Button>
         )}
       </DialogTrigger>

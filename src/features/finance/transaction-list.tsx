@@ -1,10 +1,12 @@
 'use client'
 
-import { ArrowRightLeft, Check, Pencil, Send, Trash2, User, X } from 'lucide-react'
+import { ArrowRightLeft, Pencil, Send, Trash2, User } from 'lucide-react'
 import { useFormatter, useLocale, useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { MoneyInput } from '@/components/ui/money-input'
 import { Select } from '@/components/ui/select'
@@ -32,6 +34,8 @@ type Titled = Pick<Transaction, 'kind' | 'merchant' | 'categoryId' | 'accountId'
 }
 
 const ROW_ESTIMATE = 56
+/** The same row on a phone, where it stacks onto two lines. Measured, not guessed. */
+const PHONE_ROW_ESTIMATE = 104
 
 export function TransactionList({
   transactions,
@@ -68,6 +72,8 @@ export function TransactionList({
   const locale = useLocale()
   const format = useFormatter()
   const [editingId, setEditingId] = useState<string | null>(null)
+  const editing =
+    editingId === null ? null : (transactions.find((row) => row.id === editingId) ?? null)
   /** The row whose money has not been handed over yet, while its sheet is open. */
   const [transfer, setTransfer] = useState<{
     id: string
@@ -160,6 +166,7 @@ export function TransactionList({
         items={transactions}
         getKey={(row) => row.id}
         estimateSize={ROW_ESTIMATE}
+        phoneEstimateSize={PHONE_ROW_ESTIMATE}
         maxVisibleRows={{ base: 5, sm: 10 }}
         hasMore={hasMore}
         loadingMore={loadingMore}
@@ -167,39 +174,9 @@ export function TransactionList({
         loadingMoreLabel={tc('loading')}
         listClassName="divide-border-base divide-y"
         renderItem={(transaction) => {
-          const editing = editingId === transaction.id
           return (
-            <div
-              className={cn(
-                editing
-                  ? 'glass rounded-[var(--radius)] p-2'
-                  : 'group grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 py-2 sm:flex sm:gap-3',
-              )}
-            >
-              {editing ? (
-                <TransactionEditor
-                  transaction={transaction}
-                  accounts={accounts}
-                  categories={categories}
-                  people={people}
-                  pending={busyId === transaction.id}
-                  onClose={() => setEditingId(null)}
-                  onSave={async (patch) => {
-                    setBusyId(transaction.id)
-                    try {
-                      const result = await saveTransaction({ id: transaction.id, ...patch })
-                      if (!result.ok) {
-                        toast.error(tc('error'))
-                        return
-                      }
-                      setEditingId(null)
-                      toast.success(t('saved'))
-                    } finally {
-                      setBusyId(null)
-                    }
-                  }}
-                />
-              ) : (
+            <div className="group grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 py-2 sm:flex sm:gap-3">
+              {
                 <>
                   {/* The slot holds the row's width; only the name inside it is
                       the button. Stretching the button across the slot made the
@@ -209,7 +186,7 @@ export function TransactionList({
                     <button
                       type="button"
                       onClick={() => setEditingId(transaction.id)}
-                      className="hover:text-accent inline-block max-w-full truncate align-top text-left text-sm"
+                      className="hover:text-accent inline-block max-w-full truncate text-left align-top text-sm"
                     >
                       {label(transaction)}
                     </button>
@@ -247,8 +224,7 @@ export function TransactionList({
                       <Badge tone="accent" className="min-w-0 sm:order-3">
                         <User className="size-3 shrink-0" />
                         <span className="truncate">
-                          {people.find((person) => person.id === transaction.personId)?.name ??
-                            '—'}
+                          {people.find((person) => person.id === transaction.personId)?.name ?? '—'}
                         </span>
                       </Badge>
                     ) : null}
@@ -268,7 +244,7 @@ export function TransactionList({
                   </span>
 
                   {/* Visible on a phone, where there is no hover to reveal them. */}
-                  <span className="flex shrink-0 items-center justify-end gap-1 sm:order-5">
+                  <span className="flex shrink-0 items-center justify-end gap-1.5 sm:order-5 sm:gap-1">
                     {/* Stays lit rather than hiding behind hover like edit and
                         delete: it is the row asking for something, not an
                         action offered on a row that is already settled. */}
@@ -289,62 +265,94 @@ export function TransactionList({
                             ),
                           })
                         }}
-                        className="text-accent hover:bg-surface-2 rounded-full p-1"
+                        className="text-accent hover:bg-surface-2 inline-flex size-10 shrink-0 items-center justify-center rounded-full sm:size-8"
                       >
-                        <Send className="size-3.5" />
+                        <Send className="size-4 sm:size-3.5" />
                       </button>
                     ) : null}
-                    <span className="flex items-center gap-1 sm:opacity-0 sm:transition-opacity sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
-                    <button
-                      type="button"
-                      disabled={busyId === transaction.id}
-                      aria-label={`${tc('edit')} ${label(transaction)}`}
-                      onClick={() => setEditingId(transaction.id)}
-                      className="text-text-subtle hover:text-text p-1"
-                    >
-                      <Pencil className="size-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busyId === transaction.id}
-                      aria-label={`${tc('delete')} ${label(transaction)}`}
-                      onClick={async () => {
-                        setBusyId(transaction.id)
-                        try {
-                          const result = await removeTransaction(transaction.id)
-                          onRemoved?.(transaction.id)
-                          const removed = result.removed
-                          if (!removed) return
-                          toast.success(t('transactionDeleted', { what: label(transaction) }), {
-                            action: {
-                              label: tc('undo'),
-                              onClick: () => {
-                                void restoreTransaction({
-                                  ...removed,
-                                  amount: Number(removed.amount),
-                                }).then((undone) => {
-                                  if (undone.ok) onRestored?.(removed)
-                                  else toast.error(tc('error'))
-                                })
+                    <span className="flex items-center gap-1.5 sm:gap-1 sm:opacity-0 sm:transition-opacity sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
+                      <button
+                        type="button"
+                        disabled={busyId === transaction.id}
+                        aria-label={`${tc('edit')} ${label(transaction)}`}
+                        onClick={() => setEditingId(transaction.id)}
+                        className="text-text-subtle hover:bg-surface-2 hover:text-text inline-flex size-10 shrink-0 items-center justify-center rounded-full sm:size-8"
+                      >
+                        <Pencil className="size-4 sm:size-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busyId === transaction.id}
+                        aria-label={`${tc('delete')} ${label(transaction)}`}
+                        onClick={async () => {
+                          setBusyId(transaction.id)
+                          try {
+                            const result = await removeTransaction(transaction.id)
+                            onRemoved?.(transaction.id)
+                            const removed = result.removed
+                            if (!removed) return
+                            toast.success(t('transactionDeleted', { what: label(transaction) }), {
+                              action: {
+                                label: tc('undo'),
+                                onClick: () => {
+                                  void restoreTransaction({
+                                    ...removed,
+                                    amount: Number(removed.amount),
+                                  }).then((undone) => {
+                                    if (undone.ok) onRestored?.(removed)
+                                    else toast.error(tc('error'))
+                                  })
+                                },
                               },
-                            },
-                          })
-                        } finally {
-                          setBusyId(null)
-                        }
-                      }}
-                      className="text-text-subtle hover:text-bad p-1"
-                    >
-                      <Trash2 className="size-3.5" />
-                    </button>
+                            })
+                          } finally {
+                            setBusyId(null)
+                          }
+                        }}
+                        className="text-text-subtle hover:bg-surface-2 hover:text-bad inline-flex size-10 shrink-0 items-center justify-center rounded-full sm:size-8"
+                      >
+                        <Trash2 className="size-4 sm:size-3.5" />
+                      </button>
                     </span>
                   </span>
                 </>
-              )}
+              }
             </div>
           )
         }}
       />
+
+      {/* On top of the page rather than in the row. The row is a dense line of
+          small controls, and swapping it for a form made the thing you were
+          aiming at move under your finger. */}
+      <Dialog open={editing !== null} onOpenChange={(next) => (next ? null : setEditingId(null))}>
+        <DialogContent title={tc('edit')}>
+          {editing ? (
+            <TransactionEditor
+              transaction={editing}
+              accounts={accounts}
+              categories={categories}
+              people={people}
+              pending={busyId === editing.id}
+              onClose={() => setEditingId(null)}
+              onSave={async (patch) => {
+                setBusyId(editing.id)
+                try {
+                  const result = await saveTransaction({ id: editing.id, ...patch })
+                  if (!result.ok) {
+                    toast.error(tc('error'))
+                    return
+                  }
+                  setEditingId(null)
+                  toast.success(t('saved'))
+                } finally {
+                  setBusyId(null)
+                }
+              }}
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
 
       <TransferDialog
         open={transfer !== null}
@@ -379,8 +387,7 @@ type Patch = {
 }
 
 /**
- * The row opens into the same shape of fields it was typed in, rather than a
- * dialog on top of the page.
+ * The same fields the row was typed in, opened in a dialog.
  *
  * A form, because the amount field keeps its plain number in a hidden sibling
  * and every other money field in the app is read the same way — through
@@ -452,9 +459,9 @@ function TransactionEditor({
       onKeyDown={(event) => {
         if (event.key === 'Escape') onClose()
       }}
-      className="flex flex-wrap items-end gap-2"
+      className="grid grid-cols-2 items-end gap-2"
     >
-      <label className="w-28 space-y-1.5">
+      <label className="min-w-0 space-y-1.5">
         <span className="text-text-muted text-xs font-medium">{t('kind')}</span>
         <Select value={kind} onChange={(event) => setKind(event.target.value as typeof kind)}>
           {kinds.map((option) => (
@@ -465,7 +472,7 @@ function TransactionEditor({
         </Select>
       </label>
 
-      <label className="w-32 space-y-1.5">
+      <label className="min-w-0 space-y-1.5">
         <span className="text-text-muted text-xs font-medium">{t('amount')}</span>
         <MoneyInput
           autoFocus
@@ -476,7 +483,7 @@ function TransactionEditor({
         />
       </label>
 
-      <label className="min-w-36 flex-1 space-y-1.5">
+      <label className="min-w-0 space-y-1.5">
         <span className="text-text-muted text-xs font-medium">{t('account')}</span>
         <Select
           name="accountId"
@@ -493,7 +500,7 @@ function TransactionEditor({
       </label>
 
       {kind === 'transfer' ? (
-        <label className="min-w-36 flex-1 space-y-1.5">
+        <label className="min-w-0 space-y-1.5">
           <span className="text-text-muted text-xs font-medium">{t('toAccount')}</span>
           <Select
             name="counterAccountId"
@@ -508,7 +515,7 @@ function TransactionEditor({
           </Select>
         </label>
       ) : (
-        <label className="min-w-36 flex-1 space-y-1.5">
+        <label className="min-w-0 space-y-1.5">
           <span className="text-text-muted text-xs font-medium">{t('category')}</span>
           <Select name="categoryId" defaultValue={transaction.categoryId ?? ''}>
             <option value="">{t('noCategory')}</option>
@@ -522,7 +529,7 @@ function TransactionEditor({
       )}
 
       {kind === 'transfer' || people.length === 0 ? null : (
-        <label className="min-w-36 flex-1 space-y-1.5">
+        <label className="min-w-0 space-y-1.5">
           <span className="text-text-muted text-xs font-medium">{t('debt')}</span>
           <Select name="personId" defaultValue={transaction.personId ?? ''}>
             <option value="">{t('notDebt')}</option>
@@ -538,7 +545,7 @@ function TransactionEditor({
       {/* The way a row saved with plain Save can still be pointed at someone.
           Without it the payee could only ever be set as the row was created. */}
       {kind === 'transfer' || payable.length === 0 ? null : (
-        <label className="min-w-36 flex-1 space-y-1.5">
+        <label className="min-w-0 space-y-1.5">
           <span className="text-text-muted text-xs font-medium">{t('transfer.title')}</span>
           <Select name="payeePersonId" defaultValue={transaction.payeePersonId ?? ''}>
             <option value="">{t('transfer.nobodyShort')}</option>
@@ -551,37 +558,27 @@ function TransactionEditor({
         </label>
       )}
 
-      <label className="min-w-32 flex-1 space-y-1.5">
+      <label className="col-span-2 min-w-0 space-y-1.5">
         <span className="text-text-muted text-xs font-medium">{t('merchant')}</span>
         <Input name="merchant" maxLength={200} defaultValue={transaction.merchant ?? ''} />
       </label>
 
-      <label className="w-full space-y-1.5 sm:w-36">
+      <label className="col-span-2 min-w-0 space-y-1.5">
         <span className="text-text-muted text-xs font-medium">{t('date')}</span>
         <Input type="date" name="occurredOn" defaultValue={transaction.occurredOn} />
       </label>
 
-      <div className="flex shrink-0 items-center gap-1 pb-1">
-        <button
-          type="submit"
-          disabled={pending}
-          aria-label={tc('save')}
-          className="text-good hover:bg-surface rounded p-1.5"
-        >
-          <Check className="size-4" />
-        </button>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label={tc('cancel')}
-          className="text-text-subtle hover:bg-surface hover:text-text rounded p-1.5"
-        >
-          <X className="size-4" />
-        </button>
+      <div className="col-span-2 flex justify-end gap-2 pt-1">
+        <Button type="button" variant="ghost" onClick={onClose}>
+          {tc('cancel')}
+        </Button>
+        <Button type="submit" disabled={pending}>
+          {tc('save')}
+        </Button>
       </div>
 
       {kind === 'transfer' ? (
-        <p className="text-text-subtle basis-full text-xs">{t('transferHint')}</p>
+        <p className="text-text-subtle col-span-2 text-xs">{t('transferHint')}</p>
       ) : null}
     </form>
   )

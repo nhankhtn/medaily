@@ -1,25 +1,28 @@
+import { cookies } from 'next/headers'
 import { getLocale, getTranslations } from 'next-intl/server'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardBody, CardHeader } from '@/components/ui/card'
 import { EmptyState, PageHeader, StatRow, TabNav } from '@/components/ui/page'
-import { Progress } from '@/components/ui/progress'
-import { AccountIcon } from '@/features/finance/account-icon'
 import {
-  AccountDialog,
-  AccountEditDialog,
-  AssetDialog,
-  BudgetDialog,
-  BudgetEditDialog,
-  CategoryDialog,
-  InvestmentDialog,
-} from '@/features/finance/finance-dialogs'
+  AccountsBoard,
+  AssetsBoard,
+  BudgetsBoard,
+  CategoriesBoard,
+  DebtsBoard,
+  InvestmentsBoard,
+} from '@/features/finance/boards'
+import { AccountDialog, CategoryDialog } from '@/features/finance/finance-dialogs'
+import { LedgerView } from '@/features/finance/ledger-view'
 import { Report } from '@/features/finance/report'
-import { CategoryList } from '@/features/finance/category-list'
-import { TransactionPanel } from '@/features/finance/transaction-panel'
 import { formatMoney } from '@/lib/format/money'
 import { PATHS, type FinanceTab } from '@/lib/paths'
+import { isDesktopCookie, VIEWPORT_COOKIE } from '@/lib/viewport'
 import { getFinanceData } from '@/server/services/finance'
 import { getFinanceReport } from '@/server/services/finance-report'
+
+const TABS = ['overview', 'accounts', 'budgets', 'report'] satisfies FinanceTab[]
+
+function tabFrom(value: string | undefined): FinanceTab {
+  return (TABS as readonly string[]).includes(value ?? '') ? (value as FinanceTab) : 'overview'
+}
 
 export default async function FinancePage({
   searchParams,
@@ -27,44 +30,72 @@ export default async function FinancePage({
   searchParams: Promise<{ tab?: string; period?: string }>
 }) {
   const [params, t] = await Promise.all([searchParams, getTranslations('finance')])
-  const tab: FinanceTab = params.tab === 'report' ? 'report' : 'overview'
+  const tab = tabFrom(params.tab)
 
-  const tabs = (['overview', 'report'] satisfies FinanceTab[]).map((key) => ({
-    key,
-    label: t(`tabs.${key}`),
-    href: PATHS.financeTab(key),
-  }))
+  const tabs = TABS.map((key) => ({ key, label: t(`tabs.${key}`), href: PATHS.financeTab(key) }))
+  const nav = <TabNav tabs={tabs} current={tab} />
 
-  // The two tabs read different things, so each one asks for only its own.
+  // Each tab reads only what it shows, so opening the report does not pay for
+  // a ledger page nobody asked for.
   if (tab === 'report') {
     const report = await getFinanceReport(params.period)
 
     return (
       <div className="space-y-4">
         <PageHeader title={t('title')} />
-        <TabNav tabs={tabs} current={tab} />
+        {nav}
         <Report report={report} />
       </div>
     )
   }
 
-  const [locale, data] = await Promise.all([getLocale(), getFinanceData()])
-
+  const [locale, data, jar] = await Promise.all([getLocale(), getFinanceData(), cookies()])
   const money = (amount: number) => formatMoney(amount, data.currency, locale)
-  const hasExpenseCategory = data.categories.some((category) => category.kind === 'expense')
+
+  const header = (
+    <PageHeader
+      title={t('title')}
+      action={
+        <div className="flex flex-wrap gap-2">
+          <AccountDialog defaultCurrency={data.currency} />
+          <CategoryDialog />
+        </div>
+      }
+    />
+  )
+
+  if (tab === 'accounts') {
+    return (
+      <div className="space-y-4">
+        {header}
+        {nav}
+        <div className="grid gap-4 lg:grid-cols-2">
+          <DebtsBoard data={data} />
+          <AccountsBoard data={data} />
+          <CategoriesBoard data={data} />
+          <AssetsBoard data={data} />
+          <InvestmentsBoard data={data} />
+        </div>
+      </div>
+    )
+  }
+
+  if (tab === 'budgets') {
+    return (
+      <div className="space-y-4">
+        {header}
+        {nav}
+        <div className="lg:max-w-xl">
+          <BudgetsBoard data={data} />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-4">
-      <PageHeader
-        title={t('title')}
-        action={
-          <div className="flex flex-wrap gap-2">
-            <AccountDialog defaultCurrency={data.currency} />
-            <CategoryDialog />
-          </div>
-        }
-      />
-      <TabNav tabs={tabs} current={tab} />
+      {header}
+      {nav}
       <StatRow
         items={[
           { label: t('netWorth'), value: money(data.totals.netWorth) },
@@ -87,192 +118,9 @@ export default async function FinancePage({
           action={<AccountDialog defaultCurrency={data.currency} />}
         />
       ) : (
-        <TransactionPanel
-          initialPage={data.transactionsPage}
-          categories={data.categories}
-          accounts={data.accounts}
-          people={data.people}
-          currency={data.currency}
-          today={data.today}
-        />
+        // What the last visit measured; a first visit may correct itself once.
+        <LedgerView data={data} initialDesktop={isDesktopCookie(jar.get(VIEWPORT_COOKIE)?.value)} />
       )}
-      <div className="grid gap-4 lg:grid-cols-2">
-        {data.debts.length > 0 ? (
-          <Card className="min-w-0">
-            <CardHeader title={t('debts')} />
-            <CardBody>
-              <ul className="divide-border-base divide-y">
-                {data.debts.map((row) => (
-                  <li key={row.personId} className="flex items-baseline gap-2 py-2">
-                    <span className="min-w-0 flex-1 truncate text-sm">{row.name}</span>
-                    <span className="text-text-subtle shrink-0 text-xs">
-                      {row.outstanding > 0 ? t('owesYou') : t('youOwe')}
-                    </span>
-                    <span
-                      className={
-                        row.outstanding > 0
-                          ? 'text-good shrink-0 text-sm font-medium tabular-nums'
-                          : 'text-bad shrink-0 text-sm font-medium tabular-nums'
-                      }
-                    >
-                      {money(Math.abs(row.outstanding))}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <p className="text-text-subtle mt-3 text-xs leading-snug">{t('debtHint')}</p>
-            </CardBody>
-          </Card>
-        ) : null}
-
-        {data.accounts.length > 0 ? (
-          <Card>
-            <CardHeader title={t('accounts')} />
-            <CardBody>
-              <ul className="divide-border-base divide-y">
-                {data.balances.map((balance) => {
-                  const account = data.accounts.find((row) => row.id === balance.accountId)
-                  return (
-                    <li key={balance.accountId} className="flex items-center gap-3 py-2">
-                      <AccountIcon type={balance.type} />
-                      {account ? (
-                        <AccountEditDialog account={account} />
-                      ) : (
-                        <span className="min-w-0 flex-1 truncate text-sm">{balance.name}</span>
-                      )}
-                      <span className="shrink-0 text-sm font-medium tabular-nums">
-                        {formatMoney(balance.balance, balance.currency, locale)}
-                      </span>
-                    </li>
-                  )
-                })}
-              </ul>
-            </CardBody>
-          </Card>
-        ) : null}
-
-        <Card>
-          <CardHeader title={t('categories')} action={<CategoryDialog />} />
-          <CardBody>
-            {data.categories.length === 0 ? (
-              <p className="text-text-subtle text-sm">{t('noCategories')}</p>
-            ) : (
-              <CategoryList categories={data.categories} />
-            )}
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardHeader
-            title={t('budgets')}
-            action={
-              hasExpenseCategory ? (
-                <BudgetDialog categories={data.categories} monthStart={data.monthStart} />
-              ) : (
-                <CategoryDialog />
-              )
-            }
-          />
-          <CardBody>
-            {!hasExpenseCategory ? (
-              <p className="text-text-subtle text-sm leading-snug">{t('needCategoryFirst')}</p>
-            ) : data.budgets.length === 0 ? (
-              <p className="text-text-subtle text-sm">{t('noBudgets')}</p>
-            ) : (
-              <ul className="space-y-3">
-                {data.budgets.map((budget) => {
-                  const amount = Number(budget.amount)
-                  const share = amount > 0 ? (budget.spent / amount) * 100 : 0
-                  const over = budget.spent > amount
-
-                  return (
-                    <li key={budget.id} className="space-y-1.5">
-                      <div className="flex items-baseline justify-between gap-2">
-                        <BudgetEditDialog budget={budget} />
-                        <span className="text-text-muted shrink-0 text-xs tabular-nums">
-                          {t('budgetOf', { spent: money(budget.spent), amount: money(amount) })}
-                        </span>
-                      </div>
-                      <Progress
-                        value={Math.min(100, share)}
-                        tone={over ? 'bad' : share > 90 ? 'warn' : 'accent'}
-                        label={budget.categoryName}
-                      />
-                      <p className={over ? 'text-bad text-xs' : 'text-text-subtle text-xs'}>
-                        {over
-                          ? t('overBudget', { amount: money(budget.spent - amount) })
-                          : t('remaining', { amount: money(amount - budget.spent) })}
-                      </p>
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardHeader title={t('assets')} action={<AssetDialog today={data.today} />} />
-          <CardBody>
-            {data.assets.length === 0 ? (
-              <p className="text-text-subtle text-sm">—</p>
-            ) : (
-              <ul className="divide-border-base divide-y">
-                {data.assets.map((asset) => (
-                  <li key={asset.id} className="flex items-center justify-between gap-2 py-2">
-                    <span className="min-w-0 truncate text-sm">{asset.name}</span>
-                    <Badge tone={asset.kind === 'liability' ? 'bad' : 'good'}>
-                      {t(asset.kind === 'liability' ? 'liability' : 'asset')}
-                    </Badge>
-                    <span className="shrink-0 text-sm tabular-nums">
-                      {money(Number(asset.value))}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardHeader title={t('investments')} action={<InvestmentDialog today={data.today} />} />
-          <CardBody>
-            {data.investments.length === 0 ? (
-              <p className="text-text-subtle text-sm">—</p>
-            ) : (
-              <ul className="divide-border-base divide-y">
-                {data.investments.map((investment) => (
-                  <li key={investment.id} className="flex items-center gap-2 py-2">
-                    <span className="w-16 shrink-0 font-medium">{investment.symbol}</span>
-                    <span className="text-text-subtle min-w-0 flex-1 truncate text-xs tabular-nums">
-                      {Number(investment.quantity)} × {money(Number(investment.avgCost))}
-                    </span>
-                    {investment.marketValue === null ? (
-                      <span className="text-text-subtle shrink-0 text-xs">{t('noPrice')}</span>
-                    ) : (
-                      <>
-                        <span className="shrink-0 text-sm tabular-nums">
-                          {money(investment.marketValue)}
-                        </span>
-                        <span
-                          className={
-                            (investment.unrealized ?? 0) >= 0
-                              ? 'text-good shrink-0 text-xs tabular-nums'
-                              : 'text-bad shrink-0 text-xs tabular-nums'
-                          }
-                        >
-                          {(investment.unrealized ?? 0) >= 0 ? '+' : ''}
-                          {money(investment.unrealized ?? 0)}
-                        </span>
-                      </>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardBody>
-        </Card>
-      </div>
     </div>
   )
 }

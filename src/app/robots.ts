@@ -12,12 +12,22 @@ import { PATHS } from '@/lib/paths'
  * pages override it. A page a robot may not fetch is a page whose `noindex`
  * it never reads, so the ones meant to stay out of the index still have to be
  * fetchable.
+ *
+ * The bare address and the preview picture are here for a different reason:
+ * the scraper behind a chat app's link card reads this file first. `/` is what
+ * anyone actually pastes, and blocking it is why a link shared to Messenger
+ * arrived as plain text while Zalo — which does not ask — showed the card.
+ *
+ * `$` anchors the match to the end of the path, so this opens the root and not
+ * the app behind it. A parser that does not know `$` reads it as a prefix that
+ * matches nothing, which leaves the root shut rather than opening anything
+ * that should stay closed.
  */
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: '*',
-      allow: [PATHS.welcome, PATHS.legalRoot, PATHS.login],
+      allow: ['/$', PATHS.welcome, PATHS.legalRoot, PATHS.login, '/opengraph-image'],
       disallow: '/',
     },
   }

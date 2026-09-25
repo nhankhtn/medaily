@@ -14,6 +14,12 @@ export type VirtualInfiniteListProps<T> = {
   renderItem: (item: T, index: number) => ReactNode
   /** Estimated row height in px; also drives `maxVisibleRows` height. */
   estimateSize?: number
+  /**
+   * Phone row height, when a row stacks there and is taller than `estimateSize`.
+   * Without it `maxVisibleRows.base` counts desktop rows, and the phone list is
+   * cut off part-way down one.
+   */
+  phoneEstimateSize?: number
   overscan?: number
   /**
    * How many rows fit in the scroll viewport before overflow.
@@ -43,6 +49,7 @@ export function VirtualInfiniteList<T>({
   getKey,
   renderItem,
   estimateSize = DEFAULT_ESTIMATE,
+  phoneEstimateSize,
   overscan = DEFAULT_OVERSCAN,
   maxVisibleRows = { base: 5, sm: 10 },
   hasMore = false,
@@ -65,7 +72,7 @@ export function VirtualInfiniteList<T>({
   const viewportHeight = estimateSize * maxVisibleRows.sm
 
   const shellStyle = {
-    ['--vil-h']: `${estimateSize * maxVisibleRows.base}px`,
+    ['--vil-h']: `${(phoneEstimateSize ?? estimateSize) * maxVisibleRows.base}px`,
     ['--vil-h-sm']: `${viewportHeight}px`,
   } as CSSProperties
 

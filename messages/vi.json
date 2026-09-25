@@ -246,6 +246,8 @@
     "completionRate": "{rate}% trong 30 ngày",
     "scheduledPerWeek": "{count} lần/tuần",
     "derivedFromLog": "Từ bản ghi ngày",
+    "derivedHint": "Thói quen này tự đánh dấu từ bản ghi ngày — ghi ở đó là nó theo.",
+    "openDailyLog": "Mở bản ghi ngày",
     "notScheduled": "Hôm nay không có lịch",
     "edit": "Sửa thói quen",
     "name": "Tên",
@@ -738,6 +740,7 @@
     "tooShort": "Chưa đủ 30 giây nên không ghi lại",
     "capped": "Phiên bị bỏ quên nên chỉ tính tối đa 8 tiếng",
     "savedTo": "Đã lưu {minutes} phút vào {where}",
+    "previousSaved": "Phiên đang chạy dở ({activity}, {minutes} phút) đã được lưu vào {where} trước.",
     "savedShort": "Đã lưu {minutes} phút",
     "offline": {
       "queued": "Đã lưu {minutes} phút trên máy này. Có mạng là nó tự gửi lên.",
@@ -843,6 +846,7 @@
     "vsLastMonth": "so với tháng trước",
     "accounts": "Tài khoản",
     "addAccount": "Tài khoản mới",
+    "addAccountShort": "Tài khoản",
     "noAccounts": "Chưa có tài khoản nào",
     "noAccountsBody": "Tài khoản là nơi tiền nằm. Giao dịch cần có nó.",
     "accountName": "Tên",
@@ -873,8 +877,7 @@
     "addTransactionTitle": "Thêm giao dịch",
     "noTransactions": "Chưa ghi giao dịch nào",
     "noMatchingTransactions": "Không có giao dịch khớp bộ lọc",
-    "filterAllAccounts": "Tất cả tài khoản",
-    "filterAllCategories": "Tất cả danh mục",
+    "filterAll": "Tất cả",
     "filterFrom": "Từ ngày",
     "filterTo": "Đến ngày",
     "amount": "Số tiền",
@@ -892,6 +895,7 @@
     },
     "categories": "Danh mục",
     "addCategory": "Danh mục mới",
+    "addCategoryShort": "Danh mục",
     "editCategory": "Sửa danh mục",
     "categoryNote": "Ghi chú cho AI",
     "categoryNoteHint": "Mô tả những gì thuộc danh mục này để khi phân loại giao dịch AI chọn đúng hơn.",
@@ -932,7 +936,9 @@
     "debtHint": "Tiền cho mượn không phải là tiền đã tiêu — nó vẫn nằm trong tài sản của bạn cho tới khi đòi về. Muốn xoá một khoản nợ thì ghi lại lần trả.",
     "tabs": {
       "overview": "Tổng quan",
-      "report": "Báo cáo"
+      "report": "Báo cáo",
+      "accounts": "Tài khoản",
+      "budgets": "Ngân sách"
     },
     "report": {
       "year": "Năm",
@@ -1006,7 +1012,8 @@
       "staticQr": "Số tiền bạn tự nhập lúc quét.",
       "copiedAccount": "Đã chép số tài khoản",
       "copiedMomo": "Đã chép số MoMo"
-    }
+    },
+    "filters": "Lọc"
   },
   "journal": {
     "title": "Nhật ký",
@@ -1483,6 +1490,8 @@
     "backToAssistant": "Về lại trợ lý"
   },
   "editor": {
+    "imageTooLarge": "Ảnh này nặng quá, tối đa 15 MB.",
+    "imageFailed": "Chưa tải được ảnh lên, thử lại nhé.",
     "slashHint": "Gõ ‘/’ để chèn khối",
     "headingHint": "Tiêu đề",
     "noBlock": "Không có khối nào khớp",

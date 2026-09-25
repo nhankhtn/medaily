@@ -747,6 +747,38 @@ input[type='number'] {
   text-decoration: line-through;
 }
 
+.md-editor .md-content img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius);
+  margin: 0.5rem 0;
+}
+
+.md-editor .md-content img.ProseMirror-selectednode {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/*
+ * Standing where the picture will be while it uploads. Sized like a small
+ * image rather than a spinner on a line, so the text below does not jump once
+ * the real thing arrives.
+ */
+.md-image-uploading {
+  height: 8rem;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  margin: 0.5rem 0;
+  animation: md-image-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes md-image-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
 .md-editor .md-content blockquote {
   border-left: 3px solid var(--border-strong);
   padding-left: 0.875rem;

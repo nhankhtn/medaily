@@ -246,6 +246,8 @@
     "completionRate": "{rate}% in 30 days",
     "scheduledPerWeek": "{count}× per week",
     "derivedFromLog": "From daily log",
+    "derivedHint": "This one ticks itself from the daily log — record it there and it follows.",
+    "openDailyLog": "Open the daily log",
     "notScheduled": "Not scheduled today",
     "edit": "Edit habit",
     "name": "Name",
@@ -738,6 +740,7 @@
     "tooShort": "Under 30 seconds, so nothing was recorded",
     "capped": "The run was left going, so it was capped at 8 hours",
     "savedTo": "Saved {minutes} min to {where}",
+    "previousSaved": "The run still going ({activity}, {minutes} min) was saved to {where} first.",
     "savedShort": "Saved {minutes} min",
     "offline": {
       "queued": "Saved {minutes} min on this device. It will upload when you are back online.",
@@ -843,6 +846,7 @@
     "vsLastMonth": "vs last month",
     "accounts": "Accounts",
     "addAccount": "New account",
+    "addAccountShort": "Account",
     "noAccounts": "No accounts yet",
     "noAccountsBody": "An account is where money sits. Transactions need one.",
     "accountName": "Name",
@@ -873,8 +877,7 @@
     "addTransactionTitle": "Add a transaction",
     "noTransactions": "Nothing recorded yet",
     "noMatchingTransactions": "No transactions match these filters",
-    "filterAllAccounts": "All accounts",
-    "filterAllCategories": "All categories",
+    "filterAll": "All",
     "filterFrom": "From",
     "filterTo": "To",
     "amount": "Amount",
@@ -892,6 +895,7 @@
     },
     "categories": "Categories",
     "addCategory": "New category",
+    "addCategoryShort": "Category",
     "editCategory": "Edit category",
     "categoryNote": "Note for AI",
     "categoryNoteHint": "Describe what belongs here so capture can pick this category more accurately.",
@@ -932,7 +936,9 @@
     "debtHint": "Money you lend is not money you spent — it stays in your net worth until it comes back. To settle a debt, record the repayment.",
     "tabs": {
       "overview": "Overview",
-      "report": "Report"
+      "report": "Report",
+      "accounts": "Accounts",
+      "budgets": "Budgets"
     },
     "report": {
       "year": "Year",
@@ -1006,7 +1012,8 @@
       "staticQr": "Type the amount when you scan.",
       "copiedAccount": "Account number copied",
       "copiedMomo": "MoMo number copied"
-    }
+    },
+    "filters": "Filters"
   },
   "journal": {
     "title": "Journal",
@@ -1483,6 +1490,8 @@
     "backToAssistant": "Back to the assistant"
   },
   "editor": {
+    "imageTooLarge": "That picture is too large. The limit is 15 MB.",
+    "imageFailed": "Could not upload that picture. Try again.",
     "slashHint": "Type ‘/’ for blocks",
     "headingHint": "Heading",
     "noBlock": "No block matches",

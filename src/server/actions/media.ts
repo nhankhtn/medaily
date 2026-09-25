@@ -121,6 +121,21 @@ export async function describePhoto(input: unknown) {
 }
 
 /**
+ * An image pasted into a note, a journal entry, a review — anywhere the
+ * Markdown editor is.
+ *
+ * Unlike a person's photo there is no row to attach it to: the URL is written
+ * into the Markdown itself, which is the only place it is referenced. So the
+ * folder is the user's own and nothing here needs an ownership check.
+ */
+export async function requestNoteImageUpload(): Promise<TicketResult> {
+  const userId = await getCurrentUserId()
+  const ticket = createUploadTicket('notes', userId, userId)
+  if (!ticket) return { ok: false, error: 'disabled' }
+  return { ok: true, ticket }
+}
+
+/**
  * Profile avatar: one photo per user, stored as `users.image_url`. Folder is
  * owned by the session user themselves, so no separate ownership check.
  */
