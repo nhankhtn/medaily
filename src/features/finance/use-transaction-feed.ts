@@ -12,6 +12,17 @@ import { useQueuedTransactions } from './pending-transactions'
 
 const transactionId = (row: Transaction) => row.id
 
+/**
+ * The order the server pages in: `occurred_on DESC, created_at DESC, id DESC`,
+ * which is also what the keyset cursor steps through. A row put back by hand
+ * has to land where the next page boundary expects it, or paging skips or
+ * repeats one.
+ */
+const newestFirst = (a: Transaction, b: Transaction) =>
+  b.occurredOn.localeCompare(a.occurredOn) ||
+  b.createdAt.getTime() - a.createdAt.getTime() ||
+  b.id.localeCompare(a.id)
+
 export type LedgerFilters = {
   accountId: string
   /** `__none__` means uncategorised only. */
@@ -107,7 +118,17 @@ export function useTransactionFeed({
       setItems((current) =>
         current.some((item) => transactionId(item) === row.id)
           ? current
-          : [...current, row].sort((a, b) => b.occurredOn.localeCompare(a.occurredOn)),
+          : [...current, row].sort(newestFirst),
+      )
+    },
+    [setItems],
+  )
+
+  /** An edited row, back in place. Order is unchanged unless its date moved. */
+  const updateItem = useCallback(
+    (row: Transaction) => {
+      setItems((current) =>
+        current.map((item) => (transactionId(item) === row.id ? row : item)).sort(newestFirst),
       )
     },
     [setItems],
@@ -167,7 +188,17 @@ export function useTransactionFeed({
     setFilter,
     activeFilters,
     filtering,
-    rows: { items, pendingRows, loading, loadingMore, hasMore, loadMore, removeItem, restoreItem },
+    rows: {
+      items,
+      pendingRows,
+      loading,
+      loadingMore,
+      hasMore,
+      loadMore,
+      removeItem,
+      restoreItem,
+      updateItem,
+    },
     addPending,
   }
 }

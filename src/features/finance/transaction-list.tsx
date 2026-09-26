@@ -50,6 +50,7 @@ export function TransactionList({
   onLoadMore,
   onRemoved,
   onRestored,
+  onUpdated,
 }: {
   transactions: Transaction[]
   /** Rows sent but not confirmed; they sit above the ledger until it catches up. */
@@ -66,6 +67,8 @@ export function TransactionList({
   onRemoved?: (id: string) => void
   /** Puts an undone delete back in the list without waiting for a refetch. */
   onRestored?: (transaction: Transaction) => void
+  /** The edited row as the server saved it, for the page held in client state. */
+  onUpdated?: (transaction: Transaction) => void
 }) {
   const t = useTranslations('finance')
   const tc = useTranslations('common')
@@ -343,6 +346,7 @@ export function TransactionList({
                     toast.error(tc('error'))
                     return
                   }
+                  onUpdated?.(result.transaction)
                   setEditingId(null)
                   toast.success(t('saved'))
                 } finally {

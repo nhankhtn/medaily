@@ -158,6 +158,7 @@ export function LedgerMobile({ data }: { data: FinanceData }) {
               onLoadMore={rows.loadMore}
               onRemoved={rows.removeItem}
               onRestored={rows.restoreItem}
+              onUpdated={rows.updateItem}
             />
           )}
         </CardBody>

@@ -24,6 +24,8 @@ export const TRANSACTION_PAGE_SIZE = 40
 
 export type TransactionCursor = {
   occurredOn: string
+  /** ISO instant. Ties on the date are broken by when the row was entered. */
+  createdAt: string
   id: string
 }
 
@@ -49,23 +51,36 @@ export type TransactionPage = {
   nextCursor: string | null
 }
 
-/** Opaque keyset cursor for `(occurred_on DESC, id DESC)`. */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * Opaque keyset cursor for `(occurred_on DESC, created_at DESC, id DESC)`.
+ *
+ * `created_at` is in there because the id is a random uuid: ordering a day's
+ * rows by it puts a transaction just entered wherever its random bytes fall,
+ * and what a person expects is the one they just typed at the top of the day.
+ * The id stays on the end as the tiebreaker that makes the order total, which
+ * is what keeps paging from skipping or repeating a row at the seam.
+ */
 export function encodeTransactionCursor(cursor: TransactionCursor): string {
-  return Buffer.from(`${cursor.occurredOn}|${cursor.id}`, 'utf8').toString('base64url')
+  return Buffer.from(`${cursor.occurredOn}|${cursor.createdAt}|${cursor.id}`, 'utf8').toString(
+    'base64url',
+  )
 }
 
 export function decodeTransactionCursor(raw: string): TransactionCursor | null {
   try {
-    const decoded = Buffer.from(raw, 'base64url').toString('utf8')
-    const sep = decoded.indexOf('|')
-    if (sep <= 0) return null
-    const occurredOn = decoded.slice(0, sep)
-    const id = decoded.slice(sep + 1)
+    const [occurredOn, createdAt, id, ...rest] = Buffer.from(raw, 'base64url')
+      .toString('utf8')
+      .split('|')
+    // A cursor from the two-part format is not upgradeable — it names no
+    // instant. Refusing it restarts paging, which costs one page and nothing
+    // else; guessing an instant would silently skip rows.
+    if (rest.length > 0 || !occurredOn || !createdAt || !id) return null
     if (!ISO_DATE_RE.test(occurredOn)) return null
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
-      return null
-    }
-    return { occurredOn, id }
+    if (Number.isNaN(Date.parse(createdAt))) return null
+    if (!UUID_RE.test(id)) return null
+    return { occurredOn, createdAt, id }
   } catch {
     return null
   }
@@ -315,10 +330,23 @@ export async function findTransactionsPage(
   }
   if (opts.cursor) {
     const cursor = opts.cursor
+    const createdAt = new Date(cursor.createdAt)
+    // Three levels, in the same order as the sort below. Anything less leaves
+    // rows on a shared date undecided, and the seam between two pages is
+    // exactly where that shows up as a row seen twice or not at all.
     conditions.push(
       or(
         lt(transactions.occurredOn, cursor.occurredOn),
-        and(eq(transactions.occurredOn, cursor.occurredOn), lt(transactions.id, cursor.id)),
+        and(
+          eq(transactions.occurredOn, cursor.occurredOn),
+          or(
+            lt(transactions.createdAt, createdAt),
+            and(
+              eq(transactions.createdAt, createdAt),
+              lt(transactions.id, cursor.id),
+            ),
+          ),
+        ),
       )!,
     )
   }
@@ -327,7 +355,7 @@ export async function findTransactionsPage(
     .select()
     .from(transactions)
     .where(and(...conditions))
-    .orderBy(desc(transactions.occurredOn), desc(transactions.id))
+    .orderBy(desc(transactions.occurredOn), desc(transactions.createdAt), desc(transactions.id))
     .limit(limit + 1)
 
   const hasMore = rows.length > limit
@@ -337,7 +365,11 @@ export async function findTransactionsPage(
     items,
     nextCursor:
       hasMore && last
-        ? encodeTransactionCursor({ occurredOn: last.occurredOn, id: last.id })
+        ? encodeTransactionCursor({
+            occurredOn: last.occurredOn,
+            createdAt: last.createdAt.toISOString(),
+            id: last.id,
+          })
         : null,
   }
 }
