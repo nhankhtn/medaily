@@ -763,13 +763,24 @@ input[type='number'] {
 /*
  * Standing where the picture will be while it uploads. Sized like a small
  * image rather than a spinner on a line, so the text below does not jump once
- * the real thing arrives.
+ * the real thing arrives, and carrying a number: a box that only pulses says
+ * nothing about whether anything is still moving.
  */
 .md-image-uploading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   height: 8rem;
   border-radius: var(--radius);
+  border: 1px dashed var(--border-strong);
   background: var(--surface-2);
   margin: 0.5rem 0;
+}
+
+.md-image-uploading-label {
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
   animation: md-image-pulse 1.4s ease-in-out infinite;
 }
 

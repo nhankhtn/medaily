@@ -74,6 +74,12 @@ export async function insertUser(
  * the identities with it. Nothing is archived: this is the request to be
  * forgotten, not to be hidden.
  */
+/** Every account, for work that is nobody's request in particular. */
+export async function findAllUserIds(tx: DbOrTx = db): Promise<string[]> {
+  const rows = await tx.select({ id: users.id }).from(users)
+  return rows.map((row) => row.id)
+}
+
 export async function deleteUser(userId: string, tx: DbOrTx = db): Promise<void> {
   await tx.delete(users).where(eq(users.id, userId))
 }

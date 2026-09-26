@@ -3,6 +3,7 @@ import { OWNER_USER_ID } from '@/lib/auth/current-user'
 import { emailIsPermitted, readAccessPolicy } from '@/lib/auth/config'
 import type { FirebaseIdentity } from '@/lib/auth/firebase-verify'
 import {
+  folderFor,
   isUploadedAvatar,
   publicIdFromDeliveryUrl,
   readCloudinaryConfig,
@@ -19,7 +20,7 @@ import {
 import { findSettings, insertUserSettings } from '@/server/repositories/settings'
 import { deleteUser, findUserById as findUser } from '@/server/repositories/auth'
 import { findAllPhotoPublicIds } from '@/server/repositories/media'
-import { destroyAsset } from '@/server/services/media'
+import { destroyAsset, destroyByPrefix } from '@/server/services/media'
 import { log } from '@/lib/log'
 import { insertAccounts, insertCategories } from '@/server/repositories/finance'
 import { starterFor } from '@/lib/onboarding/starter'
@@ -193,9 +194,9 @@ export async function eraseAccount(userId: string): Promise<void> {
   // The avatar is not in `person_photos`; it is only ever a delivery URL on
   // the user row, so its public id has to be read back out of the URL.
   const user = await findUser(userId)
-  const cloudName = readCloudinaryConfig().cloudName
+  const cloud = readCloudinaryConfig()
   if (user?.imageUrl && isUploadedAvatar(user.imageUrl, userId)) {
-    const avatarId = publicIdFromDeliveryUrl(user.imageUrl, cloudName)
+    const avatarId = publicIdFromDeliveryUrl(user.imageUrl, cloud.cloudName)
     if (avatarId) publicIds.push(avatarId)
   }
 
@@ -205,6 +206,18 @@ export async function eraseAccount(userId: string): Promise<void> {
     } catch (error) {
       await log.error('auth', `could not erase asset ${publicId}`, error)
     }
+  }
+
+  /*
+   * Pictures pasted into notes are named by nothing but the Markdown that
+   * mentions it, so they are in neither `person_photos` nor the user row and
+   * the ids above never reach them. The whole folder goes instead — there is
+   * nothing left to compare against once the rows are gone.
+   */
+  try {
+    await destroyByPrefix(`${folderFor(cloud.baseFolder, 'notes', userId, userId)}/`)
+  } catch (error) {
+    await log.error('auth', 'could not erase note images', error)
   }
 
   await deleteUser(userId)

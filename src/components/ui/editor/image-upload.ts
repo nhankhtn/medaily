@@ -4,14 +4,17 @@ import { Plugin, PluginKey, type EditorState } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import { toast } from 'sonner'
 import { deliveryUrl } from '@/lib/media/image-url'
+import { shrinkImage } from '@/lib/media/shrink-image'
 import { requestNoteImageUpload } from '@/server/actions/media'
 import type { UploadTicket } from '@/server/services/media'
 
 const MAX_BYTES = 15 * 1024 * 1024
 
-export type ImageWording = { tooLarge: string; failed: string }
+export type ImageWording = { tooLarge: string; failed: string; uploading: string }
 
-type Action = { add: { id: object; pos: number } } | { remove: { id: object } }
+type Action =
+  | { add: { id: object; pos: number; element: HTMLElement } }
+  | { remove: { id: object } }
 
 const key = new PluginKey<DecorationSet>('imageUpload')
 
@@ -35,10 +38,8 @@ function placeholders() {
         if (!action) return mapped
 
         if ('add' in action) {
-          const element = document.createElement('div')
-          element.className = 'md-image-uploading'
           return mapped.add(tr.doc, [
-            Decoration.widget(action.add.pos, element, { id: action.add.id }),
+            Decoration.widget(action.add.pos, action.add.element, { id: action.add.id }),
           ])
         }
         return mapped.remove(
@@ -55,7 +56,26 @@ function placeholderAt(state: EditorState, id: object): number | null {
   return found ? found.from : null
 }
 
-async function send(file: File, ticket: UploadTicket): Promise<string> {
+function placeholderElement(label: string) {
+  const element = document.createElement('div')
+  element.className = 'md-image-uploading'
+  const text = document.createElement('span')
+  text.className = 'md-image-uploading-label'
+  text.textContent = label
+  element.append(text)
+  return { element, say: (next: string) => void (text.textContent = next) }
+}
+
+/**
+ * `XMLHttpRequest` rather than `fetch`: only it reports how much of the body
+ * has gone out, and a picture that sits there for ten seconds with no number
+ * on it is indistinguishable from one that is stuck.
+ */
+function send(
+  file: File,
+  ticket: UploadTicket,
+  onProgress: (percent: number) => void,
+): Promise<string> {
   const form = new FormData()
   form.append('file', file)
   form.append('api_key', ticket.apiKey)
@@ -63,14 +83,28 @@ async function send(file: File, ticket: UploadTicket): Promise<string> {
   form.append('folder', ticket.folder)
   form.append('signature', ticket.signature)
 
-  const response = await fetch(`https://api.cloudinary.com/v1_1/${ticket.cloudName}/image/upload`, {
-    method: 'POST',
-    body: form,
-  })
-  if (!response.ok) throw new Error(`upload failed: ${response.status}`)
+  return new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest()
+    request.open('POST', `https://api.cloudinary.com/v1_1/${ticket.cloudName}/image/upload`)
 
-  const asset = (await response.json()) as { public_id: string }
-  return deliveryUrl(ticket.cloudName, asset.public_id, 'full')
+    request.upload.addEventListener('progress', (event) => {
+      if (event.lengthComputable) onProgress(Math.round((event.loaded / event.total) * 100))
+    })
+    request.addEventListener('error', () => reject(new Error('upload failed: network')))
+    request.addEventListener('load', () => {
+      if (request.status < 200 || request.status >= 300) {
+        reject(new Error(`upload failed: ${request.status}`))
+        return
+      }
+      try {
+        const asset = JSON.parse(request.responseText) as { public_id: string }
+        resolve(deliveryUrl(ticket.cloudName, asset.public_id, 'full'))
+      } catch (error) {
+        reject(error instanceof Error ? error : new Error('upload failed: bad response'))
+      }
+    })
+    request.send(form)
+  })
 }
 
 async function uploadImages(editor: Editor, files: File[], at: number, say: ImageWording) {
@@ -90,10 +124,17 @@ async function uploadImages(editor: Editor, files: File[], at: number, say: Imag
 
   for (const file of images) {
     const id = {}
-    editor.view.dispatch(editor.view.state.tr.setMeta(key, { add: { id, pos: at } }))
+    const { element, say: label } = placeholderElement(say.uploading)
+    editor.view.dispatch(editor.view.state.tr.setMeta(key, { add: { id, pos: at, element } }))
 
     try {
-      const src = await send(file, ticket.ticket)
+      // Shrunk first: the delivery URL caps every note image at 2000px, so the
+      // megapixels past that are carried up the slowest link in the chain and
+      // then discarded. The label goes up before it, because re-encoding a
+      // twelve-megapixel photo is itself a visible pause.
+      const smaller = await shrinkImage(file)
+      const src = await send(smaller, ticket.ticket, (percent) => label(`${percent}%`))
+
       const pos = placeholderAt(editor.view.state, id)
       editor.view.dispatch(editor.view.state.tr.setMeta(key, { remove: { id } }))
       if (pos !== null) {
