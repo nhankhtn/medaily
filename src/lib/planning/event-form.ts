@@ -17,7 +17,7 @@ export type EventForm = {
   startTime: string | null
   endTime: string | null
   allDay: boolean
-  location: string | null
+  note: string | null
   recurrenceRule: RecurrenceRule | null
   recurrenceUntil: ISODate | null
 }
@@ -29,7 +29,7 @@ export type EventRow = {
   startsAt: Date
   endsAt: Date | null
   allDay: boolean
-  location: string | null
+  note: string | null
   recurrenceRule: RecurrenceRule | null
   recurrenceUntil: ISODate | null
 }
@@ -50,7 +50,7 @@ export function toEventForm(row: EventRow, timezone: string): EventForm {
     startTime: row.allDay ? null : hhmmInZone(row.startsAt, timezone),
     endTime: row.allDay || !row.endsAt ? null : hhmmInZone(row.endsAt, timezone),
     allDay: row.allDay,
-    location: row.location,
+    note: row.note,
     recurrenceRule: row.recurrenceRule,
     recurrenceUntil: row.recurrenceUntil,
   }

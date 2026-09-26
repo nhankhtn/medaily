@@ -371,9 +371,9 @@ async function WeekView({
                       <CalendarDays className="text-text-subtle size-4 shrink-0" />
                     )}
                     <span className="min-w-0 flex-1 truncate text-sm">{event.title}</span>
-                    {event.location ? (
+                    {event.note ? (
                       <span className="text-text-subtle hidden shrink-0 text-xs sm:inline">
-                        {event.location}
+                        {event.note}
                       </span>
                     ) : null}
                     <span className="text-text-subtle shrink-0 text-xs tabular-nums">
@@ -530,9 +530,9 @@ async function DayView({
                         <CalendarDays className="text-text-subtle size-4 shrink-0" />
                       )}
                       <span className="min-w-0 flex-1 truncate text-sm">{event.title}</span>
-                      {event.location ? (
+                      {event.note ? (
                         <span className="text-text-subtle hidden shrink-0 text-xs sm:inline">
-                          {event.location}
+                          {event.note}
                         </span>
                       ) : null}
                       <span className="text-text-subtle shrink-0 text-xs tabular-nums">

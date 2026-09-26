@@ -79,8 +79,7 @@ export function EventDialog({ defaultDate, event }: { defaultDate: ISODate; even
                 startTime: allDay ? undefined : String(formData.get('startTime') ?? '09:00'),
                 endTime: allDay ? undefined : String(formData.get('endTime') || '') || undefined,
                 allDay,
-                location: String(formData.get('location') ?? ''),
-                note: '',
+                note: String(formData.get('note') ?? ''),
                 recurrenceRule: repeat || null,
                 recurrenceUntil: String(formData.get('recurrenceUntil') ?? '') || null,
               })
@@ -168,8 +167,8 @@ export function EventDialog({ defaultDate, event }: { defaultDate: ISODate; even
             ) : null}
           </div>
 
-          <Field label={t('location')}>
-            <Input name="location" maxLength={200} defaultValue={event?.location ?? ''} />
+          <Field label={t('note')}>
+            <Input name="note" maxLength={200} defaultValue={event?.note ?? ''} />
           </Field>
 
           <div className="flex items-center justify-between gap-2">
