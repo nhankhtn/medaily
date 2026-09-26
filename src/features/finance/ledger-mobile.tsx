@@ -60,18 +60,22 @@ export function LedgerMobile({ data }: { data: FinanceData }) {
               />
             </label>
 
-            {/* Folded away, so the count is the only sign a filter is still on. */}
+            {/* Folded away, so the count is the only sign a filter is still on.
+                The word is dropped but not the label: the icon alone is what a
+                sighted person reads here, and `aria-label` is what everyone
+                else does. `size="icon"` keeps it level with the search box. */}
             <Button
               type="button"
               variant="outline"
+              size="icon"
               aria-expanded={filtersOpen}
+              aria-label={t('filters')}
               onClick={() => setFiltersOpen((open) => !open)}
-              className="shrink-0"
+              className="relative shrink-0"
             >
               <SlidersHorizontal className="size-4" />
-              {t('filters')}
               {activeFilters > 0 ? (
-                <span className="bg-accent text-accent-text rounded-full px-1.5 text-xs tabular-nums">
+                <span className="bg-accent text-accent-text absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full text-[10px] leading-none tabular-nums">
                   {activeFilters}
                 </span>
               ) : null}
