@@ -71,6 +71,7 @@
     "notFoundHint": "The link may be old, or the page may have moved."
   },
   "daily": {
+    "setup": { "title": "Set up" },
     "title": "Daily Log",
     "subtitleToday": "How did today go?",
     "subtitlePast": "Editing {date}",

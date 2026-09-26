@@ -71,6 +71,7 @@
     "notFoundHint": "Có thể link đã cũ, hoặc trang đã chuyển chỗ."
   },
   "daily": {
+    "setup": { "title": "Thiết lập" },
     "title": "Ghi ngày",
     "subtitleToday": "Hôm nay của bạn thế nào?",
     "subtitlePast": "Đang sửa ngày {date}",

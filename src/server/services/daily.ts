@@ -5,6 +5,7 @@ import { addDays, rangeOfLastDays, today, type ISODate } from '@/lib/dates'
 import type { DailyLogPatchInput } from '@/lib/validation/daily'
 import type { HideableField } from '@/lib/daily/hidden-fields'
 import { recomputeDerivedHabitLogs } from '@/server/services/habit-derivation'
+import { getMetricUses, type MetricUse } from '@/server/services/metric-uses'
 import {
   findCustomMetrics,
   findCustomValues,
@@ -107,6 +108,7 @@ export type DailyFormData = {
   customValues: Record<string, number | boolean | string | null>
   /** Questions this person has turned off; see `lib/daily/hidden-fields`. */
   hiddenFields: HideableField[]
+  metricUses: MetricUse
 }
 
 export async function getDailyFormData(date: ISODate): Promise<DailyFormData> {
@@ -114,16 +116,25 @@ export async function getDailyFormData(date: ISODate): Promise<DailyFormData> {
   const logicalToday = today(dayContextOf(settings))
   const medianSince = addDays(logicalToday, -13)
 
-  const [log, effective, medians, exerciseTypes, previousDay, missingDays, customMetrics] =
-    await Promise.all([
-      findRawLog(settings.userId, date),
-      findEffectiveLog(settings.userId, date),
-      findMedians(settings.userId, medianSince),
-      findExerciseTypes(settings.userId),
-      findLatestLogBefore(settings.userId, date),
-      findMissingDays(logicalToday, 7),
-      findCustomMetrics(settings.userId),
-    ])
+  const [
+    log,
+    effective,
+    medians,
+    exerciseTypes,
+    previousDay,
+    missingDays,
+    customMetrics,
+    metricUses,
+  ] = await Promise.all([
+    findRawLog(settings.userId, date),
+    findEffectiveLog(settings.userId, date),
+    findMedians(settings.userId, medianSince),
+    findExerciseTypes(settings.userId),
+    findLatestLogBefore(settings.userId, date),
+    findMissingDays(logicalToday, 7),
+    findCustomMetrics(settings.userId),
+    getMetricUses(settings.userId),
+  ])
 
   const customValues: Record<string, number | boolean | string | null> = {}
   if (log) {
@@ -149,6 +160,7 @@ export async function getDailyFormData(date: ISODate): Promise<DailyFormData> {
     customMetrics,
     customValues,
     hiddenFields: settings.hiddenDailyFields,
+    metricUses,
   }
 }
 
