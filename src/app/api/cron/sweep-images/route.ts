@@ -37,5 +37,7 @@ export async function GET(request: Request) {
     }
   }
 
+  log.info('media', `note image sweep completed`, { removed, freedBytes, failed })
+
   return NextResponse.json({ removed, freedBytes, failed })
 }

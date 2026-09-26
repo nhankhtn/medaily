@@ -29,7 +29,7 @@ export async function currentRequestId(): Promise<string | null> {
 const SILENT = new Set(['alerts'])
 
 async function write(
-  level: 'error' | 'warn',
+  level: 'error' | 'warn' | 'info',
   scope: string,
   message: string,
   details: unknown[],
@@ -95,4 +95,6 @@ export const log = {
     write('error', scope, message, details),
   warn: (scope: string, message: string, ...details: unknown[]) =>
     write('warn', scope, message, details),
+  info: (scope: string, message: string, ...details: unknown[]) =>
+    write('info', scope, message, details),
 }
