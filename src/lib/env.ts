@@ -63,6 +63,10 @@ const envSchema = z.object({
   TELEGRAM_BOT_TOKEN: z.string().optional(),
   TELEGRAM_CHAT_ID: z.string().optional(),
 
+  // What the scheduler sends back so the sweep route knows the request is
+  // the platform's and not the open internet's. Absent, the route refuses.
+  CRON_SECRET: z.string().optional(),
+
   // Photo storage. Absent means the photo UI is simply not offered.
   CLOUDINARY_CLOUD_NAME: z.string().optional(),
   CLOUDINARY_API_KEY: z.string().optional(),
