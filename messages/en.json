@@ -1612,6 +1612,8 @@
     "nothing": "cleared",
     "noChange": "Nothing moved.",
     "fields": {
+      "device": "Device",
+      "location": "Place",
       "occurredOn": "Date",
       "amount": "Amount",
       "kind": "Kind",

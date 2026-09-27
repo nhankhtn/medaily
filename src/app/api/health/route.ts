@@ -62,11 +62,21 @@ export async function GET() {
     // the token and the chat id never leave the deploy.
     alertsConfigured:
       Boolean(process.env.TELEGRAM_BOT_TOKEN) && Boolean(process.env.TELEGRAM_CHAT_ID),
+    // Whether anything is being recorded. Without this there is no way to tell
+    // a deploy that is not keeping a trail from one whose trail is empty: the
+    // feature switches itself off silently, by design, and a button that never
+    // appears looks exactly like a button that was never built.
+    activityConfigured: Boolean(process.env.MONGODB_URI),
   }
 
   if (!process.env.DATABASE_URL) {
     return NextResponse.json(
-      { status: 'error', database: 'not_configured', ...config, roundTripMs: Date.now() - startedAt },
+      {
+        status: 'error',
+        database: 'not_configured',
+        ...config,
+        roundTripMs: Date.now() - startedAt,
+      },
       { status: 503, headers: { 'cache-control': 'no-store' } },
     )
   }

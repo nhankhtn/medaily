@@ -1612,6 +1612,8 @@
     "nothing": "bỏ trống",
     "noChange": "Không có gì đổi.",
     "fields": {
+      "device": "Thiết bị",
+      "location": "Nơi",
       "occurredOn": "Ngày",
       "amount": "Số tiền",
       "kind": "Loại",

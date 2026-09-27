@@ -7,6 +7,7 @@ import { readAuthConfig } from '@/lib/auth/config'
 import { safeEqual, SESSION_COOKIE, sessionCookieOptions, signSession } from '@/lib/auth/session'
 import { eraseAccount, resolvePasswordIdentity } from '@/server/services/auth'
 import { recordActivity } from '@/server/services/activity'
+import { signInSnapshot } from '@/lib/activity/sign-in'
 import { readSession } from '@/lib/auth/current-user'
 import { PATHS, safeNextPath } from '@/lib/paths'
 import { clientKey } from '@/lib/client-ip'
@@ -57,7 +58,14 @@ export async function login(_previous: LoginState, formData: FormData): Promise<
   // Not through `audited()`: that wrapper asks `getCurrentUserId()` *after* the
   // handler, and this request had no session when it started — the cookie it
   // just set belongs to the next one. The id is right here instead.
-  recordActivity({ userId, action: 'session.login', label: auth.username })
+  recordActivity({
+    userId,
+    action: 'session.login',
+    label: auth.username,
+    // Which browser, on which system, and roughly where from. Read here
+    // because `after()` runs once the request's headers are gone.
+    request: signInSnapshot(await headers()),
+  })
 
   redirect(safeNextPath(parsed.data.next))
 }
@@ -98,7 +106,12 @@ export async function logout() {
   cookieStore.delete(SESSION_COOKIE)
 
   if (session) {
-    recordActivity({ userId: session.uid, action: 'session.logout', label: session.sub })
+    recordActivity({
+      userId: session.uid,
+      action: 'session.logout',
+      label: session.sub,
+      request: signInSnapshot(await headers()),
+    })
   }
 
   redirect(PATHS.login)

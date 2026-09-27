@@ -6,6 +6,7 @@ import { FirebaseVerifyError, verifyFirebaseIdToken } from '@/lib/auth/firebase-
 import { sessionCookieOptions, SESSION_COOKIE, signSession } from '@/lib/auth/session'
 import { resolveGoogleIdentity } from '@/server/services/auth'
 import { recordActivity } from '@/server/services/activity'
+import { signInSnapshot } from '@/lib/activity/sign-in'
 import { DEFAULT_LOCALE, isLocale, LOCALE_COOKIE, type Locale } from '@/i18n/config'
 import { clientKey } from '@/lib/client-ip'
 import { createLimit } from '@/lib/rate-limit'
@@ -89,7 +90,12 @@ export async function POST(request: Request) {
 
     // The other door into the app. Same entry as the password one, so a trail
     // does not go quiet just because somebody signed in with Google.
-    recordActivity({ userId: resolved.userId, action: 'session.login', label: identity.email })
+    recordActivity({
+      userId: resolved.userId,
+      action: 'session.login',
+      label: identity.email,
+      request: signInSnapshot(request.headers),
+    })
 
     const token = await signSession(
       { uid: resolved.userId, sub: identity.email, provider: 'google' },
