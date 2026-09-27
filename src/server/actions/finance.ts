@@ -352,7 +352,7 @@ export async function saveTransaction(input: unknown) {
     return { ok: false as const, error: 'invalid_input' as const }
   }
 
-  await updateTransaction(settings.userId, parsed.data.id, {
+  const saved = await updateTransaction(settings.userId, parsed.data.id, {
     occurredOn: parsed.data.occurredOn,
     amount: String(parsed.data.amount),
     kind: parsed.data.kind,
@@ -365,7 +365,10 @@ export async function saveTransaction(input: unknown) {
   })
 
   revalidateFinance()
-  return { ok: true as const }
+  // The row as the database now holds it. The ledger keeps its page in client
+  // state, so without this the edited row goes on showing what it used to say
+  // until something reloads it.
+  return { ok: true as const, transaction: saved }
 }
 
 /**

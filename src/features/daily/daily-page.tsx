@@ -6,6 +6,7 @@ import { fromISODate, type ISODate } from '@/lib/dates'
 import { PATHS } from '@/lib/paths'
 import { getDailyFormData } from '@/server/services/daily'
 import { DailyForm } from './daily-form'
+import { DailySettingsDialog } from './daily-settings-dialog'
 import { DateNav } from './date-nav'
 import { valuesFromLog } from './types'
 
@@ -32,7 +33,14 @@ export async function DailyPage({ date }: { date: ISODate }) {
                 })}
           </p>
         </div>
-        <DateNav date={date} today={data.today} />
+        <div className="flex items-center gap-2">
+          <DailySettingsDialog
+            hidden={data.hiddenFields}
+            uses={data.metricUses}
+            metrics={data.customMetrics}
+          />
+          <DateNav date={date} today={data.today} />
+        </div>
       </div>
 
       {data.missingDays.length >= 2 ? (

@@ -1,6 +1,6 @@
 'use client'
 
-import { SlidersHorizontal } from 'lucide-react'
+import { FilterX, SlidersHorizontal } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -23,10 +23,11 @@ import { useTransactionFeed } from './use-transaction-feed'
 export function LedgerMobile({ data }: { data: FinanceData }) {
   const t = useTranslations('finance')
   const tc = useTranslations('common')
-  const { filters, setFilter, activeFilters, filtering, rows, addPending } = useTransactionFeed({
-    initialPage: data.transactionsPage,
-    categories: data.categories,
-  })
+  const { filters, setFilter, clearFilters, activeFilters, filtering, rows, addPending } =
+    useTransactionFeed({
+      initialPage: data.transactionsPage,
+      categories: data.categories,
+    })
   const [filtersOpen, setFiltersOpen] = useState(false)
   const names = data.accounts.map((account) => ({ id: account.id, name: account.name }))
 
@@ -60,22 +61,42 @@ export function LedgerMobile({ data }: { data: FinanceData }) {
               />
             </label>
 
-            {/* Folded away, so the count is the only sign a filter is still on. */}
+            {/* Folded away, so the count is the only sign a filter is still on.
+                The word is dropped but not the label: the icon alone is what a
+                sighted person reads here, and `aria-label` is what everyone
+                else does. `size="icon"` keeps it level with the search box. */}
             <Button
               type="button"
               variant="outline"
+              size="icon"
               aria-expanded={filtersOpen}
+              aria-label={t('filters')}
               onClick={() => setFiltersOpen((open) => !open)}
-              className="shrink-0"
+              className="relative shrink-0"
             >
               <SlidersHorizontal className="size-4" />
-              {t('filters')}
               {activeFilters > 0 ? (
-                <span className="bg-accent text-accent-text rounded-full px-1.5 text-xs tabular-nums">
+                <span className="bg-accent text-accent-text absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full text-[10px] leading-none tabular-nums">
                   {activeFilters}
                 </span>
               ) : null}
             </Button>
+
+            {/* Beside the toggle, not inside the fold: the search box is a
+                filter too, and the one most likely to be left on while the
+                panel that would explain it is shut. */}
+            {filtering ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label={t('clearFilters')}
+                onClick={clearFilters}
+                className="shrink-0"
+              >
+                <FilterX className="size-4" />
+              </Button>
+            ) : null}
           </div>
 
           {filtersOpen ? (
@@ -158,6 +179,7 @@ export function LedgerMobile({ data }: { data: FinanceData }) {
               onLoadMore={rows.loadMore}
               onRemoved={rows.removeItem}
               onRestored={rows.restoreItem}
+              onUpdated={rows.updateItem}
             />
           )}
         </CardBody>

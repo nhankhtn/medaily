@@ -9,9 +9,10 @@ import {
 } from 'firebase/auth'
 
 /**
- * Browser-side Firebase, used for exactly one thing: obtaining a Google ID
- * token to hand to `/api/auth/google`. Nothing else in the app talks to
- * Firebase, and no Firebase state is trusted for authorization.
+ * Browser-side Firebase. Two things use it: obtaining a Google ID token to
+ * hand to `/api/auth/google`, and — where a measurement id is configured —
+ * analytics, which shares this app rather than initialising a second one.
+ * No Firebase state is trusted for authorization.
  *
  * These values are public by design — Firebase web config is not a secret,
  * it identifies the project. What protects the app is the server verifying
@@ -34,6 +35,12 @@ function firebaseConfig() {
         ? window.location.host
         : (process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? ''),
     projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? '',
+    // Both only matter to analytics, and both are absent on a deploy that
+    // only signs people in. Firebase ignores what it is not asked for, so
+    // they sit in the one config rather than in a second one that would
+    // initialise a second app for the same project.
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? '',
+    measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID ?? '',
   }
 }
 
@@ -43,7 +50,17 @@ export function firebaseConfigured(): boolean {
   return config.apiKey.length > 0 && config.projectId.length > 0
 }
 
-function firebaseApp(): FirebaseApp {
+/**
+ * Analytics needs an app id and a measurement id on top of what signing in
+ * needs, so it is configured separately and can be off while sign-in is on.
+ */
+export function firebaseAnalyticsConfigured(): boolean {
+  const config = firebaseConfig()
+  return firebaseConfigured() && config.appId.length > 0 && config.measurementId.length > 0
+}
+
+/** Shared, so analytics and sign-in never initialise two apps for one project. */
+export function firebaseApp(): FirebaseApp {
   if (getApps().length > 0) return getApp()
   return initializeApp(firebaseConfig())
 }

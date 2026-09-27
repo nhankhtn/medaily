@@ -18,7 +18,7 @@ const weekly: EventRow = {
   startsAt: atVn('2026-09-01T09:30:00'),
   endsAt: atVn('2026-09-01T10:00:00'),
   allDay: false,
-  location: 'Phòng 3',
+  note: 'Mang theo laptop',
   recurrenceRule: 'weekly',
   recurrenceUntil: '2026-12-31',
 }
@@ -32,7 +32,7 @@ describe('toEventForm', () => {
       startTime: '09:30',
       endTime: '10:00',
       allDay: false,
-      location: 'Phòng 3',
+      note: 'Mang theo laptop',
       recurrenceRule: 'weekly',
       recurrenceUntil: '2026-12-31',
     })

@@ -111,6 +111,62 @@ export function reportText(report: ErrorReport): string {
   return truncate(lines.join('\n'), TELEGRAM_LIMIT)
 }
 
+/**
+ * A scheduled job that finished, for the chat that otherwise only ever brings
+ * bad news.
+ *
+ * The point is not the count. A sweep nobody hears from is indistinguishable
+ * from a cron that was never registered, a `CRON_SECRET` nobody set, or a
+ * deploy that dropped `vercel.json` — all of which fail by doing nothing at
+ * all, which is the one failure an error channel cannot report. So the
+ * message says it ran, and the numbers come along for free.
+ */
+export type JobReport = {
+  /** What ran, in words a person reads at 2am, not a route name. */
+  job: string
+  environment: string
+  /** Whole seconds is the resolution anyone cares about for a nightly job. */
+  tookMs: number
+  /** Whatever the job counted. Rendered in order, so put the headline first. */
+  counts: Record<string, string | number>
+}
+
+export function jobReportText(report: JobReport): string {
+  const counted = Object.entries(report.counts)
+    .map(([label, value]) => `${label}: ${value}`)
+    .join('\n')
+
+  const lines = [
+    `✅ medaily (${report.environment})`,
+    `${report.job} · ${formatDuration(report.tookMs)}`,
+    '',
+    counted || 'nothing to report',
+  ]
+
+  return truncate(lines.join('\n'), TELEGRAM_LIMIT)
+}
+
+/** Under a minute reads better in seconds; past it, nobody counts in seconds. */
+export function formatDuration(ms: number): string {
+  const seconds = Math.round(ms / 1000)
+  if (seconds < 60) return `${seconds}s`
+  const minutes = Math.floor(seconds / 60)
+  return `${minutes}m ${seconds % 60}s`
+}
+
+/** Bytes as something readable. Cloudinary counts in bytes; people do not. */
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  const units = ['KB', 'MB', 'GB']
+  let value = bytes / 1024
+  let unit = 0
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024
+    unit += 1
+  }
+  return `${value < 10 ? value.toFixed(1) : Math.round(value)} ${units[unit]}`
+}
+
 export function truncate(text: string, limit: number): string {
   if (text.length <= limit) return text
   return `${text.slice(0, limit - 1)}…`

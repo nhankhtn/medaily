@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 import { getLocale, getTranslations } from 'next-intl/server'
 import { EmptyState, PageHeader, StatRow, TabNav } from '@/components/ui/page'
+import { BalanceHistory } from '@/features/finance/balance-history'
 import {
   AccountsBoard,
   AssetsBoard,
@@ -69,6 +70,11 @@ export default async function FinancePage({
       <div className="space-y-4">
         {header}
         {nav}
+        <BalanceHistory
+          points={data.dailyBalances}
+          accounts={data.accounts.map((account) => ({ id: account.id, name: account.name }))}
+          currency={data.currency}
+        />
         <div className="grid gap-4 lg:grid-cols-2">
           <DebtsBoard data={data} />
           <AccountsBoard data={data} />

@@ -1,10 +1,12 @@
 import { createGate } from '@/lib/alerts/gate'
 import { log } from '@/lib/log'
 import {
+  jobReportText,
   reportKey,
   reportText,
   supportText,
   type ErrorReport,
+  type JobReport,
   type SupportMessage,
 } from '@/lib/alerts/report'
 import { env } from '@/lib/env'
@@ -104,6 +106,21 @@ export async function sendSupportMessage(
   }
 
   return post(supportText(message), 'support')
+}
+
+/**
+ * Says a scheduled job finished.
+ *
+ * No gate. The other two senders guard against a flood — a failing route, a
+ * stranger with a form — and a nightly job is neither; gating this would only
+ * ever swallow the one message it exists to send.
+ *
+ * Never throws, for the same reason as the rest: a sweep that deleted the
+ * right files must not be reported as a failure because Telegram was down.
+ */
+export async function sendJobReport(report: JobReport): Promise<'sent' | 'skipped' | 'failed'> {
+  if (!alertsEnabled()) return 'skipped'
+  return post(jobReportText(report), 'jobs')
 }
 
 /** What deploy this is, for the first line of the message. */

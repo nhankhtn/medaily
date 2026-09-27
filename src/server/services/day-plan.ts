@@ -23,7 +23,7 @@ export type DayEvent = {
   title: string
   startsAt: Date
   allDay: boolean
-  location: string | null
+  note: string | null
   series: EventForm
 }
 
@@ -86,7 +86,7 @@ export const getDayPlan = cache(async (requested?: ISODate): Promise<DayPlan> =>
       title: event.title,
       startsAt: event.startsAt,
       allDay: event.allDay,
-      location: event.location,
+      note: event.note,
       series: seriesById.get(event.id) ?? toEventForm(event, timezone),
     })),
     blocks,
