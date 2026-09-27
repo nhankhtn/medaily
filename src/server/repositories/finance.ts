@@ -127,6 +127,80 @@ export async function findAccountBalances(userId: string): Promise<AccountBalanc
   }))
 }
 
+export type DailyBalancePoint = { accountId: string; date: ISODate; balance: number }
+
+/**
+ * Closing balance per account for every day in the range — the same arithmetic
+ * `v_account_balances` does, stopped at each day instead of only at the end.
+ *
+ * Three parts, because a balance line may not have holes:
+ *
+ * - `moves` is the net movement a day made to an account. A transfer counts
+ *   twice from the account's point of view, once out of one and once into the
+ *   other, which is why both sides are tested separately.
+ * - `carried` folds everything that happened *before* the window into the
+ *   opening balance. Without it a chart starting in September would draw a
+ *   year of spending as if it began from zero.
+ * - the running `SUM(...) OVER (ORDER BY day)` carries the last balance
+ *   forward across days with no transaction. A day nobody spent anything is
+ *   not a gap in the line and not a zero: it is yesterday, unchanged.
+ */
+export async function findDailyBalances(
+  userId: string,
+  range: DateRange,
+): Promise<DailyBalancePoint[]> {
+  const rows = await db.execute<{ account_id: string; day: string; balance: string }>(sql`
+    WITH moves AS (
+      SELECT
+        a.id AS account_id,
+        t.occurred_on AS day,
+        SUM(
+          CASE
+            WHEN t.kind = 'income'   AND t.account_id = a.id         THEN  t.amount
+            WHEN t.kind = 'expense'  AND t.account_id = a.id         THEN -t.amount
+            WHEN t.kind = 'transfer' AND t.account_id = a.id         THEN -t.amount
+            WHEN t.kind = 'transfer' AND t.counter_account_id = a.id THEN  t.amount
+            ELSE 0
+          END
+        ) AS delta
+      FROM accounts a
+      JOIN transactions t
+        ON t.user_id = a.user_id AND (t.account_id = a.id OR t.counter_account_id = a.id)
+      WHERE a.user_id = ${userId} AND a.archived_at IS NULL
+      GROUP BY a.id, t.occurred_on
+    ),
+    carried AS (
+      SELECT account_id, SUM(delta) AS total
+      FROM moves WHERE day < ${range.start}::date
+      GROUP BY account_id
+    ),
+    grid AS (
+      SELECT a.id AS account_id, a.opening_balance, d.day
+      FROM accounts a
+      CROSS JOIN generate_series(${range.start}::date, ${range.end}::date, interval '1 day') AS d(day)
+      WHERE a.user_id = ${userId} AND a.archived_at IS NULL
+    )
+    SELECT
+      g.account_id,
+      g.day::date AS day,
+      (
+        g.opening_balance
+        + COALESCE(c.total, 0)
+        + COALESCE(SUM(m.delta) OVER (PARTITION BY g.account_id ORDER BY g.day), 0)
+      ) AS balance
+    FROM grid g
+    LEFT JOIN carried c ON c.account_id = g.account_id
+    LEFT JOIN moves   m ON m.account_id = g.account_id AND m.day = g.day
+    ORDER BY g.account_id, g.day
+  `)
+
+  return rows.map((row) => ({
+    accountId: row.account_id,
+    date: row.day.slice(0, 10) as ISODate,
+    balance: Number(row.balance),
+  }))
+}
+
 /** From either side: a transfer names one account as the counterparty. */
 export async function countAccountTransactions(userId: string, accountId: string): Promise<number> {
   const rows = await db
