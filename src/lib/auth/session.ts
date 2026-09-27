@@ -9,6 +9,17 @@
 const COOKIE_NAME = 'medaily_session'
 const DEFAULT_TTL_SECONDS = 60 * 60 * 24 * 30
 
+/**
+ * How long a session may be kept alive by using it, counted from the sign-in
+ * that started it and never reset by a renewal.
+ *
+ * Without it, "renew while in use" means a stolen cookie that its thief keeps
+ * warm never expires at all — the one property nobody would agree to if it
+ * were written down. Six months is long enough that nobody notices it and
+ * short enough that a lost phone stops being a key within one.
+ */
+const ABSOLUTE_MAX_SECONDS = 60 * 60 * 24 * 180
+
 export const SESSION_COOKIE = COOKIE_NAME
 
 /**
@@ -30,6 +41,46 @@ export type SessionPayload = {
   /** Issued-at and expiry, both seconds since epoch. */
   iat: number
   exp: number
+  /**
+   * When the sign-in behind this session happened, carried unchanged through
+   * every renewal — which is what makes the ceiling a ceiling rather than
+   * another thing that slides.
+   *
+   * Optional, and read through `sessionStartedAt`: cookies issued before
+   * renewal existed have no `sat`, and rejecting them would sign everyone out
+   * on the deploy that added this. Their `iat` is the sign-in they came from,
+   * which is exactly what `sat` means.
+   */
+  sat?: number
+}
+
+/** The sign-in a session descends from, for a cookie of either vintage. */
+export function sessionStartedAt(payload: SessionPayload): number {
+  return payload.sat ?? payload.iat
+}
+
+/**
+ * How long a renewed cookie should live, or null to leave it alone.
+ *
+ * Three refusals, in order. Before the halfway mark there is nothing to gain
+ * and re-signing on every request is the thing to avoid. Past the ceiling the
+ * session has had its six months. And once the ceiling is close enough that a
+ * renewal would end no later than the cookie already does, renewing is churn —
+ * this is what stops the last day turning into a re-sign on every page.
+ *
+ * The clamp is why the ceiling holds exactly: a new expiry is never later than
+ * the sign-in plus the maximum, so no chain of renewals can walk past it.
+ */
+export function renewalTtl(payload: SessionPayload, nowSeconds: number): number | null {
+  const life = payload.exp - payload.iat
+  if (life <= 0) return null
+  if (nowSeconds - payload.iat <= life / 2) return null
+
+  const remaining = sessionStartedAt(payload) + ABSOLUTE_MAX_SECONDS - nowSeconds
+  if (remaining <= 0) return null
+
+  const ttl = Math.min(life, remaining)
+  return nowSeconds + ttl > payload.exp ? ttl : null
 }
 
 function encoder() {
@@ -66,7 +117,14 @@ export async function signSession(
   ttlSeconds = DEFAULT_TTL_SECONDS,
 ): Promise<string> {
   const now = Math.floor(Date.now() / 1000)
-  const body: SessionPayload = { ...payload, v: SESSION_VERSION, iat: now, exp: now + ttlSeconds }
+  const body: SessionPayload = {
+    ...payload,
+    v: SESSION_VERSION,
+    iat: now,
+    // A fresh sign-in starts the clock; a renewal hands back the one it had.
+    sat: payload.sat ?? now,
+    exp: now + ttlSeconds,
+  }
   const encoded = base64UrlEncode(encoder().encode(JSON.stringify(body)))
   const signature = await crypto.subtle.sign(
     'HMAC',
