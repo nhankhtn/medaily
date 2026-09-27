@@ -49,6 +49,20 @@ describe('the legal documents', () => {
    * an untrue statement — so whoever adds the next measurement has to come
    * through here.
    */
+  /**
+   * The trail of what changed is the one store that is not the main database,
+   * so it is the one a reader would never guess at. Naming it here means the
+   * next swap of that store has to come back through the notice.
+   */
+  it('names every store that holds what a reader wrote', () => {
+    for (const locale of LOCALES) {
+      const body = legalDocument(locale, 'privacy').body
+      expect(body, `${locale}`).toContain('Neon')
+      expect(body, `${locale}`).toContain('Cloudinary')
+      expect(body, `${locale}`).toContain('MongoDB')
+    }
+  })
+
   it('names every measurement the app actually loads', () => {
     for (const locale of LOCALES) {
       const body = legalDocument(locale, 'privacy').body

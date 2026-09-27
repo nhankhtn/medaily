@@ -48,6 +48,21 @@ birthdays and bank account details.
 
 **Pictures you upload**, if you add any.
 
+**A record of what changed**, if this deployment keeps one: the moment, what
+kind of change it was — a transaction deleted, a person added — which row it
+was about, and, for the fields it follows, what they held before and after.
+Each time you signed in or out is in there too. It is kept so that you can see
+what happened to your own data — which is the point of showing an amount going
+from one figure to another — and so that a sign-in you did not make is
+something you can spot.
+
+What it follows is a fixed list per kind of record: amounts, dates, names,
+categories, and the like. It never holds the text of a journal entry, a note
+or your daily log, and a bank account number appears only as its last four
+digits. This record lives in a **MongoDB** database rather than the main one,
+it expires on its own after 90 days, and deleting your account erases it
+first.
+
 **How the pages are used**, if this deployment has measurement switched on.
 Two things measure, and they are not alike.
 
@@ -76,6 +91,7 @@ third-party script reading what you write.
 ## Where it is kept
 
 - The database is hosted by **Neon**, in the United States.
+- The record of what changed, where it is kept, is held by **MongoDB Atlas**.
 - The app runs on **Vercel**.
 - Pictures are stored by **Cloudinary**.
 - Page measurements, where they are on, go to **Google**.
@@ -139,6 +155,20 @@ trong đó, có thể có số điện thoại, email, ngày sinh và số tài 
 
 **Ảnh bạn tải lên**, nếu có.
 
+**Bản ghi những gì đã đổi**, nếu bản cài này có giữ: thời điểm, việc đã làm là
+gì — xoá một giao dịch, thêm một người — dòng nào, và với những trường được
+theo dõi thì cả giá trị trước lẫn sau. Mỗi lần bạn đăng nhập, đăng xuất cũng
+nằm trong đó. Nó có ở đó để bạn tự xem lại dữ liệu của mình đã qua những gì —
+chính vì vậy mà số tiền đổi từ bao nhiêu sang bao nhiêu được ghi lại — và để
+một lần đăng nhập không phải của bạn thì nhìn ra được.
+
+Những trường được theo dõi là một danh sách cố định cho từng loại bản ghi: số
+tiền, ngày, tên, danh mục và tương tự. Nó không bao giờ chứa nội dung một ghi
+chép, một ghi chú hay bản ghi ngày, còn số tài khoản ngân hàng chỉ hiện bốn số
+cuối. Riêng bản ghi này nằm trong một cơ sở dữ liệu **MongoDB** chứ không phải
+cơ sở dữ liệu chính, tự hết hạn sau 90 ngày, và khi bạn xoá tài khoản thì nó bị
+xoá trước tiên.
+
 **Cách các trang được dùng**, nếu bản cài này có bật đo đạc. Có hai thứ đo, và
 chúng khác nhau.
 
@@ -167,6 +197,7 @@ thứ ba nào đọc những gì bạn viết.
 ## Dữ liệu nằm ở đâu
 
 - Cơ sở dữ liệu đặt tại **Neon**, ở Mỹ.
+- Bản ghi những gì đã đổi, chỗ nào có giữ, nằm ở **MongoDB Atlas**.
 - App chạy trên **Vercel**.
 - Ảnh lưu ở **Cloudinary**.
 - Số liệu trang, chỗ nào bật, gửi về **Google**.

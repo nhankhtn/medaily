@@ -1603,5 +1603,126 @@
     "tooShort": "A few more words would help — say what happened.",
     "tooMany": "That is a few in a row. Give it an hour and write again.",
     "unavailable": "That did not send. Try again in a moment."
+  },
+  "activity": {
+    "title": "What changed",
+    "body": "What you added, changed or deleted here lately. Only the last {days} days are kept.",
+    "empty": "Nothing here yet.",
+    "open": "See history",
+    "nothing": "cleared",
+    "noChange": "Nothing moved.",
+    "fields": {
+      "occurredOn": "Date",
+      "amount": "Amount",
+      "kind": "Kind",
+      "account": "Account",
+      "counterAccount": "To account",
+      "category": "Category",
+      "person": "Person",
+      "merchant": "Merchant",
+      "name": "Name",
+      "type": "Type",
+      "currency": "Currency",
+      "openingBalance": "Opening balance",
+      "note": "Note",
+      "frequency": "Frequency",
+      "intervalDays": "Every N days",
+      "target": "Target",
+      "linkedMetric": "Linked metric",
+      "startDate": "Start date",
+      "status": "Status",
+      "targetDate": "Target date",
+      "progressMode": "Progress",
+      "metricTarget": "Metric target",
+      "relationship": "Relationship",
+      "company": "Company",
+      "role": "Role",
+      "birthday": "Birthday",
+      "phone": "Phone",
+      "email": "Email",
+      "contactIntervalDays": "Contact every N days",
+      "bankAccountNumber": "Bank account",
+      "title": "Title",
+      "learnedOn": "Learned on"
+    },
+    "values": {
+      "income": "Income",
+      "expense": "Expense",
+      "transfer": "Transfer",
+      "cash": "Cash",
+      "bank": "Other bank",
+      "e_wallet": "Other e-wallet",
+      "credit_card": "Credit card",
+      "investment": "Investment",
+      "loan": "Loan",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "specific_days": "Set days",
+      "interval": "Every N days",
+      "active": "Active",
+      "completed": "Done",
+      "paused": "Paused",
+      "cancelled": "Dropped",
+      "manual": "By hand",
+      "metric": "By metric",
+      "milestones": "By milestone",
+      "partner": "Partner",
+      "family": "Family",
+      "friend": "Friend",
+      "colleague": "Colleague",
+      "mentor": "Mentor",
+      "other": "Other",
+      "note": "Note",
+      "concept": "Concept",
+      "bookmark": "Bookmark",
+      "lesson": "Lesson"
+    },
+    "actions": {
+      "transaction": {
+        "create": "Transaction added",
+        "update": "Transaction changed",
+        "delete": "Transaction deleted",
+        "restore": "Transaction restored"
+      },
+      "account": {
+        "create": "Account added",
+        "update": "Account changed",
+        "delete": "Account deleted"
+      },
+      "category": {
+        "create": "Category added",
+        "update": "Category changed",
+        "delete": "Category deleted"
+      },
+      "habit": {
+        "create": "Habit added",
+        "update": "Habit changed",
+        "delete": "Habit deleted",
+        "restore": "Habit restored"
+      },
+      "person": {
+        "create": "Person added",
+        "update": "Person changed",
+        "delete": "Person deleted",
+        "restore": "Person restored"
+      },
+      "goal": {
+        "create": "Goal added",
+        "update": "Goal changed",
+        "delete": "Goal deleted"
+      },
+      "note": {
+        "create": "Note added",
+        "update": "Note changed",
+        "delete": "Note deleted"
+      },
+      "daily": {
+        "update": "Daily log changed"
+      },
+      "session": {
+        "login": "Signed in",
+        "logout": "Signed out"
+      }
+    }
   }
 }

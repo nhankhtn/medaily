@@ -15,10 +15,13 @@ export async function ProfileCard({
   user,
   provider,
   subject,
+  actions,
 }: {
   user: User
   provider: SessionProvider
   subject: string
+  /** Anything that acts on the account itself, sat at the end of the top row. */
+  actions?: React.ReactNode
 }) {
   const [t, format] = await Promise.all([getTranslations('settings.profile'), getFormatter()])
   const email = user.email ?? (provider === 'google' ? subject : null)
@@ -48,6 +51,7 @@ export async function ProfileCard({
             )}
           </p>
         </div>
+        {actions}
       </div>
 
       <dl className="border-border-base mt-4 grid gap-x-8 gap-y-3 border-t pt-3 sm:grid-cols-2">

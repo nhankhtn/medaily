@@ -480,6 +480,19 @@ export async function insertTransactions(
 }
 
 /** Scoped by user, so a well-formed id cannot reach another person's row. */
+/**
+ * One row by id, scoped to its owner. Read before an edit overwrites it, so
+ * the trail can say what the amount used to be.
+ */
+export async function findTransaction(userId: string, id: string): Promise<Transaction | null> {
+  const rows = await db
+    .select()
+    .from(transactions)
+    .where(and(eq(transactions.userId, userId), eq(transactions.id, id)))
+    .limit(1)
+  return rows[0] ?? null
+}
+
 export async function updateTransaction(
   userId: string,
   id: string,
