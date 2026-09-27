@@ -4,12 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { getCurrentUserId } from '@/lib/auth/current-user'
 import { PATHS } from '@/lib/paths'
-import {
-  actionById,
-  conflictsWith,
-  isValidBinding,
-  resolveBindings,
-} from '@/lib/shortcuts'
+import { actionById, conflictsWith, isValidBinding, resolveBindings } from '@/lib/shortcuts'
 import { findSettings, updateSettings } from '@/server/repositories/settings'
 
 export type SaveResult =

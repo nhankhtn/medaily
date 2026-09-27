@@ -56,7 +56,10 @@ export async function saveWorkout(input: unknown) {
   const workout = await insertWorkout({
     ...values,
     userId: settings.userId,
-    distanceKm: values.distanceKm === null || values.distanceKm === undefined ? null : String(values.distanceKm),
+    distanceKm:
+      values.distanceKm === null || values.distanceKm === undefined
+        ? null
+        : String(values.distanceKm),
   })
 
   if (sets?.length) {

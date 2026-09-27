@@ -5,11 +5,7 @@ import { z } from 'zod'
 import { getCurrentUserId } from '@/lib/auth/current-user'
 import { PATHS } from '@/lib/paths'
 import { isoDateSchema } from '@/lib/validation/daily'
-import {
-  insertAchievement,
-  insertPortfolioItem,
-  upsertSkill,
-} from '@/server/repositories/career'
+import { insertAchievement, insertPortfolioItem, upsertSkill } from '@/server/repositories/career'
 
 const optionalText = z
   .string()
