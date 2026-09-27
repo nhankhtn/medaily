@@ -46,6 +46,14 @@ export function BalanceHistory({
   const locale = useLocale()
   const format = useFormatter()
   const mode = useChartMode()
+  const compact = useMemo(
+    () =>
+      new Intl.NumberFormat(locale === 'vi' ? 'vi-VN' : 'en-US', {
+        notation: 'compact',
+        maximumFractionDigits: 1,
+      }),
+    [locale],
+  )
   // Money rides the same series colour the rest of the app spends on it, which
   // the dataviz palette already validated for both modes.
   const color = SERIES_COLORS[mode].energy
@@ -132,12 +140,38 @@ export function BalanceHistory({
 
         <div className="h-48 w-full sm:h-56">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={series} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
+            <LineChart data={series} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
               <CartesianGrid stroke="var(--border)" strokeDasharray="2 4" vertical={false} />
-              <XAxis dataKey="date" hide />
+              {/* Recessive axes: a thin muted tick label, no axis rule and no
+                  tick marks. The line is the subject; these only let someone
+                  read a value off it. */}
+              <XAxis
+                dataKey="date"
+                axisLine={false}
+                tickLine={false}
+                minTickGap={40}
+                tick={{ fill: 'var(--text-subtle)', fontSize: 11 }}
+                tickFormatter={(value: string) =>
+                  format.dateTime(fromISODate(value as ISODate), 'dayMonth')
+                }
+              />
               {/* Money is not a ratio: a balance chart that starts at zero
-                  flattens the movement it exists to show. */}
-              <YAxis hide domain={['dataMin', 'dataMax']} />
+                  flattens the movement it exists to show. Compact, because a
+                  VND balance written out in full is wider than the chart. */}
+              <YAxis
+                domain={['dataMin', 'dataMax']}
+                axisLine={false}
+                tickLine={false}
+                width={60}
+                tickCount={4}
+                tick={{ fill: 'var(--text-subtle)', fontSize: 11 }}
+                // Magnitude only. The currency is on the number above the
+                // chart and in the tooltip; repeating it on every tick is what
+                // made these labels wide enough to be clipped, and a clipped
+                // axis label does not read as short — it reads as a wrong
+                // number.
+                tickFormatter={(value: number) => compact.format(value)}
+              />
               <Tooltip
                 cursor={{ stroke: CURSOR_STROKE, strokeWidth: 1 }}
                 content={({ active, payload }) => {
