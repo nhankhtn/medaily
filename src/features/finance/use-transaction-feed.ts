@@ -73,6 +73,13 @@ export function useTransactionFeed({
     [],
   )
 
+  /**
+   * Back to everything, in one go. Five controls to reset by hand is enough
+   * work that a filtered ledger stays filtered by accident — and an empty list
+   * with no obvious way back reads as missing data rather than a narrow view.
+   */
+  const clearFilters = useCallback(() => setFilters(NO_FILTERS), [])
+
   const { accountId, categoryId, from, to } = filters
   const search = useDebounced(filters.search.trim(), SEARCH_DELAY)
 
@@ -186,6 +193,7 @@ export function useTransactionFeed({
     categories,
     filters,
     setFilter,
+    clearFilters,
     activeFilters,
     filtering,
     rows: {

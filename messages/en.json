@@ -1017,6 +1017,7 @@
       "copiedMomo": "MoMo number copied"
     },
     "filters": "Filters",
+    "clearFilters": "Clear filters",
     "balanceHistory": {
       "title": "Balance over time",
       "account": "Account",

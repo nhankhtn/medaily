@@ -1,6 +1,8 @@
 'use client'
 
+import { FilterX } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/button'
 import { Card, CardBody, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
@@ -21,7 +23,7 @@ import { useTransactionFeed } from './use-transaction-feed'
 export function LedgerDesktop({ data }: { data: FinanceData }) {
   const t = useTranslations('finance')
   const tc = useTranslations('common')
-  const { filters, setFilter, filtering, rows, addPending } = useTransactionFeed({
+  const { filters, setFilter, clearFilters, filtering, rows, addPending } = useTransactionFeed({
     initialPage: data.transactionsPage,
     categories: data.categories,
   })
@@ -44,7 +46,19 @@ export function LedgerDesktop({ data }: { data: FinanceData }) {
       </Card>
 
       <Card>
-        <CardHeader title={t('transactions')} />
+        <CardHeader
+          title={t('transactions')}
+          // Only once something is on. A permanent reset button for filters
+          // nobody set is a control that does nothing most of the time.
+          action={
+            filtering ? (
+              <Button type="button" variant="ghost" size="sm" onClick={clearFilters}>
+                <FilterX className="size-4" />
+                {t('clearFilters')}
+              </Button>
+            ) : null
+          }
+        />
         <CardBody className="space-y-3">
           <div className="flex flex-wrap items-end gap-2">
             <label className="min-w-36 flex-1 space-y-1.5 sm:max-w-48">

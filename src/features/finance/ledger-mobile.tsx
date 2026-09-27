@@ -1,6 +1,6 @@
 'use client'
 
-import { SlidersHorizontal } from 'lucide-react'
+import { FilterX, SlidersHorizontal } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -23,10 +23,11 @@ import { useTransactionFeed } from './use-transaction-feed'
 export function LedgerMobile({ data }: { data: FinanceData }) {
   const t = useTranslations('finance')
   const tc = useTranslations('common')
-  const { filters, setFilter, activeFilters, filtering, rows, addPending } = useTransactionFeed({
-    initialPage: data.transactionsPage,
-    categories: data.categories,
-  })
+  const { filters, setFilter, clearFilters, activeFilters, filtering, rows, addPending } =
+    useTransactionFeed({
+      initialPage: data.transactionsPage,
+      categories: data.categories,
+    })
   const [filtersOpen, setFiltersOpen] = useState(false)
   const names = data.accounts.map((account) => ({ id: account.id, name: account.name }))
 
@@ -80,6 +81,22 @@ export function LedgerMobile({ data }: { data: FinanceData }) {
                 </span>
               ) : null}
             </Button>
+
+            {/* Beside the toggle, not inside the fold: the search box is a
+                filter too, and the one most likely to be left on while the
+                panel that would explain it is shut. */}
+            {filtering ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label={t('clearFilters')}
+                onClick={clearFilters}
+                className="shrink-0"
+              >
+                <FilterX className="size-4" />
+              </Button>
+            ) : null}
           </div>
 
           {filtersOpen ? (

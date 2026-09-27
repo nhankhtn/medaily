@@ -1017,6 +1017,7 @@
       "copiedMomo": "Đã chép số MoMo"
     },
     "filters": "Lọc",
+    "clearFilters": "Bỏ lọc",
     "balanceHistory": {
       "title": "Số dư theo thời gian",
       "account": "Tài khoản",
