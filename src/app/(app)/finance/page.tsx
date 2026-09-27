@@ -10,7 +10,7 @@ import {
   DebtsBoard,
   InvestmentsBoard,
 } from '@/features/finance/boards'
-import { AccountDialog, CategoryDialog } from '@/features/finance/finance-dialogs'
+import { AccountDialog } from '@/features/finance/finance-dialogs'
 import { LedgerView } from '@/features/finance/ledger-view'
 import { Report } from '@/features/finance/report'
 import { formatMoney } from '@/lib/format/money'
@@ -53,17 +53,15 @@ export default async function FinancePage({
   const [locale, data, jar] = await Promise.all([getLocale(), getFinanceData(), cookies()])
   const money = (amount: number) => formatMoney(amount, data.currency, locale)
 
-  const header = (
-    <PageHeader
-      title={t('title')}
-      action={
-        <div className="flex flex-wrap gap-2">
-          <AccountDialog defaultCurrency={data.currency} />
-          <CategoryDialog />
-        </div>
-      }
-    />
-  )
+  /*
+   * No action on the title. Adding an account and adding a category now sit on
+   * the cards that list them, over on the Accounts tab — next to the thing
+   * they make, rather than on every tab whether or not it has anything to do
+   * with either. The Categories card and the Budgets card already carried
+   * their own, so the header pair was a second copy on the one tab where both
+   * were already reachable.
+   */
+  const header = <PageHeader title={t('title')} />
 
   if (tab === 'accounts') {
     return (
