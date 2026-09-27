@@ -71,7 +71,9 @@
     "notFoundHint": "Có thể link đã cũ, hoặc trang đã chuyển chỗ."
   },
   "daily": {
-    "setup": { "title": "Thiết lập" },
+    "setup": {
+      "title": "Thiết lập"
+    },
     "title": "Ghi ngày",
     "subtitleToday": "Hôm nay của bạn thế nào?",
     "subtitlePast": "Đang sửa ngày {date}",
@@ -1014,7 +1016,14 @@
       "copiedAccount": "Đã chép số tài khoản",
       "copiedMomo": "Đã chép số MoMo"
     },
-    "filters": "Lọc"
+    "filters": "Lọc",
+    "balanceHistory": {
+      "title": "Số dư theo thời gian",
+      "account": "Tài khoản",
+      "allAccounts": "Tất cả tài khoản",
+      "days": "{count} ngày",
+      "overDays": "trong {count} ngày"
+    }
   },
   "journal": {
     "title": "Nhật ký",
@@ -1131,6 +1140,7 @@
     "blockDeleted": "Đã xóa khối thời gian",
     "noBlocks": "Chưa lên kế hoạch",
     "kind": "Loại",
+    "project": "Dự án",
     "kinds": {
       "learning": "Học",
       "deep_work": "Deep work",

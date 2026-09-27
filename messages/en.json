@@ -71,7 +71,9 @@
     "notFoundHint": "The link may be old, or the page may have moved."
   },
   "daily": {
-    "setup": { "title": "Set up" },
+    "setup": {
+      "title": "Set up"
+    },
     "title": "Daily Log",
     "subtitleToday": "How did today go?",
     "subtitlePast": "Editing {date}",
@@ -1014,7 +1016,14 @@
       "copiedAccount": "Account number copied",
       "copiedMomo": "MoMo number copied"
     },
-    "filters": "Filters"
+    "filters": "Filters",
+    "balanceHistory": {
+      "title": "Balance over time",
+      "account": "Account",
+      "allAccounts": "All accounts",
+      "days": "{count} days",
+      "overDays": "over {count} days"
+    }
   },
   "journal": {
     "title": "Journal",
@@ -1131,6 +1140,7 @@
     "blockDeleted": "Block deleted",
     "noBlocks": "Nothing planned",
     "kind": "Kind",
+    "project": "Project",
     "kinds": {
       "learning": "Learning",
       "deep_work": "Deep work",

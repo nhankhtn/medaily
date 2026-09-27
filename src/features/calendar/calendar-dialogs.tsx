@@ -312,7 +312,7 @@ export function BlockDialog({
                 ))}
               </Select>
             </Field>
-            <Field label={tc('none')}>
+            <Field label={t('project')}>
               <Select name="projectId" defaultValue={block?.projectId ?? ''}>
                 <option value="">—</option>
                 {projects.map((project) => (
