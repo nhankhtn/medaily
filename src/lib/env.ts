@@ -46,6 +46,11 @@ const envSchema = z.object({
   NEXT_PUBLIC_FIREBASE_PROJECT_ID: z.string().optional(),
   NEXT_PUBLIC_FIREBASE_API_KEY: z.string().optional(),
   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: z.string().optional(),
+  // Google One Tap's OAuth web client id. Declared here for the same reason as
+  // the rest: the browser reads it straight off `process.env` — Next only
+  // inlines that exact expression — but a variable the server cannot see is a
+  // variable nothing can report as missing.
+  NEXT_PUBLIC_GOOGLE_CLIENT_ID: z.string().optional(),
   // Analytics only. Sign-in works without both; the counter does not start.
   NEXT_PUBLIC_FIREBASE_APP_ID: z.string().optional(),
   NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: z.string().optional(),
@@ -87,7 +92,26 @@ const envSchema = z.object({
 
 export type Env = z.infer<typeof envSchema>
 
-const parsed = envSchema.safeParse(process.env)
+/**
+ * `FOO=` in an env file means *not set*, not "set to the empty string".
+ *
+ * That is how everyone reads such a line, and it is the only reading that lets
+ * `.env.example` list every variable uncommented — which is the point of that
+ * file, since a key commented out is a key nobody knows exists. Zod disagrees
+ * by default: an empty string is a string, so `LEGAL_CONTACT_EMAIL=` fails as
+ * a malformed address, `AUTH_SECRET=` as too short, and `ACTIVITY_LOG_DAYS=`
+ * coerces to zero and takes the schema's own default with it.
+ */
+function unsetBlanks(source: NodeJS.ProcessEnv): Record<string, string | undefined> {
+  return Object.fromEntries(
+    Object.entries(source).map(([key, value]) => [
+      key,
+      typeof value === 'string' && value.trim() === '' ? undefined : value,
+    ]),
+  )
+}
+
+const parsed = envSchema.safeParse(unsetBlanks(process.env))
 
 /** Human-readable configuration problems, empty when the environment is valid. */
 export const envIssues: string[] = parsed.success
@@ -109,6 +133,7 @@ export const env: Env = parsed.success
       NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
       NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
       NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+      NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
       NEXT_PUBLIC_FIREBASE_APP_ID: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
       NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
       AUTH_OWNER_EMAIL: process.env.AUTH_OWNER_EMAIL,
