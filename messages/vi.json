@@ -1540,7 +1540,23 @@
     "divider": "Đường kẻ",
     "dividerHint": "Vạch ngăn giữa các mục",
     "table": "Bảng",
-    "tableHint": "Lưới đơn giản"
+    "tableHint": "Lưới đơn giản",
+    "help": {
+      "open": "Cách dùng",
+      "title": "Cách dùng khung soạn thảo",
+      "intro": "Gõ như bình thường. Mấy thứ dưới đây là phần không nhìn ra được.",
+      "slashTitle": "Gõ “/” để chèn khối",
+      "slashBody": "Dấu / chỉ mở danh sách khi nó đứng ở đầu dòng hoặc ngay sau một dấu cách — gõ dính vào chữ như “abc/” thì không hiện gì. Danh sách có tiêu đề, gạch đầu dòng, danh sách đánh số, việc cần làm, trích dẫn, khối mã, đường kẻ và bảng. Gõ thêm vài chữ để lọc, Enter để chọn.",
+      "tableTitle": "Làm bảng",
+      "tableBody": "Gõ / rồi chọn Bảng. Bạn được lưới 3×3 kèm hàng tiêu đề. Tab nhảy sang ô kế, Shift+Tab lùi lại, và Tab ở ô cuối cùng thì thêm luôn một hàng mới.",
+      "formatTitle": "Bôi đen để định dạng",
+      "formatBody": "Bôi đen một đoạn là thanh công cụ hiện lên ngay trên đó: in đậm, in nghiêng, gạch ngang, mã, và chèn liên kết. Ctrl/Cmd + B và Ctrl/Cmd + I cũng được.",
+      "imageTitle": "Chèn ảnh",
+      "imageBody": "Dán thẳng ảnh vào, hoặc kéo thả vào khung. Ảnh tự tải lên, chỗ nó sẽ nằm hiện thanh chạy cho tới khi xong.",
+      "moveTitle": "Đổi chỗ các khối",
+      "moveBody": "Rê chuột ra lề trái một khối sẽ thấy hai nút: dấu cộng thêm khối mới bên dưới, còn chấm dọc thì giữ và kéo để đổi chỗ khối đó.",
+      "rulesTitle": "Gõ tắt"
+    }
   },
   "account": {
     "deleteTitle": "Xoá tài khoản này",
