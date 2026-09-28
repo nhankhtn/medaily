@@ -584,6 +584,8 @@
     "signedInAs": "Signed in as {name}",
     "or": "or",
     "continueWithGoogle": "Continue with Google",
+    "continueAs": "Continue as {email}",
+    "forgetAccount": "Forget this account",
     "googleFailed": "Google sign-in failed. Try again.",
     "popupBlocked": "Your browser blocked the sign-in window. Allow popups for this site and try again.",
     "notAllowed": "This account is not allowed to sign in."

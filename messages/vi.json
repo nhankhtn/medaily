@@ -584,6 +584,8 @@
     "signedInAs": "Đang đăng nhập: {name}",
     "or": "hoặc",
     "continueWithGoogle": "Tiếp tục với Google",
+    "continueAs": "Tiếp tục với {email}",
+    "forgetAccount": "Quên tài khoản này",
     "googleFailed": "Đăng nhập Google thất bại. Thử lại nhé.",
     "popupBlocked": "Trình duyệt đã chặn cửa sổ đăng nhập. Cho phép popup ở trang này rồi thử lại.",
     "notAllowed": "Tài khoản này không được phép đăng nhập."

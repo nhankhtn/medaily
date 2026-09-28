@@ -11,14 +11,23 @@ export function isStandalone(): boolean {
 }
 
 /**
- * iPhone and iPad Safari. iPadOS reports itself as a Mac, so the touch count
- * is what separates a tablet from a desktop.
+ * iPhone or iPad, whichever browser is painted on top.
+ *
+ * Every browser on iOS is WebKit underneath, so a capability Safari lacks is
+ * one Chrome and Firefox lack there too — which is why this asks about the
+ * device and `isIosSafari` asks about the browser.
  */
-export function isIosSafari(): boolean {
+export function isIos(): boolean {
   if (typeof window === 'undefined') return false
   const ua = window.navigator.userAgent
-  const iPhone = /iphone|ipod/i.test(ua)
-  const iPad = /ipad/i.test(ua) || (/macintosh/i.test(ua) && window.navigator.maxTouchPoints > 1)
-  if (!iPhone && !iPad) return false
-  return !/crios|fxios|edgios/i.test(ua)
+  if (/iphone|ipod|ipad/i.test(ua)) return true
+  // iPadOS reports itself as a Mac; the touch count is what separates a tablet
+  // from a desktop.
+  return /macintosh/i.test(ua) && window.navigator.maxTouchPoints > 1
+}
+
+/** iPhone and iPad Safari specifically — not Chrome or Firefox painted on it. */
+export function isIosSafari(): boolean {
+  if (!isIos()) return false
+  return !/crios|fxios|edgios/i.test(window.navigator.userAgent)
 }

@@ -4,6 +4,7 @@ import { Logo } from '@/components/brand/logo'
 import { LocaleSwitcher } from '@/components/shell/locale-switcher'
 import { ThemeToggle } from '@/components/shell/theme-toggle'
 import { GoogleButton } from '@/features/auth/google-button'
+import { OneTap } from '@/features/auth/one-tap'
 import { LoginForm } from '@/features/auth/login-form'
 import { getShellTheme } from '@/server/services/settings'
 
@@ -78,6 +79,7 @@ export default async function LoginPage({
                 <p className="text-text-muted text-sm">{t('titleHint')}</p>
               </div>
 
+              <OneTap next={params.next} />
               <GoogleButton next={params.next} />
               <LoginForm next={params.next} />
             </div>
