@@ -5,6 +5,7 @@ import { getLocale, getMessages } from 'next-intl/server'
 import { Toaster } from 'sonner'
 import { RequestIdProvider } from '@/components/shell/request-id'
 import { AnalyticsMount } from '@/lib/analytics'
+import { SpeedInsightsMount } from '@/lib/analytics/speed'
 import { FORMATS } from '@/lib/format/dates'
 import { fontBrand, fontSans } from '@/lib/fonts'
 import { REQUEST_ID_HEADER } from '@/lib/request-id'
@@ -122,8 +123,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             mobileOffset="calc(env(safe-area-inset-top, 0px) + 12px)"
           />
         </NextIntlClientProvider>
-        {/* Last in the body: it measures the page, it is not part of it. */}
+        {/* Last in the body: these measure the page, they are not part of it. */}
         <AnalyticsMount />
+        <SpeedInsightsMount />
       </body>
     </html>
   )

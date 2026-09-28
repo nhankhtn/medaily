@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { createGate } from '@/lib/alerts/gate'
 import { redact } from '@/lib/alerts/redact'
-import { reportKey, reportText, TELEGRAM_LIMIT, type ErrorReport } from '@/lib/alerts/report'
+import {
+  formatBytes,
+  formatDuration,
+  jobReportText,
+  reportKey,
+  reportText,
+  TELEGRAM_LIMIT,
+  type ErrorReport,
+  type JobReport,
+} from '@/lib/alerts/report'
 
 const report = (over: Partial<ErrorReport> = {}): ErrorReport => ({
   source: 'render',
@@ -125,5 +134,82 @@ describe('reportKey', () => {
 
   it('treats the same failure on the same route as one incident', () => {
     expect(reportKey(report({ stack: 'one' }))).toBe(reportKey(report({ stack: 'other' })))
+  })
+})
+
+/**
+ * The nightly sweep reports when it finishes. What it is really reporting is
+ * that it ran at all: an unregistered cron, an unset secret and a dropped
+ * `vercel.json` all fail by being silent, and an error channel cannot report
+ * a silence.
+ */
+describe('jobReportText', () => {
+  const job = (over: Partial<JobReport> = {}): JobReport => ({
+    job: 'Dọn ảnh ghi chú',
+    environment: 'production',
+    tookMs: 4_200,
+    counts: { 'Ảnh đã xóa': 3, 'Dung lượng thu hồi': '1.2 MB' },
+    ...over,
+  })
+
+  it('opens with a tick, so it is not mistaken for the other kind of message', () => {
+    expect(jobReportText(job()).startsWith('✅')).toBe(true)
+    expect(reportText(report()).startsWith('⚠️')).toBe(true)
+  })
+
+  it('names the deploy, so a staging run is not read as production', () => {
+    expect(jobReportText(job({ environment: 'preview' }))).toContain('(preview)')
+  })
+
+  it('keeps the counts in the order they were given', () => {
+    const text = jobReportText(job())
+    expect(text.indexOf('Ảnh đã xóa')).toBeLessThan(text.indexOf('Dung lượng thu hồi'))
+  })
+
+  it('still says it ran when it counted nothing', () => {
+    const text = jobReportText(job({ counts: {} }))
+    expect(text).toContain('Dọn ảnh ghi chú')
+    expect(text).toContain('nothing to report')
+  })
+
+  it('never exceeds what Telegram accepts', () => {
+    const counts = Object.fromEntries(
+      Array.from({ length: 500 }, (_, i) => [`account ${i}`, 'x'.repeat(40)]),
+    )
+    expect(jobReportText(job({ counts })).length).toBeLessThanOrEqual(TELEGRAM_LIMIT)
+  })
+})
+
+describe('formatDuration', () => {
+  it('counts in seconds below a minute', () => {
+    expect(formatDuration(4_200)).toBe('4s')
+    expect(formatDuration(59_400)).toBe('59s')
+  })
+
+  it('switches to minutes once nobody would count seconds', () => {
+    expect(formatDuration(90_000)).toBe('1m 30s')
+    expect(formatDuration(600_000)).toBe('10m 0s')
+  })
+
+  it('reads zero rather than nothing for a job that finished at once', () => {
+    expect(formatDuration(0)).toBe('0s')
+  })
+})
+
+describe('formatBytes', () => {
+  it('leaves a handful of bytes alone', () => {
+    expect(formatBytes(0)).toBe('0 B')
+    expect(formatBytes(900)).toBe('900 B')
+  })
+
+  it('keeps a decimal only while it means something', () => {
+    expect(formatBytes(1_536)).toBe('1.5 KB')
+    expect(formatBytes(20 * 1024)).toBe('20 KB')
+  })
+
+  it('climbs as far as gigabytes and stops', () => {
+    expect(formatBytes(5 * 1024 * 1024)).toBe('5.0 MB')
+    expect(formatBytes(3 * 1024 ** 3)).toBe('3.0 GB')
+    expect(formatBytes(4096 * 1024 ** 3)).toContain('GB')
   })
 })

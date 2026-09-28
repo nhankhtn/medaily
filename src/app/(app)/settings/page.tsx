@@ -4,13 +4,14 @@ import { LocaleSwitcher } from '@/components/shell/locale-switcher'
 import { ThemeToggle } from '@/components/shell/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { CustomMetricsPanel } from '@/features/settings/custom-metrics-panel'
-import { DailyFieldsPanel, type MetricUse } from '@/features/settings/daily-fields-panel'
 import { ProfileCard } from '@/features/settings/profile-card'
 import { DataPanel } from '@/features/settings/data-panel'
 import { DeleteAccount } from '@/features/settings/delete-account'
+import { ActivityDialog } from '@/features/settings/activity-dialog'
 import { SupportDialog } from '@/features/support/support-dialog'
 import { alertsEnabled } from '@/server/services/alerts'
+import { activityLogEnabled, findActivity } from '@/server/services/activity'
+import { env } from '@/lib/env'
 import { InstallApp } from '@/features/settings/install-app'
 import { ReplayOnboardingButton } from '@/features/onboarding/replay-button'
 import { SettingsForm } from '@/features/settings/settings-form'
@@ -18,9 +19,6 @@ import { ShortcutsDialog } from '@/features/settings/shortcuts-panel'
 import { readSession } from '@/lib/auth/current-user'
 import { findUserById } from '@/server/repositories/auth'
 import { aiServiceConfigured } from '@/server/services/ai-service'
-import { findCustomMetrics } from '@/server/repositories/custom-metrics'
-import { findGoals } from '@/server/repositories/goals'
-import { findHabits } from '@/server/repositories/habits'
 import { getSettings } from '@/server/services/settings'
 
 export default async function SettingsPage() {
@@ -31,30 +29,23 @@ export default async function SettingsPage() {
     readSession(),
   ])
   const user = await findUserById(settings.userId)
-
-  /*
-   * What reads each metric, so the panel can warn before a field is switched
-   * off rather than leave a habit silently never ticking again.
-   */
-  const [habits, goals] = await Promise.all([
-    findHabits(settings.userId),
-    findGoals(settings.userId),
-  ])
-  const uses: MetricUse = {}
-  const note = (key: string | null, kind: 'habits' | 'goals') => {
-    if (!key) return
-    uses[key] ??= { habits: 0, goals: 0 }
-    uses[key][kind] += 1
-  }
-  for (const habit of habits) note(habit.linkedMetric, 'habits')
-  for (const goal of goals) note(goal.metricKey, 'goals')
+  // Read here rather than inside the dialog so the first page is already in
+  // the markup when the button is pressed.
+  const trail = activityLogEnabled() ? await findActivity(settings.userId) : null
 
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold">{t('title')}</h1>
 
       {user && session ? (
-        <ProfileCard user={user} provider={session.provider} subject={session.sub} />
+        <ProfileCard
+          user={user}
+          provider={session.provider}
+          subject={session.sub}
+          actions={
+            trail ? <ActivityDialog initialPage={trail} days={env.ACTIVITY_LOG_DAYS} /> : null
+          }
+        />
       ) : null}
 
       <section className="glass rounded-[var(--radius)] p-4">
@@ -72,8 +63,6 @@ export default async function SettingsPage() {
       <InstallApp />
 
       <SettingsForm settings={settings} />
-      <CustomMetricsPanel metrics={await findCustomMetrics(settings.userId)} />
-      <DailyFieldsPanel hidden={settings.hiddenDailyFields} uses={uses} />
       <section className="glass hidden rounded-[var(--radius)] p-4 sm:block">
         <h2 className="text-sm font-semibold">{t('shortcuts.title')}</h2>
         <p className="text-text-subtle mt-0.5 mb-3 text-xs leading-snug">{t('shortcuts.help')}</p>

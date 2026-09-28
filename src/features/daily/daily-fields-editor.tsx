@@ -10,13 +10,11 @@ import {
   TIMER_FILLS,
   type HideableField,
 } from '@/lib/daily/hidden-fields'
-import { Card } from '@/components/ui/card'
+import type { MetricUse } from '@/server/services/metric-uses'
 import { saveHiddenDailyFields } from '@/server/actions/settings'
 import { cn } from '@/lib/utils'
 
 /** How many habits and goals read a metric, so a field can say what it feeds. */
-export type MetricUse = Record<string, { habits: number; goals: number }>
-
 /** First N fields stay visible on a phone; the rest sit behind "show more". */
 const MOBILE_PREVIEW = 5
 
@@ -25,7 +23,7 @@ const MOBILE_PREVIEW = 5
  * column, the history and anything already written stay exactly where they
  * are, and a day that has a value in a field shows it whatever this says.
  */
-export function DailyFieldsPanel({ hidden, uses }: { hidden: string[]; uses: MetricUse }) {
+export function DailyFieldsEditor({ hidden, uses }: { hidden: string[]; uses: MetricUse }) {
   const t = useTranslations('settings.dailyFields')
   const td = useTranslations('daily.fields')
   const tc = useTranslations('common')
@@ -48,12 +46,11 @@ export function DailyFieldsPanel({ hidden, uses }: { hidden: string[]; uses: Met
   const needsToggle = HIDEABLE_FIELDS.length > MOBILE_PREVIEW
 
   return (
-    <Card className="p-4">
-      <div className="flex items-center gap-2">
-        <h2 className="text-sm font-semibold">{t('title')}</h2>
-        {pending ? <Loader2 className="text-text-subtle size-3.5 animate-spin" /> : null}
-      </div>
-      <p className="text-text-subtle mt-0.5 mb-3 text-xs leading-snug">{t('help')}</p>
+    <section>
+      <p className="text-text-subtle mb-3 flex items-center gap-2 text-xs leading-snug">
+        {t('help')}
+        {pending ? <Loader2 className="size-3.5 shrink-0 animate-spin" /> : null}
+      </p>
 
       <ul className="divide-border-base divide-y">
         {HIDEABLE_FIELDS.map((field, index) => {
@@ -110,7 +107,7 @@ export function DailyFieldsPanel({ hidden, uses }: { hidden: string[]; uses: Met
           {expanded ? tc('showLess') : tc('showMore')}
         </button>
       ) : null}
-    </Card>
+    </section>
   )
 }
 

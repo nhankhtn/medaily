@@ -5,7 +5,6 @@ import { useLocale, useTranslations } from 'next-intl'
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
@@ -22,19 +21,20 @@ const AGGREGATIONS = ['sum', 'avg', 'count_days', 'latest'] as const
  * The daily log ships with the metrics most people want; this is where the
  * rest come from. A metric added here appears on the daily log, and a habit or
  * a goal can bind to it exactly like a built-in one.
+ *
+ * It lives beside the log rather than in settings: somebody who wants to start
+ * tracking one more thing is looking at the form that is missing it, not at a
+ * settings page they have no reason to open.
  */
-export function CustomMetricsPanel({ metrics }: { metrics: CustomMetric[] }) {
+export function CustomMetricsEditor({ metrics }: { metrics: CustomMetric[] }) {
   const t = useTranslations('settings.metrics')
   const locale = useLocale()
   const [pending, startTransition] = useTransition()
 
   return (
-    <Card className="p-4">
+    <section>
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-sm font-semibold">{t('title')}</h2>
-          <p className="text-text-subtle mt-0.5 text-xs leading-snug">{t('help')}</p>
-        </div>
+        <p className="text-text-subtle text-xs leading-snug">{t('help')}</p>
         <MetricDialog taken={metrics.map((m) => m.key)} />
       </div>
 
@@ -77,7 +77,7 @@ export function CustomMetricsPanel({ metrics }: { metrics: CustomMetric[] }) {
           ))}
         </ul>
       )}
-    </Card>
+    </section>
   )
 }
 

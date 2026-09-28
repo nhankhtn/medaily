@@ -23,7 +23,7 @@ export type LegalDocument = 'terms' | 'privacy'
 export const LEGAL_DOCUMENTS: readonly LegalDocument[] = ['terms', 'privacy'] as const
 
 /** Shown beside the title so a reader knows which version they are reading. */
-export const LEGAL_UPDATED_ON = '2026-09-24'
+export const LEGAL_UPDATED_ON = '2026-09-27'
 
 type Document = { title: string; body: string }
 
@@ -48,12 +48,41 @@ birthdays and bank account details.
 
 **Pictures you upload**, if you add any.
 
+**A record of what changed**, if this deployment keeps one: the moment, what
+kind of change it was — a transaction deleted, a person added — which row it
+was about, and, for the fields it follows, what they held before and after.
+Each time you signed in or out is in there too, with the browser and system
+you used — "Chrome · Windows", read from what your browser tells every site it
+visits and kept only in that shortened form — and roughly where from, as a city
+and a country. That place is worked out from your IP address while the request
+is arriving, and **the address itself is never stored**: what stays is "Hà Nội,
+VN" and nothing narrower. Both are there so that a sign-in you did not make is
+something you can spot, which needs the device and the place to be nameable.
+The rest is kept so you can see what happened to your own data, which is the
+point of showing an amount going from one figure to another.
+
+What it follows is a fixed list per kind of record: amounts, dates, names,
+categories, and the like. It never holds the text of a journal entry, a note
+or your daily log, and a bank account number appears only as its last four
+digits. This record lives in a **MongoDB** database rather than the main one,
+it expires on its own after 90 days, and deleting your account erases it
+first.
+
 **How the pages are used**, if this deployment has measurement switched on.
-Vercel Web Analytics and Speed Insights record which pages were opened and how
-quickly they loaded. They do not use cookies, do not build a profile, and
-cannot see anything you typed — a page address and a loading time, never the
-contents of a journal entry or a transaction. Where it is off, nothing is sent
-and no script is loaded.
+Two things measure, and they are not alike.
+
+**Google Analytics for Firebase** records which pages were opened, and it does
+so under an identifier it stores in your browser. That identifier is what lets
+it tell one visit from the next, so unlike a plain page counter it **does build
+a profile across visits** — which pages, how often, from roughly where (worked
+out from your IP address), on what kind of device. Google is the one holding
+it, under their own terms. It cannot see anything you typed: a page address,
+never the contents of a journal entry or a transaction.
+
+**Vercel Speed Insights** records how quickly pages loaded. It uses no
+identifier, builds no profile and sees nothing you typed.
+
+Where measurement is off, nothing is sent and no script is loaded.
 
 **What you write in**, if you use the contact form. The note, the page you
 were on, and either your account name or the address you gave for an answer,
@@ -67,9 +96,11 @@ third-party script reading what you write.
 ## Where it is kept
 
 - The database is hosted by **Neon**, in the United States.
+- The record of what changed, where it is kept, is held by **MongoDB Atlas**.
 - The app runs on **Vercel**.
 - Pictures are stored by **Cloudinary**.
-- Page and speed measurements, where they are on, go to **Vercel**.
+- Page measurements, where they are on, go to **Google**.
+- Speed measurements, where they are on, go to **Vercel**.
 - Notes sent through the contact form go to **Telegram**.
 - Sign-in is handled by **Google Firebase**, which verifies who you are. Your
   password, if you have one with Google, is never seen by this app.
@@ -129,13 +160,41 @@ trong đó, có thể có số điện thoại, email, ngày sinh và số tài 
 
 **Ảnh bạn tải lên**, nếu có.
 
-**Cách các trang được dùng**, nếu bản cài này có bật đo đạc.
-Vercel Web Analytics và Speed Insights ghi lại trang nào được mở và tải nhanh
-chậm ra sao.
-Chúng không dùng cookie, không dựng hồ sơ về bạn, và không thấy được thứ bạn
-gõ vào — chỉ là địa chỉ trang và thời gian tải, không bao giờ là nội dung một
-ghi chép hay một giao dịch. Chỗ nào tắt thì không gửi gì và cũng không nạp
-script nào.
+**Bản ghi những gì đã đổi**, nếu bản cài này có giữ: thời điểm, việc đã làm là
+gì — xoá một giao dịch, thêm một người — dòng nào, và với những trường được
+theo dõi thì cả giá trị trước lẫn sau. Mỗi lần bạn đăng nhập, đăng xuất cũng
+nằm trong đó, kèm trình duyệt và hệ điều hành bạn dùng — "Chrome · Windows",
+đọc từ thứ trình duyệt tự khai với mọi trang web và chỉ giữ lại ở dạng rút gọn
+đó — cùng nơi truy cập ở mức thành phố và quốc gia. Nơi đó được suy ra từ địa
+chỉ IP ngay lúc request đi vào, và **bản thân địa chỉ IP không được lưu**: thứ
+nằm lại chỉ là "Hà Nội, VN", không chi tiết hơn. Cả hai có ở đó để một lần đăng
+nhập không phải của bạn thì nhìn ra được, mà muốn vậy thì phải gọi tên được
+thiết bị và nơi truy cập. Phần còn lại giữ để bạn tự xem lại dữ
+liệu của mình đã qua những gì — chính vì vậy mà số tiền đổi từ bao nhiêu sang
+bao nhiêu được ghi lại.
+
+Những trường được theo dõi là một danh sách cố định cho từng loại bản ghi: số
+tiền, ngày, tên, danh mục và tương tự. Nó không bao giờ chứa nội dung một ghi
+chép, một ghi chú hay bản ghi ngày, còn số tài khoản ngân hàng chỉ hiện bốn số
+cuối. Riêng bản ghi này nằm trong một cơ sở dữ liệu **MongoDB** chứ không phải
+cơ sở dữ liệu chính, tự hết hạn sau 90 ngày, và khi bạn xoá tài khoản thì nó bị
+xoá trước tiên.
+
+**Cách các trang được dùng**, nếu bản cài này có bật đo đạc. Có hai thứ đo, và
+chúng khác nhau.
+
+**Google Analytics for Firebase** ghi lại trang nào được mở, và nó ghi kèm một
+mã nhận dạng lưu trong trình duyệt của bạn. Chính mã đó cho phép nó phân biệt
+lần vào này với lần vào sau, nên khác với một bộ đếm trang thuần túy, nó **có
+dựng hồ sơ về bạn qua nhiều lần truy cập** — vào trang nào, bao nhiêu lần, từ
+đâu (suy ra từ địa chỉ IP), bằng thiết bị gì. Google là bên giữ số liệu đó,
+theo điều khoản của họ. Nó không thấy được thứ bạn gõ vào: chỉ là địa chỉ
+trang, không bao giờ là nội dung một ghi chép hay một giao dịch.
+
+**Vercel Speed Insights** ghi lại trang tải nhanh chậm ra sao. Nó không dùng mã
+nhận dạng nào, không dựng hồ sơ, và không thấy thứ bạn gõ.
+
+Chỗ nào tắt đo đạc thì không gửi gì và cũng không nạp script nào.
 
 **Những gì bạn viết vào form liên hệ**, nếu bạn dùng nó. Nội dung, trang bạn
 đang mở, cùng tên tài khoản hoặc địa chỉ bạn để lại, được chuyển tới một đoạn
@@ -149,9 +208,11 @@ thứ ba nào đọc những gì bạn viết.
 ## Dữ liệu nằm ở đâu
 
 - Cơ sở dữ liệu đặt tại **Neon**, ở Mỹ.
+- Bản ghi những gì đã đổi, chỗ nào có giữ, nằm ở **MongoDB Atlas**.
 - App chạy trên **Vercel**.
 - Ảnh lưu ở **Cloudinary**.
-- Số liệu trang và tốc độ, chỗ nào bật, gửi về **Vercel**.
+- Số liệu trang, chỗ nào bật, gửi về **Google**.
+- Số liệu tốc độ, chỗ nào bật, gửi về **Vercel**.
 - Tin gửi qua form liên hệ đi tới **Telegram**.
 - Đăng nhập do **Google Firebase** xử lý để xác minh bạn là ai. Mật khẩu
   Google của bạn không bao giờ đi qua app này.

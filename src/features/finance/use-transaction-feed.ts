@@ -12,6 +12,17 @@ import { useQueuedTransactions } from './pending-transactions'
 
 const transactionId = (row: Transaction) => row.id
 
+/**
+ * The order the server pages in: `occurred_on DESC, created_at DESC, id DESC`,
+ * which is also what the keyset cursor steps through. A row put back by hand
+ * has to land where the next page boundary expects it, or paging skips or
+ * repeats one.
+ */
+const newestFirst = (a: Transaction, b: Transaction) =>
+  b.occurredOn.localeCompare(a.occurredOn) ||
+  b.createdAt.getTime() - a.createdAt.getTime() ||
+  b.id.localeCompare(a.id)
+
 export type LedgerFilters = {
   accountId: string
   /** `__none__` means uncategorised only. */
@@ -62,6 +73,13 @@ export function useTransactionFeed({
     [],
   )
 
+  /**
+   * Back to everything, in one go. Five controls to reset by hand is enough
+   * work that a filtered ledger stays filtered by accident — and an empty list
+   * with no obvious way back reads as missing data rather than a narrow view.
+   */
+  const clearFilters = useCallback(() => setFilters(NO_FILTERS), [])
+
   const { accountId, categoryId, from, to } = filters
   const search = useDebounced(filters.search.trim(), SEARCH_DELAY)
 
@@ -107,7 +125,17 @@ export function useTransactionFeed({
       setItems((current) =>
         current.some((item) => transactionId(item) === row.id)
           ? current
-          : [...current, row].sort((a, b) => b.occurredOn.localeCompare(a.occurredOn)),
+          : [...current, row].sort(newestFirst),
+      )
+    },
+    [setItems],
+  )
+
+  /** An edited row, back in place. Order is unchanged unless its date moved. */
+  const updateItem = useCallback(
+    (row: Transaction) => {
+      setItems((current) =>
+        current.map((item) => (transactionId(item) === row.id ? row : item)).sort(newestFirst),
       )
     },
     [setItems],
@@ -165,9 +193,20 @@ export function useTransactionFeed({
     categories,
     filters,
     setFilter,
+    clearFilters,
     activeFilters,
     filtering,
-    rows: { items, pendingRows, loading, loadingMore, hasMore, loadMore, removeItem, restoreItem },
+    rows: {
+      items,
+      pendingRows,
+      loading,
+      loadingMore,
+      hasMore,
+      loadMore,
+      removeItem,
+      restoreItem,
+      updateItem,
+    },
     addPending,
   }
 }

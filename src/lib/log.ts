@@ -25,11 +25,14 @@ export async function currentRequestId(): Promise<string | null> {
  *
  * `alerts` is the reporter itself: it logs when Telegram refuses a message, and
  * alerting on that would try to tell Telegram that Telegram is unreachable.
+ * `jobs` is the same reporter under the name it uses for a finished scheduled
+ * job, and it is here for the same reason — a nightly report that could not be
+ * delivered must not become an error report down the same pipe.
  */
-const SILENT = new Set(['alerts'])
+const SILENT = new Set(['alerts', 'jobs'])
 
 async function write(
-  level: 'error' | 'warn',
+  level: 'error' | 'warn' | 'info',
   scope: string,
   message: string,
   details: unknown[],
@@ -95,4 +98,6 @@ export const log = {
     write('error', scope, message, details),
   warn: (scope: string, message: string, ...details: unknown[]) =>
     write('warn', scope, message, details),
+  info: (scope: string, message: string, ...details: unknown[]) =>
+    write('info', scope, message, details),
 }

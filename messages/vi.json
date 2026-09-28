@@ -71,6 +71,9 @@
     "notFoundHint": "Có thể link đã cũ, hoặc trang đã chuyển chỗ."
   },
   "daily": {
+    "setup": {
+      "title": "Thiết lập"
+    },
     "title": "Ghi ngày",
     "subtitleToday": "Hôm nay của bạn thế nào?",
     "subtitlePast": "Đang sửa ngày {date}",
@@ -1013,7 +1016,15 @@
       "copiedAccount": "Đã chép số tài khoản",
       "copiedMomo": "Đã chép số MoMo"
     },
-    "filters": "Lọc"
+    "filters": "Lọc",
+    "clearFilters": "Bỏ lọc",
+    "balanceHistory": {
+      "title": "Số dư theo thời gian",
+      "account": "Tài khoản",
+      "allAccounts": "Tất cả tài khoản",
+      "days": "{count} ngày",
+      "overDays": "trong {count} ngày"
+    }
   },
   "journal": {
     "title": "Nhật ký",
@@ -1130,6 +1141,7 @@
     "blockDeleted": "Đã xóa khối thời gian",
     "noBlocks": "Chưa lên kế hoạch",
     "kind": "Loại",
+    "project": "Dự án",
     "kinds": {
       "learning": "Học",
       "deep_work": "Deep work",
@@ -1492,6 +1504,7 @@
   "editor": {
     "imageTooLarge": "Ảnh này nặng quá, tối đa 15 MB.",
     "imageFailed": "Chưa tải được ảnh lên, thử lại nhé.",
+    "imageUploading": "Đang tải ảnh…",
     "slashHint": "Gõ ‘/’ để chèn khối",
     "headingHint": "Tiêu đề",
     "noBlock": "Không có khối nào khớp",
@@ -1527,7 +1540,23 @@
     "divider": "Đường kẻ",
     "dividerHint": "Vạch ngăn giữa các mục",
     "table": "Bảng",
-    "tableHint": "Lưới đơn giản"
+    "tableHint": "Lưới đơn giản",
+    "help": {
+      "open": "Cách dùng",
+      "title": "Cách dùng khung soạn thảo",
+      "intro": "Gõ như bình thường. Mấy thứ dưới đây là phần không nhìn ra được.",
+      "slashTitle": "Gõ “/” để chèn khối",
+      "slashBody": "Dấu / chỉ mở danh sách khi nó đứng ở đầu dòng hoặc ngay sau một dấu cách — gõ dính vào chữ như “abc/” thì không hiện gì. Danh sách có tiêu đề, gạch đầu dòng, danh sách đánh số, việc cần làm, trích dẫn, khối mã, đường kẻ và bảng. Gõ thêm vài chữ để lọc, Enter để chọn.",
+      "tableTitle": "Làm bảng",
+      "tableBody": "Gõ / rồi chọn Bảng. Bạn được lưới 3×3 kèm hàng tiêu đề. Tab nhảy sang ô kế, Shift+Tab lùi lại, và Tab ở ô cuối cùng thì thêm luôn một hàng mới.",
+      "formatTitle": "Bôi đen để định dạng",
+      "formatBody": "Bôi đen một đoạn là thanh công cụ hiện lên ngay trên đó: in đậm, in nghiêng, gạch ngang, mã, và chèn liên kết. Ctrl/Cmd + B và Ctrl/Cmd + I cũng được.",
+      "imageTitle": "Chèn ảnh",
+      "imageBody": "Dán thẳng ảnh vào, hoặc kéo thả vào khung. Ảnh tự tải lên, chỗ nó sẽ nằm hiện thanh chạy cho tới khi xong.",
+      "moveTitle": "Đổi chỗ các khối",
+      "moveBody": "Rê chuột ra lề trái một khối sẽ thấy hai nút: dấu cộng thêm khối mới bên dưới, còn chấm dọc thì giữ và kéo để đổi chỗ khối đó.",
+      "rulesTitle": "Gõ tắt"
+    }
   },
   "account": {
     "deleteTitle": "Xoá tài khoản này",
@@ -1590,5 +1619,128 @@
     "tooShort": "Viết thêm vài chữ nữa nhé — kể xem chuyện gì đã xảy ra.",
     "tooMany": "Gửi hơi dồn rồi. Một tiếng nữa viết tiếp nhé.",
     "unavailable": "Chưa gửi được. Lát nữa thử lại."
+  },
+  "activity": {
+    "title": "Những gì đã đổi",
+    "body": "Bạn đã thêm, sửa hay xoá gì gần đây. Chỉ giữ lại {days} ngày gần nhất.",
+    "empty": "Chưa có gì ở đây.",
+    "open": "Xem lịch sử",
+    "nothing": "bỏ trống",
+    "noChange": "Không có gì đổi.",
+    "fields": {
+      "device": "Thiết bị",
+      "location": "Nơi",
+      "occurredOn": "Ngày",
+      "amount": "Số tiền",
+      "kind": "Loại",
+      "account": "Tài khoản",
+      "counterAccount": "Tài khoản nhận",
+      "category": "Danh mục",
+      "person": "Người",
+      "merchant": "Nơi chi",
+      "name": "Tên",
+      "type": "Loại",
+      "currency": "Tiền tệ",
+      "openingBalance": "Số dư ban đầu",
+      "note": "Ghi chú",
+      "frequency": "Tần suất",
+      "intervalDays": "Cách mấy ngày",
+      "target": "Mức đặt ra",
+      "linkedMetric": "Chỉ số gắn vào",
+      "startDate": "Bắt đầu",
+      "status": "Trạng thái",
+      "targetDate": "Hạn",
+      "progressMode": "Cách đo",
+      "metricTarget": "Đích của chỉ số",
+      "relationship": "Quan hệ",
+      "company": "Công ty",
+      "role": "Vai trò",
+      "birthday": "Sinh nhật",
+      "phone": "Điện thoại",
+      "email": "Email",
+      "contactIntervalDays": "Nhắc sau mấy ngày",
+      "bankAccountNumber": "Số tài khoản",
+      "title": "Tiêu đề",
+      "learnedOn": "Ngày học"
+    },
+    "values": {
+      "income": "Thu",
+      "expense": "Chi",
+      "transfer": "Chuyển khoản",
+      "cash": "Tiền mặt",
+      "bank": "Ngân hàng khác",
+      "e_wallet": "Ví điện tử khác",
+      "credit_card": "Thẻ tín dụng",
+      "investment": "Đầu tư",
+      "loan": "Khoản vay",
+      "daily": "Mỗi ngày",
+      "weekly": "Mỗi tuần",
+      "specific_days": "Ngày cố định",
+      "interval": "Cách quãng",
+      "active": "Đang làm",
+      "completed": "Xong",
+      "paused": "Tạm dừng",
+      "cancelled": "Đã bỏ",
+      "manual": "Tự nhập",
+      "metric": "Theo chỉ số",
+      "milestones": "Theo cột mốc",
+      "partner": "Người yêu",
+      "family": "Gia đình",
+      "friend": "Bạn bè",
+      "colleague": "Đồng nghiệp",
+      "mentor": "Người hướng dẫn",
+      "other": "Khác",
+      "note": "Ghi chú",
+      "concept": "Khái niệm",
+      "bookmark": "Bookmark",
+      "lesson": "Bài học"
+    },
+    "actions": {
+      "transaction": {
+        "create": "Thêm giao dịch",
+        "update": "Sửa giao dịch",
+        "delete": "Xoá giao dịch",
+        "restore": "Khôi phục giao dịch"
+      },
+      "account": {
+        "create": "Thêm tài khoản",
+        "update": "Sửa tài khoản",
+        "delete": "Xoá tài khoản"
+      },
+      "category": {
+        "create": "Thêm danh mục",
+        "update": "Sửa danh mục",
+        "delete": "Xoá danh mục"
+      },
+      "habit": {
+        "create": "Thêm thói quen",
+        "update": "Sửa thói quen",
+        "delete": "Xoá thói quen",
+        "restore": "Khôi phục thói quen"
+      },
+      "person": {
+        "create": "Thêm người",
+        "update": "Sửa người",
+        "delete": "Xoá người",
+        "restore": "Khôi phục người"
+      },
+      "goal": {
+        "create": "Thêm mục tiêu",
+        "update": "Sửa mục tiêu",
+        "delete": "Xoá mục tiêu"
+      },
+      "note": {
+        "create": "Thêm ghi chú",
+        "update": "Sửa ghi chú",
+        "delete": "Xoá ghi chú"
+      },
+      "daily": {
+        "update": "Sửa bản ghi ngày"
+      },
+      "session": {
+        "login": "Đăng nhập",
+        "logout": "Đăng xuất"
+      }
+    }
   }
 }

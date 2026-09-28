@@ -14,10 +14,13 @@ import {
   upsertNote,
 } from '@/server/repositories/knowledge'
 import { findResource, findTopic } from '@/server/repositories/learning'
+import { findNote } from '@/server/repositories/knowledge'
 import { extractWikiLinks } from '@/lib/knowledge/links'
 import { today } from '@/lib/dates'
 import { PATHS } from '@/lib/paths'
 import { getDayContext } from '@/server/services/settings'
+import { audited, type NoteChange } from '@/server/services/audited'
+import { noteSnapshot } from '@/server/services/activity-snapshots'
 
 const optionalText = z
   .string()
@@ -54,54 +57,70 @@ async function ownedOrNull(
   return (await owns(userId, id)) ? id : null
 }
 
-export async function saveNote(input: unknown) {
-  const parsed = noteSchema.safeParse(input)
-  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+export const saveNote = audited(
+  (_result, input: unknown) => ((input as { id?: string }).id ? 'note.update' : 'note.create'),
+  async (input: unknown, audit: NoteChange) => {
+    const parsed = noteSchema.safeParse(input)
+    if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
-  const userId = await getCurrentUserId()
-  const { tags: tagNames, ...values } = parsed.data
+    const userId = await getCurrentUserId()
+    const { tags: tagNames, ...values } = parsed.data
 
-  // A lesson always carries the day it was learned, so a review of the period
-  // can group it. Typing it a week later must not move it into that week.
-  const learnedOn =
-    values.type === 'lesson'
-      ? (values.learnedOn ?? today(await getDayContext()))
-      : (values.learnedOn ?? null)
+    // A lesson always carries the day it was learned, so a review of the period
+    // can group it. Typing it a week later must not move it into that week.
+    const learnedOn =
+      values.type === 'lesson'
+        ? (values.learnedOn ?? today(await getDayContext()))
+        : (values.learnedOn ?? null)
 
-  const [topicId, resourceId] = await Promise.all([
-    ownedOrNull(userId, values.topicId, findTopic),
-    ownedOrNull(userId, values.resourceId, findResource),
-  ])
+    const [topicId, resourceId, before] = await Promise.all([
+      ownedOrNull(userId, values.topicId, findTopic),
+      ownedOrNull(userId, values.resourceId, findResource),
+      // Beside them rather than after: the row as it stands is needed before
+      // the upsert overwrites it, and it answers to nothing the other two ask.
+      values.id ? findNote(userId, values.id) : null,
+    ])
+    const note = await upsertNote(userId, {
+      ...values,
+      bodyMd: values.bodyMd ?? null,
+      url: values.url ?? null,
+      learnedOn,
+      topicId,
+      resourceId,
+    })
 
-  const note = await upsertNote(userId, {
-    ...values,
-    bodyMd: values.bodyMd ?? null,
-    url: values.url ?? null,
-    learnedOn,
-    topicId,
-    resourceId,
-  })
+    // Tags and wiki-links are derived from the note itself, so saving keeps the
+    // graph in step with the text (spec 13.2).
+    const tags = await ensureTags(userId, tagNames ?? [])
+    await setNoteTags(
+      note.id,
+      tags.map((tag) => tag.id),
+    )
+    await replaceNoteLinks(userId, note.id, extractWikiLinks(values.bodyMd ?? ''))
 
-  // Tags and wiki-links are derived from the note itself, so saving keeps the
-  // graph in step with the text (spec 13.2).
-  const tags = await ensureTags(userId, tagNames ?? [])
-  await setNoteTags(
-    note.id,
-    tags.map((tag) => tag.id),
-  )
-  await replaceNoteLinks(userId, note.id, extractWikiLinks(values.bodyMd ?? ''))
+    audit({ current: noteSnapshot(before), request: noteSnapshot(note) })
 
-  revalidatePath(PATHS.learning)
-  revalidatePath(PATHS.reviews)
-  return { ok: true as const, id: note.id }
-}
+    revalidatePath(PATHS.learning)
+    revalidatePath(PATHS.reviews)
+    return { ok: true as const, id: note.id }
+  },
+  ({ result, input }) => ({
+    entityId: result.ok ? result.id : null,
+    label: (input as { title?: string }).title ?? null,
+  }),
+)
 
-export async function removeNote(input: unknown) {
-  const id = z.string().uuid().parse(input)
-  await deleteNote(await getCurrentUserId(), id)
-  revalidatePath(PATHS.learning)
-  return { ok: true }
-}
+export const removeNote = audited(
+  'note.delete',
+  async (input: unknown, audit: NoteChange) => {
+    const id = z.string().uuid().parse(input)
+    const userId = await getCurrentUserId()
+    audit({ current: noteSnapshot(await deleteNote(userId, id)) })
+    revalidatePath(PATHS.learning)
+    return { ok: true }
+  },
+  ({ input }) => ({ entityId: input as string }),
+)
 
 const journalSchema = z.object({
   id: z.string().uuid().optional(),

@@ -47,7 +47,6 @@ export async function saveEvent(input: unknown) {
       startTime: timeSchema.optional(),
       endTime: timeSchema.optional(),
       allDay: z.boolean().default(false),
-      location: optionalText,
       note: optionalText,
       recurrenceRule: z.enum(RECURRENCE_RULES).nullable().optional(),
       recurrenceUntil: isoDateSchema.nullable().optional(),
@@ -71,7 +70,6 @@ export async function saveEvent(input: unknown) {
     startsAt,
     endsAt,
     allDay,
-    location: parsed.data.location ?? null,
     note: parsed.data.note ?? null,
     recurrenceRule: recurrenceRule ?? null,
     // An end date without a rule would be a bound on nothing.

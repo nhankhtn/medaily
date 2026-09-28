@@ -17,6 +17,8 @@ import {
 import { backfillDerivedHabitLogs } from '@/server/services/habit-derivation'
 import { canBindMetric } from '@/server/services/metrics'
 import { getSettings } from '@/server/services/settings'
+import { audited, type NoteChange } from '@/server/services/audited'
+import { habitSnapshot } from '@/server/services/activity-snapshots'
 
 const toggleSchema = z.object({
   habitId: z.string().uuid(),
@@ -122,64 +124,89 @@ export type SaveHabitResult =
  * metric-linked habit is correct the moment it exists rather than only from the
  * next save onwards.
  */
-export async function saveHabit(input: unknown): Promise<SaveHabitResult> {
-  const parsed = habitSchema.safeParse(input)
-  if (!parsed.success) {
-    return { ok: false, error: 'invalid_input', detail: parsed.error.issues[0]?.message }
-  }
+export const saveHabit = audited(
+  (_result, input: unknown) => ((input as { id?: string }).id ? 'habit.update' : 'habit.create'),
+  async (input: unknown, audit: NoteChange): Promise<SaveHabitResult> => {
+    const parsed = habitSchema.safeParse(input)
+    if (!parsed.success) {
+      return { ok: false, error: 'invalid_input', detail: parsed.error.issues[0]?.message }
+    }
 
-  const settings = await getSettings()
-  const { id, ...values } = parsed.data
+    const settings = await getSettings()
+    const { id, ...values } = parsed.data
 
-  // A key that is not a built-in has to name one of this person's own metrics,
-  // still tracked and holding a number (spec 29 — never trust the client).
-  // No detail: the select only ever offers keys that pass, so reaching this
-  // means a tampered request, and `detail` goes straight into a toast.
-  if (values.linkedMetric && !(await canBindMetric(settings.userId, values.linkedMetric))) {
-    return { ok: false, error: 'invalid_input' }
-  }
+    // A key that is not a built-in has to name one of this person's own metrics,
+    // still tracked and holding a number (spec 29 — never trust the client).
+    // No detail: the select only ever offers keys that pass, so reaching this
+    // means a tampered request, and `detail` goes straight into a toast.
+    if (values.linkedMetric && !(await canBindMetric(settings.userId, values.linkedMetric))) {
+      return { ok: false, error: 'invalid_input' }
+    }
 
-  const row = {
-    ...values,
-    weekdays: values.frequencyType === 'specific_days' ? (values.weekdays ?? null) : null,
-    intervalDays: values.frequencyType === 'interval' ? (values.intervalDays ?? null) : null,
-    linkedMetric: values.linkedMetric ?? null,
-    linkedOperator: values.linkedMetric ? (values.linkedOperator ?? null) : null,
-    linkedThreshold:
-      values.linkedMetric && values.linkedThreshold !== null && values.linkedThreshold !== undefined
-        ? String(values.linkedThreshold)
-        : null,
-    notes: values.notes ?? null,
-  }
+    const row = {
+      ...values,
+      weekdays: values.frequencyType === 'specific_days' ? (values.weekdays ?? null) : null,
+      intervalDays: values.frequencyType === 'interval' ? (values.intervalDays ?? null) : null,
+      linkedMetric: values.linkedMetric ?? null,
+      linkedOperator: values.linkedMetric ? (values.linkedOperator ?? null) : null,
+      linkedThreshold:
+        values.linkedMetric &&
+        values.linkedThreshold !== null &&
+        values.linkedThreshold !== undefined
+          ? String(values.linkedThreshold)
+          : null,
+      notes: values.notes ?? null,
+    }
 
-  const { habitId, backfilledDays } = await db.transaction(async (tx) => {
-    const saved = id
-      ? await updateHabit(settings.userId, id, row)
-      : await insertHabit({ ...row, userId: settings.userId })
+    const before = id ? await findHabit(settings.userId, id) : null
+    const { habitId, backfilledDays } = await db.transaction(async (tx) => {
+      const saved = id
+        ? await updateHabit(settings.userId, id, row)
+        : await insertHabit({ ...row, userId: settings.userId })
 
-    const { days } = row.linkedMetric
-      ? await backfillDerivedHabitLogs(tx, settings.userId, saved.startDate, settings.weekStart)
-      : { days: 0 }
+      const { days } = row.linkedMetric
+        ? await backfillDerivedHabitLogs(tx, settings.userId, saved.startDate, settings.weekStart)
+        : { days: 0 }
 
-    return { habitId: saved.id, backfilledDays: days }
-  })
+      return { habitId: saved.id, backfilledDays: days }
+    })
 
-  revalidatePath(PATHS.habits)
-  revalidatePath(PATHS.home)
-  return { ok: true, id: habitId, backfilledDays }
-}
+    audit({ current: habitSnapshot(before), request: habitSnapshot(row) })
 
-export async function archiveHabit(input: unknown) {
-  const id = z.string().uuid().parse(input)
-  await updateHabit(await getCurrentUserId(), id, { archivedAt: new Date() })
-  revalidatePath(PATHS.habits)
-  revalidatePath(PATHS.home)
-  return { ok: true }
-}
+    revalidatePath(PATHS.habits)
+    revalidatePath(PATHS.home)
+    return { ok: true, id: habitId, backfilledDays }
+  },
+  ({ result, input }) => ({
+    entityId: result.ok ? result.id : null,
+    label: (input as { name?: string }).name ?? null,
+  }),
+)
 
-export async function unarchiveHabit(input: unknown) {
-  const id = z.string().uuid().parse(input)
-  await updateHabit(await getCurrentUserId(), id, { archivedAt: null })
-  revalidatePath(PATHS.habits)
-  return { ok: true }
-}
+export const archiveHabit = audited(
+  'habit.delete',
+  async (input: unknown, audit: NoteChange) => {
+    const id = z.string().uuid().parse(input)
+    const userId = await getCurrentUserId()
+    // The row the update hands back, not a read before it: `archivedAt` is not
+    // a field the trail follows, so what comes out is the same snapshot the
+    // row had going in — and it costs no extra round trip to the database.
+    audit({ current: habitSnapshot(await updateHabit(userId, id, { archivedAt: new Date() })) })
+    revalidatePath(PATHS.habits)
+    revalidatePath(PATHS.home)
+    return { ok: true }
+  },
+  ({ input }) => ({ entityId: input as string }),
+)
+
+export const unarchiveHabit = audited(
+  'habit.restore',
+  async (input: unknown, audit: NoteChange) => {
+    const id = z.string().uuid().parse(input)
+    const userId = await getCurrentUserId()
+    audit({ request: habitSnapshot(await updateHabit(userId, id, { archivedAt: null })) })
+    revalidatePath(PATHS.habits)
+    return { ok: true }
+  },
+  ({ input }) => ({ entityId: input as string }),
+)

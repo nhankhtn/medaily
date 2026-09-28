@@ -9,6 +9,7 @@ import type { FinanceData } from '@/server/services/finance'
 import { AccountIcon } from './account-icon'
 import { CategoryList } from './category-list'
 import {
+  AccountDialog,
   AccountEditDialog,
   AssetDialog,
   BudgetDialog,
@@ -66,30 +67,42 @@ export function DebtsBoard({ data }: BoardProps) {
 export function AccountsBoard({ data }: BoardProps) {
   const t = useTranslations('finance')
   const locale = useLocale()
-  if (data.accounts.length === 0) return null
 
+  /*
+   * It used to disappear when there were no accounts, which was fine while the
+   * only way to add one sat in the page header. The button lives on this card
+   * now, so vanishing would take the button with it and leave the tab with no
+   * way to make the first account — the one moment it is needed most.
+   */
   return (
     <Card>
-      <CardHeader title={t('accounts')} />
+      <CardHeader
+        title={t('accounts')}
+        action={<AccountDialog defaultCurrency={data.currency} variant="outline" />}
+      />
       <CardBody>
-        <ul className="divide-border-base divide-y">
-          {data.balances.map((balance) => {
-            const account = data.accounts.find((row) => row.id === balance.accountId)
-            return (
-              <li key={balance.accountId} className="flex items-center gap-3 py-2">
-                <AccountIcon type={balance.type} />
-                {account ? (
-                  <AccountEditDialog account={account} />
-                ) : (
-                  <span className="min-w-0 flex-1 truncate text-sm">{balance.name}</span>
-                )}
-                <span className="shrink-0 text-sm font-medium tabular-nums">
-                  {formatMoney(balance.balance, balance.currency, locale)}
-                </span>
-              </li>
-            )
-          })}
-        </ul>
+        {data.accounts.length === 0 ? (
+          <p className="text-text-subtle text-sm">{t('noAccounts')}</p>
+        ) : (
+          <ul className="divide-border-base divide-y">
+            {data.balances.map((balance) => {
+              const account = data.accounts.find((row) => row.id === balance.accountId)
+              return (
+                <li key={balance.accountId} className="flex items-center gap-3 py-2">
+                  <AccountIcon type={balance.type} />
+                  {account ? (
+                    <AccountEditDialog account={account} />
+                  ) : (
+                    <span className="min-w-0 flex-1 truncate text-sm">{balance.name}</span>
+                  )}
+                  <span className="shrink-0 text-sm font-medium tabular-nums">
+                    {formatMoney(balance.balance, balance.currency, locale)}
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        )}
       </CardBody>
     </Card>
   )

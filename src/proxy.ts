@@ -2,7 +2,14 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { readAuthConfig, readGoogleConfig } from '@/lib/auth/config'
 import { PATHS, PUBLIC_PATHS, safeNextPath } from '@/lib/paths'
 import { REQUEST_ID_HEADER, requestIdFrom } from '@/lib/request-id'
-import { SESSION_COOKIE, verifySession } from '@/lib/auth/session'
+import {
+  renewalTtl,
+  SESSION_COOKIE,
+  sessionCookieOptions,
+  sessionStartedAt,
+  signSession,
+  verifySession,
+} from '@/lib/auth/session'
 
 /**
  * Spec 29 — every personal-data route requires a session. The check runs here,
@@ -67,7 +74,44 @@ export async function proxy(request: NextRequest) {
     return onwards
   }
 
-  if (session) return forward()
+  if (session) {
+    const response = forward()
+
+    /*
+     * Renewed while it is being used, so somebody who opens the app most weeks
+     * is never signed out — but only on GET.
+     *
+     * Signing out is a server action, which is a POST: renewing there would
+     * put a fresh `Set-Cookie` on the same response the action clears the
+     * cookie on, and which of the two wins is a question about header order
+     * that signing out should not depend on. Opening a page and navigating are
+     * both GETs, so nothing is lost by staying out of the way of every write.
+     *
+     * Two tabs crossing the halfway mark at once both renew, and that is
+     * harmless: each writes a valid cookie and the last one lands. This is the
+     * whole reason it is a sliding cookie rather than a rotating refresh
+     * token, where the second of those two would present a token the first had
+     * just retired and be thrown out mid-session.
+     */
+    if (request.method === 'GET') {
+      const ttl = renewalTtl(session, Math.floor(Date.now() / 1000))
+      if (ttl !== null) {
+        const token = await signSession(
+          {
+            uid: session.uid,
+            sub: session.sub,
+            provider: session.provider,
+            sat: sessionStartedAt(session),
+          },
+          auth.secret,
+          ttl,
+        )
+        response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions(ttl))
+      }
+    }
+
+    return response
+  }
 
   const url = request.nextUrl.clone()
 

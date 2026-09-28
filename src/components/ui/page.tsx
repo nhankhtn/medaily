@@ -15,7 +15,7 @@ export function PageHeader({
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div className="min-w-0">
         <h1 className="text-2xl font-semibold">{title}</h1>
-        {subtitle ? <p className="mt-0.5 text-sm text-text-muted">{subtitle}</p> : null}
+        {subtitle ? <p className="text-text-muted mt-0.5 text-sm">{subtitle}</p> : null}
       </div>
       {action}
     </div>
@@ -37,12 +37,12 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'glass rounded-[var(--radius)] border-dashed border-border-strong p-6 text-center',
+        'glass border-border-strong rounded-[var(--radius)] border-dashed p-6 text-center',
         className,
       )}
     >
       <p className="font-medium">{title}</p>
-      {body ? <p className="mx-auto mt-1 max-w-prose text-sm text-text-subtle">{body}</p> : null}
+      {body ? <p className="text-text-subtle mx-auto mt-1 max-w-prose text-sm">{body}</p> : null}
       {action ? <div className="mt-4 flex justify-center">{action}</div> : null}
     </div>
   )
@@ -52,13 +52,10 @@ export function StatRow({ items }: { items: { label: string; value: string; hint
   return (
     <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
       {items.map((item) => (
-        <div
-          key={item.label}
-          className="glass rounded-[var(--radius)] px-3 py-2.5"
-        >
-          <dt className="truncate text-xs text-text-muted">{item.label}</dt>
+        <div key={item.label} className="glass rounded-[var(--radius)] px-3 py-2.5">
+          <dt className="text-text-muted truncate text-xs">{item.label}</dt>
           <dd className="mt-0.5 text-xl font-semibold tabular-nums">{item.value}</dd>
-          {item.hint ? <dd className="text-xs text-text-subtle">{item.hint}</dd> : null}
+          {item.hint ? <dd className="text-text-subtle text-xs">{item.hint}</dd> : null}
         </div>
       ))}
     </dl>
@@ -74,7 +71,7 @@ export type Tab = { key: string; label: string; href: string }
  */
 export function TabNav({ tabs, current }: { tabs: Tab[]; current: string }) {
   return (
-    <nav className="glass flex w-full rounded-full p-0.5">
+    <nav className="glass flex w-full rounded-full p-0.5 sm:w-fit">
       {tabs.map((tab) => (
         <Link
           key={tab.key}
@@ -84,9 +81,9 @@ export function TabNav({ tabs, current }: { tabs: Tab[]; current: string }) {
             // Four Vietnamese labels do not fit a phone at text-sm, and a label
             // that wraps makes the bar two lines tall for one tab and one for
             // the rest. Smaller and unbroken, so the row keeps its height.
-            'flex-1 rounded-full px-2.5 py-1 text-center text-xs whitespace-nowrap transition-colors sm:px-3 sm:text-sm',
+            'flex-1 rounded-full px-2.5 py-1 text-center text-xs whitespace-nowrap transition-colors sm:flex-none sm:px-4 sm:text-sm',
             tab.key === current
-              ? 'glass-inset font-medium text-text shadow-sm'
+              ? 'glass-inset text-text font-medium shadow-sm'
               : 'text-text-muted hover:text-text',
           )}
         >

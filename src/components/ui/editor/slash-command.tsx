@@ -252,6 +252,20 @@ export function createSlashCommand({
                 editor: props.editor,
                 props: { items: props.items, command: props.command, empty: empty() },
               })
+              /*
+               * The plugin appends this to `document.body`, where `z-index:
+               * auto` means DOM order decides — and a dialog is mounted on
+               * that same body at `z-50`. So in a dialog the menu opened,
+               * positioned itself correctly, and was painted over by the very
+               * panel it belonged to: no error, no warning, nothing on screen.
+               * Outside a dialog nobody noticed, because coming last in the
+               * body was enough to win.
+               *
+               * Set here rather than on the menu's own element: that one is a
+               * child of this wrapper, and a child cannot lift a parent whose
+               * stacking position already lost.
+               */
+              component.element.style.zIndex = '60'
               unmount = props.mount(component.element)
             },
             onUpdate: (props) => {

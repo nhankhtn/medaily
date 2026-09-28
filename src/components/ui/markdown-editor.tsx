@@ -14,6 +14,7 @@ import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useRef } from 'react'
 import { Markdown } from 'tiptap-markdown'
 import { BubbleToolbar } from '@/components/ui/editor/bubble-toolbar'
+import { EditorHelpDialog } from '@/components/ui/editor/help-dialog'
 import { createImageUpload } from '@/components/ui/editor/image-upload'
 import {
   blockCommands,
@@ -31,6 +32,7 @@ type Wording = {
   field: string | undefined
   imageTooLarge: string
   imageFailed: string
+  imageUploading: string
 }
 
 /**
@@ -90,7 +92,11 @@ function buildExtensions(wording: ReturnType<typeof wordingBox>) {
     }),
     createImageUpload(() => {
       const say = wording.read()
-      return { tooLarge: say.imageTooLarge, failed: say.imageFailed }
+      return {
+        tooLarge: say.imageTooLarge,
+        failed: say.imageFailed,
+        uploading: say.imageUploading,
+      }
     }),
   ]
 }
@@ -171,6 +177,7 @@ export function MarkdownEditor({
       field: placeholder,
       imageTooLarge: t('imageTooLarge'),
       imageFailed: t('imageFailed'),
+      imageUploading: t('imageUploading'),
     })
     return [box, buildExtensions(box)] as const
     // Seeded once; every later change arrives through `write` below.
@@ -186,6 +193,7 @@ export function MarkdownEditor({
       field: placeholder,
       imageTooLarge: t('imageTooLarge'),
       imageFailed: t('imageFailed'),
+      imageUploading: t('imageUploading'),
     })
   }, [wording, t, placeholder])
 
@@ -247,7 +255,7 @@ export function MarkdownEditor({
   return (
     <div
       className={cn(
-        'glass-inset text-text border-border-strong relative w-full rounded-[var(--radius)] px-3 py-2',
+        'glass-inset text-text border-border-strong relative w-full rounded-[var(--radius)] py-2 pr-9 pl-3',
         'focus-within:border-accent focus-within:inset-ring-accent focus-within:inset-ring-1',
         disabled && 'text-text-muted bg-surface-2',
         'md-editor',
@@ -257,6 +265,7 @@ export function MarkdownEditor({
       <EditorContent editor={editor} />
       {editor && !disabled ? (
         <>
+          <EditorHelpDialog />
           <BubbleToolbar editor={editor} />
           <DragHandle
             editor={editor}

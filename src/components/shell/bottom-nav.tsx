@@ -13,9 +13,18 @@ import { SignOutButton } from './sign-out-button'
 export function BottomNav() {
   const pathname = usePathname()
   const t = useTranslations('nav')
-  // The sheet remembers which route it was opened on, so navigating closes it
-  // without an effect that would re-render the whole bar.
+  /*
+   * The sheet remembers which route it was opened on, so any navigation —
+   * a tile, the dock underneath, the back button — closes it without an
+   * effect that would re-render the whole bar.
+   *
+   * The reset is the other half of that, and it has to happen: holding the
+   * old route meant the sheet came back by itself on returning to the page it
+   * was opened from, which is not something anyone asked for.
+   */
   const [openedOn, setOpenedOn] = useState<string | null>(null)
+  if (openedOn !== null && openedOn !== pathname) setOpenedOn(null)
+
   const moreOpen = openedOn === pathname
   const setMoreOpen = (open: boolean) => setOpenedOn(open ? pathname : null)
 
@@ -62,6 +71,7 @@ export function BottomNav() {
                 <Link
                   key={item.key}
                   href={item.href}
+                  onClick={() => setOpenedOn(null)}
                   className="glass-chip flex aspect-square flex-col items-center justify-center gap-2 rounded-[1.35rem] p-2 text-center"
                 >
                   <item.icon className="size-6 text-accent" />
@@ -102,6 +112,7 @@ export function BottomNav() {
               <li key={item.key}>
                 <Link
                   href={item.href}
+                  onClick={() => setOpenedOn(null)}
                   aria-current={active ? 'page' : undefined}
                   className={cn(
                     'flex h-12 flex-col items-center justify-center gap-0.5 rounded-2xl',

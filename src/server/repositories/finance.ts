@@ -24,6 +24,8 @@ export const TRANSACTION_PAGE_SIZE = 40
 
 export type TransactionCursor = {
   occurredOn: string
+  /** ISO instant. Ties on the date are broken by when the row was entered. */
+  createdAt: string
   id: string
 }
 
@@ -49,23 +51,36 @@ export type TransactionPage = {
   nextCursor: string | null
 }
 
-/** Opaque keyset cursor for `(occurred_on DESC, id DESC)`. */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * Opaque keyset cursor for `(occurred_on DESC, created_at DESC, id DESC)`.
+ *
+ * `created_at` is in there because the id is a random uuid: ordering a day's
+ * rows by it puts a transaction just entered wherever its random bytes fall,
+ * and what a person expects is the one they just typed at the top of the day.
+ * The id stays on the end as the tiebreaker that makes the order total, which
+ * is what keeps paging from skipping or repeating a row at the seam.
+ */
 export function encodeTransactionCursor(cursor: TransactionCursor): string {
-  return Buffer.from(`${cursor.occurredOn}|${cursor.id}`, 'utf8').toString('base64url')
+  return Buffer.from(`${cursor.occurredOn}|${cursor.createdAt}|${cursor.id}`, 'utf8').toString(
+    'base64url',
+  )
 }
 
 export function decodeTransactionCursor(raw: string): TransactionCursor | null {
   try {
-    const decoded = Buffer.from(raw, 'base64url').toString('utf8')
-    const sep = decoded.indexOf('|')
-    if (sep <= 0) return null
-    const occurredOn = decoded.slice(0, sep)
-    const id = decoded.slice(sep + 1)
+    const [occurredOn, createdAt, id, ...rest] = Buffer.from(raw, 'base64url')
+      .toString('utf8')
+      .split('|')
+    // A cursor from the two-part format is not upgradeable — it names no
+    // instant. Refusing it restarts paging, which costs one page and nothing
+    // else; guessing an instant would silently skip rows.
+    if (rest.length > 0 || !occurredOn || !createdAt || !id) return null
     if (!ISO_DATE_RE.test(occurredOn)) return null
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
-      return null
-    }
-    return { occurredOn, id }
+    if (Number.isNaN(Date.parse(createdAt))) return null
+    if (!UUID_RE.test(id)) return null
+    return { occurredOn, createdAt, id }
   } catch {
     return null
   }
@@ -108,6 +123,80 @@ export async function findAccountBalances(userId: string): Promise<AccountBalanc
     name: row.name,
     type: toAccountType(row.type),
     currency: row.currency,
+    balance: Number(row.balance),
+  }))
+}
+
+export type DailyBalancePoint = { accountId: string; date: ISODate; balance: number }
+
+/**
+ * Closing balance per account for every day in the range — the same arithmetic
+ * `v_account_balances` does, stopped at each day instead of only at the end.
+ *
+ * Three parts, because a balance line may not have holes:
+ *
+ * - `moves` is the net movement a day made to an account. A transfer counts
+ *   twice from the account's point of view, once out of one and once into the
+ *   other, which is why both sides are tested separately.
+ * - `carried` folds everything that happened *before* the window into the
+ *   opening balance. Without it a chart starting in September would draw a
+ *   year of spending as if it began from zero.
+ * - the running `SUM(...) OVER (ORDER BY day)` carries the last balance
+ *   forward across days with no transaction. A day nobody spent anything is
+ *   not a gap in the line and not a zero: it is yesterday, unchanged.
+ */
+export async function findDailyBalances(
+  userId: string,
+  range: DateRange,
+): Promise<DailyBalancePoint[]> {
+  const rows = await db.execute<{ account_id: string; day: string; balance: string }>(sql`
+    WITH moves AS (
+      SELECT
+        a.id AS account_id,
+        t.occurred_on AS day,
+        SUM(
+          CASE
+            WHEN t.kind = 'income'   AND t.account_id = a.id         THEN  t.amount
+            WHEN t.kind = 'expense'  AND t.account_id = a.id         THEN -t.amount
+            WHEN t.kind = 'transfer' AND t.account_id = a.id         THEN -t.amount
+            WHEN t.kind = 'transfer' AND t.counter_account_id = a.id THEN  t.amount
+            ELSE 0
+          END
+        ) AS delta
+      FROM accounts a
+      JOIN transactions t
+        ON t.user_id = a.user_id AND (t.account_id = a.id OR t.counter_account_id = a.id)
+      WHERE a.user_id = ${userId} AND a.archived_at IS NULL
+      GROUP BY a.id, t.occurred_on
+    ),
+    carried AS (
+      SELECT account_id, SUM(delta) AS total
+      FROM moves WHERE day < ${range.start}::date
+      GROUP BY account_id
+    ),
+    grid AS (
+      SELECT a.id AS account_id, a.opening_balance, d.day
+      FROM accounts a
+      CROSS JOIN generate_series(${range.start}::date, ${range.end}::date, interval '1 day') AS d(day)
+      WHERE a.user_id = ${userId} AND a.archived_at IS NULL
+    )
+    SELECT
+      g.account_id,
+      g.day::date AS day,
+      (
+        g.opening_balance
+        + COALESCE(c.total, 0)
+        + COALESCE(SUM(m.delta) OVER (PARTITION BY g.account_id ORDER BY g.day), 0)
+      ) AS balance
+    FROM grid g
+    LEFT JOIN carried c ON c.account_id = g.account_id
+    LEFT JOIN moves   m ON m.account_id = g.account_id AND m.day = g.day
+    ORDER BY g.account_id, g.day
+  `)
+
+  return rows.map((row) => ({
+    accountId: row.account_id,
+    date: row.day.slice(0, 10) as ISODate,
     balance: Number(row.balance),
   }))
 }
@@ -315,10 +404,23 @@ export async function findTransactionsPage(
   }
   if (opts.cursor) {
     const cursor = opts.cursor
+    const createdAt = new Date(cursor.createdAt)
+    // Three levels, in the same order as the sort below. Anything less leaves
+    // rows on a shared date undecided, and the seam between two pages is
+    // exactly where that shows up as a row seen twice or not at all.
     conditions.push(
       or(
         lt(transactions.occurredOn, cursor.occurredOn),
-        and(eq(transactions.occurredOn, cursor.occurredOn), lt(transactions.id, cursor.id)),
+        and(
+          eq(transactions.occurredOn, cursor.occurredOn),
+          or(
+            lt(transactions.createdAt, createdAt),
+            and(
+              eq(transactions.createdAt, createdAt),
+              lt(transactions.id, cursor.id),
+            ),
+          ),
+        ),
       )!,
     )
   }
@@ -327,7 +429,7 @@ export async function findTransactionsPage(
     .select()
     .from(transactions)
     .where(and(...conditions))
-    .orderBy(desc(transactions.occurredOn), desc(transactions.id))
+    .orderBy(desc(transactions.occurredOn), desc(transactions.createdAt), desc(transactions.id))
     .limit(limit + 1)
 
   const hasMore = rows.length > limit
@@ -337,7 +439,11 @@ export async function findTransactionsPage(
     items,
     nextCursor:
       hasMore && last
-        ? encodeTransactionCursor({ occurredOn: last.occurredOn, id: last.id })
+        ? encodeTransactionCursor({
+            occurredOn: last.occurredOn,
+            createdAt: last.createdAt.toISOString(),
+            id: last.id,
+          })
         : null,
   }
 }
@@ -374,6 +480,19 @@ export async function insertTransactions(
 }
 
 /** Scoped by user, so a well-formed id cannot reach another person's row. */
+/**
+ * One row by id, scoped to its owner. Read before an edit overwrites it, so
+ * the trail can say what the amount used to be.
+ */
+export async function findTransaction(userId: string, id: string): Promise<Transaction | null> {
+  const rows = await db
+    .select()
+    .from(transactions)
+    .where(and(eq(transactions.userId, userId), eq(transactions.id, id)))
+    .limit(1)
+  return rows[0] ?? null
+}
+
 export async function updateTransaction(
   userId: string,
   id: string,

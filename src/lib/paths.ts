@@ -101,6 +101,7 @@ export const PATHS = {
 
   api: {
     health: '/api/health',
+    cronSweepImages: '/api/cron/sweep-images',
     googleAuth: '/api/auth/google',
     calendarIcs: '/api/calendar.ics',
     exportJson: '/api/export?format=json',
@@ -152,6 +153,9 @@ export function safeNextPath(value: string | null | undefined): string {
 export const PUBLIC_PATHS = [
   PATHS.login,
   PATHS.api.health,
+  // Not public in the ordinary sense: it carries no session because the
+  // scheduler has none, and checks a shared secret of its own instead.
+  PATHS.api.cronSweepImages,
   PATHS.api.googleAuth,
   PATHS.manifest,
   PATHS.robots,

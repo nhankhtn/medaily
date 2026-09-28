@@ -49,13 +49,48 @@ describe('the legal documents', () => {
    * an untrue statement — so whoever adds the next measurement has to come
    * through here.
    */
+  /**
+   * The trail of what changed is the one store that is not the main database,
+   * so it is the one a reader would never guess at. Naming it here means the
+   * next swap of that store has to come back through the notice.
+   */
+  it('names every store that holds what a reader wrote', () => {
+    for (const locale of LOCALES) {
+      const body = legalDocument(locale, 'privacy').body
+      expect(body, `${locale}`).toContain('Neon')
+      expect(body, `${locale}`).toContain('Cloudinary')
+      expect(body, `${locale}`).toContain('MongoDB')
+    }
+  })
+
   it('names every measurement the app actually loads', () => {
     for (const locale of LOCALES) {
       const body = legalDocument(locale, 'privacy').body
-      expect(body, `${locale}`).toContain('Vercel Web Analytics')
+      expect(body, `${locale}`).toContain('Google Analytics for Firebase')
       expect(body, `${locale}`).toContain('Speed Insights')
       // The contact form hands a note, and sometimes an address, to a chat.
       expect(body, `${locale}`).toContain('Telegram')
+    }
+  })
+
+  /**
+   * The counter moved from Vercel to Firebase, and the two differ in the one
+   * way a reader cares about: Firebase keeps an identifier and builds a
+   * profile across visits, where the old one did neither. The notice used to
+   * promise "no cookies, no profile" — a sentence that survived the swap
+   * would be the most misleading line on the page, so the promise is pinned
+   * to the provider that can actually keep it.
+   */
+  it('does not promise no profile while a profiling counter is loaded', () => {
+    const disclosed: Record<(typeof LOCALES)[number], string> = {
+      en: 'does build a profile across visits',
+      vi: 'có\ndựng hồ sơ về bạn qua nhiều lần truy cập',
+    }
+    for (const locale of LOCALES) {
+      const body = legalDocument(locale, 'privacy').body
+      expect(body.replace(/\s+/g, ' '), `${locale}`).toContain(
+        disclosed[locale].replace(/\s+/g, ' '),
+      )
     }
   })
 })

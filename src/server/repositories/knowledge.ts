@@ -67,8 +67,13 @@ export async function findLessons(userId: string, range: DateRange): Promise<Les
     )
 }
 
-export async function deleteNote(userId: string, noteId: string): Promise<void> {
-  await db.delete(notes).where(and(eq(notes.userId, userId), eq(notes.id, noteId)))
+/** Returns the row it removed, so the trail can say which note went. */
+export async function deleteNote(userId: string, noteId: string): Promise<Note | null> {
+  const rows = await db
+    .delete(notes)
+    .where(and(eq(notes.userId, userId), eq(notes.id, noteId)))
+    .returning()
+  return rows[0] ?? null
 }
 
 export async function findTags(userId: string): Promise<Tag[]> {

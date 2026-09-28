@@ -1,12 +1,13 @@
 import { cache } from 'react'
 import { getCurrentUserId } from '@/lib/auth/current-user'
 import type { Asset, Budget, FinanceCategory, Investment } from '@/lib/db/schema'
-import { addMonthsISO, monthEndOf, monthStartOf, today as todayOf, type ISODate } from '@/lib/dates'
+import { type ISODate, addMonthsISO, monthEndOf, monthStartOf, rangeOfLastDays, today as todayOf } from '@/lib/dates'
 import type { AccountType } from '@/lib/finance/account-types'
 import { debtBalances, netDebt, type DebtBalance } from '@/lib/finance/debts'
 import {
   findAccountBalances,
   findAccounts,
+  findDailyBalances,
   findAssets,
   findBudgets,
   findCategories,
@@ -16,6 +17,7 @@ import {
   sumDebtsByPerson,
   type AccountBalance,
   type CategoryTotal,
+  type DailyBalancePoint,
   type TransactionPage,
 } from '@/server/repositories/finance'
 import type { Payee } from '@/lib/finance/payee'
@@ -23,6 +25,12 @@ import { findPeople } from '@/server/repositories/people'
 import { dayContextOf, getSettings } from '@/server/services/settings'
 
 export type BudgetView = Budget & { spent: number; categoryName: string }
+
+/**
+ * How far back the balance chart can look. One fetch covers every range it
+ * offers, so a longer memory here is a bigger payload on every accounts page.
+ */
+const BALANCE_HISTORY_DAYS = 180
 
 export type FinanceData = {
   today: ISODate
@@ -37,6 +45,8 @@ export type FinanceData = {
     openingBalance: string
   }[]
   balances: AccountBalance[]
+  /** Closing balance per account per day, for the chart on the accounts tab. */
+  dailyBalances: DailyBalancePoint[]
   categories: FinanceCategory[]
   /** First ledger page for SSR; further pages load via `listTransactions`. */
   transactionsPage: TransactionPage
@@ -80,6 +90,7 @@ export const getFinanceData = cache(async (): Promise<FinanceData> => {
     investments,
     personRows,
     debtRows,
+    dailyBalances,
   ] = await Promise.all([
     findAccounts(userId),
     findAccountBalances(userId),
@@ -92,6 +103,10 @@ export const getFinanceData = cache(async (): Promise<FinanceData> => {
     findInvestments(userId),
     findPeople(userId, { includeArchived: true }),
     sumDebtsByPerson(userId),
+    // The longest range the chart offers, fetched once: filtering by account
+    // or by a shorter window is then arithmetic in the browser rather than a
+    // round trip per click.
+    findDailyBalances(userId, rangeOfLastDays(today, BALANCE_HISTORY_DAYS)),
   ])
 
   const sumKind = (kind: string, rows: CategoryTotal[]) =>
@@ -142,6 +157,7 @@ export const getFinanceData = cache(async (): Promise<FinanceData> => {
       openingBalance: row.openingBalance,
     })),
     balances,
+    dailyBalances,
     categories,
     transactionsPage,
     byCategory,
