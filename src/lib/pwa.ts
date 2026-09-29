@@ -26,6 +26,18 @@ export function isIos(): boolean {
   return /macintosh/i.test(ua) && window.navigator.maxTouchPoints > 1
 }
 
+/**
+ * A phone or a tablet — somewhere an app can be installed and handed a link.
+ *
+ * Asked before offering anything that opens another app. A laptop has no
+ * bank app to open, and VietQR says as much: on a desktop its deeplink page
+ * answers `Deeplink not support on your os: mac os` and nothing else.
+ */
+export function isMobile(): boolean {
+  if (typeof window === 'undefined') return false
+  return isIos() || /android/i.test(window.navigator.userAgent)
+}
+
 /** iPhone and iPad Safari specifically — not Chrome or Firefox painted on it. */
 export function isIosSafari(): boolean {
   if (!isIos()) return false

@@ -10,6 +10,7 @@ import { QrCode } from '@/components/ui/qr-code'
 import { copyText } from '@/lib/clipboard'
 import { bankName } from '@/lib/finance/banks'
 import { formatMoney } from '@/lib/format/money'
+import { isMobile } from '@/lib/pwa'
 import type { AccountType } from '@/lib/finance/account-types'
 import { bankAppLink, payeeCode, senderApp } from '@/lib/finance/bank-apps'
 import { bankTarget, canReceive, isMomoLink, momoLink, type Payee } from '@/lib/finance/payee'
@@ -99,14 +100,6 @@ export function TransferDialog({
     }
   }
 
-  const openBankApp = (href: string) => {
-    // Same rule as MoMo: the navigation stays inside the tap that asked for
-    // it, because iOS blocks one that resumes after an await. `assign` rather
-    // than writing to `location.href`, which reads as mutating a value from
-    // outside the component and is refused by `react-hooks/immutability`.
-    window.location.assign(href)
-  }
-
   const target = chosen ? bankTarget(chosen) : null
   /*
    * The app to open is the sender's, and the account to pay into is the
@@ -124,8 +117,13 @@ export function TransferDialog({
    * return to a development machine, and sending it an address it cannot reach
    * is worse than sending none.
    */
+  /*
+   * Only where there is an app to open. On a desktop VietQR answers the same
+   * link with `Deeplink not support on your os`, and the QR beside this is
+   * already the answer there — that is what it is for.
+   */
   const appHref =
-    target && bankApp && toBank
+    isMobile() && target && bankApp && toBank
       ? bankAppLink({
           app: bankApp,
           payeeBank: toBank,
@@ -203,10 +201,29 @@ export function TransferDialog({
                   {t('transfer.copyAccount')}
                 </Button>
               ) : null}
+              {/*
+               * A real link, opened in a tab of its own, rather than sending
+               * this page to VietQR.
+               *
+               * Installed to the home screen, the app runs standalone, and
+               * there iOS silently refuses to follow a scheme it does not
+               * recognise. VietQR's page cannot tell that apart from the app
+               * being missing — it waits, sees itself still on screen, and
+               * falls through to the App Store, which then opens the bank
+               * cold with none of the transfer on it. From Telegram the same
+               * link is fine, because its browser is allowed to hand the
+               * scheme over.
+               *
+               * `target="_blank"` is what leaves the standalone context, and
+               * it keeps this dialog open underneath — so "Đã chuyển" is
+               * still waiting when they come back.
+               */}
               {appHref ? (
-                <Button size="sm" onClick={() => openBankApp(appHref)}>
-                  <ExternalLink className="size-4" />
-                  {t('transfer.openBankApp', { app: bankApp!.name })}
+                <Button size="sm" asChild>
+                  <a href={appHref} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="size-4" />
+                    {t('transfer.openBankApp', { app: bankApp!.name })}
+                  </a>
                 </Button>
               ) : null}
               {chosen.momoPhone ? (
