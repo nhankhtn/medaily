@@ -1,6 +1,7 @@
 'use client'
 
 import { Plus, Send } from 'lucide-react'
+import type { AccountType } from '@/lib/finance/account-types'
 import { useLocale, useTranslations } from 'next-intl'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -31,7 +32,7 @@ export function TransactionForm({
   today,
   onPending,
 }: {
-  accounts: { id: string; name: string }[]
+  accounts: { id: string; name: string; type: AccountType }[]
   categories: FinanceCategory[]
   people: Payee[]
   currency: string
@@ -56,6 +57,8 @@ export function TransactionForm({
     payee: Payee | null
     amount: number
     reference: string
+    /** The kind of account the money leaves, which names the app to open. */
+    from: AccountType | null
   } | null>(null)
   /** Resolves when the row exists on the server, so marking it cannot arrive first. */
   const savingRef = useRef<Promise<boolean>>(Promise.resolve(false))
@@ -197,6 +200,9 @@ export function TransactionForm({
       id,
       payee: null,
       amount,
+      from:
+        accounts.find((account) => account.id === String(data.get('accountId') ?? ''))?.type ??
+        null,
       reference: transferNote(
         [String(data.get('merchant') ?? ''), dayMonth(String(data.get('occurredOn') ?? today))],
         id,
@@ -332,6 +338,7 @@ export function TransactionForm({
         }}
         payees={people}
         payee={transfer?.payee ?? null}
+        fromAccountType={transfer?.from ?? null}
         onPick={(payee) => {
           if (payeeRef.current) payeeRef.current.value = payee.id
           formRef.current?.requestSubmit()

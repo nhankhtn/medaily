@@ -1,6 +1,7 @@
 'use client'
 
 import { ArrowRightLeft, Pencil, Send, Trash2, User } from 'lucide-react'
+import type { AccountType } from '@/lib/finance/account-types'
 import { useFormatter, useLocale, useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -26,7 +27,7 @@ import { TransferDialog } from './transfer-dialog'
 import { cn } from '@/lib/utils'
 import type { PendingTransaction } from './pending'
 
-type Account = { id: string; name: string }
+type Account = { id: string; name: string; type: AccountType }
 
 /** Everything the row's title needs, which a pending row also has. */
 type Titled = Pick<Transaction, 'kind' | 'merchant' | 'categoryId' | 'accountId'> & {
@@ -83,6 +84,8 @@ export function TransactionList({
     payee: Payee
     amount: number
     reference: string
+    /** The kind of account the money leaves, which names the app to open. */
+    from: AccountType | null
   } | null>(null)
   /**
    * Which row is mid-write. Plain state rather than `useTransition`, whose
@@ -262,6 +265,10 @@ export function TransactionList({
                             id: transaction.id,
                             payee,
                             amount: Number(transaction.amount),
+                            // The app to open follows the account the money
+                            // left, not the payee's bank.
+                            from:
+                              accounts.find((a) => a.id === transaction.accountId)?.type ?? null,
                             reference: transferNote(
                               [transaction.merchant, dayMonth(transaction.occurredOn)],
                               transaction.id,
@@ -367,6 +374,7 @@ export function TransactionList({
         payee={transfer?.payee ?? null}
         amount={transfer?.amount ?? 0}
         reference={transfer?.reference ?? ''}
+        fromAccountType={transfer?.from ?? null}
         currency={currency}
         onTransferred={async () => {
           if (!transfer) return

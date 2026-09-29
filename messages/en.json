@@ -1016,7 +1016,9 @@
       "later": "Later",
       "staticQr": "Type the amount when you scan.",
       "copiedAccount": "Account number copied",
-      "copiedMomo": "MoMo number copied"
+      "copiedMomo": "MoMo number copied",
+      "openBankApp": "Open {app}",
+      "bankAppManual": "It only opens the app — the account and the amount still get typed in. Scanning the code above is quicker."
     },
     "filters": "Filters",
     "clearFilters": "Clear filters",

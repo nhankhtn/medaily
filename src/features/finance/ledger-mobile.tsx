@@ -29,7 +29,13 @@ export function LedgerMobile({ data }: { data: FinanceData }) {
       categories: data.categories,
     })
   const [filtersOpen, setFiltersOpen] = useState(false)
-  const names = data.accounts.map((account) => ({ id: account.id, name: account.name }))
+  // `type` travels with the name: the transfer sheet opens the app behind
+  // the account the money leaves, and that is the only thing that says which.
+  const names = data.accounts.map((account) => ({
+    id: account.id,
+    name: account.name,
+    type: account.type,
+  }))
 
   return (
     <div className="space-y-4">

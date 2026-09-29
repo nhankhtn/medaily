@@ -10,6 +10,8 @@ import { QrCode } from '@/components/ui/qr-code'
 import { copyText } from '@/lib/clipboard'
 import { bankName } from '@/lib/finance/banks'
 import { formatMoney } from '@/lib/format/money'
+import type { AccountType } from '@/lib/finance/account-types'
+import { bankAppLink, payeeCode, senderApp } from '@/lib/finance/bank-apps'
 import { bankTarget, canReceive, isMomoLink, momoLink, type Payee } from '@/lib/finance/payee'
 import { vietQrPayload } from '@/lib/finance/vietqr'
 
@@ -30,6 +32,7 @@ export function TransferDialog({
   onPick,
   amount,
   reference,
+  fromAccountType,
   currency,
   onTransferred,
 }: {
@@ -41,6 +44,8 @@ export function TransferDialog({
   onPick?: (payee: Payee) => void
   amount: number
   reference: string
+  /** The kind of account the money leaves; it names the app to open. */
+  fromAccountType: AccountType | null
   currency: string
   onTransferred: () => Promise<void> | void
 }) {
@@ -94,7 +99,44 @@ export function TransferDialog({
     }
   }
 
+  const openBankApp = (href: string) => {
+    // Same rule as MoMo: the navigation stays inside the tap that asked for
+    // it, because iOS blocks one that resumes after an await. `assign` rather
+    // than writing to `location.href`, which reads as mutating a value from
+    // outside the component and is refused by `react-hooks/immutability`.
+    window.location.assign(href)
+  }
+
   const target = chosen ? bankTarget(chosen) : null
+  /*
+   * The app to open is the sender's, and the account to pay into is the
+   * payee's. Reading both off the payee — which this did at first — opens an
+   * app the sender may not have, at a bank they do not use.
+   */
+  const bankApp = senderApp(fromAccountType)
+  const toBank = payeeCode(chosen?.bankBin)
+  /*
+   * Built from this transfer, so the five apps that fill their form in get the
+   * account, the sum and the reference; the other ten open on their home
+   * screen with the same link and nothing lost.
+   *
+   * The way back is offered only from a real deployment: a bank app cannot
+   * return to a development machine, and sending it an address it cannot reach
+   * is worse than sending none.
+   */
+  const appHref =
+    target && bankApp && toBank
+      ? bankAppLink({
+          app: bankApp,
+          payeeBank: toBank,
+          payeeAccount: target.accountNumber,
+          amount,
+          note: reference,
+          returnUrl: typeof window === 'undefined' ? null : window.location.href,
+        })
+      : null
+
+  console.log('appHref', appHref)
   /** Built here, so it carries this transaction's amount and reference. */
   const built = target ? vietQrPayload({ ...target, amount, message: reference }) : null
   /*
@@ -161,8 +203,18 @@ export function TransferDialog({
                   {t('transfer.copyAccount')}
                 </Button>
               ) : null}
+              {appHref ? (
+                <Button size="sm" onClick={() => openBankApp(appHref)}>
+                  <ExternalLink className="size-4" />
+                  {t('transfer.openBankApp', { app: bankApp!.name })}
+                </Button>
+              ) : null}
               {chosen.momoPhone ? (
-                <Button variant="outline" size="sm" onClick={() => openMomo(chosen.momoPhone!)}>
+                <Button
+                  variant={appHref ? 'outline' : 'primary'}
+                  size="sm"
+                  onClick={() => openMomo(chosen.momoPhone!)}
+                >
                   <ExternalLink className="size-4" />
                   {t('transfer.openMomo')}
                 </Button>
@@ -171,6 +223,13 @@ export function TransferDialog({
 
             {payload && !built ? (
               <p className="text-text-subtle text-xs">{t('transfer.staticQr')}</p>
+            ) : null}
+
+            {/* Said only where it is true. Ten of the fifteen apps open on a
+                home screen, and a button that implied otherwise would send
+                somebody looking for a form that is not there. */}
+            {appHref && !bankApp?.autofill ? (
+              <p className="text-text-subtle text-xs">{t('transfer.bankAppManual')}</p>
             ) : null}
 
             {chosen.momoPhone && !isMomoLink(chosen.momoPhone) ? (
