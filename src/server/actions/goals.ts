@@ -6,6 +6,7 @@ import { getCurrentUserId } from '@/lib/auth/current-user'
 import { PATHS } from '@/lib/paths'
 import { isoDateSchema } from '@/lib/validation/daily'
 import {
+  findGoal,
   findMilestonesFor,
   insertGoal,
   reorderGoals,
@@ -13,6 +14,8 @@ import {
   upsertMilestone,
 } from '@/server/repositories/goals'
 import { canBindMetric } from '@/server/services/metrics'
+import { audited, type NoteChange } from '@/server/services/audited'
+import { goalSnapshot } from '@/server/services/activity-snapshots'
 
 /** At most this many in one move; a longer list is not a reorder. */
 const MAX_REORDER = 500
@@ -135,72 +138,88 @@ const goalSchema = z
 export type SaveGoalResult =
   { ok: true; id: string } | { ok: false; error: 'invalid_input'; detail?: string }
 
-export async function saveGoal(input: unknown): Promise<SaveGoalResult> {
-  const parsed = goalSchema.safeParse(input)
-  if (!parsed.success) {
-    return { ok: false, error: 'invalid_input', detail: parsed.error.issues[0]?.message }
-  }
-
-  const userId = await getCurrentUserId()
-  const { id, milestoneTitles, ...values } = parsed.data
-  const isMetric = values.progressMode === 'metric'
-
-  // A key that is not a built-in has to name one of this person's own metrics,
-  // still tracked and holding a number (spec 29 — never trust the client).
-  // No detail: the select only ever offers keys that pass, so reaching this
-  // means a tampered request, and `detail` goes straight into a toast.
-  if (isMetric && values.metricKey && !(await canBindMetric(userId, values.metricKey))) {
-    return { ok: false, error: 'invalid_input' }
-  }
-
-  const row = {
-    ...values,
-    description: values.description ?? null,
-    targetDate: values.targetDate ?? null,
-    // Only the chosen mode's columns are written, so a mode switch cannot leave
-    // stale configuration behind that the CHECK constraint would then reject.
-    progressManual:
-      values.progressMode === 'manual' &&
-      values.progressManual !== null &&
-      values.progressManual !== undefined
-        ? String(values.progressManual)
-        : null,
-    progressUpdatedAt: values.progressMode === 'manual' ? new Date() : null,
-    metricKey: isMetric ? (values.metricKey ?? null) : null,
-    metricAggregation: isMetric ? (values.metricAggregation ?? null) : null,
-    metricPeriod: isMetric ? (values.metricPeriod ?? null) : null,
-    metricTarget: isMetric && values.metricTarget ? String(values.metricTarget) : null,
-    metricDirection: isMetric ? (values.metricDirection ?? 'at_least') : null,
-    completedAt: values.status === 'completed' ? new Date() : null,
-  }
-
-  const goal = id ? await updateGoal(userId, id, row) : await insertGoal({ ...row, userId })
-
-  if (values.progressMode === 'milestones' && milestoneTitles?.length) {
-    const existing = await findMilestonesFor([goal.id])
-    for (const [index, title] of milestoneTitles.entries()) {
-      const current = existing[index]
-      await upsertMilestone({
-        id: current?.id,
-        goalId: goal.id,
-        title,
-        sortOrder: index,
-        weight: current?.weight ?? '1',
-        completedAt: current?.completedAt ?? null,
-        dueDate: current?.dueDate ?? null,
-      })
+export const saveGoal = audited(
+  (_result, input: unknown) => ((input as { id?: string }).id ? 'goal.update' : 'goal.create'),
+  async (input: unknown, audit: NoteChange): Promise<SaveGoalResult> => {
+    const parsed = goalSchema.safeParse(input)
+    if (!parsed.success) {
+      return { ok: false, error: 'invalid_input', detail: parsed.error.issues[0]?.message }
     }
-  }
 
-  revalidatePath(PATHS.goals)
-  revalidatePath(PATHS.home)
-  return { ok: true, id: goal.id }
-}
+    const userId = await getCurrentUserId()
+    const { id, milestoneTitles, ...values } = parsed.data
+    const isMetric = values.progressMode === 'metric'
 
-export async function archiveGoal(input: unknown) {
-  const id = z.string().uuid().parse(input)
-  await updateGoal(await getCurrentUserId(), id, { archivedAt: new Date() })
-  revalidatePath(PATHS.goals)
-  revalidatePath(PATHS.home)
-  return { ok: true }
-}
+    // A key that is not a built-in has to name one of this person's own metrics,
+    // still tracked and holding a number (spec 29 — never trust the client).
+    // No detail: the select only ever offers keys that pass, so reaching this
+    // means a tampered request, and `detail` goes straight into a toast.
+    if (isMetric && values.metricKey && !(await canBindMetric(userId, values.metricKey))) {
+      return { ok: false, error: 'invalid_input' }
+    }
+
+    const row = {
+      ...values,
+      description: values.description ?? null,
+      targetDate: values.targetDate ?? null,
+      // Only the chosen mode's columns are written, so a mode switch cannot leave
+      // stale configuration behind that the CHECK constraint would then reject.
+      progressManual:
+        values.progressMode === 'manual' &&
+        values.progressManual !== null &&
+        values.progressManual !== undefined
+          ? String(values.progressManual)
+          : null,
+      progressUpdatedAt: values.progressMode === 'manual' ? new Date() : null,
+      metricKey: isMetric ? (values.metricKey ?? null) : null,
+      metricAggregation: isMetric ? (values.metricAggregation ?? null) : null,
+      metricPeriod: isMetric ? (values.metricPeriod ?? null) : null,
+      metricTarget: isMetric && values.metricTarget ? String(values.metricTarget) : null,
+      metricDirection: isMetric ? (values.metricDirection ?? 'at_least') : null,
+      completedAt: values.status === 'completed' ? new Date() : null,
+    }
+
+    const before = id ? await findGoal(userId, id) : null
+    const goal = id ? await updateGoal(userId, id, row) : await insertGoal({ ...row, userId })
+    audit({ current: goalSnapshot(before), request: goalSnapshot(goal) })
+
+    if (values.progressMode === 'milestones' && milestoneTitles?.length) {
+      const existing = await findMilestonesFor([goal.id])
+      for (const [index, title] of milestoneTitles.entries()) {
+        const current = existing[index]
+        await upsertMilestone({
+          id: current?.id,
+          goalId: goal.id,
+          title,
+          sortOrder: index,
+          weight: current?.weight ?? '1',
+          completedAt: current?.completedAt ?? null,
+          dueDate: current?.dueDate ?? null,
+        })
+      }
+    }
+
+    revalidatePath(PATHS.goals)
+    revalidatePath(PATHS.home)
+    return { ok: true, id: goal.id }
+  },
+  ({ result, input }) => ({
+    entityId: result.ok ? result.id : null,
+    label: (input as { name?: string }).name ?? null,
+  }),
+)
+
+export const archiveGoal = audited(
+  'goal.delete',
+  async (input: unknown, audit: NoteChange) => {
+    const id = z.string().uuid().parse(input)
+    const userId = await getCurrentUserId()
+    // The row the update returns: `archivedAt` is not followed, so it reads
+    // the same as it did before, without a second trip to the database.
+    audit({ current: goalSnapshot(await updateGoal(userId, id, { archivedAt: new Date() })) })
+    revalidatePath(PATHS.goals)
+    revalidatePath(PATHS.home)
+    return { ok: true }
+  },
+  ({ input }) => ({ entityId: input as string }),
+)

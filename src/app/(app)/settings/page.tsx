@@ -7,8 +7,11 @@ import { Card } from '@/components/ui/card'
 import { ProfileCard } from '@/features/settings/profile-card'
 import { DataPanel } from '@/features/settings/data-panel'
 import { DeleteAccount } from '@/features/settings/delete-account'
+import { ActivityDialog } from '@/features/settings/activity-dialog'
 import { SupportDialog } from '@/features/support/support-dialog'
 import { alertsEnabled } from '@/server/services/alerts'
+import { activityLogEnabled, findActivity } from '@/server/services/activity'
+import { env } from '@/lib/env'
 import { InstallApp } from '@/features/settings/install-app'
 import { ReplayOnboardingButton } from '@/features/onboarding/replay-button'
 import { SettingsForm } from '@/features/settings/settings-form'
@@ -26,14 +29,23 @@ export default async function SettingsPage() {
     readSession(),
   ])
   const user = await findUserById(settings.userId)
-
+  // Read here rather than inside the dialog so the first page is already in
+  // the markup when the button is pressed.
+  const trail = activityLogEnabled() ? await findActivity(settings.userId) : null
 
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold">{t('title')}</h1>
 
       {user && session ? (
-        <ProfileCard user={user} provider={session.provider} subject={session.sub} />
+        <ProfileCard
+          user={user}
+          provider={session.provider}
+          subject={session.sub}
+          actions={
+            trail ? <ActivityDialog initialPage={trail} days={env.ACTIVITY_LOG_DAYS} /> : null
+          }
+        />
       ) : null}
 
       <section className="glass rounded-[var(--radius)] p-4">

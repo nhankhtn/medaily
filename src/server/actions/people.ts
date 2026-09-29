@@ -3,6 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { getCurrentUserId } from '@/lib/auth/current-user'
+import { audited, type NoteChange } from '@/server/services/audited'
+import { personSnapshot } from '@/server/services/activity-snapshots'
 import { isSupportedBank } from '@/lib/finance/banks'
 import { PATHS } from '@/lib/paths'
 import { isoDateSchema } from '@/lib/validation/daily'
@@ -51,72 +53,92 @@ function revalidatePeopleAndFinance() {
   revalidatePath(PATHS.finance)
 }
 
-export async function savePerson(input: unknown) {
-  const parsed = z
-    .object({
-      id: z.string().uuid().optional(),
-      name: z.string().min(1).max(200),
-      relationship: z
-        .enum(['partner', 'family', 'friend', 'colleague', 'mentor', 'other'])
-        .default('friend'),
-      company: optionalText,
-      role: optionalText,
-      birthday: isoDateSchema.nullable().optional(),
-      phone: optionalText,
-      email: optionalText,
-      notes: optionalText,
-      contactIntervalDays: z.number().int().min(1).max(3650).nullable().optional(),
-      bankBin: bankBinSchema,
-      bankAccountNumber: accountNumberSchema,
-      bankAccountName: optionalText,
-      momoPhone: optionalText,
-      paymentQr: optionalText,
-    })
-    .safeParse(input)
-  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+export const savePerson = audited(
+  (_result, input: unknown) => ((input as { id?: string }).id ? 'person.update' : 'person.create'),
+  async (input: unknown, audit: NoteChange) => {
+    const parsed = z
+      .object({
+        id: z.string().uuid().optional(),
+        name: z.string().min(1).max(200),
+        relationship: z
+          .enum(['partner', 'family', 'friend', 'colleague', 'mentor', 'other'])
+          .default('friend'),
+        company: optionalText,
+        role: optionalText,
+        birthday: isoDateSchema.nullable().optional(),
+        phone: optionalText,
+        email: optionalText,
+        notes: optionalText,
+        contactIntervalDays: z.number().int().min(1).max(3650).nullable().optional(),
+        bankBin: bankBinSchema,
+        bankAccountNumber: accountNumberSchema,
+        bankAccountName: optionalText,
+        momoPhone: optionalText,
+        paymentQr: optionalText,
+      })
+      .safeParse(input)
+    if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
-  const userId = await getCurrentUserId()
-  const { id, ...values } = parsed.data
+    const userId = await getCurrentUserId()
+    const { id, ...values } = parsed.data
 
-  if (id) await updatePerson(userId, id, values)
-  else await insertPerson({ ...values, userId })
+    // Only on an edit: a create has nothing standing there to read.
+    const before = id ? await findPerson(userId, id) : null
+    if (id) await updatePerson(userId, id, values)
+    else await insertPerson({ ...values, userId })
 
-  revalidatePeopleAndFinance()
-  return { ok: true as const }
-}
+    audit({ current: personSnapshot(before), request: personSnapshot(values) })
+
+    revalidatePeopleAndFinance()
+    return { ok: true as const }
+  },
+  ({ input }) => ({
+    entityId: (input as { id?: string }).id ?? null,
+    label: (input as { name?: string }).name ?? null,
+  }),
+)
 
 /**
  * Archived, never deleted: the interactions, photos and debts filed under a
  * person would cascade away with the row, and last year's ledger should not
  * lose a name because the friendship did.
  */
-export async function archivePerson(input: unknown) {
-  const parsed = z.object({ id: z.string().uuid() }).safeParse(input)
-  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+export const archivePerson = audited(
+  'person.delete',
+  async (input: unknown, audit: NoteChange) => {
+    const parsed = z.object({ id: z.string().uuid() }).safeParse(input)
+    if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
-  const userId = await getCurrentUserId()
-  if (!(await findPerson(userId, parsed.data.id))) {
-    return { ok: false as const, error: 'not_found' as const }
-  }
+    const userId = await getCurrentUserId()
+    const found = await findPerson(userId, parsed.data.id)
+    if (!found) return { ok: false as const, error: 'not_found' as const }
 
-  await updatePerson(userId, parsed.data.id, { archivedAt: new Date() })
-  revalidatePeopleAndFinance()
-  return { ok: true as const }
-}
+    await updatePerson(userId, parsed.data.id, { archivedAt: new Date() })
+    // The row the guard above already read — no second query to say who went.
+    audit({ current: personSnapshot(found) })
+    revalidatePeopleAndFinance()
+    return { ok: true as const }
+  },
+  ({ input }) => ({ entityId: (input as { id?: string }).id ?? null }),
+)
 
-export async function restorePerson(input: unknown) {
-  const parsed = z.object({ id: z.string().uuid() }).safeParse(input)
-  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+export const restorePerson = audited(
+  'person.restore',
+  async (input: unknown, audit: NoteChange) => {
+    const parsed = z.object({ id: z.string().uuid() }).safeParse(input)
+    if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
-  const userId = await getCurrentUserId()
-  if (!(await findPerson(userId, parsed.data.id))) {
-    return { ok: false as const, error: 'not_found' as const }
-  }
+    const userId = await getCurrentUserId()
+    const found = await findPerson(userId, parsed.data.id)
+    if (!found) return { ok: false as const, error: 'not_found' as const }
 
-  await updatePerson(userId, parsed.data.id, { archivedAt: null })
-  revalidatePeopleAndFinance()
-  return { ok: true as const }
-}
+    await updatePerson(userId, parsed.data.id, { archivedAt: null })
+    audit({ request: personSnapshot(found) })
+    revalidatePeopleAndFinance()
+    return { ok: true as const }
+  },
+  ({ input }) => ({ entityId: (input as { id?: string }).id ?? null }),
+)
 
 export async function logInteraction(input: unknown) {
   const parsed = z

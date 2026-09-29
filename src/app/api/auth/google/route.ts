@@ -5,6 +5,8 @@ import { readAuthConfig, readGoogleConfig } from '@/lib/auth/config'
 import { FirebaseVerifyError, verifyFirebaseIdToken } from '@/lib/auth/firebase-verify'
 import { sessionCookieOptions, SESSION_COOKIE, signSession } from '@/lib/auth/session'
 import { resolveGoogleIdentity } from '@/server/services/auth'
+import { recordActivity } from '@/server/services/activity'
+import { signInSnapshot } from '@/lib/activity/sign-in'
 import { DEFAULT_LOCALE, isLocale, LOCALE_COOKIE, type Locale } from '@/i18n/config'
 import { clientKey } from '@/lib/client-ip'
 import { createLimit } from '@/lib/rate-limit'
@@ -85,6 +87,15 @@ export async function POST(request: Request) {
     // `not_allowed` and `signup_closed` are reported identically on purpose:
     // telling a stranger which addresses exist is a free directory.
     if (!resolved.ok) return fail('not_allowed', 403)
+
+    // The other door into the app. Same entry as the password one, so a trail
+    // does not go quiet just because somebody signed in with Google.
+    recordActivity({
+      userId: resolved.userId,
+      action: 'session.login',
+      label: identity.email,
+      request: signInSnapshot(request.headers),
+    })
 
     const token = await signSession(
       { uid: resolved.userId, sub: identity.email, provider: 'google' },

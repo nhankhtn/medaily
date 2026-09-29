@@ -22,6 +22,7 @@ import { deleteUser, findUserById as findUser } from '@/server/repositories/auth
 import { findAllPhotoPublicIds } from '@/server/repositories/media'
 import { destroyAsset, destroyByPrefix } from '@/server/services/media'
 import { log } from '@/lib/log'
+import { eraseActivity } from '@/server/services/activity'
 import { insertAccounts, insertCategories } from '@/server/repositories/finance'
 import { starterFor } from '@/lib/onboarding/starter'
 import { DEFAULT_LOCALE, type Locale } from '@/i18n/config'
@@ -219,6 +220,8 @@ export async function eraseAccount(userId: string): Promise<void> {
   } catch (error) {
     await log.error('auth', 'could not erase note images', error)
   }
+
+  await eraseActivity(userId)
 
   await deleteUser(userId)
 }

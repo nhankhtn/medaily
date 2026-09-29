@@ -584,6 +584,8 @@
     "signedInAs": "Signed in as {name}",
     "or": "or",
     "continueWithGoogle": "Continue with Google",
+    "continueAs": "Continue as {email}",
+    "forgetAccount": "Forget this account",
     "googleFailed": "Google sign-in failed. Try again.",
     "popupBlocked": "Your browser blocked the sign-in window. Allow popups for this site and try again.",
     "notAllowed": "This account is not allowed to sign in."
@@ -1540,7 +1542,23 @@
     "divider": "Divider",
     "dividerHint": "A line between sections",
     "table": "Table",
-    "tableHint": "A simple grid"
+    "tableHint": "A simple grid",
+    "help": {
+      "open": "How this works",
+      "title": "Using the editor",
+      "intro": "Type as you would anywhere. These are the parts you cannot see.",
+      "slashTitle": "Press “/” to insert a block",
+      "slashBody": "The slash only opens the list at the start of a line or straight after a space — typed against a word, as in “abc/”, nothing happens. The list holds headings, bullets, numbered lists, to-dos, quotes, code blocks, dividers and tables. Keep typing to narrow it, Enter to choose.",
+      "tableTitle": "Making a table",
+      "tableBody": "Type / and pick Table. You get a 3×3 grid with a header row. Tab moves to the next cell, Shift+Tab goes back, and Tab in the last cell adds a row.",
+      "formatTitle": "Select text to format it",
+      "formatBody": "Select a stretch of text and a small toolbar appears above it: bold, italic, strikethrough, code, and a link. Ctrl/Cmd + B and Ctrl/Cmd + I work too.",
+      "imageTitle": "Adding a picture",
+      "imageBody": "Paste an image straight in, or drop one on the box. It uploads on its own, and the spot it will land in shows a progress bar until it is done.",
+      "moveTitle": "Moving blocks about",
+      "moveBody": "Hover the left margin of a block for two controls: the plus adds a new block underneath, and the dots are a handle — hold and drag to move the block.",
+      "rulesTitle": "Type these and they become blocks"
+    }
   },
   "account": {
     "deleteTitle": "Delete this account",
@@ -1603,5 +1621,128 @@
     "tooShort": "A few more words would help — say what happened.",
     "tooMany": "That is a few in a row. Give it an hour and write again.",
     "unavailable": "That did not send. Try again in a moment."
+  },
+  "activity": {
+    "title": "What changed",
+    "body": "What you added, changed or deleted here lately. Only the last {days} days are kept.",
+    "empty": "Nothing here yet.",
+    "open": "See history",
+    "nothing": "cleared",
+    "noChange": "Nothing moved.",
+    "fields": {
+      "device": "Device",
+      "location": "Place",
+      "occurredOn": "Date",
+      "amount": "Amount",
+      "kind": "Kind",
+      "account": "Account",
+      "counterAccount": "To account",
+      "category": "Category",
+      "person": "Person",
+      "merchant": "Merchant",
+      "name": "Name",
+      "type": "Type",
+      "currency": "Currency",
+      "openingBalance": "Opening balance",
+      "note": "Note",
+      "frequency": "Frequency",
+      "intervalDays": "Every N days",
+      "target": "Target",
+      "linkedMetric": "Linked metric",
+      "startDate": "Start date",
+      "status": "Status",
+      "targetDate": "Target date",
+      "progressMode": "Progress",
+      "metricTarget": "Metric target",
+      "relationship": "Relationship",
+      "company": "Company",
+      "role": "Role",
+      "birthday": "Birthday",
+      "phone": "Phone",
+      "email": "Email",
+      "contactIntervalDays": "Contact every N days",
+      "bankAccountNumber": "Bank account",
+      "title": "Title",
+      "learnedOn": "Learned on"
+    },
+    "values": {
+      "income": "Income",
+      "expense": "Expense",
+      "transfer": "Transfer",
+      "cash": "Cash",
+      "bank": "Other bank",
+      "e_wallet": "Other e-wallet",
+      "credit_card": "Credit card",
+      "investment": "Investment",
+      "loan": "Loan",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "specific_days": "Set days",
+      "interval": "Every N days",
+      "active": "Active",
+      "completed": "Done",
+      "paused": "Paused",
+      "cancelled": "Dropped",
+      "manual": "By hand",
+      "metric": "By metric",
+      "milestones": "By milestone",
+      "partner": "Partner",
+      "family": "Family",
+      "friend": "Friend",
+      "colleague": "Colleague",
+      "mentor": "Mentor",
+      "other": "Other",
+      "note": "Note",
+      "concept": "Concept",
+      "bookmark": "Bookmark",
+      "lesson": "Lesson"
+    },
+    "actions": {
+      "transaction": {
+        "create": "Transaction added",
+        "update": "Transaction changed",
+        "delete": "Transaction deleted",
+        "restore": "Transaction restored"
+      },
+      "account": {
+        "create": "Account added",
+        "update": "Account changed",
+        "delete": "Account deleted"
+      },
+      "category": {
+        "create": "Category added",
+        "update": "Category changed",
+        "delete": "Category deleted"
+      },
+      "habit": {
+        "create": "Habit added",
+        "update": "Habit changed",
+        "delete": "Habit deleted",
+        "restore": "Habit restored"
+      },
+      "person": {
+        "create": "Person added",
+        "update": "Person changed",
+        "delete": "Person deleted",
+        "restore": "Person restored"
+      },
+      "goal": {
+        "create": "Goal added",
+        "update": "Goal changed",
+        "delete": "Goal deleted"
+      },
+      "note": {
+        "create": "Note added",
+        "update": "Note changed",
+        "delete": "Note deleted"
+      },
+      "daily": {
+        "update": "Daily log changed"
+      },
+      "session": {
+        "login": "Signed in",
+        "logout": "Signed out"
+      }
+    }
   }
 }

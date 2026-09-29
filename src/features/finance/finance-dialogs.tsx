@@ -48,7 +48,19 @@ function useDialogAction(onDone: () => void) {
   return { pending, run }
 }
 
-export function AccountDialog({ defaultCurrency }: { defaultCurrency: string }) {
+export function AccountDialog({
+  defaultCurrency,
+  /*
+   * Solid where it is the one thing a screen is for — the empty state that
+   * meets someone with no accounts yet — and outlined where it heads a card
+   * among four siblings that all open something. A filled button in that row
+   * does not read as more important, it reads as a mistake.
+   */
+  variant = 'primary',
+}: {
+  defaultCurrency: string
+  variant?: 'primary' | 'outline'
+}) {
   const t = useTranslations('finance')
   const tc = useTranslations('common')
   const [open, setOpen] = useState(false)
@@ -61,7 +73,7 @@ export function AccountDialog({ defaultCurrency }: { defaultCurrency: string }) 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" data-tour="account-new">
+        <Button size="sm" variant={variant} data-tour="account-new">
           <Plus className="size-4" />
           {t('addAccountShort')}
         </Button>

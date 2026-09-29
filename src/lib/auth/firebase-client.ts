@@ -3,6 +3,7 @@ import {
   browserPopupRedirectResolver,
   getAuth,
   GoogleAuthProvider,
+  signInWithCredential,
   signInWithPopup,
   signOut,
   type Auth,
@@ -81,25 +82,79 @@ export class GoogleSignInError extends Error {
 /**
  * Returns a fresh ID token. The token is short-lived and used once — the
  * server trades it for a session cookie and never stores it.
+ *
+ * `hint` is an address the visitor has already picked, by tapping a remembered
+ * account. Google then opens straight into it instead of asking which one,
+ * which is the whole point of the chip. Without a hint the chooser is forced:
+ * on a shared machine, silently reusing the last Google account is a
+ * surprising way to open someone's private journal. Picking the account *is*
+ * the choice that rule exists to require, so a hint does not weaken it.
  */
-export async function signInWithGoogle(): Promise<string> {
+export async function signInWithGoogle(hint?: string): Promise<string> {
   const auth = firebaseAuth()
   const provider = new GoogleAuthProvider()
-  // Always show the chooser: on a shared machine, silently reusing the last
-  // Google account is a surprising way to open someone's private journal.
-  provider.setCustomParameters({ prompt: 'select_account' })
+  provider.setCustomParameters(hint ? { login_hint: hint } : { prompt: 'select_account' })
 
   try {
     const credential = await signInWithPopup(auth, provider, browserPopupRedirectResolver)
     return await credential.user.getIdToken()
   } catch (error) {
-    const code = (error as { code?: string }).code ?? ''
-    if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
-      throw new GoogleSignInError('cancelled')
-    }
-    if (code === 'auth/popup-blocked') throw new GoogleSignInError('popup_blocked')
-    throw new GoogleSignInError('failed')
+    throw asSignInError(error)
   }
+}
+
+/**
+ * Trades a Google ID token — the one One Tap hands back — for a Firebase one.
+ *
+ * This is what keeps One Tap off the server. The token One Tap issues is
+ * Google's, signed by `accounts.google.com`; `/api/auth/google` verifies
+ * Firebase's, signed by `securetoken@system`, and every account in the
+ * database is keyed by the Firebase uid it carries. Exchanging here means the
+ * new door opens onto the same accounts as the old one, and not a line of the
+ * server changes.
+ *
+ * No nonce. GIS can put one in the token, but `GoogleAuthProvider.credential`
+ * takes no raw nonce to check it against — that parameter exists on the
+ * generic OIDC provider, not this one — so a nonce sent here comes back as
+ * `auth/invalid-credential`. What remains binding the token is its audience,
+ * which is this app's client id, and the origin Google will only deliver it
+ * to.
+ */
+export async function signInWithGoogleCredential(idToken: string): Promise<string> {
+  const auth = firebaseAuth()
+
+  try {
+    const credential = await signInWithCredential(auth, GoogleAuthProvider.credential(idToken))
+    return await credential.user.getIdToken()
+  } catch (error) {
+    throw asSignInError(error)
+  }
+}
+
+function asSignInError(error: unknown): GoogleSignInError {
+  const code = (error as { code?: string }).code ?? ''
+  if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+    return new GoogleSignInError('cancelled')
+  }
+  if (code === 'auth/popup-blocked') return new GoogleSignInError('popup_blocked')
+  return new GoogleSignInError('failed')
+}
+
+/**
+ * Who Firebase says just signed in, in the shape the chip row stores.
+ *
+ * Read from Firebase rather than passed down from the caller because the three
+ * ways in — the button, a chip, One Tap — all end with a Firebase user and
+ * none of them otherwise knows the display name or the picture.
+ */
+export function currentAccount(): {
+  email: string
+  name: string | null
+  photoUrl: string | null
+} | null {
+  const user = firebaseAuth().currentUser
+  if (!user?.email) return null
+  return { email: user.email, name: user.displayName, photoUrl: user.photoURL }
 }
 
 /**

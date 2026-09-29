@@ -4,6 +4,13 @@ import { revalidatePath } from 'next/cache'
 import { log } from '@/lib/log'
 import { z } from 'zod'
 import { getCurrentUserId } from '@/lib/auth/current-user'
+import { audited, type NoteChange } from '@/server/services/audited'
+import {
+  accountSnapshot,
+  categorySnapshot,
+  namesFrom,
+  transactionSnapshot,
+} from '@/server/services/activity-snapshots'
 import { today } from '@/lib/dates'
 import type { FinanceCategory } from '@/lib/db/schema'
 import { ACCOUNT_TYPES } from '@/lib/finance/account-types'
@@ -19,6 +26,7 @@ import {
   deleteTransaction,
   findAccounts,
   findCategories,
+  findTransaction,
   findTransactionsPage,
   insertAccount,
   insertAsset,
@@ -50,51 +58,70 @@ function revalidateFinance() {
   revalidatePath(PATHS.home)
 }
 
-export async function createAccount(input: unknown) {
-  const parsed = z
-    .object({
-      name: z.string().min(1).max(120),
-      type: z.enum(ACCOUNT_TYPES),
-      currency: z.string().length(3),
-      openingBalance: z.number().min(-999_999_999_999).max(999_999_999_999).default(0),
-    })
-    .safeParse(input)
-  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+export const createAccount = audited(
+  'account.create',
+  async (input: unknown, audit: NoteChange) => {
+    const parsed = z
+      .object({
+        name: z.string().min(1).max(120),
+        type: z.enum(ACCOUNT_TYPES),
+        currency: z.string().length(3),
+        openingBalance: z.number().min(-999_999_999_999).max(999_999_999_999).default(0),
+      })
+      .safeParse(input)
+    if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
-  await insertAccount({
-    userId: await getCurrentUserId(),
-    name: parsed.data.name,
-    type: parsed.data.type,
-    currency: parsed.data.currency.toUpperCase(),
-    openingBalance: String(parsed.data.openingBalance),
-  })
+    const values = {
+      name: parsed.data.name,
+      type: parsed.data.type,
+      currency: parsed.data.currency.toUpperCase(),
+      openingBalance: String(parsed.data.openingBalance),
+    }
+    await insertAccount({ userId: await getCurrentUserId(), ...values })
+    audit({ request: accountSnapshot(values) })
 
-  revalidateFinance()
-  return { ok: true as const }
-}
+    revalidateFinance()
+    return { ok: true as const }
+  },
+  ({ input }) => ({ label: (input as { name?: string }).name ?? null }),
+)
 
-export async function saveAccount(input: unknown) {
-  const parsed = z
-    .object({
-      id: z.string().uuid(),
-      name: z.string().min(1).max(120),
-      type: z.enum(ACCOUNT_TYPES),
-      currency: z.string().length(3),
-      openingBalance: z.number().min(-999_999_999_999).max(999_999_999_999),
-    })
-    .safeParse(input)
-  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+export const saveAccount = audited(
+  'account.update',
+  async (input: unknown, audit: NoteChange) => {
+    const parsed = z
+      .object({
+        id: z.string().uuid(),
+        name: z.string().min(1).max(120),
+        type: z.enum(ACCOUNT_TYPES),
+        currency: z.string().length(3),
+        openingBalance: z.number().min(-999_999_999_999).max(999_999_999_999),
+      })
+      .safeParse(input)
+    if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
-  await updateAccount(await getCurrentUserId(), parsed.data.id, {
-    name: parsed.data.name,
-    type: parsed.data.type,
-    currency: parsed.data.currency.toUpperCase(),
-    openingBalance: String(parsed.data.openingBalance),
-  })
+    const userId = await getCurrentUserId()
+    const values = {
+      name: parsed.data.name,
+      type: parsed.data.type,
+      currency: parsed.data.currency.toUpperCase(),
+      openingBalance: String(parsed.data.openingBalance),
+    }
+    // The whole list rather than a single-row read: it is a handful of rows
+    // per person, already indexed by owner, and every other account action
+    // reads it anyway.
+    const before = (await findAccounts(userId)).find((row) => row.id === parsed.data.id)
+    await updateAccount(userId, parsed.data.id, values)
+    audit({ current: accountSnapshot(before), request: accountSnapshot(values) })
 
-  revalidateFinance()
-  return { ok: true as const }
-}
+    revalidateFinance()
+    return { ok: true as const }
+  },
+  ({ input }) => ({
+    entityId: (input as { id?: string }).id ?? null,
+    label: (input as { name?: string }).name ?? null,
+  }),
+)
 
 /**
  * Removing an account means two different things, and the ledger decides which.
@@ -102,51 +129,77 @@ export async function saveAccount(input: unknown) {
  * take its history with it — that account is hidden instead, and every row it
  * is part of stays where it is. An account nobody ever used is simply gone.
  */
-export async function removeAccount(input: unknown) {
-  const parsed = z.object({ id: z.string().uuid() }).safeParse(input)
-  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+export const removeAccount = audited(
+  'account.delete',
+  async (input: unknown, audit: NoteChange) => {
+    const parsed = z.object({ id: z.string().uuid() }).safeParse(input)
+    if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
-  const userId = await getCurrentUserId()
-  const used = await countAccountTransactions(userId, parsed.data.id)
+    const userId = await getCurrentUserId()
+    const [used, accounts] = await Promise.all([
+      countAccountTransactions(userId, parsed.data.id),
+      findAccounts(userId),
+    ])
 
-  if (used > 0) await updateAccount(userId, parsed.data.id, { archivedAt: new Date() })
-  else await deleteAccount(userId, parsed.data.id)
+    if (used > 0) await updateAccount(userId, parsed.data.id, { archivedAt: new Date() })
+    else await deleteAccount(userId, parsed.data.id)
 
-  revalidateFinance()
-  return { ok: true as const, hidden: used > 0, transactions: used }
-}
-
-export async function createCategory(input: unknown) {
-  const parsed = z
-    .object({
-      name: z.string().min(1).max(120),
-      kind: z.enum(['income', 'expense']),
-      note: optionalText,
+    audit({
+      current: accountSnapshot(accounts.find((row) => row.id === parsed.data.id)),
     })
-    .safeParse(input)
-  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
-  await insertCategory({ ...parsed.data, userId: await getCurrentUserId() })
-  revalidateFinance()
-  return { ok: true as const }
-}
+    revalidateFinance()
+    return { ok: true as const, hidden: used > 0, transactions: used }
+  },
+  ({ input }) => ({ entityId: (input as { id?: string }).id ?? null }),
+)
 
-export async function saveCategory(input: unknown) {
-  const parsed = z
-    .object({
-      id: z.string().uuid(),
-      name: z.string().min(1).max(120),
-      kind: z.enum(['income', 'expense']),
-      note: optionalText,
-    })
-    .safeParse(input)
-  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+export const createCategory = audited(
+  'category.create',
+  async (input: unknown, audit: NoteChange) => {
+    const parsed = z
+      .object({
+        name: z.string().min(1).max(120),
+        kind: z.enum(['income', 'expense']),
+        note: optionalText,
+      })
+      .safeParse(input)
+    if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
-  const { id, ...patch } = parsed.data
-  await updateCategory(await getCurrentUserId(), id, patch)
-  revalidateFinance()
-  return { ok: true as const }
-}
+    await insertCategory({ ...parsed.data, userId: await getCurrentUserId() })
+    audit({ request: categorySnapshot(parsed.data) })
+    revalidateFinance()
+    return { ok: true as const }
+  },
+  ({ input }) => ({ label: (input as { name?: string }).name ?? null }),
+)
+
+export const saveCategory = audited(
+  'category.update',
+  async (input: unknown, audit: NoteChange) => {
+    const parsed = z
+      .object({
+        id: z.string().uuid(),
+        name: z.string().min(1).max(120),
+        kind: z.enum(['income', 'expense']),
+        note: optionalText,
+      })
+      .safeParse(input)
+    if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+
+    const { id, ...patch } = parsed.data
+    const userId = await getCurrentUserId()
+    const before = (await findCategories(userId)).find((row) => row.id === id)
+    await updateCategory(userId, id, patch)
+    audit({ current: categorySnapshot(before), request: categorySnapshot(patch) })
+    revalidateFinance()
+    return { ok: true as const }
+  },
+  ({ input }) => ({
+    entityId: (input as { id?: string }).id ?? null,
+    label: (input as { name?: string }).name ?? null,
+  }),
+)
 
 /**
  * Same two meanings as removing an account, decided the same way. A category
@@ -156,20 +209,31 @@ export async function saveCategory(input: unknown) {
  * "groceries" quietly becoming uncategorised is not what a delete button
  * should mean.
  */
-export async function removeCategory(input: unknown) {
-  const parsed = z.object({ id: z.string().uuid() }).safeParse(input)
-  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+export const removeCategory = audited(
+  'category.delete',
+  async (input: unknown, audit: NoteChange) => {
+    const parsed = z.object({ id: z.string().uuid() }).safeParse(input)
+    if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
-  const userId = await getCurrentUserId()
-  const used = await countCategoryUsage(userId, parsed.data.id)
-  const total = used.transactions + used.recurring + used.budgets
+    const userId = await getCurrentUserId()
+    const [used, categories] = await Promise.all([
+      countCategoryUsage(userId, parsed.data.id),
+      findCategories(userId),
+    ])
+    const total = used.transactions + used.recurring + used.budgets
 
-  if (total > 0) await updateCategory(userId, parsed.data.id, { archivedAt: new Date() })
-  else await deleteCategory(userId, parsed.data.id)
+    if (total > 0) await updateCategory(userId, parsed.data.id, { archivedAt: new Date() })
+    else await deleteCategory(userId, parsed.data.id)
 
-  revalidateFinance()
-  return { ok: true as const, hidden: total > 0, ...used }
-}
+    audit({
+      current: categorySnapshot(categories.find((row) => row.id === parsed.data.id)),
+    })
+
+    revalidateFinance()
+    return { ok: true as const, hidden: total > 0, ...used }
+  },
+  ({ input }) => ({ entityId: (input as { id?: string }).id ?? null }),
+)
 
 const transactionFields = {
   occurredOn: isoDateSchema,
@@ -250,48 +314,61 @@ function ownedBy(id: string | null | undefined, rows: { id: string }[]): string 
   return id && rows.some((row) => row.id === id) ? id : null
 }
 
-export async function createTransaction(input: unknown) {
-  const parsed = transactionSchema.safeParse(input)
-  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+export const createTransaction = audited(
+  'transaction.create',
+  async (input: unknown, audit: NoteChange) => {
+    const parsed = transactionSchema.safeParse(input)
+    if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
-  // The session cookie names the user without touching the database, so the
-  // settings row is read alongside the ownership lists rather than ahead of
-  // them. One wave of queries instead of two.
-  const userId = await getCurrentUserId()
-  const [settings, accounts, categories, people] = await Promise.all([
-    getSettings(),
-    findAccounts(userId),
-    findCategories(userId),
-    // Archived included: re-saving an old transaction must not silently drop
-    // the debt link to someone who has since been removed from the list.
-    findPeople(userId, { includeArchived: true }),
-  ])
+    // The session cookie names the user without touching the database, so the
+    // settings row is read alongside the ownership lists rather than ahead of
+    // them. One wave of queries instead of two.
+    const userId = await getCurrentUserId()
+    const [settings, accounts, categories, people] = await Promise.all([
+      getSettings(),
+      findAccounts(userId),
+      findCategories(userId),
+      // Archived included: re-saving an old transaction must not silently drop
+      // the debt link to someone who has since been removed from the list.
+      findPeople(userId, { includeArchived: true }),
+    ])
 
-  const transfer = parsed.data.kind === 'transfer'
-  const accountId = ownedBy(parsed.data.accountId, accounts)
-  const counterAccountId = transfer ? ownedBy(parsed.data.counterAccountId, accounts) : null
-  if (accountId === null || (transfer && counterAccountId === null)) {
-    return { ok: false as const, error: 'invalid_input' as const }
-  }
+    const transfer = parsed.data.kind === 'transfer'
+    const accountId = ownedBy(parsed.data.accountId, accounts)
+    const counterAccountId = transfer ? ownedBy(parsed.data.counterAccountId, accounts) : null
+    if (accountId === null || (transfer && counterAccountId === null)) {
+      return { ok: false as const, error: 'invalid_input' as const }
+    }
 
-  await insertTransaction({
-    ...(parsed.data.id ? { id: parsed.data.id } : {}),
-    userId: settings.userId,
-    occurredOn: parsed.data.occurredOn,
-    amount: String(parsed.data.amount),
-    currency: settings.defaultCurrency,
-    kind: parsed.data.kind,
-    accountId,
-    counterAccountId,
-    categoryId: transfer ? null : ownedBy(parsed.data.categoryId, categories),
-    personId: transfer ? null : ownedBy(parsed.data.personId, people),
-    payeePersonId: ownedBy(parsed.data.payeePersonId, people),
-    merchant: parsed.data.merchant ?? null,
-  })
+    await insertTransaction({
+      ...(parsed.data.id ? { id: parsed.data.id } : {}),
+      userId: settings.userId,
+      occurredOn: parsed.data.occurredOn,
+      amount: String(parsed.data.amount),
+      currency: settings.defaultCurrency,
+      kind: parsed.data.kind,
+      accountId,
+      counterAccountId,
+      categoryId: transfer ? null : ownedBy(parsed.data.categoryId, categories),
+      personId: transfer ? null : ownedBy(parsed.data.personId, people),
+      payeePersonId: ownedBy(parsed.data.payeePersonId, people),
+      merchant: parsed.data.merchant ?? null,
+    })
 
-  revalidateFinance()
-  return { ok: true as const }
-}
+    // Said from in here rather than from the wrapper: naming the account and
+    // the category needs the lists that were just loaded to check ownership.
+    audit({
+      request: transactionSnapshot(
+        { ...parsed.data, accountId, counterAccountId, currency: settings.defaultCurrency },
+        namesFrom({ accounts, categories, people }),
+      ),
+    })
+
+    revalidateFinance()
+    return { ok: true as const }
+  },
+  ({ input }) => ({ label: (input as { merchant?: string }).merchant ?? null }),
+)
 
 /**
  * Editing a row that is already in the ledger.
@@ -327,49 +404,62 @@ export async function markTransactionTransferred(input: unknown) {
   return { ok: true as const }
 }
 
-export async function saveTransaction(input: unknown) {
-  const parsed = z
-    .object({ id: z.string().uuid(), ...transactionFields })
-    .refine(transferRule, transferMessage)
-    .refine(debtRule, debtMessage)
-    .safeParse(input)
-  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+export const saveTransaction = audited(
+  'transaction.update',
+  async (input: unknown, audit: NoteChange) => {
+    const parsed = z
+      .object({ id: z.string().uuid(), ...transactionFields })
+      .refine(transferRule, transferMessage)
+      .refine(debtRule, debtMessage)
+      .safeParse(input)
+    if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
-  const userId = await getCurrentUserId()
-  const [settings, accounts, categories, people] = await Promise.all([
-    getSettings(),
-    findAccounts(userId),
-    findCategories(userId),
-    // Archived included: re-saving an old transaction must not silently drop
-    // the debt link to someone who has since been removed from the list.
-    findPeople(userId, { includeArchived: true }),
-  ])
+    const userId = await getCurrentUserId()
+    const [settings, accounts, categories, people, before] = await Promise.all([
+      getSettings(),
+      findAccounts(userId),
+      findCategories(userId),
+      // Archived included: re-saving an old transaction must not silently drop
+      // the debt link to someone who has since been removed from the list.
+      findPeople(userId, { includeArchived: true }),
+      // The row as it stands. Read alongside the lists rather than after them,
+      // and read at all because in three lines it will not exist any more.
+      findTransaction(userId, parsed.data.id),
+    ])
 
-  const transfer = parsed.data.kind === 'transfer'
-  const accountId = ownedBy(parsed.data.accountId, accounts)
-  const counterAccountId = transfer ? ownedBy(parsed.data.counterAccountId, accounts) : null
-  if (accountId === null || (transfer && counterAccountId === null)) {
-    return { ok: false as const, error: 'invalid_input' as const }
-  }
+    const transfer = parsed.data.kind === 'transfer'
+    const accountId = ownedBy(parsed.data.accountId, accounts)
+    const counterAccountId = transfer ? ownedBy(parsed.data.counterAccountId, accounts) : null
+    if (accountId === null || (transfer && counterAccountId === null)) {
+      return { ok: false as const, error: 'invalid_input' as const }
+    }
 
-  const saved = await updateTransaction(settings.userId, parsed.data.id, {
-    occurredOn: parsed.data.occurredOn,
-    amount: String(parsed.data.amount),
-    kind: parsed.data.kind,
-    accountId,
-    counterAccountId,
-    categoryId: transfer ? null : ownedBy(parsed.data.categoryId, categories),
-    personId: transfer ? null : ownedBy(parsed.data.personId, people),
-    payeePersonId: ownedBy(parsed.data.payeePersonId, people),
-    merchant: parsed.data.merchant ?? null,
-  })
+    const saved = await updateTransaction(settings.userId, parsed.data.id, {
+      occurredOn: parsed.data.occurredOn,
+      amount: String(parsed.data.amount),
+      kind: parsed.data.kind,
+      accountId,
+      counterAccountId,
+      categoryId: transfer ? null : ownedBy(parsed.data.categoryId, categories),
+      personId: transfer ? null : ownedBy(parsed.data.personId, people),
+      payeePersonId: ownedBy(parsed.data.payeePersonId, people),
+      merchant: parsed.data.merchant ?? null,
+    })
 
-  revalidateFinance()
-  // The row as the database now holds it. The ledger keeps its page in client
-  // state, so without this the edited row goes on showing what it used to say
-  // until something reloads it.
-  return { ok: true as const, transaction: saved }
-}
+    const names = namesFrom({ accounts, categories, people })
+    audit({
+      current: transactionSnapshot(before, names),
+      request: transactionSnapshot(saved, names),
+    })
+
+    revalidateFinance()
+    // The row as the database now holds it. The ledger keeps its page in client
+    // state, so without this the edited row goes on showing what it used to say
+    // until something reloads it.
+    return { ok: true as const, transaction: saved }
+  },
+  ({ result }) => ({ entityId: result.transaction?.id, label: result.transaction?.merchant }),
+)
 
 /**
  * Spec 12 + §14 — free text becomes *drafts*, never rows. The model's output is
@@ -488,14 +578,35 @@ export async function createTransactions(input: unknown) {
   return { ok: true as const, saved }
 }
 
-export async function removeTransaction(input: unknown) {
-  const id = z.string().uuid().parse(input)
-  // The row goes back to the caller so the toast can offer to undo the delete;
-  // nothing else keeps a copy, and the table has no archived flag to hide it.
-  const removed = await deleteTransaction(await getCurrentUserId(), id)
-  revalidateFinance()
-  return { ok: true as const, removed }
-}
+export const removeTransaction = audited(
+  'transaction.delete',
+  async (input: unknown, audit: NoteChange) => {
+    const id = z.string().uuid().parse(input)
+    const userId = await getCurrentUserId()
+    // The lists say "Ăn uống" rather than a dead id once the row is gone. They
+    // are fetched beside the delete rather than after it: naming a category
+    // has nothing to do with removing a transaction, so waiting for one to
+    // start the other would add a whole round trip to every delete for
+    // nothing. The row goes back to the caller so the toast can offer to undo
+    // it; nothing else keeps a copy, and the table has no archived flag.
+    const [removed, accounts, categories, people] = await Promise.all([
+      deleteTransaction(userId, id),
+      findAccounts(userId),
+      findCategories(userId),
+      findPeople(userId, { includeArchived: true }),
+    ])
+
+    if (removed) {
+      audit({
+        current: transactionSnapshot(removed, namesFrom({ accounts, categories, people })),
+      })
+    }
+
+    revalidateFinance()
+    return { ok: true as const, removed }
+  },
+  ({ result }) => ({ entityId: result.removed?.id, label: result.removed?.merchant }),
+)
 
 /**
  * Puts a deleted row back, id and all. Every field is re-checked the way a new
@@ -504,47 +615,51 @@ export async function removeTransaction(input: unknown) {
  * along because unlike a create this is meant to restore, not to re-enter:
  * dropping them would return a different transaction than the one deleted.
  */
-export async function restoreTransaction(input: unknown) {
-  const parsed = restoreSchema.safeParse(input)
-  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+export const restoreTransaction = audited(
+  'transaction.restore',
+  async (input: unknown) => {
+    const parsed = restoreSchema.safeParse(input)
+    if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
-  const userId = await getCurrentUserId()
-  const [accounts, categories, people] = await Promise.all([
-    findAccounts(userId),
-    findCategories(userId),
-    findPeople(userId, { includeArchived: true }),
-  ])
+    const userId = await getCurrentUserId()
+    const [accounts, categories, people] = await Promise.all([
+      findAccounts(userId),
+      findCategories(userId),
+      findPeople(userId, { includeArchived: true }),
+    ])
 
-  const transfer = parsed.data.kind === 'transfer'
-  const accountId = ownedBy(parsed.data.accountId, accounts)
-  const counterAccountId = transfer ? ownedBy(parsed.data.counterAccountId, accounts) : null
-  if (accountId === null || (transfer && counterAccountId === null)) {
-    return { ok: false as const, error: 'invalid_input' as const }
-  }
+    const transfer = parsed.data.kind === 'transfer'
+    const accountId = ownedBy(parsed.data.accountId, accounts)
+    const counterAccountId = transfer ? ownedBy(parsed.data.counterAccountId, accounts) : null
+    if (accountId === null || (transfer && counterAccountId === null)) {
+      return { ok: false as const, error: 'invalid_input' as const }
+    }
 
-  // `insertTransaction` ignores a conflicting id, so a second tap on Undo is a
-  // no-op rather than an error.
-  await insertTransaction({
-    id: parsed.data.id,
-    userId,
-    occurredOn: parsed.data.occurredOn,
-    amount: String(parsed.data.amount),
-    currency: parsed.data.currency,
-    fxRate: parsed.data.fxRate,
-    kind: parsed.data.kind,
-    accountId,
-    counterAccountId,
-    categoryId: transfer ? null : ownedBy(parsed.data.categoryId, categories),
-    personId: transfer ? null : ownedBy(parsed.data.personId, people),
-    payeePersonId: ownedBy(parsed.data.payeePersonId, people),
-    transferredAt: parsed.data.transferredAt,
-    merchant: parsed.data.merchant ?? null,
-    tags: parsed.data.tags,
-  })
+    // `insertTransaction` ignores a conflicting id, so a second tap on Undo is a
+    // no-op rather than an error.
+    await insertTransaction({
+      id: parsed.data.id,
+      userId,
+      occurredOn: parsed.data.occurredOn,
+      amount: String(parsed.data.amount),
+      currency: parsed.data.currency,
+      fxRate: parsed.data.fxRate,
+      kind: parsed.data.kind,
+      accountId,
+      counterAccountId,
+      categoryId: transfer ? null : ownedBy(parsed.data.categoryId, categories),
+      personId: transfer ? null : ownedBy(parsed.data.personId, people),
+      payeePersonId: ownedBy(parsed.data.payeePersonId, people),
+      transferredAt: parsed.data.transferredAt,
+      merchant: parsed.data.merchant ?? null,
+      tags: parsed.data.tags,
+    })
 
-  revalidateFinance()
-  return { ok: true as const }
-}
+    revalidateFinance()
+    return { ok: true as const }
+  },
+  ({ input }) => ({ entityId: (input as { id?: string }).id ?? null }),
+)
 
 const listTransactionsSchema = z.object({
   cursor: z.string().min(1).max(200).optional(),

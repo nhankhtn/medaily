@@ -230,7 +230,11 @@ const fileSchema = z.object({
   activity: z.custom<ActivityId>(isActivityId),
   startedAt: z.string().datetime({ offset: true }),
   endedAt: z.string().datetime({ offset: true }),
-  seconds: z.number().int().min(0).max(48 * 60 * 60),
+  seconds: z
+    .number()
+    .int()
+    .min(0)
+    .max(48 * 60 * 60),
   workoutType: z.string().max(80).nullable().optional(),
   topicId: optionalId,
   projectId: optionalId,
@@ -317,7 +321,11 @@ export async function fileCompletedRun(input: unknown) {
 const syncSchema = z.object({
   startedAt: z.string().datetime({ offset: true }),
   pausedAt: z.string().datetime({ offset: true }).nullable(),
-  accumulatedSeconds: z.number().int().min(0).max(48 * 60 * 60),
+  accumulatedSeconds: z
+    .number()
+    .int()
+    .min(0)
+    .max(48 * 60 * 60),
   activity: z.custom<ActivityId>(isActivityId),
   mode: z.enum(['stopwatch', 'countdown']),
   targetSeconds: z.number().int().min(60).max(86400).nullable(),
