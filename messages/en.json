@@ -1076,7 +1076,9 @@
     "noResource": "None",
     "close": "Close",
     "edit": "Edit",
-    "view": "View"
+    "view": "View",
+    "widen": "Fill the screen",
+    "narrow": "Back to the side panel"
   },
   "search": {
     "types": {

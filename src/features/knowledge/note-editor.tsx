@@ -1,6 +1,6 @@
 'use client'
 
-import { Eye, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Eye, Maximize2, Minimize2, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
@@ -22,6 +22,35 @@ const TYPES = ['note', 'concept', 'bookmark', 'lesson'] as const
 
 type Mode = 'view' | 'edit'
 
+/**
+ * Whether notes open wide, remembered across notes and across visits.
+ *
+ * Per device rather than on the account: which width is comfortable is a fact
+ * about the screen in front of somebody, and a laptop and a phone disagreeing
+ * about it is correct rather than a bug to sync away.
+ *
+ * Every access is guarded — `localStorage` throws in a private window and
+ * where site data is blocked, and a note that will not open because a width
+ * preference could not be read would be a poor trade.
+ */
+const WIDE_KEY = 'medaily.notes.wide'
+
+function readWide(): boolean {
+  try {
+    return localStorage.getItem(WIDE_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function writeWide(wide: boolean): void {
+  try {
+    localStorage.setItem(WIDE_KEY, wide ? '1' : '0')
+  } catch {
+    /* refused or full. The panel still opens, just at the default width. */
+  }
+}
+
 export function NoteEditor({
   note,
   trigger,
@@ -40,6 +69,12 @@ export function NoteEditor({
   const tc = useTranslations('common')
   const initialMode: Mode = defaultMode ?? (note ? 'view' : 'edit')
   const [open, setOpen] = useState(false)
+  /*
+   * Seeded on first render rather than in an effect: the server has no
+   * storage, and this is only read once the dialog is open — which is a click,
+   * long after hydration, so there is no markup for it to disagree with.
+   */
+  const [wide, setWide] = useState(false)
   const [mode, setMode] = useState<Mode>(initialMode)
   const [body, setBody] = useState(note?.bodyMd ?? '')
   const [type, setType] = useState<string>(note?.type ?? 'note')
@@ -85,8 +120,10 @@ export function NoteEditor({
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        if (next) openAs(initialMode)
-        else setOpen(false)
+        if (next) {
+          setWide(readWide())
+          openAs(initialMode)
+        } else setOpen(false)
       }}
     >
       <DialogTrigger asChild>
@@ -99,9 +136,27 @@ export function NoteEditor({
       </DialogTrigger>
 
       <DialogContent
-        layout="drawer"
+        layout={wide ? 'full' : 'drawer'}
         title={viewing ? (note?.title ?? t('newNote')) : note ? t('edit') : t('newNote')}
         description={viewing ? undefined : t('wikiHint')}
+        headerAction={
+          <button
+            type="button"
+            onClick={() => {
+              const next = !wide
+              setWide(next)
+              writeWide(next)
+            }}
+            aria-pressed={wide}
+            aria-label={t(wide ? 'narrow' : 'widen')}
+            title={t(wide ? 'narrow' : 'widen')}
+            // Hidden on a phone, where the sheet already stands at 96dvh and
+            // the button would be an affordance for nothing.
+            className="text-text-subtle hover:bg-surface-2 hover:text-text hidden size-8 shrink-0 items-center justify-center rounded-full sm:flex"
+          >
+            {wide ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
+          </button>
+        }
       >
         {note ? (
           <ModeSwitch mode={mode} onChange={setMode} viewLabel={t('view')} editLabel={t('edit')} />
@@ -184,71 +239,94 @@ export function NoteEditor({
               <Input name="title" defaultValue={note?.title} required autoFocus maxLength={300} />
             </Field>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label={t('type')}>
-                <Select name="type" value={type} onChange={(event) => setType(event.target.value)}>
-                  {TYPES.map((option) => (
-                    <option key={option} value={option}>
-                      {t(`types.${option}`)}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-              {type === 'lesson' ? (
-                <Field label={t('learnedOn')}>
-                  <Input name="learnedOn" type="date" defaultValue={note?.learnedOn ?? ''} />
-                </Field>
-              ) : (
-                <Field label={t('url')}>
-                  <Input name="url" type="url" defaultValue={note?.url ?? ''} maxLength={500} />
-                </Field>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <Field label={t('topic')}>
-                <Select name="topicId" defaultValue={note?.topicId ?? ''}>
-                  <option value="">{t('noTopic')}</option>
-                  {topics.map((topic) => (
-                    <option key={topic.id} value={topic.id}>
-                      {topic.name}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-              <Field label={t('resource')}>
-                <Select name="resourceId" defaultValue={note?.resourceId ?? ''}>
-                  <option value="">{t('noResource')}</option>
-                  {resources.map((resource) => (
-                    <option key={resource.id} value={resource.id}>
-                      {resource.title}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-            </div>
-
-            <Field label={t('tags')}>
-              <Input
-                name="tags"
-                defaultValue={note?.tagNames.join(', ') ?? ''}
-                placeholder={t('tagsHint')}
-              />
-            </Field>
-
             {/*
-             * Body fills what is left and scrolls inside its own box. Without
-             * overflow clipping, a flex-grown contenteditable paints over the
-             * fields below and looks like one big grey slab that swallowed them.
+             * Wide, the fields step aside into a column and the body takes the
+             * height they were using. That is the whole point of the wide mode:
+             * at full screen the panel grew sideways while the editor stayed
+             * the same height, because the rows above it went on eating the
+             * same 330px. Narrow, nothing moves: the fields come first in the
+             * markup, so stacking them puts everything back where it was.
              */}
-            <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-hidden">
-              <span className="shrink-0 text-sm font-medium">{t('body')}</span>
-              <MarkdownEditor
-                label={t('body')}
-                value={body}
-                onChange={setBody}
-                className="min-h-48 flex-1 overflow-y-auto sm:min-h-56"
-              />
+            <div className={cn('flex min-h-0 flex-1 gap-3', wide ? 'flex-row gap-4' : 'flex-col')}>
+              <div
+                className={cn(
+                  'flex shrink-0 flex-col gap-3',
+                  wide ? 'w-72 overflow-y-auto pr-1' : '',
+                )}
+              >
+                {/* One per row in the side column: two of these in 288px
+                    leaves a URL box too narrow to read what is in it. */}
+                <div className={cn('grid gap-3', wide ? '' : 'sm:grid-cols-2')}>
+                  <Field label={t('type')}>
+                    <Select
+                      name="type"
+                      value={type}
+                      onChange={(event) => setType(event.target.value)}
+                    >
+                      {TYPES.map((option) => (
+                        <option key={option} value={option}>
+                          {t(`types.${option}`)}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                  {type === 'lesson' ? (
+                    <Field label={t('learnedOn')}>
+                      <Input name="learnedOn" type="date" defaultValue={note?.learnedOn ?? ''} />
+                    </Field>
+                  ) : (
+                    <Field label={t('url')}>
+                      <Input name="url" type="url" defaultValue={note?.url ?? ''} maxLength={500} />
+                    </Field>
+                  )}
+                </div>
+
+                <div className={cn('grid gap-3', wide ? '' : 'grid-cols-2')}>
+                  <Field label={t('topic')}>
+                    <Select name="topicId" defaultValue={note?.topicId ?? ''}>
+                      <option value="">{t('noTopic')}</option>
+                      {topics.map((topic) => (
+                        <option key={topic.id} value={topic.id}>
+                          {topic.name}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                  <Field label={t('resource')}>
+                    <Select name="resourceId" defaultValue={note?.resourceId ?? ''}>
+                      <option value="">{t('noResource')}</option>
+                      {resources.map((resource) => (
+                        <option key={resource.id} value={resource.id}>
+                          {resource.title}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                </div>
+
+                <Field label={t('tags')}>
+                  <Input
+                    name="tags"
+                    defaultValue={note?.tagNames.join(', ') ?? ''}
+                    placeholder={t('tagsHint')}
+                  />
+                </Field>
+              </div>
+
+              {/*
+               * Body fills what is left and scrolls inside its own box. Without
+               * overflow clipping, a flex-grown contenteditable paints over the
+               * fields below and looks like one big grey slab that swallowed them.
+               */}
+              <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-hidden">
+                <span className="shrink-0 text-sm font-medium">{t('body')}</span>
+                <MarkdownEditor
+                  label={t('body')}
+                  value={body}
+                  onChange={setBody}
+                  className="min-h-48 flex-1 overflow-y-auto sm:min-h-56"
+                />
+              </div>
             </div>
 
             <div className="flex shrink-0 justify-between gap-2 pb-1">

@@ -1076,7 +1076,9 @@
     "noResource": "Không có",
     "close": "Đóng",
     "edit": "Sửa",
-    "view": "Xem"
+    "view": "Xem",
+    "widen": "Mở rộng toàn màn hình",
+    "narrow": "Thu về khung bên"
   },
   "search": {
     "types": {

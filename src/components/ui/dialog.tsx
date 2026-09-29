@@ -27,26 +27,42 @@ export function DialogContent({
   title,
   description,
   layout = 'dialog',
+  headerAction,
   className,
   children,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   title: string
   description?: string
-  layout?: 'dialog' | 'drawer'
+  /**
+   * `dialog` is a centred box for a short form. `drawer` is the side panel a
+   * record is read and edited in. `full` is the same panel given the screen,
+   * for the one thing a side panel is bad at: writing something long.
+   */
+  layout?: 'dialog' | 'drawer' | 'full'
+  /** Sits beside the close button — a control about the panel, not its contents. */
+  headerAction?: React.ReactNode
 }) {
   const keyboard = useKeyboardInset()
-  const drawer = layout === 'drawer'
+  const drawer = layout === 'drawer' || layout === 'full'
 
   return (
     <DialogPrimitive.Portal>
-      <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-overlay backdrop-blur-sm" />
+      <DialogPrimitive.Overlay className="bg-overlay fixed inset-0 z-50 backdrop-blur-sm" />
       <DialogPrimitive.Content
         className={cn(
           'glass-strong fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-2xl',
-          drawer
-            ? 'max-h-[calc(96dvh-var(--keyboard-inset))] bottom-[var(--keyboard-inset)] sm:inset-y-0 sm:right-0 sm:left-auto sm:bottom-0 sm:h-full sm:max-h-none sm:w-full sm:max-w-xl sm:translate-x-0 sm:translate-y-0 sm:rounded-none sm:rounded-l-2xl lg:max-w-2xl'
-            : 'max-h-[calc(90dvh-var(--keyboard-inset))] bottom-[var(--keyboard-inset)] sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:w-full sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:max-h-[85dvh]',
+          /*
+           * On a phone all three are the same sheet: it already stands at
+           * 96dvh, so there is nothing left for `full` to give. The difference
+           * only exists from `sm:` up, which is also the only place a side
+           * panel is narrow enough to be worth escaping.
+           */
+          layout === 'full'
+            ? 'bottom-[var(--keyboard-inset)] max-h-[calc(96dvh-var(--keyboard-inset))] sm:inset-4 sm:bottom-4 sm:h-auto sm:max-h-none sm:w-auto sm:max-w-none sm:translate-x-0 sm:translate-y-0 sm:rounded-2xl'
+            : drawer
+              ? 'bottom-[var(--keyboard-inset)] max-h-[calc(96dvh-var(--keyboard-inset))] sm:inset-y-0 sm:right-0 sm:bottom-0 sm:left-auto sm:h-full sm:max-h-none sm:w-full sm:max-w-xl sm:translate-x-0 sm:translate-y-0 sm:rounded-none sm:rounded-l-2xl lg:max-w-2xl'
+              : 'bottom-[var(--keyboard-inset)] max-h-[calc(90dvh-var(--keyboard-inset))] sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:max-h-[85dvh] sm:w-full sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl',
           className,
         )}
         {...props}
@@ -56,17 +72,20 @@ export function DialogContent({
           <div>
             <DialogPrimitive.Title className="text-lg font-semibold">{title}</DialogPrimitive.Title>
             {description ? (
-              <DialogPrimitive.Description className="mt-0.5 text-sm text-text-muted">
+              <DialogPrimitive.Description className="text-text-muted mt-0.5 text-sm">
                 {description}
               </DialogPrimitive.Description>
             ) : null}
           </div>
-          <DialogPrimitive.Close
-            className="flex size-8 shrink-0 items-center justify-center rounded-full text-text-subtle hover:bg-surface-2 hover:text-text"
-            aria-label="Close"
-          >
-            <X className="size-4" />
-          </DialogPrimitive.Close>
+          <div className="flex shrink-0 items-center gap-1">
+            {headerAction}
+            <DialogPrimitive.Close
+              className="text-text-subtle hover:bg-surface-2 hover:text-text flex size-8 shrink-0 items-center justify-center rounded-full"
+              aria-label="Close"
+            >
+              <X className="size-4" />
+            </DialogPrimitive.Close>
+          </div>
         </div>
 
         <div
