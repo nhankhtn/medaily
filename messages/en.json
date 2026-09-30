@@ -1643,6 +1643,8 @@
     "open": "Open",
     "members": "{count} in the room",
     "placeholder": "Write something",
+    "typing": "{name} is typing…",
+    "typingMany": "{count} people are typing…",
     "send": "Send",
     "loadOlder": "Loading older messages…",
     "emptyRoom": "Nothing said yet.",

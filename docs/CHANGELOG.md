@@ -6,6 +6,31 @@ Dates are the day the document was written, not the day the code shipped. A
 line here is the cheapest way to know whether what you are reading is older
 than the code.
 
+## 2026-09-30
+
+**Added**
+
+- [realtime.md](realtime.md) — a fourth document. How a message reaches
+  another screen, why the doorbell carries no payload, and why the typing
+  indicator is the one exception. It exists because the reasoning behind
+  `firestore.rules` lived only in code comments, and rules that deny fail
+  silently: there is no error anywhere, updates simply never arrive.
+- A typing indicator in a chat room. `Speaker` now carries `firebaseUid`
+  (`auth_identities.provider_uid` where the provider is `google`) so that
+  Firestore can vouch for who is typing instead of the payload claiming it —
+  the rules tie a write to `request.auth.uid`. Anybody signed in with the
+  password has no uid and never appears as typing, which matches their having
+  no live updates at all.
+- `firestore.rules` gained `channels/{channel}/typing/{uid}`, with `delete`
+  separated from `create, update` because `request.resource` is null on a
+  delete. No migration: the uid was already stored.
+
+**Known gap**
+
+- `features.md` still has no chat section at all — it predates this change and
+  was not filled in here. Rooms, invites, recall and now the typing indicator
+  are undocumented as features.
+
 ## 2026-09-21
 
 **Added**

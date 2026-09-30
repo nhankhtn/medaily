@@ -88,4 +88,18 @@ export function directKeyOf(a: string, b: string): string {
 export const MESSAGE_PAGE = 50
 
 /** A sender, as the transcript names them. Absent means they erased their account. */
-export type Speaker = { id: string; name: string; imageUrl: string | null }
+export type Speaker = {
+  id: string
+  name: string
+  imageUrl: string | null
+  /**
+   * Firebase uid, when this person has one — the name Firestore knows them by.
+   *
+   * The typing indicator is the only thing that reads it: Firestore rules tie
+   * a write to `request.auth.uid`, so a claim of "I am typing" can only be made
+   * in your own name. Matching that back to a member needs the uid here.
+   * `null` for anyone who signed in with the password, who therefore never
+   * appears as typing — the same people who have no live updates at all.
+   */
+  firebaseUid: string | null
+}

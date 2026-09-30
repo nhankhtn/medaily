@@ -1,11 +1,12 @@
 # Documentation
 
-Three documents, each answering a different question.
+Four documents, each answering a different question.
 
 | Document | Answers |
 | --- | --- |
 | [features.md](features.md) | What the app does and how to use it |
 | [database.md](database.md) | What is stored, column by column, and how the tables relate |
+| [realtime.md](realtime.md) | How live updates work, and what Firestore holds |
 | [CHANGELOG.md](CHANGELOG.md) | What changed in these documents, and when |
 
 ## Keeping them honest
@@ -20,6 +21,11 @@ nobody can explain six months later.
 **When a change adds or removes something a person can see or do, update
 [features.md](features.md).** The test is whether the "how to use it" steps
 still work if followed literally.
+
+**When a change touches `src/lib/realtime/**` or `firestore.rules`, update
+[realtime.md](realtime.md).** That document is the only place the reasoning
+behind the rules is written down, and rules that deny fail silently — a wrong
+document there costs an afternoon.
 
 Either way, add a dated line to [CHANGELOG.md](CHANGELOG.md) saying what moved.
 

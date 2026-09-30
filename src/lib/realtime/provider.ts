@@ -1,4 +1,4 @@
-import { NO_REALTIME, type RealtimeSignal } from './signal'
+import { NO_REALTIME, NO_TYPING, type RealtimeSignal, type TypingChannel } from './signal'
 
 /**
  * Whether live updates are offered.
@@ -33,4 +33,22 @@ export async function pickRealtimeSignal(): Promise<RealtimeSignal> {
 
   const { firestoreSignal } = await import('./firestore')
   return firestoreSignal()
+}
+
+/**
+ * Picks the typing transport, under exactly the gates the doorbell uses.
+ *
+ * Separate function rather than a second return value, so a screen that wants
+ * only the doorbell never loads the typing code — and so turning one off later
+ * does not mean untangling it from the other.
+ */
+export async function pickTypingChannel(): Promise<TypingChannel> {
+  if (typeof window === 'undefined' || !realtimeEnabled()) return NO_TYPING
+
+  const { getAuth } = await import('firebase/auth')
+  const { firebaseApp } = await import('@/lib/auth/firebase-client')
+  if (!getAuth(firebaseApp()).currentUser) return NO_TYPING
+
+  const { firestoreTyping } = await import('./firestore')
+  return firestoreTyping()
 }

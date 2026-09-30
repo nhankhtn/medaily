@@ -41,6 +41,37 @@ service cloud.firestore {
         && request.resource.data.at < request.time.toMillis() + 60000;
     }
 
+    // "Somebody is typing" — the one payload here that a client reads and the
+    // UI draws, so these rules are what make drawing it safe.
+    //
+    // The document is named by the writer's own Firebase uid and the write is
+    // tied to it, so a claim can only be made in your own name. Knowing a
+    // channel key therefore buys the ability to say "I am typing" as yourself,
+    // which every member of the room can do anyway, and nothing more. The
+    // reader matches the uid against the room's members and draws nothing for
+    // a uid it does not recognise.
+    //
+    // This is also the only thing Firestore knows about a person: that a uid
+    // was active in a room at a time. No word anybody typed reaches it.
+    match /channels/{channel}/typing/{uid} {
+      // Listable, unlike the channels above — the whole question is "who".
+      // Still gated by the 122 bits of the channel key, which is what a
+      // removed member loses when the key is rotated.
+      allow get, list: if request.auth != null;
+
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['at'])
+        && request.resource.data.at is number
+        && request.resource.data.at > request.time.toMillis() - 60000
+        && request.resource.data.at < request.time.toMillis() + 60000;
+
+      // Separate from the two above because on a delete `request.resource` is
+      // null: a single `write` rule inspecting the written fields would refuse
+      // the retraction that a sent message depends on.
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

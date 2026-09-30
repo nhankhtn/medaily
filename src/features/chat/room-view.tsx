@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { VirtualInfiniteList } from '@/components/ui/virtual-infinite-list'
 import type { ChatMessage, ChatRoom, MessagePage, Speaker } from '@/lib/chat/types'
 import { ringRoom, useRoomLive } from '@/lib/hooks/use-room-live'
+import { useTyping } from '@/lib/hooks/use-typing'
 import { realtimeEnabled } from '@/lib/realtime/provider'
 import { cn } from '@/lib/utils'
 import {
@@ -79,6 +80,23 @@ export function RoomView({
 
   useRoomLive(room.doorbellKey, () => void catchUp())
 
+  // My own uid comes from the roster rather than from Firebase directly: the
+  // roster is what the names are drawn from, so if the two ever disagree the
+  // indicator should follow the one the UI uses.
+  const myUid = speakers[me]?.firebaseUid ?? null
+  const { typists, announce, stop } = useTyping(room.doorbellKey, myUid)
+
+  /**
+   * Names for the uids that are typing, in roster order.
+   *
+   * A uid with no member behind it is dropped rather than shown as "former
+   * member": the doorbell key is all it takes to make a claim, and an
+   * unrecognised claimant is exactly the case not worth drawing.
+   */
+  const typingNames = typists
+    .map((uid) => Object.values(speakers).find((speaker) => speaker.firebaseUid === uid)?.name)
+    .filter((name): name is string => Boolean(name))
+
   const loadOlder = useCallback(async () => {
     if (!older || loadingOlder) return
     setLoadingOlder(true)
@@ -115,6 +133,8 @@ export function RoomView({
       shown.some((m) => m.id === result.message.id) ? shown : [...shown, result.message],
     )
     newest.current = result.message.id
+    // Before the ring, so the name is gone by the time the message lands.
+    stop()
     // Told after it is saved, so nobody is sent looking for something that is
     // not there yet.
     void ringRoom(result.doorbellKey)
@@ -184,10 +204,25 @@ export function RoomView({
         }}
       />
 
+      {/* Between the transcript and the box, and it reserves no space: a
+          permanent empty line under a conversation is a worse trade than the
+          layout shifting by one row for four seconds. */}
+      {typingNames.length > 0 ? (
+        <p aria-live="polite" className="text-text-subtle px-1 text-xs">
+          {typingNames.length === 1
+            ? t('typing', { name: typingNames[0]! })
+            : t('typingMany', { count: typingNames.length })}
+        </p>
+      ) : null}
+
       <form onSubmit={submit} className="flex items-end gap-2">
         <textarea
           value={draft}
-          onChange={(event) => setDraft(event.target.value)}
+          onChange={(event) => {
+            setDraft(event.target.value)
+            // Throttled inside the hook — every announcement is a write.
+            announce()
+          }}
           onKeyDown={(event) => {
             if (event.key === 'Enter' && !event.shiftKey) void submit(event)
           }}

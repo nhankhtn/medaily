@@ -1643,6 +1643,8 @@
     "open": "Mở",
     "members": "{count} người trong phòng",
     "placeholder": "Viết gì đó",
+    "typing": "{name} đang nhập…",
+    "typingMany": "{count} người đang nhập…",
     "send": "Gửi",
     "loadOlder": "Đang lấy tin cũ hơn…",
     "emptyRoom": "Chưa ai nói gì.",

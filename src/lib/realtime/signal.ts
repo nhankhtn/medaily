@@ -1,3 +1,5 @@
+import type { TypingEntry } from './typing'
+
 /**
  * A doorbell, not a database.
  *
@@ -45,5 +47,70 @@ export function inMemorySignal(): RealtimeSignal & { listeners: (channel: string
       return () => listeners.delete(onRing)
     },
     listeners: (channel) => channels.get(channel)?.size ?? 0,
+  }
+}
+
+/**
+ * The other half of the transport: a claim that can be read, not just heard.
+ *
+ * Kept as its own type rather than grown onto `RealtimeSignal`, because the
+ * doorbell's whole guarantee is that nobody reads what it carries. Something
+ * that must be read belongs beside it, where the difference is stated, not
+ * inside it, where the difference would quietly stop being true.
+ */
+export type TypingChannel = {
+  id: string
+  /** Says "still me, still typing" in the caller's own name. */
+  announce: (channel: string) => Promise<void>
+  /**
+   * Takes the claim back now, rather than letting it time out.
+   *
+   * Sending a message is the case that needs it: the message lands on the
+   * other screen instantly, and a name still marked as typing beside it for
+   * the rest of the TTL reads as the app being confused.
+   */
+  retract: (channel: string) => Promise<void>
+  /** Returns how to stop watching. */
+  watch: (channel: string, onChange: (entries: TypingEntry[]) => void) => () => void
+}
+
+/** Used where no transport is configured: nobody ever appears to be typing. */
+export const NO_TYPING: TypingChannel = {
+  id: 'none',
+  announce: async () => {},
+  retract: async () => {},
+  watch: () => () => {},
+}
+
+/** For tests: claims are delivered synchronously, under the given identity. */
+export function inMemoryTyping(me: string): TypingChannel & { now: () => number } {
+  const channels = new Map<string, Map<string, number>>()
+  const watchers = new Map<string, Set<(entries: TypingEntry[]) => void>>()
+  let clock = 0
+
+  const emit = (channel: string) => {
+    const entries = [...(channels.get(channel) ?? new Map())].map(([uid, at]) => ({ uid, at }))
+    for (const watcher of watchers.get(channel) ?? []) watcher(entries)
+  }
+
+  return {
+    id: 'memory',
+    now: () => clock,
+    announce: async (channel) => {
+      const claims = channels.get(channel) ?? new Map<string, number>()
+      claims.set(me, (clock += 1))
+      channels.set(channel, claims)
+      emit(channel)
+    },
+    retract: async (channel) => {
+      channels.get(channel)?.delete(me)
+      emit(channel)
+    },
+    watch: (channel, onChange) => {
+      const set = watchers.get(channel) ?? new Set()
+      set.add(onChange)
+      watchers.set(channel, set)
+      return () => set.delete(onChange)
+    },
   }
 }

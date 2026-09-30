@@ -11,7 +11,7 @@ import { directKeyOf, MESSAGE_PAGE } from '@/lib/chat/types'
 import { PATHS } from '@/lib/paths'
 import { createLimit } from '@/lib/rate-limit'
 import type { Speaker } from '@/lib/chat/types'
-import { findUsersByIds } from '@/server/repositories/auth'
+import { listIdentities, findUsersByIds } from '@/server/repositories/auth'
 import {
   assertCanInvite,
   assertMember,
@@ -400,11 +400,26 @@ async function allowed(roomId: string, userId: string): Promise<boolean> {
 }
 
 async function speakersOf(ids: string[]): Promise<Record<string, Speaker>> {
-  const rows = await findUsersByIds([...new Set(ids)])
+  const unique = [...new Set(ids)]
+  const [rows, identities] = await Promise.all([
+    findUsersByIds(unique),
+    listIdentities({ userIds: unique, provider: 'google' }),
+  ])
+
+  // One Google identity per person here — the unique index is on
+  // (provider, provider_uid), so a second row for the same user would mean two
+  // Google accounts linked, and either uid identifies them equally well.
+  const uidOf = new Map(identities.map((row) => [row.userId, row.providerUid]))
+
   return Object.fromEntries(
     rows.map((row) => [
       row.id,
-      { id: row.id, name: row.displayName, imageUrl: row.imageUrl ?? null },
+      {
+        id: row.id,
+        name: row.displayName,
+        imageUrl: row.imageUrl ?? null,
+        firebaseUid: uidOf.get(row.id) ?? null,
+      },
     ]),
   )
 }
