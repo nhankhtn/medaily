@@ -2,7 +2,6 @@ import { getTranslations } from 'next-intl/server'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Card } from '@/components/ui/card'
-import { InvitePanel } from '@/features/chat/invite-panel'
 import { RoomSettings } from '@/features/chat/room-settings'
 import { RoomView } from '@/features/chat/room-view'
 import { getCurrentUserId } from '@/lib/auth/current-user'
@@ -41,7 +40,7 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
 
         {/* Beside the title, not under the transcript: it is about the room,
             and it is where the eye already is on arriving. */}
-        <RoomSettings roomId={loaded.room.id} />
+        <RoomSettings roomId={loaded.room.id} owner={owner} />
       </div>
 
       <Card className="p-4">
@@ -53,10 +52,10 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
         />
       </Card>
 
-      <Card className="space-y-3 p-4">
-        <p className="text-text-subtle text-xs leading-snug">{t('privacyNote')}</p>
-        {owner ? <InvitePanel roomId={loaded.room.id} /> : null}
-      </Card>
+      {/* Not behind the gear with the rest: this one says what happens to
+          what you type, and a disclosure nobody opens is not a disclosure.
+          No card either — a single line of small print never needed one. */}
+      <p className="text-text-subtle px-1 text-xs leading-snug">{t('privacyNote')}</p>
     </div>
   )
 }
