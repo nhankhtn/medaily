@@ -11,6 +11,7 @@ import {
 } from '@/features/finance/boards'
 import { BudgetPanel } from '@/features/finance/budget-panel'
 import { AccountDialog } from '@/features/finance/finance-dialogs'
+import { getBalanceHistory } from '@/server/services/balance-history'
 import { getBudgetMonth } from '@/server/services/budgets'
 import { LedgerView } from '@/features/finance/ledger-view'
 import { Report } from '@/features/finance/report'
@@ -40,12 +41,22 @@ export default async function FinancePage({
   // Each tab reads only what it shows, so opening the report does not pay for
   // a ledger page nobody asked for.
   if (tab === 'report') {
-    const report = await getFinanceReport(params.period)
+    // Two focused reads rather than the whole ledger: the chart needs the
+    // daily balances and the account names, and nothing else on this page.
+    const [report, history] = await Promise.all([
+      getFinanceReport(params.period),
+      getBalanceHistory(),
+    ])
 
     return (
       <div className="space-y-4">
         <PageHeader title={t('title')} />
         {nav}
+        <BalanceHistory
+          points={history.points}
+          accounts={history.accounts}
+          currency={history.currency}
+        />
         <Report report={report} />
       </div>
     )
@@ -69,11 +80,6 @@ export default async function FinancePage({
       <div className="space-y-4">
         {header}
         {nav}
-        <BalanceHistory
-          points={data.dailyBalances}
-          accounts={data.accounts.map((account) => ({ id: account.id, name: account.name }))}
-          currency={data.currency}
-        />
         <div className="grid gap-4 lg:grid-cols-2">
           <DebtsBoard data={data} />
           <AccountsBoard data={data} />
