@@ -31,10 +31,7 @@ import {
 function firebaseConfig() {
   return {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? '',
-    authDomain:
-      typeof window !== 'undefined'
-        ? window.location.host
-        : (process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? ''),
+    authDomain: authDomain(),
     projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? '',
     // Both only matter to analytics, and both are absent on a deploy that
     // only signs people in. Firebase ignores what it is not asked for, so
@@ -43,6 +40,26 @@ function firebaseConfig() {
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? '',
     measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID ?? '',
   }
+}
+
+/**
+ * The page's own host where that can work, the project's own domain where it
+ * cannot.
+ *
+ * Firebase builds its helper address itself, always as
+ * `https://<authDomain>/__/auth/handler` — the scheme is not ours to choose.
+ * `next dev` serves plain http, so handing it `localhost:3000` produces
+ * `https://localhost:3000/__/auth/handler`, and the popup dies on
+ * `ERR_SSL_PROTOCOL_ERROR` before Google is ever reached.
+ *
+ * Asking about the scheme rather than the hostname: a tunnelled or
+ * self-signed https dev server can use the same-origin trick and should, and
+ * anything served over http cannot, whatever it is called.
+ */
+function authDomain(): string {
+  const configured = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? ''
+  if (typeof window === 'undefined') return configured
+  return window.location.protocol === 'https:' ? window.location.host : configured
 }
 
 /** False when the deploy has no Firebase project: the button then stays hidden. */
