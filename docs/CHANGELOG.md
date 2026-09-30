@@ -24,6 +24,18 @@ than the code.
 - `firestore.rules` gained `channels/{channel}/typing/{uid}`, with `delete`
   separated from `create, update` because `request.resource` is null on a
   delete. No migration: the uid was already stored.
+- A nightly sweep of orphaned doorbell documents, last in `/api/cron/nightly`.
+  It had to be server-side: after `rotateDoorbell` nobody holds the old key,
+  and the rules require it, so no browser can reach that document even to
+  delete it. Typing claims go after an hour, channels after thirty days, and
+  claims under a dying channel go with it — sub-collections outlive the
+  document above them, so order matters.
+- `FIREBASE_SERVICE_ACCOUNT`, and [realtime.md](realtime.md) says plainly what
+  it costs: it is the only Firebase credential here with real power, where
+  everything else runs on public keys and rules. Contained to one file that
+  speaks the REST API rather than pulling in the Admin SDK, reachable only from
+  the nightly job, and refused outright when its `project_id` does not match
+  the project the browser signs in to.
 
 **Known gap**
 

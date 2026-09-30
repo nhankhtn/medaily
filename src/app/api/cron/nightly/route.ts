@@ -6,6 +6,7 @@ import { findAllUserIds } from '@/server/repositories/auth'
 import { environmentName, sendJobReport } from '@/server/services/alerts'
 import { rolloverBudgets } from '@/server/services/budget-rollover'
 import { sweepNoteImages } from '@/server/services/note-images'
+import { sweepRealtimeChannels } from '@/server/services/realtime-gc'
 
 /**
  * Everything that runs once, overnight, for everybody.
@@ -22,8 +23,12 @@ import { sweepNoteImages } from '@/server/services/note-images'
  * enough to be cut off. Cheap and needed goes first; expensive and optional
  * goes second, where being cut off costs a night rather than a month.
  *
- * Neither can take the other down: each account is caught on its own inside
- * the services, and the two halves are caught separately here.
+ * The channel sweep goes last for the same reason taken further: it deletes
+ * orphaned doorbell documents, which nobody is waiting for and which cost a
+ * few hundred bytes a room. Cut off, it finishes tomorrow.
+ *
+ * None can take another down: each account is caught on its own inside the
+ * services, and each half is caught separately here.
  */
 export async function GET(request: Request) {
   const userAgent = request.headers.get('user-agent') ?? ''
@@ -46,6 +51,7 @@ export async function GET(request: Request) {
 
   const budgets = { created: 0, failed: 0 }
   const images = { removed: 0, freedBytes: 0, failed: 0 }
+  const realtime = { channels: 0, typing: 0, skipped: 0, capped: false, failed: 0 }
 
   for (const userId of userIds) {
     try {
@@ -67,7 +73,25 @@ export async function GET(request: Request) {
     }
   }
 
-  log.info('cron', 'nightly run completed', { budgets, images, accounts: userIds.length })
+  /*
+   * Not per account: Firestore knows nothing about who owns a room, and the
+   * whole point of the doorbell key is that it cannot be traced back to one.
+   * The sweep reads the collection once and judges by age.
+   */
+  try {
+    const swept = await sweepRealtimeChannels()
+    if (swept) Object.assign(realtime, swept)
+  } catch (error) {
+    realtime.failed += 1
+    await log.error('realtime', 'the channel sweep failed', error)
+  }
+
+  log.info('cron', 'nightly run completed', {
+    budgets,
+    images,
+    realtime,
+    accounts: userIds.length,
+  })
 
   /*
    * Only when it did something, or could not. Most nights it copies nothing
@@ -75,8 +99,15 @@ export async function GET(request: Request) {
    * stops being read — which matters because the same channel carries the
    * failures.
    */
-  const didSomething = budgets.created > 0 || images.removed > 0
-  const wentWrong = budgets.failed > 0 || images.failed > 0
+  const didSomething =
+    budgets.created > 0 || images.removed > 0 || realtime.channels > 0 || realtime.typing > 0
+  const wentWrong = budgets.failed > 0 || images.failed > 0 || realtime.failed > 0
+
+  const sweepNote = realtime.failed > 0
+    ? 'lỗi'
+    : realtime.capped
+      ? 'đã tới giới hạn, còn tiếp đêm mai'
+      : null
 
   if (didSomething || wentWrong) {
     await sendJobReport({
@@ -87,6 +118,13 @@ export async function GET(request: Request) {
         'Dòng ngân sách đã chép': budgets.created,
         'Ảnh đã xóa': images.removed,
         'Dung lượng thu hồi': formatBytes(images.freedBytes),
+        'Kênh chat đã dọn': `${realtime.channels} phòng · ${realtime.typing} trạng thái gõ`,
+        // One key, decided once. Two spreads both writing 'Dọn kênh' would
+        // have let whichever came last silently win.
+        ...(sweepNote ? { 'Dọn kênh': sweepNote } : {}),
+        // Worth seeing once, not every night: a document with no readable
+        // timestamp is left alone rather than guessed at.
+        ...(realtime.skipped > 0 ? { 'Document không đọc được mốc thời gian': realtime.skipped } : {}),
         ...(wentWrong
           ? { 'Tài khoản lỗi': `${budgets.failed} ngân sách · ${images.failed} ảnh` }
           : {}),
@@ -94,5 +132,5 @@ export async function GET(request: Request) {
     })
   }
 
-  return NextResponse.json({ budgets, images, accounts: userIds.length })
+  return NextResponse.json({ budgets, images, realtime, accounts: userIds.length })
 }

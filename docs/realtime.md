@@ -187,24 +187,78 @@ on the 45-second floor instead.
 
 ## Housekeeping
 
-Nothing deletes channel documents. There is no TTL policy and no sweep, and
-there cannot be a server-side one: the app has no Firebase Admin SDK, so only
-browsers write here. A deleted room and every rotated `doorbellKey` leave a
-document behind.
+Two kinds of document accumulate, and neither can clean itself from the
+browser.
 
-It does not matter much. Each is two numeric fields, `allow list` is `false` on
-`channels`, and an orphan nobody holds the key to is never read again.
+**Channel documents** are orphaned when a room is deleted — `deleteRoom` only
+touches MongoDB — and every time `rotateDoorbell` mints a new key. After a
+rotation nobody holds the old key, and the rules require it, so no browser can
+reach that document even to delete it.
 
-**To clean up, delete the `channels` collection from the console, whenever.**
-No need to be selective or careful: the next `ring` re-creates what it needs
+**Typing claims** normally retract themselves when a message is sent or the
+room is left. A tab closed mid-word gives no time for the round trip, and a
+device whose clock is wrong has its writes refused, so some are left behind.
+
+### The nightly sweep
+
+`sweepRealtimeChannels` runs last in `/api/cron/nightly`. It lists `channels`,
+and for each one:
+
+- deletes typing claims older than **1 hour** (`TYPING_STALE_MS`)
+- if the channel itself is older than **30 days** (`CHANNEL_STALE_MS`), deletes
+  **every** claim under it and then the channel document
+
+**Order matters.** Firestore does not delete a document's sub-collections with
+it. Deleting the channel first would leave its claims under a document that no
+longer exists — invisible in the console unless you already know to look.
+
+Three things bound what a mistake here costs:
+
+| Guard | Why |
+| --- | --- |
+| `MAX_DELETES_PER_RUN` = 500 | A blast radius, not a performance limit. A wrong threshold or a clock years ahead costs a bounded number of rows and a confusing line in the report. |
+| A document with no readable `at` is **kept** | Unexplained, so reported as skipped rather than guessed at. "Delete what you do not understand" is the wrong default for a scheduled job. |
+| Deletions are sorted | A run cut off by the cap takes the same first half every night and finishes, rather than an arbitrary half forever. |
+
+Being cut off is harmless in the other direction too: a channel whose claims
+went but which survived the cap is found tomorrow with nothing under it.
+
+The decisions are in `src/lib/realtime/gc.ts`, pure and tested. The service
+only carries them out.
+
+### What it costs to have
+
+This is the only Firebase credential in the app with real power.
+`FIREBASE_SERVICE_ACCOUNT` holds the whole service-account JSON and wants
+`roles/datastore.user`; its `project_id` is checked against
+`NEXT_PUBLIC_FIREBASE_PROJECT_ID`, so a staging key left in a production
+environment is refused rather than trusted.
+
+Everything else here — sign-in, the doorbell, the typing indicator — runs on
+public keys and security rules, with no secret to leak. That property is
+genuinely weaker now, and the containment is that one small file
+(`src/server/services/firestore-rest.ts`) holds the credential, speaks the REST
+API rather than pulling in the Admin SDK, and is reachable only from the
+nightly job.
+
+Leave `FIREBASE_SERVICE_ACCOUNT` unset and nothing is swept, nothing
+complains, and the garbage stays — a couple of numeric fields per room.
+
+### By hand, if you prefer
+
+```bash
+npx firebase-tools firestore:delete --recursive channels
+```
+
+`--recursive` is not optional: sub-collections outlive the documents above
+them. Nothing is lost either way — the next `ring` re-creates what it needs
 with `setDoc(..., { merge: true })`, and the worst case is one message arriving
-on the floor instead of instantly. That is the upside of storing nothing —
-there is nothing to lose.
+on the 45-second floor.
 
-A TTL policy would be the tidier answer but does not work as written: Firestore
-TTL requires a `Timestamp` field, and `at` is a plain number that the rules
-explicitly require to be a number. Changing it means changing the write, the
-rule, and re-thinking what stops a far-future timestamp being parked there.
+A TTL policy would be tidier but does not work as written: Firestore TTL
+requires a `Timestamp` field, and `at` is a plain number the rules explicitly
+require to be a number. Changing it means changing the write, the rule, and
+re-thinking what stops a far-future timestamp being parked there.
 
 ---
 
@@ -218,4 +272,7 @@ rule, and re-thinking what stops a far-future timestamp being parked there.
 | `src/lib/realtime/provider.ts` | The gates: env, and a Firebase session |
 | `src/lib/hooks/use-room-live.ts` | The doorbell, the 400ms debounce and the 45s floor |
 | `src/lib/hooks/use-typing.ts` | Watching, sweeping, throttling, retracting |
+| `src/lib/realtime/gc.ts` | What the nightly sweep may delete — pure, and tested |
+| `src/server/services/firestore-rest.ts` | The only holder of a powerful Firebase credential |
+| `src/server/services/realtime-gc.ts` | The sweep itself, called from `/api/cron/nightly` |
 | `firestore.rules` | Deployed by hand. Read `firestore.ts` before loosening anything |

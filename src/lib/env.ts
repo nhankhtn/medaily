@@ -87,6 +87,21 @@ const envSchema = z.object({
   // remembering. A log that grows forever is a liability, not an asset.
   ACTIVITY_LOG_DAYS: z.coerce.number().int().min(1).max(3650).default(90),
 
+  /*
+   * The only Firebase credential with any power in this app, and the only
+   * thing that uses it is the nightly sweep of orphaned doorbell documents.
+   * Absent, nothing is swept and nothing complains — the garbage is a few
+   * hundred bytes a room and harmless.
+   *
+   * The whole service-account JSON, pasted as one value. Two variables would
+   * mean a private key with real newlines in an environment variable, which is
+   * the classic way to spend an afternoon; inside JSON they stay escaped and
+   * `JSON.parse` restores them.
+   *
+   * Needs `roles/datastore.user` and nothing more.
+   */
+  FIREBASE_SERVICE_ACCOUNT: z.string().optional(),
+
   // Photo storage. Absent means the photo UI is simply not offered.
   CLOUDINARY_CLOUD_NAME: z.string().optional(),
   CLOUDINARY_API_KEY: z.string().optional(),
@@ -147,6 +162,7 @@ export const env: Env = parsed.success
       AUTH_ALLOW_SIGNUP: process.env.AUTH_ALLOW_SIGNUP,
       MONGODB_URI: process.env.MONGODB_URI,
       ACTIVITY_LOG_DAYS: Number(process.env.ACTIVITY_LOG_DAYS) || 90,
+      FIREBASE_SERVICE_ACCOUNT: process.env.FIREBASE_SERVICE_ACCOUNT,
       CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
       CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
       CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
