@@ -21,13 +21,48 @@ const FEATURES = [
 ] as const
 
 /**
+ * The name people type when they are looking for this, which is not the name
+ * in the layout.
+ *
+ * Every page inherits `Personal OS` from the root, and that is what this page
+ * carried until now — so the word `medaily` appeared nowhere in the one
+ * document search engines are allowed to read, and a search for it had only
+ * the domain to match on. The sidebar still says Personal OS; both are here
+ * because both are what somebody might type.
+ */
+const SEARCH_TITLE = 'medaily — Personal OS'
+
+/**
  * The first page a stranger sees, and the only one besides the legal notices
  * that search engines are allowed to index — everything else behind the gate
  * is somebody's private data.
+ *
+ * Its own title and description rather than the layout's: those are written
+ * for a link card in a chat and are the same in every language, while this is
+ * the one page written to be found, and it is read in whichever language the
+ * reader asked for.
  */
-export const metadata: Metadata = {
-  robots: { index: true, follow: true },
-  alternates: { canonical: PATHS.welcome },
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('welcome')
+
+  return {
+    title: SEARCH_TITLE,
+    /*
+     * Its own line rather than the subtitle on the page. That one is written
+     * to be read once somebody is already here; this one is what they type
+     * to arrive — so it names the things outright, `chi tiêu`, `thói quen`,
+     * `sức khỏe`, instead of describing the feeling of using them.
+     */
+    description: t('metaDescription'),
+    robots: { index: true, follow: true },
+    alternates: { canonical: PATHS.welcome },
+    openGraph: {
+      type: 'website',
+      url: PATHS.welcome,
+      title: SEARCH_TITLE,
+      description: t('metaDescription'),
+    },
+  }
 }
 
 export default async function WelcomePage() {
