@@ -9,7 +9,7 @@ import { VirtualInfiniteList } from '@/components/ui/virtual-infinite-list'
 import type { ChatMessage, ChatRoom, MessagePage, Speaker } from '@/lib/chat/types'
 import { ringRoom, useRoomLive } from '@/lib/hooks/use-room-live'
 import { useTyping } from '@/lib/hooks/use-typing'
-import { realtimeEnabled } from '@/lib/realtime/provider'
+import { Avatar } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import {
   deleteMessage,
@@ -19,7 +19,13 @@ import {
   sendMessage,
 } from '@/server/actions/chat'
 
-const ROW_ESTIMATE = 68
+/**
+ * A bubble row: the name where there is one, the bubble, the time. Mine has
+ * no name and comes out shorter, so this sits between the two rather than on
+ * either — the list corrects itself once rows are measured, and the estimate
+ * only has to keep the scrollbar honest before that.
+ */
+const ROW_ESTIMATE = 60
 
 /**
  * A message on screen, which is not quite a message in the database: one that
@@ -192,8 +198,6 @@ export function RoomView({
 
   return (
     <div className="space-y-3">
-      {!realtimeEnabled() ? <p className="text-text-subtle text-xs">{t('liveOff')}</p> : null}
-
       <VirtualInfiniteList
         items={messages}
         getKey={(message) => message.id}
@@ -205,50 +209,84 @@ export function RoomView({
         loadMorePosition="start"
         stickToBottom
         loadingMoreLabel={t('loadOlder')}
-        listClassName="divide-border-base divide-y"
+        listClassName="space-y-1"
         empty={<p className="text-text-subtle py-8 text-center text-sm">{t('emptyRoom')}</p>}
         renderItem={(message) => {
           const mine = message.userId === me
           const speaker = message.userId ? speakers[message.userId] : undefined
+          const recallable = mine && !message.deletedAt && !message.pending
+
+          /*
+           * Side says who, so the name does not have to. Mine on the right in
+           * the accent, everyone else's on the left — the arrangement every
+           * chat app has trained people to read at a glance, which is why the
+           * name above the bubble is only drawn for other people. Reading
+           * "Bạn" over every second line is repeating what the side already
+           * said.
+           */
           return (
-            <div className="group px-1 py-2">
-              <div className="flex flex-wrap items-baseline gap-x-2">
-                <span className="text-sm font-medium">
-                  {mine ? t('you') : (speaker?.name ?? t('formerMember'))}
-                </span>
+            <div className={cn('group flex px-1 py-0.5', mine ? 'justify-end' : 'justify-start')}>
+              <div
+                className={cn(
+                  'flex max-w-[80%] min-w-0 flex-col gap-0.5 sm:max-w-[70%]',
+                  mine ? 'items-end' : 'items-start',
+                )}
+              >
+                {mine ? null : (
+                  <span className="text-text-subtle px-1 text-xs font-medium">
+                    {speaker?.name ?? t('formerMember')}
+                  </span>
+                )}
+
+                <div className="flex min-w-0 items-end gap-1.5">
+                  {/* Only for other people, as every chat app does it: your own
+                      face beside your own words tells you nothing you did not
+                      already know, and it costs a column of width. */}
+                  {mine ? null : (
+                    <Avatar
+                      name={speaker?.name ?? t('formerMember')}
+                      src={speaker?.imageUrl}
+                      className="size-6"
+                    />
+                  )}
+                  {/* Outside the bubble and before it, so it never covers a
+                      word and never moves the text when it appears. */}
+                  {recallable ? (
+                    <button
+                      type="button"
+                      onClick={() => void recall(message)}
+                      aria-label={t('recall')}
+                      className="text-text-subtle hover:text-bad shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  ) : null}
+
+                  <p
+                    className={cn(
+                      'min-w-0 rounded-2xl px-3 py-1.5 text-sm break-words whitespace-pre-wrap',
+                      mine ? 'bg-accent text-accent-text' : 'bg-surface-2',
+                      message.deletedAt && 'text-text-subtle bg-surface-2 italic',
+                      // Faded until the server has it. Showing it as though it
+                      // had landed would be a lie on the one occasion it
+                      // matters: when the send is about to fail.
+                      message.pending && 'opacity-60',
+                    )}
+                  >
+                    {message.deletedAt ? t('recalled') : message.body}
+                  </p>
+                </div>
+
                 {message.pending ? null : (
-                  <span className="text-text-subtle text-xs tabular-nums">
+                  <span className="text-text-subtle px-1 text-[11px] tabular-nums">
                     {format.dateTime(new Date(message.createdAt), 'clock')}
                   </span>
                 )}
-                {mine && !message.deletedAt && !message.pending ? (
-                  <button
-                    type="button"
-                    onClick={() => void recall(message)}
-                    aria-label={t('recall')}
-                    className="text-text-subtle hover:text-bad ml-auto opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-                  >
-                    <Trash2 className="size-3.5" />
-                  </button>
-                ) : null}
               </div>
-              <p
-                className={cn(
-                  'mt-0.5 text-sm break-words whitespace-pre-wrap',
-                  message.deletedAt && 'text-text-subtle italic',
-                  // Faded until the server has it. Showing it as though it
-                  // had landed would be a lie on the one occasion it matters:
-                  // when the send is about to fail.
-                  message.pending && 'opacity-60',
-                )}
-              >
-                {message.deletedAt ? t('recalled') : message.body}
-              </p>
             </div>
           )
         }}
       />
-
       {/* Between the transcript and the box, and it reserves no space: a
           permanent empty line under a conversation is a worse trade than the
           layout shifting by one row for four seconds. */}
@@ -259,7 +297,6 @@ export function RoomView({
             : t('typingMany', { count: typingNames.length })}
         </p>
       ) : null}
-
       <form onSubmit={submit} className="flex items-end gap-2">
         <textarea
           value={draft}

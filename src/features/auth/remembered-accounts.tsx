@@ -2,12 +2,9 @@
 
 import { X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { useState, useSyncExternalStore } from 'react'
-import {
-  forget,
-  localAccountStore,
-  type RememberedAccount,
-} from '@/lib/auth/remembered-accounts'
+import { useSyncExternalStore } from 'react'
+import { Avatar } from '@/components/ui/avatar'
+import { forget, localAccountStore, type RememberedAccount } from '@/lib/auth/remembered-accounts'
 
 /** Dispatched here when the row changes, so every reader re-reads. */
 const CHANGED = 'medaily:accounts-changed'
@@ -84,7 +81,7 @@ export function RememberedAccounts({
             aria-label={t('continueAs', { email: account.email })}
             className="flex min-w-0 flex-1 items-center gap-2.5 rounded-full py-2 pl-2.5 text-left disabled:opacity-50"
           >
-            <Avatar account={account} />
+            <Avatar name={account.name ?? account.email} src={account.photoUrl} />
             <span className="min-w-0 flex-1">
               {account.name ? (
                 <span className="block truncate text-sm leading-tight font-medium">
@@ -113,40 +110,5 @@ export function RememberedAccounts({
         </li>
       ))}
     </ul>
-  )
-}
-
-/**
- * The Google picture, or the initial when there is none.
- *
- * `onError` matters more than it looks: these URLs are Google's and go stale,
- * and the alternative to a fallback is a broken-image glyph next to somebody's
- * address. `no-referrer` because the rest of the app sends none either.
- */
-function Avatar({ account }: { account: RememberedAccount }) {
-  const [broken, setBroken] = useState(false)
-  const initial = (account.name ?? account.email).trim().charAt(0).toUpperCase()
-
-  if (!account.photoUrl || broken) {
-    return (
-      <span
-        aria-hidden
-        className="bg-surface-2 text-text-muted flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-medium"
-      >
-        {initial}
-      </span>
-    )
-  }
-
-  return (
-    <img
-      src={account.photoUrl}
-      alt=""
-      width={28}
-      height={28}
-      referrerPolicy="no-referrer"
-      onError={() => setBroken(true)}
-      className="size-7 shrink-0 rounded-full object-cover"
-    />
   )
 }
