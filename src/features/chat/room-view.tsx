@@ -21,6 +21,13 @@ import {
 
 const ROW_ESTIMATE = 68
 
+/**
+ * A message on screen, which is not quite a message in the database: one that
+ * has been typed but not yet acknowledged is standing there under its client
+ * id, waiting to be swapped for the stored row.
+ */
+type Shown = ChatMessage & { pending?: boolean }
+
 export function RoomView({
   room,
   me,
@@ -35,7 +42,7 @@ export function RoomView({
   const t = useTranslations('chat')
   const format = useFormatter()
 
-  const [messages, setMessages] = useState<ChatMessage[]>(initialPage.items)
+  const [messages, setMessages] = useState<Shown[]>(initialPage.items)
   const [speakers, setSpeakers] = useState(initialSpeakers)
   const [older, setOlder] = useState<string | null>(
     initialPage.more ? (initialPage.items[0]?.id ?? null) : null,
@@ -113,28 +120,60 @@ export function RoomView({
     }
   }, [older, loadingOlder, room.id])
 
+  /**
+   * Shows the message at once, then lets the server correct it.
+   *
+   * A round trip to a serverless function and a database is a few hundred
+   * milliseconds, and watching your own sentence hang in the box for that long
+   * reads as the app being broken rather than as the network being slow. The
+   * row goes up immediately under the client id, and the answer swaps it for
+   * the stored one — or takes it away and gives the words back to the box.
+   */
   const submit = async (event: React.FormEvent) => {
     event.preventDefault()
     const body = draft.trim()
     if (body === '' || sending) return
 
+    const clientId = crypto.randomUUID()
+    const optimistic: Shown = {
+      id: clientId,
+      roomId: room.id,
+      userId: me,
+      body,
+      // Left blank rather than guessed: the time a message was sent is the
+      // server's to say, and the row is not showing a clock until it has.
+      createdAt: '',
+      deletedAt: null,
+      pending: true,
+    }
+
     setSending(true)
     setDraft('')
-    const result = await sendMessage({ roomId: room.id, body, clientId: crypto.randomUUID() })
+    setMessages((shown) => [...shown, optimistic])
+    // Before the request, not after: the name should go the moment the words
+    // do, not a round trip later.
+    stop()
+
+    const result = await sendMessage({ roomId: room.id, body, clientId })
     setSending(false)
 
     if (!result.ok) {
+      setMessages((shown) => shown.filter((m) => m.id !== clientId))
       setDraft(body)
       toast.error(t(result.error === 'rate_limited' ? 'tooFast' : 'sendFailed'))
       return
     }
 
-    setMessages((shown) =>
-      shown.some((m) => m.id === result.message.id) ? shown : [...shown, result.message],
-    )
+    setMessages((shown) => {
+      // The doorbell can bring the stored row back before this reply arrives,
+      // so the placeholder is removed first and the real one added only if it
+      // is not already standing there.
+      const without = shown.filter((m) => m.id !== clientId)
+      return without.some((m) => m.id === result.message.id)
+        ? without
+        : [...without, result.message]
+    })
     newest.current = result.message.id
-    // Before the ring, so the name is gone by the time the message lands.
-    stop()
     // Told after it is saved, so nobody is sent looking for something that is
     // not there yet.
     void ringRoom(result.doorbellKey)
@@ -177,10 +216,12 @@ export function RoomView({
                 <span className="text-sm font-medium">
                   {mine ? t('you') : (speaker?.name ?? t('formerMember'))}
                 </span>
-                <span className="text-text-subtle text-xs tabular-nums">
-                  {format.dateTime(new Date(message.createdAt), 'clock')}
-                </span>
-                {mine && !message.deletedAt ? (
+                {message.pending ? null : (
+                  <span className="text-text-subtle text-xs tabular-nums">
+                    {format.dateTime(new Date(message.createdAt), 'clock')}
+                  </span>
+                )}
+                {mine && !message.deletedAt && !message.pending ? (
                   <button
                     type="button"
                     onClick={() => void recall(message)}
@@ -195,6 +236,10 @@ export function RoomView({
                 className={cn(
                   'mt-0.5 text-sm break-words whitespace-pre-wrap',
                   message.deletedAt && 'text-text-subtle italic',
+                  // Faded until the server has it. Showing it as though it
+                  // had landed would be a lie on the one occasion it matters:
+                  // when the send is about to fail.
+                  message.pending && 'opacity-60',
                 )}
               >
                 {message.deletedAt ? t('recalled') : message.body}
