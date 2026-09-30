@@ -68,6 +68,8 @@ export const PATHS = {
   chatRoom: (id: string) => `/chat/${id}`,
   /** Where an invite link lands. Joining is a POST from here, never the GET. */
   chatJoin: (code: string) => `/chat/join/${code}`,
+  /** The room list with an invite waiting to be answered on top of it. */
+  chatWithInvite: (code: string) => `/chat?join=${encodeURIComponent(code)}`,
 
   people: '/people',
   career: '/career',

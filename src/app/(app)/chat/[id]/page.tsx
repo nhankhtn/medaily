@@ -1,5 +1,7 @@
 import { getTranslations } from 'next-intl/server'
+import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 import { notFound } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { RoomSettings } from '@/features/chat/room-settings'
@@ -28,14 +30,26 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <Link href={PATHS.chat} className="text-text-subtle text-xs hover:underline">
-            {t('title')}
-          </Link>
-          <h1 className="mt-0.5 truncate text-2xl font-semibold">
-            {loaded.room.title ?? t('untitled')}
-          </h1>
-          <p className="text-text-subtle mt-0.5 text-xs">{t('members', { count: members })}</p>
+        <div className="flex min-w-0 items-start gap-2">
+          {/*
+           * An arrow, and one a thumb can hit. The way back used to be the
+           * word "Nhắn tin" in the smallest type on the page, sitting where a
+           * breadcrumb goes — which reads as a label for the screen you are
+           * on rather than a door out of it. Sized like the other things a
+           * finger has to find rather than read.
+           */}
+          <Button variant="ghost" size="icon" asChild aria-label={t('backToRooms')}>
+            <Link href={PATHS.chat}>
+              <ArrowLeft className="size-5" />
+            </Link>
+          </Button>
+
+          <div className="min-w-0">
+            <h1 className="truncate text-2xl font-semibold">
+              {loaded.room.title ?? t('untitled')}
+            </h1>
+            <p className="text-text-subtle mt-0.5 text-xs">{t('members', { count: members })}</p>
+          </div>
         </div>
 
         {/* Beside the title, not under the transcript: it is about the room,
@@ -55,7 +69,6 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
       {/* Not behind the gear with the rest: this one says what happens to
           what you type, and a disclosure nobody opens is not a disclosure.
           No card either — a single line of small print never needed one. */}
-      <p className="text-text-subtle px-1 text-xs leading-snug">{t('privacyNote')}</p>
     </div>
   )
 }

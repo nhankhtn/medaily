@@ -35,8 +35,17 @@ describe('every chat action checks who is asking', () => {
     return [name, source.slice(start, end)] as [string, string]
   })
 
-  /** These decide membership rather than depend on it. */
-  const entryPoints = new Set(['createRoom', 'openDirectRoom', 'acceptInvite'])
+  /**
+   * These decide membership rather than depend on it.
+   *
+   * `peekInvite` belongs here for the same reason as `acceptInvite`: it
+   * answers "what am I being invited to" for somebody who is, by definition,
+   * not in the room yet. Asking it to call `assertMember` would be asking it
+   * to refuse everyone it exists to serve. What it must do instead — read the
+   * session, throttle by address, and stay vague about codes that do not
+   * exist — the checks below still hold it to.
+   */
+  const entryPoints = new Set(['createRoom', 'openDirectRoom', 'acceptInvite', 'peekInvite'])
 
   it('checks every exported action, whatever shape it is written in', () => {
     const exported = source.match(/^export (?:async function|const) \w+/gm) ?? []

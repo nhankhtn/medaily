@@ -1652,8 +1652,6 @@
     "recalled": "Tin đã thu hồi",
     "recall": "Thu hồi",
     "formerMember": "Người đã rời",
-    "you": "Bạn",
-    "liveOff": "Tin mới sẽ hiện trong vòng một phút.",
     "sendFailed": "Chưa gửi được. Thử lại nhé.",
     "tooFast": "Chậm lại một chút rồi gửi tiếp.",
     "roomSettings": "Cài đặt phòng",
@@ -1664,7 +1662,7 @@
     "inviteLink": "Chép link mời",
     "linkCopied": "Đã chép link. Dùng được một lần, trong hai ngày.",
     "inviteByEmail": "Mời bằng địa chỉ email",
-    "emailQueued": "Nếu có ai đang dùng địa chỉ đó, họ sẽ thấy phòng này chờ sẵn lúc đăng nhập.",
+    "emailQueued": "Đã mời",
     "noEmailSent": "Không có email nào được gửi đi — bạn tự gửi link cho họ nhé.",
     "revoke": "Thu hồi",
     "pendingInvites": "Lời mời đã phát",
@@ -1672,8 +1670,11 @@
     "joinAccept": "Vào phòng",
     "joinDecline": "Để sau",
     "joinGone": "Lời mời này không dùng được nữa. Xin một lời mời mới nhé.",
-    "joinAlready": "Bạn đã ở trong phòng này rồi.",
-    "privacyNote": "Mọi người ở đây đều thấy tên bạn và những gì bạn viết."
+    "joinAlready": "Bạn đã ở trong <b>{room}</b> rồi.",
+    "joinChecking": "Đang xem lời mời…",
+    "joinInvited": "Bạn được mời vào <b>{room}</b>.",
+    "joinOpen": "Mở phòng",
+    "backToRooms": "Về danh sách phòng"
   },
   "activity": {
     "title": "Những gì đã đổi",

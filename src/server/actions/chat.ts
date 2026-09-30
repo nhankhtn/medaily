@@ -388,6 +388,47 @@ export const acceptInvite = audited('chatRoom.join', async (input: unknown) => {
   return { ok: true as const, roomId: invite.roomId, alreadyIn: false }
 })
 
+/**
+ * What an invite is for, without spending it.
+ *
+ * The link used to land on a page of its own that said nothing but "join".
+ * Naming the room is the whole difference between that and an answerable
+ * question — nobody should have to accept an invitation to find out what they
+ * are joining.
+ *
+ * `findInvite` reads; `useInvite` is what spends, and it is not called here.
+ * So this stays safe to run on a page load, including the one a chat app's
+ * preview bot triggers before a person has clicked anything.
+ *
+ * It shares the accept throttle and the same vague refusal: a stranger
+ * guessing codes must not learn which ones exist from a friendlier answer.
+ */
+export async function peekInvite(input: unknown) {
+  const parsed = z.string().min(1).max(64).safeParse(input)
+  if (!parsed.success) return { ok: false as const, error: 'not_found' as const }
+
+  if (!joins.take(clientKey(await headers())).allowed) {
+    return { ok: false as const, error: 'rate_limited' as const }
+  }
+
+  const store = pickChatStore()
+  const invite = await store.findInvite(parsed.data)
+  if (!invite) return { ok: false as const, error: 'not_found' as const }
+
+  const room = await store.findRoom(invite.roomId)
+  if (!room) return { ok: false as const, error: 'not_found' as const }
+
+  // Already in it: the dialog says so rather than offering to join twice.
+  const member = await store.findMember(invite.roomId, await getCurrentUserId())
+
+  return {
+    ok: true as const,
+    title: room.title,
+    roomId: room.id,
+    alreadyIn: Boolean(member && member.leftAt === null),
+  }
+}
+
 /** Guessing codes is the one thing a stranger can try, so it is throttled by address. */
 const joins = createLimit({ capacity: 20, refillMs: 15 * 60_000 })
 

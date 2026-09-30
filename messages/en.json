@@ -1652,8 +1652,6 @@
     "recalled": "Message recalled",
     "recall": "Recall",
     "formerMember": "Someone who left",
-    "you": "You",
-    "liveOff": "New messages show up within a minute.",
     "sendFailed": "Not sent. Try again.",
     "tooFast": "Slow down a moment, then send it again.",
     "roomSettings": "Room settings",
@@ -1664,7 +1662,7 @@
     "inviteLink": "Copy invite link",
     "linkCopied": "Link copied. It works once, for two days.",
     "inviteByEmail": "Invite by email address",
-    "emailQueued": "If somebody is using that address, they will find this room waiting when they sign in.",
+    "emailQueued": "Invited",
     "noEmailSent": "Nothing is emailed — send them the link yourself.",
     "revoke": "Revoke",
     "pendingInvites": "Invites out",
@@ -1672,8 +1670,11 @@
     "joinAccept": "Join the room",
     "joinDecline": "Not now",
     "joinGone": "This invite no longer works. Ask for a new one.",
-    "joinAlready": "You are already in this room.",
-    "privacyNote": "Everyone here sees your name and what you write."
+    "joinAlready": "You are already in <b>{room}</b>.",
+    "joinChecking": "Looking at the invite…",
+    "joinInvited": "You have been invited to <b>{room}</b>.",
+    "joinOpen": "Open the room",
+    "backToRooms": "Back to the rooms"
   },
   "activity": {
     "title": "What changed",
