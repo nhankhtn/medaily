@@ -3,7 +3,6 @@
 import { useLocale, useTranslations } from 'next-intl'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardBody, CardHeader } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
 import { formatMoney } from '@/lib/format/money'
 import type { FinanceData } from '@/server/services/finance'
 import { AccountIcon } from './account-icon'
@@ -12,8 +11,6 @@ import {
   AccountDialog,
   AccountEditDialog,
   AssetDialog,
-  BudgetDialog,
-  BudgetEditDialog,
   CategoryDialog,
   InvestmentDialog,
 } from './finance-dialogs'
@@ -119,63 +116,6 @@ export function CategoriesBoard({ data }: BoardProps) {
           <p className="text-text-subtle text-sm">{t('noCategories')}</p>
         ) : (
           <CategoryList categories={data.categories} />
-        )}
-      </CardBody>
-    </Card>
-  )
-}
-
-export function BudgetsBoard({ data }: BoardProps) {
-  const t = useTranslations('finance')
-  const money = useMoney(data.currency)
-  const hasExpenseCategory = data.categories.some((category) => category.kind === 'expense')
-
-  return (
-    <Card>
-      <CardHeader
-        title={t('budgets')}
-        action={
-          hasExpenseCategory ? (
-            <BudgetDialog categories={data.categories} monthStart={data.monthStart} />
-          ) : (
-            <CategoryDialog />
-          )
-        }
-      />
-      <CardBody>
-        {!hasExpenseCategory ? (
-          <p className="text-text-subtle text-sm leading-snug">{t('needCategoryFirst')}</p>
-        ) : data.budgets.length === 0 ? (
-          <p className="text-text-subtle text-sm">{t('noBudgets')}</p>
-        ) : (
-          <ul className="space-y-3">
-            {data.budgets.map((budget) => {
-              const amount = Number(budget.amount)
-              const share = amount > 0 ? (budget.spent / amount) * 100 : 0
-              const over = budget.spent > amount
-
-              return (
-                <li key={budget.id} className="space-y-1.5">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <BudgetEditDialog budget={budget} />
-                    <span className="text-text-muted shrink-0 text-xs tabular-nums">
-                      {t('budgetOf', { spent: money(budget.spent), amount: money(amount) })}
-                    </span>
-                  </div>
-                  <Progress
-                    value={Math.min(100, share)}
-                    tone={over ? 'bad' : share > 90 ? 'warn' : 'accent'}
-                    label={budget.categoryName}
-                  />
-                  <p className={over ? 'text-bad text-xs' : 'text-text-subtle text-xs'}>
-                    {over
-                      ? t('overBudget', { amount: money(budget.spent - amount) })
-                      : t('remaining', { amount: money(amount - budget.spent) })}
-                  </p>
-                </li>
-              )
-            })}
-          </ul>
         )}
       </CardBody>
     </Card>

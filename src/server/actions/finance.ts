@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { rolloverBudgets } from '@/server/services/budget-rollover'
 import { log } from '@/lib/log'
 import { z } from 'zod'
 import { getCurrentUserId } from '@/lib/auth/current-user'
@@ -717,6 +718,24 @@ export async function saveBudget(input: unknown) {
 
   revalidateFinance()
   return { ok: true as const }
+}
+
+/**
+ * Brings last month's budget into this one, on the button rather than on the
+ * schedule.
+ *
+ * The nightly job does the same thing unattended, so this exists for the two
+ * moments it cannot cover: the month it was set up in, and a month somebody
+ * cleared on purpose and then wanted back. Both go through
+ * `rolloverBudgets`, which refuses to touch a month that already has a
+ * figure in it — so pressing this twice is as harmless as the job running
+ * twice.
+ */
+export async function copyLastMonthBudgets() {
+  const created = (await rolloverBudgets(await getCurrentUserId())).created
+
+  revalidateFinance()
+  return { ok: true as const, created }
 }
 
 export async function createAsset(input: unknown) {

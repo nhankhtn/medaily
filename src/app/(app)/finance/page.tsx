@@ -5,12 +5,13 @@ import { BalanceHistory } from '@/features/finance/balance-history'
 import {
   AccountsBoard,
   AssetsBoard,
-  BudgetsBoard,
   CategoriesBoard,
   DebtsBoard,
   InvestmentsBoard,
 } from '@/features/finance/boards'
+import { BudgetPanel } from '@/features/finance/budget-panel'
 import { AccountDialog } from '@/features/finance/finance-dialogs'
+import { getBudgetMonth } from '@/server/services/budgets'
 import { LedgerView } from '@/features/finance/ledger-view'
 import { Report } from '@/features/finance/report'
 import { formatMoney } from '@/lib/format/money'
@@ -85,12 +86,16 @@ export default async function FinancePage({
   }
 
   if (tab === 'budgets') {
+    // Its own read: the budget tab is the one that can look at a month other
+    // than this one, and the ledger above was loaded for this one.
+    const month = await getBudgetMonth(params.period)
+
     return (
       <div className="space-y-4">
         {header}
         {nav}
         <div className="lg:max-w-xl">
-          <BudgetsBoard data={data} />
+          <BudgetPanel month={month} categories={data.categories} />
         </div>
       </div>
     )
