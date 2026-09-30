@@ -54,6 +54,7 @@ export function ShortcutProvider({
     const steps = Object.entries(bindings).map(([id, binding]) => ({
       id,
       chords: parseBinding(binding),
+      notWhileTyping: ACTIONS.find((action) => action.id === id)?.notWhileTyping ?? false,
     }))
 
     const fire = (id: string) => {
@@ -100,7 +101,9 @@ export function ShortcutProvider({
 
         // A bare key belongs to whatever the user is typing into; one held
         // with a modifier does not, so ⌘K still opens the palette mid-sentence.
-        if (typing && !first.mod) continue
+        // Except where the combination already means something in a text box —
+        // ⌘B is bold in the note editor, and the sidebar can wait.
+        if (typing && (!first.mod || step.notWhileTyping)) continue
 
         if (step.chords.length === 1) {
           if (fire(step.id)) event.preventDefault()

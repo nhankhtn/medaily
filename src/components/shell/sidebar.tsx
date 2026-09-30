@@ -4,8 +4,9 @@ import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Logo } from '@/components/brand/logo'
+import { useShortcut } from '@/features/shortcuts/provider'
 import { NAV_GROUPS, NAV_ITEMS } from '@/lib/nav'
 import { PATHS } from '@/lib/paths'
 import { cn } from '@/lib/utils'
@@ -31,7 +32,7 @@ export function Sidebar() {
     setMounted(true)
   }, [])
 
-  const toggle = () => {
+  const toggle = useCallback(() => {
     setCollapsed((prev) => {
       const next = !prev
       try {
@@ -41,7 +42,13 @@ export function Sidebar() {
       }
       return next
     })
-  }
+  }, [])
+
+  // Registered wherever this mounts, which includes a phone: the aside is
+  // hidden by CSS below `md`, not unmounted. Folding something invisible
+  // costs nothing and the key is free there, so it is not worth a second
+  // source of truth about the breakpoint.
+  useShortcut('sidebar', toggle)
 
   return (
     <aside
@@ -73,7 +80,7 @@ export function Sidebar() {
           return (
             <div key={group} className="mb-4">
               {!collapsed ? (
-                <p className="px-2 py-1.5 text-[11px] font-semibold tracking-wider text-text-subtle uppercase">
+                <p className="text-text-subtle px-2 py-1.5 text-[11px] font-semibold tracking-wider uppercase">
                   {t(labelKey)}
                 </p>
               ) : (
@@ -92,15 +99,13 @@ export function Sidebar() {
                         className={cn(
                           'flex h-10 items-center gap-3 rounded-[var(--radius)] px-2.5 text-sm transition-colors',
                           active
-                            ? 'bg-accent-soft font-medium text-accent'
+                            ? 'bg-accent-soft text-accent font-medium'
                             : 'text-text-muted hover:bg-surface-2 hover:text-text',
                           collapsed && 'justify-center px-0',
                         )}
                       >
                         <item.icon className="size-[18px] shrink-0" />
-                        {!collapsed ? (
-                          <span className="flex-1 truncate">{t(item.key)}</span>
-                        ) : null}
+                        {!collapsed ? <span className="flex-1 truncate">{t(item.key)}</span> : null}
                       </Link>
                     </li>
                   )

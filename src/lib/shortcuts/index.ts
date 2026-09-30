@@ -20,6 +20,17 @@ export type ShortcutAction = {
   href?: string
   /** Only offered when a Gemini key is configured. */
   needsCapture?: boolean
+  /**
+   * Skipped while the cursor is in something being typed into, even though it
+   * is held with a modifier.
+   *
+   * The default is the other way round, and that is right for `⌘K`: a palette
+   * that refuses to open mid-sentence is a palette people stop reaching for.
+   * But a few combinations already mean something inside a text box — `⌘B` is
+   * bold in the note editor — and stealing those would break the thing the
+   * person is in the middle of doing.
+   */
+  notWhileTyping?: boolean
 }
 
 /**
@@ -30,6 +41,7 @@ export const ACTIONS: readonly ShortcutAction[] = [
   { id: 'palette', group: 'everywhere', binding: 'mod+k' },
   { id: 'capture', group: 'everywhere', binding: 'mod+j', needsCapture: true },
   { id: 'shortcuts', group: 'everywhere', binding: '?' },
+  { id: 'sidebar', group: 'everywhere', binding: 'mod+b', notWhileTyping: true },
 
   { id: 'home', group: 'goto', labelNamespace: 'nav', binding: 'g o', href: PATHS.home },
   { id: 'daily', group: 'goto', labelNamespace: 'nav', binding: 'g d', href: PATHS.daily },
@@ -62,7 +74,26 @@ export const actionById = (id: string): ShortcutAction | undefined =>
  * drive every list, and a bare letter that is also a digit would swallow the
  * 1–10 scores on the daily log.
  */
-const RESERVED = new Set(['escape', 'enter', 'tab', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'backspace', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
+const RESERVED = new Set([
+  'escape',
+  'enter',
+  'tab',
+  'arrowup',
+  'arrowdown',
+  'arrowleft',
+  'arrowright',
+  'backspace',
+  '0',
+  '1',
+  '2',
+  '3',
+  '4',
+  '5',
+  '6',
+  '7',
+  '8',
+  '9',
+])
 
 export type Chord = { mod: boolean; shift: boolean; alt: boolean; key: string }
 

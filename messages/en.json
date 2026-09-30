@@ -443,7 +443,8 @@
         "today": "Back to today",
         "save": "Save the day",
         "toggleTimer": "Start or stop the running timer",
-        "shortcuts": "Show this list"
+        "shortcuts": "Show this list",
+        "sidebar": "Show or hide the sidebar"
       },
       "open": "Show shortcuts",
       "press": "press a key…",
