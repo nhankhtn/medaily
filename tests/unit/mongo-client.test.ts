@@ -8,6 +8,9 @@ vi.mock('mongodb', () => ({
     db() {
       return { collection }
     }
+    close() {
+      return Promise.resolve()
+    }
   },
 }))
 
@@ -80,6 +83,35 @@ describe('bootstrapping a collection', () => {
 
     await expect(readyCollection(URI, 'activity', INDEX)).resolves.toBeTruthy()
     expect(createIndexes).toHaveBeenCalledTimes(1)
+  })
+
+  /**
+   * The failure that takes a warm instance down for good.
+   *
+   * Nothing in this app closes the client, but the driver does, and the closed
+   * one is cached on `globalThis` — so the first `MongoTopologyClosedError`
+   * would be followed by one on every request until the instance recycled.
+   * Recovering means throwing the client away, not retrying against it.
+   */
+  it('builds a new client when the cached one has been closed', async () => {
+    const closed = Object.assign(new Error('Topology is closed'), {
+      name: 'MongoTopologyClosedError',
+    })
+    createIndexes.mockRejectedValueOnce(closed)
+
+    await expect(readyCollection(URI, 'activity', INDEX)).resolves.toBeTruthy()
+    expect(createIndexes, 'it tried again on a fresh client').toHaveBeenCalledTimes(2)
+  })
+
+  it('does not throw away the client for an ordinary index failure', async () => {
+    globalThis.__medailyMongo = undefined
+    await readyCollection(URI, 'activity', INDEX)
+    const first = globalThis.__medailyMongo
+
+    createIndexes.mockRejectedValueOnce(new Error('no permission'))
+    await readyCollection(URI, 'chat_messages', INDEX)
+
+    expect(globalThis.__medailyMongo).toBe(first)
   })
 
   /**

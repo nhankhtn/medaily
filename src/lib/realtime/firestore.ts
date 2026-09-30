@@ -93,7 +93,7 @@ export function firestoreTyping(): TypingChannel {
       // updates either, so there is nobody to be consistent with but themselves.
       if (!uid) return
 
-      await setDoc(doc(typing(channel), uid), { at: Date.now() })
+      await setDoc(doc(typing(channel), uid), { at: Date.now() }).catch(complain('announce'))
     },
 
     retract: async (channel) => {
@@ -102,7 +102,7 @@ export function firestoreTyping(): TypingChannel {
       // The only delete in this file, and the reason the rules separate
       // `delete` from `create, update`: on a delete `request.resource` is
       // null, so a rule that inspects the written fields would refuse it.
-      await deleteDoc(doc(typing(channel), uid))
+      await deleteDoc(doc(typing(channel), uid)).catch(complain('retract'))
     },
 
     watch: (channel, onChange) =>
@@ -119,9 +119,36 @@ export function firestoreTyping(): TypingChannel {
           }
           onChange(entries)
         },
-        () => {
-          /* Offline, blocked, or refused by rules. Nobody appears to be typing. */
-        },
+        // Offline, blocked, or refused by rules: nobody appears to be typing,
+        // which is right for the screen and useless for whoever has to work
+        // out why. So it is said once, here.
+        complain('watch'),
       ),
+  }
+}
+
+const complained = new Set<string>()
+
+/**
+ * Says once why a typing call did nothing.
+ *
+ * Every one of these is caught on purpose — a chat that interrupts you because
+ * a presence write failed is worse than one that quietly stops showing who is
+ * typing. But caught and unsaid is how "there are requests and no documents"
+ * became a thing nobody could tell apart from "the rules are not deployed".
+ * Over WebChannel a refused write still answers 200, so the network tab cannot
+ * tell you either.
+ */
+function complain(where: string) {
+  return (error: unknown) => {
+    const code = (error as { code?: string })?.code ?? 'unknown'
+    if (complained.has(`${where}:${code}`)) return
+    complained.add(`${where}:${code}`)
+
+    const hint =
+      code === 'permission-denied'
+        ? ' — the rules for channels/{channel}/typing/{uid} are not deployed. Run `pnpm firestore:rules`.'
+        : ''
+    console.info(`[realtime] typing ${where} was refused: ${code}${hint}`)
   }
 }

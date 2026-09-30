@@ -55,6 +55,27 @@ export async function readyCollection<T extends Document>(
   name: string,
   indexes: IndexDescription[],
 ): Promise<Collection<T>> {
+  try {
+    return await collectionWithIndexes<T>(uri, name, indexes)
+  } catch (error) {
+    if (!isTopologyClosed(error)) throw error
+
+    // A client that has been closed stays closed, and this one is cached on
+    // `globalThis` — so without this it would be handed out for the life of
+    // the instance and every request after the first failure would fail too.
+    // Nothing in this app calls `close()`; the driver does, and the only way
+    // back is a new client.
+    await log.error('mongo', `the connection was closed; reconnecting for ${name}`, error)
+    discardClient()
+    return collectionWithIndexes<T>(uri, name, indexes)
+  }
+}
+
+async function collectionWithIndexes<T extends Document>(
+  uri: string,
+  name: string,
+  indexes: IndexDescription[],
+): Promise<Collection<T>> {
   const collection = mongoClient(uri).db().collection<T>(name)
 
   const memo = indexMemo()
@@ -66,6 +87,10 @@ export async function readyCollection<T extends Document>(
         .then(() => undefined)
         .catch(async (error) => {
           memo.delete(name)
+          // A dead connection is not an index problem and must not be
+          // swallowed as one: it is the one failure the caller can fix, by
+          // throwing the client away and starting again.
+          if (isTopologyClosed(error)) throw error
           await log.error('mongo', `could not create indexes on ${name}`, error)
         }),
     )
@@ -73,6 +98,36 @@ export async function readyCollection<T extends Document>(
 
   await memo.get(name)
   return collection
+}
+
+/** The driver's own name for it; there is no public way to ask a client. */
+function isTopologyClosed(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'name' in error &&
+    error.name === 'MongoTopologyClosedError'
+  )
+}
+
+/**
+ * Throws the cached client away, indexes and all.
+ *
+ * The index memo goes with it: those promises resolved against a connection
+ * that no longer exists, so keeping them would mean the replacement client
+ * never builds its indexes and quietly scans instead.
+ */
+function discardClient(): void {
+  const dead = globalThis.__medailyMongo
+  globalThis.__medailyMongo = undefined
+  globalThis.__medailyMongoIndexes = undefined
+  // Best effort, and it must never be the thing that fails: the point of this
+  // function is to get back to a working client, not to tidy up the old one.
+  try {
+    void dead?.close()?.catch?.(() => {})
+  } catch {
+    /* already gone */
+  }
 }
 
 /**
