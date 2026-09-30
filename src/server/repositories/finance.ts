@@ -415,10 +415,7 @@ export async function findTransactionsPage(
           eq(transactions.occurredOn, cursor.occurredOn),
           or(
             lt(transactions.createdAt, createdAt),
-            and(
-              eq(transactions.createdAt, createdAt),
-              lt(transactions.id, cursor.id),
-            ),
+            and(eq(transactions.createdAt, createdAt), lt(transactions.id, cursor.id)),
           ),
         ),
       )!,
@@ -563,6 +560,40 @@ export async function upsertBudget(values: typeof budgets.$inferInsert): Promise
   const row = rows[0]
   if (!row) throw new Error('failed to upsert budget')
   return row
+}
+
+/**
+ * Copies a month of budgets forward, and says how many it laid down.
+ *
+ * `onConflictDoNothing` rather than an upsert: this runs unattended and its
+ * whole job is to fill an empty month, so a figure already set for the new
+ * month is a decision somebody made and must not be written over by last
+ * month's. That also makes running it twice harmless, which is what lets the
+ * job be checked daily rather than being timed to the stroke of midnight.
+ */
+export async function copyBudgetsForward(
+  userId: string,
+  from: ISODate,
+  to: ISODate,
+): Promise<number> {
+  const previous = await findBudgets(userId, from)
+  if (previous.length === 0) return 0
+
+  const rows = await db
+    .insert(budgets)
+    .values(
+      previous.map((budget) => ({
+        userId,
+        categoryId: budget.categoryId,
+        periodStart: to,
+        amount: budget.amount,
+        rollover: budget.rollover,
+      })),
+    )
+    .onConflictDoNothing({ target: [budgets.userId, budgets.categoryId, budgets.periodStart] })
+    .returning({ id: budgets.id })
+
+  return rows.length
 }
 
 export async function findAssets(userId: string): Promise<Asset[]> {

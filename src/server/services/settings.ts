@@ -10,21 +10,11 @@ import {
   DEFAULT_SCORE_WEIGHTS,
   DEFAULT_STREAK_THRESHOLDS,
 } from '@/lib/defaults'
-import type {
-  InsightThresholds,
-  ScoreTargets,
-  ScoreWeights,
-  StreakThresholds,
-} from '@/lib/types'
+import type { InsightThresholds, ScoreTargets, ScoreWeights, StreakThresholds } from '@/lib/types'
 import { parseHiddenFields, type HideableField } from '@/lib/daily/hidden-fields'
 import { findUserById } from '@/server/repositories/auth'
 import { findSettings, insertUserSettings } from '@/server/repositories/settings'
-import {
-  DEFAULT_THEME,
-  isThemePreference,
-  THEME_COOKIE,
-  type ThemePreference,
-} from '@/lib/themes'
+import { DEFAULT_THEME, isThemePreference, THEME_COOKIE, type ThemePreference } from '@/lib/themes'
 
 /**
  * A user with no settings row is repaired; a settings row for a user that no
@@ -69,8 +59,22 @@ export type ResolvedSettings = {
  * Settings are read once per request. Stored JSONB columns are merged over the
  * defaults so a partially written blob can never produce an undefined target.
  */
-export const getSettings = cache(async (): Promise<ResolvedSettings> => {
-  const userId = await getCurrentUserId()
+export const getSettings = cache(async (): Promise<ResolvedSettings> =>
+  settingsOf(await getCurrentUserId()),
+)
+
+/**
+ * The same resolution, for a named user rather than the one signed in.
+ *
+ * A scheduled job has no session to read, and what it needs is exactly what a
+ * request needs — the timezone and the rollover hour decide which day and
+ * which month that person is in, and the server's own clock is the wrong
+ * answer for both.
+ *
+ * Not `cache()`d: that memoises within one render, and a job walking every
+ * account would only ever hold the first one it asked about.
+ */
+export async function settingsOf(userId: string): Promise<ResolvedSettings> {
   const row = (await findSettings(userId)) ?? (await settingsForKnownUser(userId))
 
   return {
@@ -94,7 +98,7 @@ export const getSettings = cache(async (): Promise<ResolvedSettings> => {
     hiddenDailyFields: parseHiddenFields(row.hiddenDailyFields),
     shortcuts: resolveBindings(row.shortcuts),
   }
-})
+}
 
 export function dayContextOf(settings: ResolvedSettings): DayContext {
   return {
@@ -104,7 +108,9 @@ export function dayContextOf(settings: ResolvedSettings): DayContext {
   }
 }
 
-export const getDayContext = cache(async (): Promise<DayContext> => dayContextOf(await getSettings()))
+export const getDayContext = cache(async (): Promise<DayContext> =>
+  dayContextOf(await getSettings()),
+)
 
 /** Defaults used when the database cannot be reached (see `getShellSettings`). */
 const FALLBACK_SETTINGS: ResolvedSettings = {
@@ -163,7 +169,9 @@ export const getShellSettings = cache(async (): Promise<ResolvedSettings> => {
  */
 function isFrameworkSignal(error: unknown): boolean {
   const digest = (error as { digest?: unknown } | null)?.digest
-  return typeof digest === 'string' && (digest === 'DYNAMIC_SERVER_USAGE' || digest.startsWith('NEXT_'))
+  return (
+    typeof digest === 'string' && (digest === 'DYNAMIC_SERVER_USAGE' || digest.startsWith('NEXT_'))
+  )
 }
 
 /**

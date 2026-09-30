@@ -1028,7 +1028,12 @@
       "allAccounts": "Tất cả tài khoản",
       "days": "{count} ngày",
       "overDays": "trong {count} ngày"
-    }
+    },
+    "budgetTotal": "Tổng ngân sách",
+    "copyLastMonth": "Chép ngân sách tháng trước",
+    "copiedBudgets": "Đã chép {count} dòng ngân sách",
+    "previousMonth": "Tháng trước",
+    "nextMonth": "Tháng sau"
   },
   "journal": {
     "title": "Nhật ký",

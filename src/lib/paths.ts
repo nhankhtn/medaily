@@ -101,7 +101,7 @@ export const PATHS = {
 
   api: {
     health: '/api/health',
-    cronSweepImages: '/api/cron/sweep-images',
+    cronNightly: '/api/cron/nightly',
     googleAuth: '/api/auth/google',
     calendarIcs: '/api/calendar.ics',
     exportJson: '/api/export?format=json',
@@ -155,7 +155,7 @@ export const PUBLIC_PATHS = [
   PATHS.api.health,
   // Not public in the ordinary sense: it carries no session because the
   // scheduler has none, and checks a shared secret of its own instead.
-  PATHS.api.cronSweepImages,
+  PATHS.api.cronNightly,
   PATHS.api.googleAuth,
   PATHS.manifest,
   PATHS.robots,

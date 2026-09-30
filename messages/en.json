@@ -1028,7 +1028,12 @@
       "allAccounts": "All accounts",
       "days": "{count} days",
       "overDays": "over {count} days"
-    }
+    },
+    "budgetTotal": "All budgets",
+    "copyLastMonth": "Copy last month",
+    "copiedBudgets": "Copied {count} budgets",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month"
   },
   "journal": {
     "title": "Journal",
