@@ -14,6 +14,7 @@
     "journal": "Nhật ký",
     "calendar": "Lịch",
     "people": "Quan hệ",
+    "chat": "Nhắn tin",
     "career": "Sự nghiệp",
     "analytics": "Thống kê",
     "reviews": "Tổng kết",
@@ -1632,6 +1633,44 @@
     "tooMany": "Gửi hơi dồn rồi. Một tiếng nữa viết tiếp nhé.",
     "unavailable": "Chưa gửi được. Lát nữa thử lại."
   },
+  "chat": {
+    "title": "Nhắn tin",
+    "empty": "Chưa có phòng nào. Tạo một phòng rồi gửi link cho người bạn muốn rủ vào.",
+    "newRoom": "Phòng mới",
+    "roomName": "Phòng này để nói về gì?",
+    "create": "Tạo",
+    "untitled": "Phòng",
+    "open": "Mở",
+    "members": "{count} người trong phòng",
+    "placeholder": "Viết gì đó",
+    "send": "Gửi",
+    "loadOlder": "Đang lấy tin cũ hơn…",
+    "emptyRoom": "Chưa ai nói gì.",
+    "recalled": "Tin đã thu hồi",
+    "recall": "Thu hồi",
+    "formerMember": "Người đã rời",
+    "you": "Bạn",
+    "liveOff": "Tin mới sẽ hiện trong vòng một phút.",
+    "sendFailed": "Chưa gửi được. Thử lại nhé.",
+    "tooFast": "Chậm lại một chút rồi gửi tiếp.",
+    "leave": "Rời phòng",
+    "leaveConfirm": "Rời phòng này? Bạn sẽ không thấy nó nữa, còn những gì bạn viết thì vẫn ở lại.",
+    "remove": "Mời ra",
+    "invite": "Mời",
+    "inviteLink": "Chép link mời",
+    "linkCopied": "Đã chép link. Dùng được một lần, trong hai ngày.",
+    "inviteByEmail": "Mời bằng địa chỉ email",
+    "emailQueued": "Nếu có ai đang dùng địa chỉ đó, họ sẽ thấy phòng này chờ sẵn lúc đăng nhập.",
+    "noEmailSent": "Không có email nào được gửi đi — bạn tự gửi link cho họ nhé.",
+    "revoke": "Thu hồi",
+    "pendingInvites": "Lời mời đã phát",
+    "joinTitle": "Bạn được mời vào phòng",
+    "joinAccept": "Vào phòng",
+    "joinDecline": "Để sau",
+    "joinGone": "Lời mời này không dùng được nữa. Xin một lời mời mới nhé.",
+    "joinAlready": "Bạn đã ở trong phòng này rồi.",
+    "privacyNote": "Mọi người ở đây đều thấy tên bạn và những gì bạn viết."
+  },
   "activity": {
     "title": "Những gì đã đổi",
     "body": "Bạn đã thêm, sửa hay xoá gì gần đây. Chỉ giữ lại {days} ngày gần nhất.",
@@ -1752,6 +1791,13 @@
       "session": {
         "login": "Đăng nhập",
         "logout": "Đăng xuất"
+      },
+      "chatRoom": {
+        "create": "Tạo phòng",
+        "join": "Vào phòng",
+        "leave": "Rời phòng",
+        "invite": "Phát lời mời",
+        "remove": "Mời một người ra khỏi phòng"
       }
     }
   }

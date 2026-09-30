@@ -23,6 +23,7 @@ import { findAllPhotoPublicIds } from '@/server/repositories/media'
 import { destroyAsset, destroyByPrefix } from '@/server/services/media'
 import { log } from '@/lib/log'
 import { eraseActivity } from '@/server/services/activity'
+import { claimInvitesFor, eraseChat } from '@/server/services/chat'
 import { insertAccounts, insertCategories } from '@/server/repositories/finance'
 import { starterFor } from '@/lib/onboarding/starter'
 import { DEFAULT_LOCALE, type Locale } from '@/i18n/config'
@@ -152,6 +153,15 @@ async function provision(identity: FirebaseIdentity, locale: Locale): Promise<Re
       return user.id
     })
 
+    // A brand-new account never passes through `afterSignIn`, and this is the
+    // case the invite design exists for: an address invited before its owner
+    // had an account at all.
+    try {
+      await claimInvitesFor(identity.email, userId)
+    } catch (error) {
+      await log.error('chat', 'could not claim invites for a new account', error)
+    }
+
     return { ok: true, userId, created: true }
   } catch (error) {
     const row = await findIdentity('google', identity.uid)
@@ -221,6 +231,9 @@ export async function eraseAccount(userId: string): Promise<void> {
     await log.error('auth', 'could not erase note images', error)
   }
 
+  // Chat before the trail, and both before Postgres: MongoDB has no cascade,
+  // so a document whose owner is already gone is one nothing comes back for.
+  await eraseChat(userId)
   await eraseActivity(userId)
 
   await deleteUser(userId)
@@ -260,4 +273,14 @@ async function afterSignIn(
     displayName: identity.displayName,
     imageUrl: keepAvatar ? undefined : identity.photoUrl,
   })
+
+  // Where an invite by address finally meets the person it was for. Writing
+  // the invite never asked whether that address had an account — which is the
+  // whole of why inviting cannot be used to find out — so the match has to
+  // happen here instead. A failure must not cost anyone their sign-in.
+  try {
+    await claimInvitesFor(identity.email, userId)
+  } catch (error) {
+    await log.error('chat', 'could not claim invites on sign-in', error)
+  }
 }

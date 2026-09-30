@@ -14,6 +14,7 @@
     "journal": "Journal",
     "calendar": "Calendar",
     "people": "People",
+    "chat": "Chat",
     "career": "Career",
     "analytics": "Analytics",
     "reviews": "Reviews",
@@ -1632,6 +1633,44 @@
     "tooMany": "That is a few in a row. Give it an hour and write again.",
     "unavailable": "That did not send. Try again in a moment."
   },
+  "chat": {
+    "title": "Chat",
+    "empty": "No rooms yet. Make one, then send the link to whoever should be in it.",
+    "newRoom": "New room",
+    "roomName": "What is this room about?",
+    "create": "Create",
+    "untitled": "Room",
+    "open": "Open",
+    "members": "{count} in the room",
+    "placeholder": "Write something",
+    "send": "Send",
+    "loadOlder": "Loading older messages…",
+    "emptyRoom": "Nothing said yet.",
+    "recalled": "Message recalled",
+    "recall": "Recall",
+    "formerMember": "Someone who left",
+    "you": "You",
+    "liveOff": "New messages show up within a minute.",
+    "sendFailed": "Not sent. Try again.",
+    "tooFast": "Slow down a moment, then send it again.",
+    "leave": "Leave room",
+    "leaveConfirm": "Leave this room? You stop seeing it, and what you wrote stays.",
+    "remove": "Remove",
+    "invite": "Invite",
+    "inviteLink": "Copy invite link",
+    "linkCopied": "Link copied. It works once, for two days.",
+    "inviteByEmail": "Invite by email address",
+    "emailQueued": "If somebody is using that address, they will find this room waiting when they sign in.",
+    "noEmailSent": "Nothing is emailed — send them the link yourself.",
+    "revoke": "Revoke",
+    "pendingInvites": "Invites out",
+    "joinTitle": "You have been invited",
+    "joinAccept": "Join the room",
+    "joinDecline": "Not now",
+    "joinGone": "This invite no longer works. Ask for a new one.",
+    "joinAlready": "You are already in this room.",
+    "privacyNote": "Everyone here sees your name and what you write."
+  },
   "activity": {
     "title": "What changed",
     "body": "What you added, changed or deleted here lately. Only the last {days} days are kept.",
@@ -1752,6 +1791,13 @@
       "session": {
         "login": "Signed in",
         "logout": "Signed out"
+      },
+      "chatRoom": {
+        "create": "Room made",
+        "join": "Joined a room",
+        "leave": "Left a room",
+        "invite": "Invite sent out",
+        "remove": "Someone removed from a room"
       }
     }
   }

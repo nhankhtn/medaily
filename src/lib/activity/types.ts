@@ -26,6 +26,13 @@ export const ACTIVITY_ACTIONS = {
    * answers half a question.
    */
   session: ['login', 'logout'],
+  /**
+   * Who could read a room, and when that changed. The messages themselves are
+   * deliberately absent — a log of every line said, inside a log of what
+   * changed, buries the entries anybody actually looks for. These are the
+   * access-control moments, held to the same standard as signing in.
+   */
+  chatRoom: ['create', 'join', 'leave', 'invite', 'remove'],
 } as const
 
 export type ActivityEntity = keyof typeof ACTIVITY_ACTIONS

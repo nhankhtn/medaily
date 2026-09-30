@@ -1,7 +1,14 @@
 'use client'
 
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { useEffect, useState, useRef, type CSSProperties, type ReactNode } from 'react'
+import {
+  useEffect,
+  useLayoutEffect,
+  useState,
+  useRef,
+  type CSSProperties,
+  type ReactNode,
+} from 'react'
 import { cn } from '@/lib/utils'
 
 const DEFAULT_ESTIMATE = 56
@@ -29,6 +36,17 @@ export type VirtualInfiniteListProps<T> = {
   hasMore?: boolean
   loadingMore?: boolean
   onLoadMore?: () => void
+  /**
+   * Which end asks for more. `end` is a feed that grows downwards; `start` is
+   * a conversation, where the newest is at the bottom and older is above.
+   */
+  loadMorePosition?: 'end' | 'start'
+  /**
+   * Keeps the view at the newest row: on first paint, and afterwards only
+   * while the reader was already there. Scrolling up to read must not be
+   * yanked back by somebody else typing.
+   */
+  stickToBottom?: boolean
   /** IntersectionObserver rootMargin before the sentinel. */
   loadMoreMargin?: string
   loadingMoreLabel?: ReactNode
@@ -55,6 +73,8 @@ export function VirtualInfiniteList<T>({
   hasMore = false,
   loadingMore = false,
   onLoadMore,
+  loadMorePosition = 'end',
+  stickToBottom = false,
   loadMoreMargin = DEFAULT_LOAD_MARGIN,
   loadingMoreLabel,
   className,
@@ -68,6 +88,37 @@ export function VirtualInfiniteList<T>({
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  const firstKey = items[0] ? getKey(items[0]) : null
+  const wasAtBottom = useRef(true)
+  const previous = useRef({ count: 0, firstKey: null as string | null, height: 0, top: 0 })
+
+  /**
+   * Older messages arriving at the top push everything down by however tall
+   * they are, which would throw the reader back to a line they had already
+   * passed. Nothing tells us which end grew, so it is worked out: the count
+   * went up *and* a different row is now first.
+   */
+  useLayoutEffect(() => {
+    const element = scrollRef.current
+    if (!element || !mounted) return
+
+    const before = previous.current
+    const prepended =
+      items.length > before.count && firstKey !== before.firstKey && before.count > 0
+
+    if (prepended) element.scrollTop = element.scrollHeight - before.height + before.top
+    else if (stickToBottom && (before.count === 0 || wasAtBottom.current)) {
+      element.scrollTop = element.scrollHeight
+    }
+
+    previous.current = {
+      count: items.length,
+      firstKey,
+      height: element.scrollHeight,
+      top: element.scrollTop,
+    }
+  }, [items.length, firstKey, mounted, stickToBottom])
 
   const viewportHeight = estimateSize * maxVisibleRows.sm
 
@@ -125,8 +176,29 @@ export function VirtualInfiniteList<T>({
   const virtualItems = virtualizer.getVirtualItems()
   const useVirtual = virtualItems.length > 0
 
+  const sentinel = <div ref={sentinelRef} className="h-1" aria-hidden />
+  const busy =
+    loadingMore && loadingMoreLabel ? (
+      <div className="text-text-subtle py-2 text-center text-xs">{loadingMoreLabel}</div>
+    ) : null
+
   return (
-    <div ref={scrollRef} className={shellClass} style={shellStyle}>
+    <div
+      ref={scrollRef}
+      className={shellClass}
+      style={shellStyle}
+      onScroll={(event) => {
+        const element = event.currentTarget
+        // A few pixels of slack: a rounded scrollHeight rarely lands exactly.
+        wasAtBottom.current = element.scrollHeight - element.scrollTop - element.clientHeight < 24
+      }}
+    >
+      {loadMorePosition === 'start' ? (
+        <>
+          {sentinel}
+          {busy}
+        </>
+      ) : null}
       {useVirtual ? (
         <ul
           className={cn('relative w-full', listClassName)}
@@ -155,9 +227,11 @@ export function VirtualInfiniteList<T>({
           ))}
         </ul>
       )}
-      <div ref={sentinelRef} className="h-1" aria-hidden />
-      {loadingMore && loadingMoreLabel ? (
-        <div className="text-text-subtle py-2 text-center text-xs">{loadingMoreLabel}</div>
+      {loadMorePosition === 'end' ? (
+        <>
+          {sentinel}
+          {busy}
+        </>
       ) : null}
     </div>
   )

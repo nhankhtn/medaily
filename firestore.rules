@@ -1,0 +1,39 @@
+rules_version = '2';
+
+// Deployed by hand — this repo has no CI for it. Check after every change:
+//   firebase deploy --only firestore:rules
+//
+// Firestore is a doorbell here, not a database. One document per channel,
+// holding a counter and a time, and never a word anybody typed. Read the
+// reasoning in src/lib/realtime/firestore.ts before loosening anything.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /channels/{channel} {
+      // Being signed in to this Firebase project is barely a control: the
+      // project's sign-in is not gated by the app's own allowlists, so this
+      // means "any Google account". The protection is that a channel key is
+      // 122 bits of random and is rotated when somebody is removed from a room.
+      allow get: if request.auth != null;
+
+      // Never listable. Otherwise one query hands over every room that exists
+      // and when each was last busy — which is the whole of what is knowable
+      // here, given away in bulk.
+      allow list: if false;
+
+      // Exactly two numeric fields, and a time that has to be about now. A
+      // payload cannot be used to say anything, and a far-future timestamp
+      // cannot be parked here.
+      allow write: if request.auth != null
+        && request.resource.data.keys().hasOnly(['seq', 'at'])
+        && request.resource.data.seq is number
+        && request.resource.data.at is number
+        && request.resource.data.at > request.time.toMillis() - 60000
+        && request.resource.data.at < request.time.toMillis() + 60000;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

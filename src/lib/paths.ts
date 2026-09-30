@@ -64,6 +64,11 @@ export const PATHS = {
     return search ? `/calendar?${search}` : '/calendar'
   },
 
+  chat: '/chat',
+  chatRoom: (id: string) => `/chat/${id}`,
+  /** Where an invite link lands. Joining is a POST from here, never the GET. */
+  chatJoin: (code: string) => `/chat/join/${code}`,
+
   people: '/people',
   career: '/career',
 
@@ -129,6 +134,7 @@ export const STATIC_PAGE_PATHS = [
   PATHS.financeTab('report'),
   PATHS.journal,
   PATHS.calendar(),
+  PATHS.chat,
   PATHS.people,
   PATHS.career,
   PATHS.analytics,

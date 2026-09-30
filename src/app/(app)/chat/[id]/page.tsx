@@ -1,0 +1,55 @@
+import { getTranslations } from 'next-intl/server'
+import Link from 'next/link'
+import { notFound } from 'next/navigation'
+import { Card } from '@/components/ui/card'
+import { InvitePanel } from '@/features/chat/invite-panel'
+import { LeaveRoom } from '@/features/chat/leave-room'
+import { RoomView } from '@/features/chat/room-view'
+import { getCurrentUserId } from '@/lib/auth/current-user'
+import { chatEnabled } from '@/lib/chat/provider'
+import { PATHS } from '@/lib/paths'
+import { loadRoom } from '@/server/actions/chat'
+
+export default async function RoomPage({ params }: { params: Promise<{ id: string }> }) {
+  if (!chatEnabled()) notFound()
+
+  const { id } = await params
+  const [t, userId, loaded] = await Promise.all([
+    getTranslations('chat'),
+    getCurrentUserId(),
+    loadRoom(id),
+  ])
+  // Somebody who is not in the room is told the room is not there, rather than
+  // that it exists and is none of their business.
+  if (!loaded.ok) notFound()
+
+  const owner = loaded.room.createdBy === userId
+  const members = Object.keys(loaded.speakers).length
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <Link href={PATHS.chat} className="text-text-subtle text-xs hover:underline">
+          {t('title')}
+        </Link>
+        <h1 className="mt-0.5 text-2xl font-semibold">{loaded.room.title ?? t('untitled')}</h1>
+        <p className="text-text-subtle mt-0.5 text-xs">{t('members', { count: members })}</p>
+      </div>
+
+      <Card className="p-4">
+        <RoomView
+          room={loaded.room}
+          me={userId}
+          initialPage={loaded.page}
+          initialSpeakers={loaded.speakers}
+        />
+      </Card>
+
+      <Card className="space-y-3 p-4">
+        <p className="text-text-subtle text-xs leading-snug">{t('privacyNote')}</p>
+        {owner ? <InvitePanel roomId={loaded.room.id} /> : null}
+        <LeaveRoom roomId={loaded.room.id} />
+      </Card>
+    </div>
+  )
+}

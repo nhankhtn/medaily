@@ -27,6 +27,12 @@ export const AUDITED_ENTITIES: Record<ActivityEntity, boolean> = {
   note: true,
   daily: false,
   session: true,
+  /**
+   * On, and the messages are not in the vocabulary at all. Being added to or
+   * removed from a room is who can read what — the same kind of fact as a
+   * sign-in, and the one a person would come looking for.
+   */
+  chatRoom: true,
 }
 
 /** Whether a given action is recorded at all, read from the entity it is about. */

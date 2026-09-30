@@ -1,4 +1,4 @@
-import { and, eq, sql } from 'drizzle-orm'
+import { and, eq, inArray, sql } from 'drizzle-orm'
 import { db, type DbOrTx } from '@/lib/db'
 import { authIdentities, users } from '@/lib/db/schema'
 import type { AuthIdentity, AuthIdentityInsert, User } from '@/lib/db/schema'
@@ -46,6 +46,16 @@ export async function findUserByEmail(email: string, tx: DbOrTx = db): Promise<U
     .where(sql`lower(${users.email}) = ${email.trim().toLowerCase()}`)
     .limit(1)
   return rows[0] ?? null
+}
+
+/**
+ * Several users at once, for a chat room's roster. Read per room rather than
+ * per page of messages: everyone who ever spoke in a room is on it, so one
+ * query covers every page that follows.
+ */
+export async function findUsersByIds(ids: string[], tx: DbOrTx = db): Promise<User[]> {
+  if (ids.length === 0) return []
+  return tx.select().from(users).where(inArray(users.id, ids))
 }
 
 export async function findUserById(userId: string, tx: DbOrTx = db): Promise<User | null> {
