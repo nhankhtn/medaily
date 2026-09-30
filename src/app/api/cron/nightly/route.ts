@@ -31,60 +31,16 @@ import { sweepRealtimeChannels } from '@/server/services/realtime-gc'
  * services, and each half is caught separately here.
  */
 export async function GET(request: Request) {
-  const userAgent = request.headers.get('user-agent') ?? ''
-  const caller = userAgent.startsWith('vercel-cron') ? 'the scheduler' : 'an unknown caller'
-
-  const secret = env.CRON_SECRET
-  if (!secret) {
-    await log.error('cron', 'the nightly run cannot start: CRON_SECRET is not set', { userAgent })
-    return NextResponse.json({ error: 'not configured' }, { status: 503 })
-  }
-  if (request.headers.get('authorization') !== `Bearer ${secret}`) {
-    await log.error('cron', `the nightly run refused ${caller}: wrong or missing secret`, {
-      userAgent,
-    })
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  }
+  await validateCronSecret(request)
 
   const startedAt = Date.now()
   const userIds = await findAllUserIds()
 
-  const budgets = { created: 0, failed: 0 }
-  const images = { removed: 0, freedBytes: 0, failed: 0 }
-  const realtime = { channels: 0, typing: 0, skipped: 0, capped: false, failed: 0 }
-
-  for (const userId of userIds) {
-    try {
-      budgets.created += (await rolloverBudgets(userId)).created
-    } catch (error) {
-      budgets.failed += 1
-      await log.error('finance', `budget rollover failed for ${userId}`, error)
-    }
-  }
-
-  for (const userId of userIds) {
-    try {
-      const result = await sweepNoteImages(userId)
-      images.removed += result.removed
-      images.freedBytes += result.freedBytes
-    } catch (error) {
-      images.failed += 1
-      await log.error('media', `note image sweep failed for ${userId}`, error)
-    }
-  }
-
-  /*
-   * Not per account: Firestore knows nothing about who owns a room, and the
-   * whole point of the doorbell key is that it cannot be traced back to one.
-   * The sweep reads the collection once and judges by age.
-   */
-  try {
-    const swept = await sweepRealtimeChannels()
-    if (swept) Object.assign(realtime, swept)
-  } catch (error) {
-    realtime.failed += 1
-    await log.error('realtime', 'the channel sweep failed', error)
-  }
+  const [budgets, images, realtime] = await Promise.all([
+    handleRolloverBudgets(userIds),
+    handleSweepNoteImages(userIds),
+    handleSweepRealtimeChannels(),
+  ])
 
   log.info('cron', 'nightly run completed', {
     budgets,
@@ -103,11 +59,8 @@ export async function GET(request: Request) {
     budgets.created > 0 || images.removed > 0 || realtime.channels > 0 || realtime.typing > 0
   const wentWrong = budgets.failed > 0 || images.failed > 0 || realtime.failed > 0
 
-  const sweepNote = realtime.failed > 0
-    ? 'lỗi'
-    : realtime.capped
-      ? 'đã tới giới hạn, còn tiếp đêm mai'
-      : null
+  const sweepNote =
+    realtime.failed > 0 ? 'lỗi' : realtime.capped ? 'đã tới giới hạn, còn tiếp đêm mai' : null
 
   if (didSomething || wentWrong) {
     await sendJobReport({
@@ -124,7 +77,9 @@ export async function GET(request: Request) {
         ...(sweepNote ? { 'Dọn kênh': sweepNote } : {}),
         // Worth seeing once, not every night: a document with no readable
         // timestamp is left alone rather than guessed at.
-        ...(realtime.skipped > 0 ? { 'Document không đọc được mốc thời gian': realtime.skipped } : {}),
+        ...(realtime.skipped > 0
+          ? { 'Document không đọc được mốc thời gian': realtime.skipped }
+          : {}),
         ...(wentWrong
           ? { 'Tài khoản lỗi': `${budgets.failed} ngân sách · ${images.failed} ảnh` }
           : {}),
@@ -133,4 +88,61 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({ budgets, images, realtime, accounts: userIds.length })
+}
+
+const validateCronSecret = async (request: Request) => {
+  const userAgent = request.headers.get('user-agent') ?? ''
+  const caller = userAgent.startsWith('vercel-cron') ? 'the scheduler' : 'an unknown caller'
+  const secret = env.CRON_SECRET
+  if (!secret) {
+    await log.error('cron', 'the nightly run cannot start: CRON_SECRET is not set', { userAgent })
+    return NextResponse.json({ error: 'not configured' }, { status: 503 })
+  }
+  if (request.headers.get('authorization') !== `Bearer ${secret}`) {
+    await log.error('cron', `the nightly run refused ${caller}: wrong or missing secret`, {
+      userAgent,
+    })
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+  }
+}
+
+const handleSweepNoteImages = async (userIds: string[]) => {
+  const images = { removed: 0, freedBytes: 0, failed: 0 }
+  for (const userId of userIds) {
+    try {
+      const result = await sweepNoteImages(userId)
+      images.removed += result.removed
+      images.freedBytes += result.freedBytes
+    } catch (error) {
+      images.failed += 1
+      await log.error('media', `note image sweep failed for ${userId}`, error)
+    }
+  }
+  return images
+}
+
+const handleRolloverBudgets = async (userIds: string[]) => {
+  const budgets = { created: 0, failed: 0 }
+  for (const userId of userIds) {
+    try {
+      budgets.created += (await rolloverBudgets(userId)).created
+    } catch (error) {
+      budgets.failed += 1
+      await log.error('finance', `budget rollover failed for ${userId}`, error)
+    }
+  }
+  return budgets
+}
+
+const handleSweepRealtimeChannels = async () => {
+  const realtime = { channels: 0, typing: 0, skipped: 0, capped: false, failed: 0 }
+
+  try {
+    const swept = await sweepRealtimeChannels()
+    if (swept) Object.assign(realtime, swept)
+  } catch (error) {
+    realtime.failed += 1
+    await log.error('realtime', 'the channel sweep failed', error)
+  }
+  return realtime
 }

@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 import { readAccessPolicy, readAuthConfig, readGoogleConfig } from '@/lib/auth/config'
+import { realtimeEnabled } from '@/lib/realtime/provider'
 import { databaseFingerprint } from '@/lib/db/fingerprint'
 // Imported, not read from disk: this has to travel with the deployed bundle,
 // and it is the only record of what migrations *this* build expects.
@@ -67,6 +68,18 @@ export async function GET() {
     // feature switches itself off silently, by design, and a button that never
     // appears looks exactly like a button that was never built.
     activityConfigured: Boolean(process.env.MONGODB_URI),
+    /*
+     * Whether live updates were compiled in. `NEXT_PUBLIC_*` is baked at build
+     * time, so this answers the question that actually matters — what the
+     * browser was handed — rather than what this process can see now. Setting
+     * the variable after a deploy changes nothing until the next build, and
+     * this is how you tell those two states apart.
+     *
+     * It does not say the Firestore rules are deployed. A denied rule is
+     * silent by design (see firestore.rules), so if this is true and updates
+     * still never arrive, the rules are the next thing to look at.
+     */
+    realtimeConfigured: realtimeEnabled(),
   }
 
   if (!process.env.DATABASE_URL) {
