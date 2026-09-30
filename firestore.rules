@@ -1,7 +1,16 @@
 rules_version = '2';
 
 // Deployed by hand — this repo has no CI for it. Check after every change:
-//   firebase deploy --only firestore:rules
+//   pnpm firestore:rules          (or paste this file into the Firebase console)
+//
+// That script shells out to firebase-tools through npx, so nothing is
+// installed; the first run asks you to `npx firebase-tools login`. The project
+// and the path to this file come from .firebaserc and firebase.json.
+//
+// Getting this wrong is quiet. The onSnapshot error callback in
+// src/lib/realtime/firestore.ts swallows a rules rejection on purpose — chat
+// must not break when Firestore is unreachable — so rules that deny will show
+// up as "live updates never arrive", with nothing in the console.
 //
 // Firestore is a doorbell here, not a database. One document per channel,
 // holding a counter and a time, and never a word anybody typed. Read the

@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { InvitePanel } from '@/features/chat/invite-panel'
-import { LeaveRoom } from '@/features/chat/leave-room'
+import { RoomSettings } from '@/features/chat/room-settings'
 import { RoomView } from '@/features/chat/room-view'
 import { getCurrentUserId } from '@/lib/auth/current-user'
 import { chatEnabled } from '@/lib/chat/provider'
@@ -28,12 +28,20 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
 
   return (
     <div className="space-y-4">
-      <div>
-        <Link href={PATHS.chat} className="text-text-subtle text-xs hover:underline">
-          {t('title')}
-        </Link>
-        <h1 className="mt-0.5 text-2xl font-semibold">{loaded.room.title ?? t('untitled')}</h1>
-        <p className="text-text-subtle mt-0.5 text-xs">{t('members', { count: members })}</p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <Link href={PATHS.chat} className="text-text-subtle text-xs hover:underline">
+            {t('title')}
+          </Link>
+          <h1 className="mt-0.5 truncate text-2xl font-semibold">
+            {loaded.room.title ?? t('untitled')}
+          </h1>
+          <p className="text-text-subtle mt-0.5 text-xs">{t('members', { count: members })}</p>
+        </div>
+
+        {/* Beside the title, not under the transcript: it is about the room,
+            and it is where the eye already is on arriving. */}
+        <RoomSettings roomId={loaded.room.id} />
       </div>
 
       <Card className="p-4">
@@ -48,7 +56,6 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
       <Card className="space-y-3 p-4">
         <p className="text-text-subtle text-xs leading-snug">{t('privacyNote')}</p>
         {owner ? <InvitePanel roomId={loaded.room.id} /> : null}
-        <LeaveRoom roomId={loaded.room.id} />
       </Card>
     </div>
   )

@@ -1653,6 +1653,7 @@
     "liveOff": "New messages show up within a minute.",
     "sendFailed": "Not sent. Try again.",
     "tooFast": "Slow down a moment, then send it again.",
+    "roomSettings": "Room settings",
     "leave": "Leave room",
     "leaveConfirm": "Leave this room? You stop seeing it, and what you wrote stays.",
     "remove": "Remove",

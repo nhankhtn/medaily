@@ -23,6 +23,7 @@
     "smoke": "tsx scripts/smoke.ts",
     "capture:check": "tsx scripts/capture-check.ts",
     "db:baseline": "tsx scripts/baseline.ts",
+    "firestore:rules": "npx -y firebase-tools deploy --only firestore:rules",
     "clean": "rm -rf .next node_modules",
     "clean:cache": "rm -rf .next"
   },
