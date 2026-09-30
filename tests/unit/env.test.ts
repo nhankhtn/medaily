@@ -11,9 +11,9 @@ async function loadEnv(values: Record<string, string | undefined>) {
     else process.env[key] = value
   }
   vi.resetModules()
-  const module = await import('@/lib/env')
+  const loaded = await import('@/lib/env')
   process.env = saved
-  return module
+  return loaded
 }
 
 afterEach(() => {

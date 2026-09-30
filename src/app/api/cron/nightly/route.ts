@@ -31,16 +31,21 @@ import { sweepRealtimeChannels } from '@/server/services/realtime-gc'
  * services, and each half is caught separately here.
  */
 export async function GET(request: Request) {
-  await validateCronSecret(request)
+  // Returned, not merely called. This route is in `PUBLIC_PATHS` — it never
+  // meets the session gate — so this line is the only thing standing between
+  // the open internet and a run that deletes images for every account.
+  const refused = await validateCronSecret(request)
+  if (refused) return refused
 
   const startedAt = Date.now()
   const userIds = await findAllUserIds()
 
-  const [budgets, images, realtime] = await Promise.all([
-    handleRolloverBudgets(userIds),
-    handleSweepNoteImages(userIds),
-    handleSweepRealtimeChannels(),
-  ])
+  // One after another, which is what the ordering above is for. Run together,
+  // a timeout would cut whichever happened to be unfinished and the rollover
+  // would have no priority at all.
+  const budgets = await handleRolloverBudgets(userIds)
+  const images = await handleSweepNoteImages(userIds)
+  const realtime = await handleSweepRealtimeChannels()
 
   log.info('cron', 'nightly run completed', {
     budgets,
@@ -90,7 +95,8 @@ export async function GET(request: Request) {
   return NextResponse.json({ budgets, images, realtime, accounts: userIds.length })
 }
 
-const validateCronSecret = async (request: Request) => {
+/** Answers with the refusal to send back, or nothing when the caller is allowed. */
+const validateCronSecret = async (request: Request): Promise<NextResponse | null> => {
   const userAgent = request.headers.get('user-agent') ?? ''
   const caller = userAgent.startsWith('vercel-cron') ? 'the scheduler' : 'an unknown caller'
   const secret = env.CRON_SECRET
@@ -104,6 +110,8 @@ const validateCronSecret = async (request: Request) => {
     })
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
+
+  return null
 }
 
 const handleSweepNoteImages = async (userIds: string[]) => {

@@ -144,9 +144,9 @@ export function RoomView({
     const result = await deleteMessage({ roomId: room.id, messageId: message.id })
     if (!result.ok) return
     setMessages((shown) =>
-      shown.map((m) =>
-        m.id === message.id ? { ...m, body: '', deletedAt: new Date().toISOString() } : m,
-      ),
+      // `deletedAt` only has to be non-null for the row to read as recalled,
+      // and the server's own time arrives on the next page either way.
+      shown.map((m) => (m.id === message.id ? { ...m, body: '', deletedAt: result.at } : m)),
     )
     void ringRoom(room.doorbellKey)
   }

@@ -153,7 +153,9 @@ export async function deleteMessage(input: unknown) {
   }
 
   const removed = await store.softDeleteMessage(parsed.data.roomId, parsed.data.messageId, userId)
-  return removed ? { ok: true as const } : { ok: false as const }
+  // The moment comes back so the screen can mark the row recalled without
+  // inventing a time of its own.
+  return removed ? { ok: true as const, at: new Date().toISOString() } : { ok: false as const }
 }
 
 export async function markRoomRead(input: unknown) {
