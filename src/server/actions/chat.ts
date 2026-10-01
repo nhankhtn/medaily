@@ -245,6 +245,10 @@ export async function markRoomRead(input: unknown) {
   }
 
   await store.markRead(parsed.data.roomId, userId, parsed.data.messageId)
+  // The badge lives in the shell, so clearing it means refreshing the layout
+  // rather than the page — otherwise a room reads itself and the nav goes on
+  // claiming it is waiting.
+  revalidatePath(PATHS.home, 'layout')
   return { ok: true as const }
 }
 

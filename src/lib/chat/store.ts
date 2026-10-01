@@ -59,6 +59,19 @@ export type ChatStore = {
     roomId: string,
     page: { after?: string | null; limit: number },
   ) => Promise<MessagePage>
+  /**
+   * How many messages each room holds that this person has not seen.
+   *
+   * Asked for every room at once rather than one at a time: the badge on the
+   * nav needs all of them, and a query per room is a query per room on every
+   * page load. Their own messages never count — sending something is not a
+   * reason for the room to ask to be read.
+   */
+  countUnread: (
+    userId: string,
+    rooms: { roomId: string; after: string | null }[],
+  ) => Promise<Record<string, number>>
+
   /** Answers false when the message is not this person's to delete. */
   softDeleteMessage: (roomId: string, messageId: string, userId: string) => Promise<boolean>
   /**
@@ -127,6 +140,7 @@ export const NO_CHAT: ChatStore = {
   },
   listBackward: async () => ({ items: [], cursor: null, more: false }),
   listForward: async () => ({ items: [], cursor: null, more: false }),
+  countUnread: async () => ({}),
   softDeleteMessage: async () => false,
   toggleReaction: async () => null,
   createInvite: async () => {
@@ -261,6 +275,21 @@ export function inMemoryChatStore(): ChatStore {
         .slice(0, limit + 1)
       return page(rows, limit)
     },
+    countUnread: async (userId, rooms) => {
+      const out: Record<string, number> = {}
+      for (const { roomId, after } of rooms) {
+        const n = messages.filter(
+          (m) =>
+            m.roomId === roomId &&
+            m.userId !== userId &&
+            m.deletedAt === null &&
+            (after ? m.id > after : true),
+        ).length
+        if (n > 0) out[roomId] = n
+      }
+      return out
+    },
+
     toggleReaction: async (roomId, messageId, userId, emoji) => {
       const found = messages.find((m) => m.id === messageId && m.roomId === roomId)
       if (!found) return null

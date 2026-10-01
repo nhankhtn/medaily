@@ -266,6 +266,78 @@ export function describeChatStore(name: string, makeStore: () => Promise<ChatSto
     })
   })
 
+  describe(`${name}: unread`, () => {
+    it('counts what arrived after the last thing somebody read', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      const seen = await store.appendMessage(message('r1', 'u2', 'm1', 'c1'))
+      await store.appendMessage(message('r1', 'u2', 'm2', 'c2'))
+      await store.appendMessage(message('r1', 'u2', 'm3', 'c3'))
+
+      expect(await store.countUnread('u1', [{ roomId: 'r1', after: seen.id }])).toEqual({ r1: 2 })
+    })
+
+    it('counts the whole room for somebody who has read nothing', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      await store.appendMessage(message('r1', 'u2', 'm1', 'c1'))
+      await store.appendMessage(message('r1', 'u2', 'm2', 'c2'))
+
+      expect(await store.countUnread('u1', [{ roomId: 'r1', after: null }])).toEqual({ r1: 2 })
+    })
+
+    /** Sending something is not a reason for the room to ask to be read. */
+    it('never counts your own messages', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      await store.appendMessage(message('r1', 'u1', 'mine', 'c1'))
+      await store.appendMessage(message('r1', 'u1', 'also mine', 'c2'))
+
+      expect(await store.countUnread('u1', [{ roomId: 'r1', after: null }])).toEqual({})
+    })
+
+    it('leaves out a message that was recalled', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      const gone = await store.appendMessage(message('r1', 'u2', 'oops', 'c1'))
+      await store.appendMessage(message('r1', 'u2', 'kept', 'c2'))
+      await store.softDeleteMessage('r1', gone.id, 'u2')
+
+      expect(await store.countUnread('u1', [{ roomId: 'r1', after: null }])).toEqual({ r1: 1 })
+    })
+
+    it('answers for several rooms at once, each from its own place', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      await store.createRoom(room('r2'))
+      const seen = await store.appendMessage(message('r1', 'u2', 'm1', 'c1'))
+      await store.appendMessage(message('r1', 'u2', 'm2', 'c2'))
+      await store.appendMessage(message('r2', 'u2', 'n1', 'c3'))
+      await store.appendMessage(message('r2', 'u2', 'n2', 'c4'))
+
+      expect(
+        await store.countUnread('u1', [
+          { roomId: 'r1', after: seen.id },
+          { roomId: 'r2', after: null },
+        ]),
+      ).toEqual({ r1: 1, r2: 2 })
+    })
+
+    /** A room with nothing new is absent, not a zero — the caller counts keys. */
+    it('leaves a room with nothing new out of the answer', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      const seen = await store.appendMessage(message('r1', 'u2', 'm1', 'c1'))
+
+      expect(await store.countUnread('u1', [{ roomId: 'r1', after: seen.id }])).toEqual({})
+    })
+
+    it('answers nothing when asked about no rooms', async () => {
+      const store = await makeStore()
+      expect(await store.countUnread('u1', [])).toEqual({})
+    })
+  })
+
   describe(`${name}: reactions`, () => {
     it('adds one, and counts it under the person who chose it', async () => {
       const store = await makeStore()

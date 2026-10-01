@@ -151,3 +151,63 @@ export async function claimInvitesFor(
 
   return joined
 }
+
+/**
+ * How much is waiting, per room.
+ *
+ * Two reads: the seats say where each person had got to, the messages say
+ * what has arrived since. A room this person has left is not counted — they
+ * are no longer in it, so nothing in it is theirs to read.
+ */
+export async function unreadByRoom(
+  userId: string,
+  { store = pickChatStore() }: WithStore = {},
+): Promise<Record<string, number>> {
+  const rooms = await store.listRoomsFor(userId)
+  if (rooms.length === 0) return {}
+
+  const seats = await Promise.all(rooms.map((room) => store.findMember(room.id, userId)))
+  return store.countUnread(
+    userId,
+    rooms.map((room, index) => ({
+      roomId: room.id,
+      after: seats[index]?.lastReadMessageId ?? null,
+    })),
+  )
+}
+
+/**
+ * How many rooms are waiting, for the badge beside the nav.
+ *
+ * Rooms, not messages: a number in the hundreds beside a menu item says
+ * nothing a person can act on, while "three rooms want you" does.
+ */
+export async function unreadRooms(userId: string, options: WithStore = {}): Promise<number> {
+  return Object.keys(await unreadByRoom(userId, options)).length
+}
+
+/**
+ * What the shell needs: how many rooms are waiting, and which channels to
+ * listen on so that number can change without a reload.
+ *
+ * Both come out of one read of the room list, because asking twice for the
+ * same rooms on every page is a query nobody needed.
+ */
+export async function unreadForShell(
+  userId: string,
+  { store = pickChatStore() }: WithStore = {},
+): Promise<{ rooms: number; channels: string[] }> {
+  const rooms = await store.listRoomsFor(userId)
+  if (rooms.length === 0) return { rooms: 0, channels: [] }
+
+  const seats = await Promise.all(rooms.map((room) => store.findMember(room.id, userId)))
+  const unread = await store.countUnread(
+    userId,
+    rooms.map((room, index) => ({
+      roomId: room.id,
+      after: seats[index]?.lastReadMessageId ?? null,
+    })),
+  )
+
+  return { rooms: Object.keys(unread).length, channels: rooms.map((room) => room.doorbellKey) }
+}

@@ -8,7 +8,8 @@ import { NewRoom } from '@/features/chat/new-room'
 import { getCurrentUserId } from '@/lib/auth/current-user'
 import { chatEnabled } from '@/lib/chat/provider'
 import { PATHS } from '@/lib/paths'
-import { listRooms } from '@/server/services/chat'
+import { cn } from '@/lib/utils'
+import { listRooms, unreadByRoom } from '@/server/services/chat'
 
 export default async function ChatPage({
   searchParams,
@@ -24,7 +25,7 @@ export default async function ChatPage({
     getCurrentUserId(),
     searchParams,
   ])
-  const rooms = await listRooms(userId)
+  const [rooms, unread] = await Promise.all([listRooms(userId), unreadByRoom(userId)])
 
   return (
     <div className="space-y-4">
@@ -45,9 +46,24 @@ export default async function ChatPage({
               <Link href={PATHS.chatRoom(room.id)} className="block">
                 <Card className="hover:bg-surface-2 flex items-center gap-3 p-4 transition-colors">
                   <MessageSquare className="text-text-subtle size-4 shrink-0" />
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                  <span
+                    className={cn(
+                      'min-w-0 flex-1 truncate text-sm',
+                      // A room with something waiting reads heavier, so the
+                      // list can be scanned without reading the numbers.
+                      unread[room.id] ? 'font-semibold' : 'font-medium',
+                    )}
+                  >
                     {room.title ?? t('untitled')}
                   </span>
+                  {unread[room.id] ? (
+                    <span
+                      className="bg-accent text-accent-text flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 text-[11px] font-medium tabular-nums"
+                      aria-label={t('unread', { count: unread[room.id]! })}
+                    >
+                      {unread[room.id]! > 99 ? '99+' : unread[room.id]}
+                    </span>
+                  ) : null}
                 </Card>
               </Link>
             </li>

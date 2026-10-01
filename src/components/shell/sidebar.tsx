@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils'
 
 const COLLAPSE_KEY = 'medaily.sidebar.collapsed'
 
-export function Sidebar() {
+export function Sidebar({ badges = {} }: { badges?: Record<string, number> }) {
   const pathname = usePathname()
   const t = useTranslations('nav')
   const [collapsed, setCollapsed] = useState(false)
@@ -106,6 +106,14 @@ export function Sidebar() {
                       >
                         <item.icon className="size-[18px] shrink-0" />
                         {!collapsed ? <span className="flex-1 truncate">{t(item.key)}</span> : null}
+                        {badges[item.key] ? (
+                          <span
+                            className="bg-accent text-accent-text ml-auto flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 text-[11px] font-medium tabular-nums"
+                            aria-label={String(badges[item.key])}
+                          >
+                            {badges[item.key]! > 9 ? '9+' : badges[item.key]}
+                          </span>
+                        ) : null}
                       </Link>
                     </li>
                   )

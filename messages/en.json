@@ -1641,6 +1641,7 @@
     "roomName": "What is this room about?",
     "create": "Create",
     "untitled": "Room",
+    "unread": "{count} unread",
     "open": "Open",
     "members": "{count} in the room",
     "placeholder": "Write something",

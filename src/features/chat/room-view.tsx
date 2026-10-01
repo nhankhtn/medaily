@@ -2,6 +2,7 @@
 
 import { Send, SmilePlus, Trash2 } from 'lucide-react'
 import { useFormatter, useTranslations } from 'next-intl'
+import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { toast } from 'sonner'
@@ -53,6 +54,7 @@ export function RoomView({
   initialSpeakers: Record<string, Speaker>
 }) {
   const t = useTranslations('chat')
+  const router = useRouter()
   const format = useFormatter()
 
   const [messages, setMessages] = useState<Shown[]>(initialPage.items)
@@ -89,7 +91,6 @@ export function RoomView({
             const seen = new Set(shown.map((m) => m.id))
             return [...shown, ...result.items.filter((m) => !seen.has(m.id))]
           })
-          void markRoomRead({ roomId: room.id, messageId: result.cursor! })
         }
         more = result.more
       }
@@ -108,6 +109,26 @@ export function RoomView({
   }, [room.id])
 
   useRoomLive(room.doorbellKey, () => void catchUp())
+
+  /**
+   * Having the room open is having read it.
+   *
+   * This used to happen only while catching up, so opening a room full of
+   * unread messages marked none of them — the badge stayed up until somebody
+   * sent one more. Pending rows are skipped: their id is the client's, and
+   * storing one as the place somebody had read up to would make the next
+   * count start from nowhere.
+   */
+  const lastSeen = [...messages].reverse().find((message) => !message.pending)?.id ?? null
+  useEffect(() => {
+    if (!lastSeen) return
+    // The badge is drawn by the layout, which is already on screen by the time
+    // a room is opened — the server marking its own cache stale changes
+    // nothing a person can see until something asks for the route again.
+    void markRoomRead({ roomId: room.id, messageId: lastSeen }).then((result) => {
+      if (result.ok) router.refresh()
+    })
+  }, [room.id, lastSeen, router])
 
   // My own uid comes from the roster rather than from Firebase directly: the
   // roster is what the names are drawn from, so if the two ever disagree the

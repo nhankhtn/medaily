@@ -232,6 +232,31 @@ export function mongoChatStore(uri: string): ChatStore {
       return pageOf(rows, limit)
     },
 
+    countUnread: async (userId, rooms) => {
+      if (rooms.length === 0) return {}
+
+      // One aggregation for every room, not one count each. Each room brings
+      // its own cursor, so the match is an `$or` of per-room clauses — which
+      // the (roomId, _id) index serves one branch at a time.
+      const clauses = rooms.map(({ roomId, after }) => ({
+        roomId,
+        ...(after && ObjectId.isValid(after) ? { _id: { $gt: new ObjectId(after) } } : {}),
+      }))
+
+      const counted = await (
+        await messagesIn(uri)
+      )
+        .aggregate<{ _id: string; n: number }>([
+          // `$ne` also keeps the messages of somebody who erased their
+          // account, which is right: they are still not yours.
+          { $match: { $or: clauses, userId: { $ne: userId }, deletedAt: null } },
+          { $group: { _id: '$roomId', n: { $sum: 1 } } },
+        ])
+        .toArray()
+
+      return Object.fromEntries(counted.map((row) => [row._id, row.n]))
+    },
+
     toggleReaction: async (roomId, messageId, userId, emoji) => {
       if (!ObjectId.isValid(messageId)) return null
       const messages = await messagesIn(uri)
