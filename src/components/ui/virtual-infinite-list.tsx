@@ -94,7 +94,14 @@ export function VirtualInfiniteList<T>({
 }: VirtualInfiniteListProps<T>) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
-  const listRef = useRef<HTMLUListElement>(null)
+  /*
+   * State, not a ref: the list is two different elements — the windowed one
+   * and the plain one — and React swaps the node when it moves between them.
+   * A ref would leave the observer below watching a node that is no longer in
+   * the document, which is silent and looks exactly like a resize that never
+   * happens.
+   */
+  const [list, setList] = useState<HTMLUListElement | null>(null)
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -102,35 +109,28 @@ export function VirtualInfiniteList<T>({
   }, [])
 
   const firstKey = items[0] ? getKey(items[0]) : null
-  const wasAtBottom = useRef(true)
-  const previous = useRef({ count: 0, firstKey: null as string | null, height: 0, top: 0 })
-
   /**
-   * Older messages arriving at the top push everything down by however tall
-   * they are, which would throw the reader back to a line they had already
-   * passed. Nothing tells us which end grew, so it is worked out: the count
-   * went up *and* a different row is now first.
+   * Whether to keep the newest line in view.
+   *
+   * Only a hand turns this off. The earlier version worked it out from the
+   * scroll position on every scroll event — but the pin below scrolls, and so
+   * does the browser when it clamps a position that no longer exists, and
+   * both arrive as ordinary scroll events. One of those in an intermediate
+   * state read as "not at the bottom", and from then on nothing ever pinned
+   * again: a conversation opened at the top and stayed there.
+   *
+   * So the gestures turn it off and only reaching the bottom turns it back
+   * on. Scrolling up to read still stops the yanking, which is the whole
+   * point of having the flag.
    */
-  useLayoutEffect(() => {
-    const element = scrollRef.current
-    if (!element || !mounted) return
-
-    const before = previous.current
-    const prepended =
-      items.length > before.count && firstKey !== before.firstKey && before.count > 0
-
-    if (prepended) element.scrollTop = element.scrollHeight - before.height + before.top
-    else if (stickToBottom && (before.count === 0 || wasAtBottom.current)) {
-      element.scrollTop = element.scrollHeight
-    }
-
-    previous.current = {
-      count: items.length,
-      firstKey,
-      height: element.scrollHeight,
-      top: element.scrollTop,
-    }
-  }, [items.length, firstKey, mounted, stickToBottom])
+  const pinned = useRef(true)
+  const previous = useRef({ count: 0, firstKey: null as string | null, height: 0, top: 0 })
+  /*
+   * The observer below outlives any one render, and what it has to do depends
+   * on how many rows there are now. Reached through a box that is refilled on
+   * every render, so it can never act on a count that has moved on.
+   */
+  const pin = useRef<() => void>(() => {})
 
   const viewportHeight = estimateSize * maxVisibleRows.sm
 
@@ -156,30 +156,68 @@ export function VirtualInfiniteList<T>({
   })
 
   /**
-   * Pinning once is not enough. The rows go in at `estimateSize` and are
-   * measured afterwards, so the height the first pin used is not the height
-   * the list ends up with; `fill` adds a second round of it, because the box
-   * only learns its own height once the flex parent has resolved. Both land
-   * after the layout effect above has run, and a conversation that opens
-   * halfway up is the result.
+   * The changes that arrive without a render.
    *
-   * Only while the reader is still at the bottom — `wasAtBottom` goes false
-   * the moment they scroll up, and nothing drags them back after that.
+   * A picture finishing its download, a font swapping in, the box itself
+   * settling once the flex parent has a height — none of those are a React
+   * update, so the layout effect above never runs for them, and each one
+   * moves the bottom out from under wherever the view is sitting.
    */
   useEffect(() => {
     const element = scrollRef.current
     if (!mounted || !stickToBottom || !element) return
 
-    const pin = () => {
-      if (!wasAtBottom.current) return
-      element.scrollTop = element.scrollHeight
-    }
-
-    const observer = new ResizeObserver(pin)
+    const observer = new ResizeObserver(() => pin.current())
     observer.observe(element)
-    if (listRef.current) observer.observe(listRef.current)
+    if (list) observer.observe(list)
     return () => observer.disconnect()
-  }, [mounted, stickToBottom, items.length])
+  }, [mounted, stickToBottom, list])
+
+  /**
+   * Ask the virtualiser for the last row rather than setting `scrollTop` to
+   * `scrollHeight`.
+   *
+   * The rows go in at `estimateSize` and are measured only once they have
+   * been drawn, so until then `scrollHeight` is a guess — scrolling to it
+   * lands wherever the guess was wrong, which for a conversation means part
+   * way up it. `scrollToIndex` is the one that knows: it scrolls, lets the
+   * rows it uncovered measure themselves, and corrects until the row it was
+   * asked for really is at the bottom.
+   */
+  const toBottom = (element: HTMLElement) => {
+    if (items.length > 0) virtualizer.scrollToIndex(items.length - 1, { align: 'end' })
+    else element.scrollTop = element.scrollHeight
+  }
+
+  /**
+   * Older messages arriving at the top push everything down by however tall
+   * they are, which would throw the reader back to a line they had already
+   * passed. Nothing tells us which end grew, so it is worked out: the count
+   * went up *and* a different row is now first.
+   */
+  useLayoutEffect(() => {
+    const element = scrollRef.current
+    if (!element || !mounted) return
+
+    const before = previous.current
+    const prepended =
+      items.length > before.count && firstKey !== before.firstKey && before.count > 0
+
+    if (prepended) element.scrollTop = element.scrollHeight - before.height + before.top
+    else if (stickToBottom && pinned.current) toBottom(element)
+
+    previous.current = {
+      count: items.length,
+      firstKey,
+      height: element.scrollHeight,
+      top: element.scrollTop,
+    }
+    pin.current = () => {
+      if (stickToBottom && pinned.current) toBottom(element)
+    }
+    // Every render, deliberately: the render that finally settles the height
+    // is not one any dependency list here could name.
+  })
 
   useEffect(() => {
     if (!mounted || !hasMore || !onLoadMore || loadingMore) return
@@ -226,10 +264,23 @@ export function VirtualInfiniteList<T>({
       ref={scrollRef}
       className={shellClass}
       style={shellStyle}
+      /*
+       * The gestures, and only the gestures, let go of the newest line.
+       * `pointerDown` is in the list for the scrollbar itself, which produces
+       * scroll events and no wheel.
+       */
+      onWheel={() => void (pinned.current = false)}
+      onTouchMove={() => void (pinned.current = false)}
+      onKeyDown={() => void (pinned.current = false)}
+      onPointerDown={() => void (pinned.current = false)}
       onScroll={(event) => {
+        // Only ever takes the pin back up: a scroll this component caused
+        // must not be read as the reader asking to be left alone. A few
+        // pixels of slack, because a rounded scrollHeight rarely lands exact.
         const element = event.currentTarget
-        // A few pixels of slack: a rounded scrollHeight rarely lands exactly.
-        wasAtBottom.current = element.scrollHeight - element.scrollTop - element.clientHeight < 24
+        if (element.scrollHeight - element.scrollTop - element.clientHeight < 24) {
+          pinned.current = true
+        }
       }}
     >
       {loadMorePosition === 'start' ? (
@@ -240,7 +291,7 @@ export function VirtualInfiniteList<T>({
       ) : null}
       {useVirtual ? (
         <ul
-          ref={listRef}
+          ref={setList}
           className={cn('relative w-full', listClassName)}
           style={{ height: virtualizer.getTotalSize() }}
         >
@@ -261,7 +312,7 @@ export function VirtualInfiniteList<T>({
           })}
         </ul>
       ) : (
-        <ul ref={listRef} className={cn('w-full', listClassName)}>
+        <ul ref={setList} className={cn('w-full', listClassName)}>
           {items.map((item, index) => (
             <li key={getKey(item)}>{renderItem(item, index)}</li>
           ))}
