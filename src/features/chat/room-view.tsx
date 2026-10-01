@@ -1,6 +1,6 @@
 'use client'
 
-import { CornerUpLeft, Send, SmilePlus, Trash2, X } from 'lucide-react'
+import { Copy, CornerUpLeft, Send, SmilePlus, Trash2, X } from 'lucide-react'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -43,6 +43,8 @@ import {
  * only has to keep the scrollbar honest before that.
  */
 const ROW_ESTIMATE = 60
+/** Long enough not to fire on a tap, short enough not to feel stuck. */
+const HOLD_MS = 450
 
 /**
  * A message on screen, which is not quite a message in the database: one that
@@ -75,6 +77,9 @@ export function RoomView({
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
 
+  const [menu, setMenu] = useState<{ at: Anchor; message: Shown } | null>(null)
+  const hold = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const heldFrom = useRef<{ x: number; y: number } | null>(null)
   const newest = useRef<string | null>(initialPage.items.at(-1)?.id ?? null)
   const catchingUp = useRef(false)
 
@@ -305,6 +310,68 @@ export function RoomView({
     void ringRoom(room.doorbellKey)
   }
 
+  const copy = async (body: string) => {
+    try {
+      await navigator.clipboard.writeText(body)
+      toast.success(t('copied'))
+    } catch {
+      // Blocked, or an insecure origin. Saying nothing would read as a copy
+      // that worked, and the next paste would be the wrong thing.
+      toast.error(t('copyFailed'))
+    }
+  }
+
+  /*
+   * A press and hold on a phone, a right-click on a pointer.
+   *
+   * The message is what is being acted on, so the message is what you reach
+   * for — and it leaves the button beside the bubble doing one thing, which
+   * is the thing it is drawn as.
+   */
+  const openMenu = (clientX: number, clientY: number, message: Shown) => {
+    if (message.pending || message.deletedAt) return
+    setMenu({
+      message,
+      at: {
+        bottom: window.innerHeight - clientY + 8,
+        // Away from whichever edge it was opened near, so a menu asked for in
+        // the right-hand margin does not open off the screen.
+        ...(clientX > window.innerWidth / 2
+          ? { right: Math.max(8, window.innerWidth - clientX) }
+          : { left: Math.max(8, clientX) }),
+      },
+    })
+  }
+
+  const endHold = () => {
+    if (hold.current) clearTimeout(hold.current)
+    hold.current = null
+    heldFrom.current = null
+  }
+
+  const holdProps = (message: Shown) => ({
+    onContextMenu: (event: React.MouseEvent) => {
+      event.preventDefault()
+      openMenu(event.clientX, event.clientY, message)
+    },
+    onPointerDown: (event: React.PointerEvent) => {
+      // A mouse already has a button for this, and holding one down is how
+      // somebody selects text.
+      if (event.pointerType === 'mouse') return
+      const { clientX, clientY } = event
+      heldFrom.current = { x: clientX, y: clientY }
+      hold.current = setTimeout(() => openMenu(clientX, clientY, message), HOLD_MS)
+    },
+    onPointerMove: (event: React.PointerEvent) => {
+      const from = heldFrom.current
+      if (!from) return
+      // A thumb that travelled is a scroll, not a hold.
+      if (Math.abs(event.clientX - from.x) > 10 || Math.abs(event.clientY - from.y) > 10) endHold()
+    },
+    onPointerUp: endHold,
+    onPointerCancel: endHold,
+  })
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
       <VirtualInfiniteList
@@ -335,7 +402,6 @@ export function RoomView({
         renderItem={(message, index) => {
           const mine = message.userId === me
           const speaker = message.userId ? speakers[message.userId] : undefined
-          const recallable = mine && !message.deletedAt && !message.pending
           const { startsRun, endsRun, startsDay } = layoutAt(messages, index, now)
           const bare =
             (message.kind === 'sticker' && !message.deletedAt && isSticker(message.body)) ||
@@ -387,8 +453,9 @@ export function RoomView({
                     // the message, and a coloured box round it would only fight
                     // what is drawn inside.
                     <span
+                      {...holdProps(message)}
                       className={cn(
-                        'flex flex-col',
+                        'flex flex-col max-sm:[-webkit-touch-callout:none] max-sm:select-none',
                         mine ? 'items-end' : 'items-start',
                         message.pending && 'opacity-60',
                       )}
@@ -415,8 +482,12 @@ export function RoomView({
                     </span>
                   ) : (
                     <div
+                      {...holdProps(message)}
                       className={cn(
                         'relative min-w-0 rounded-2xl px-3 py-1.5 text-sm',
+                        // A hold is the way into the menu here, so it must not
+                        // also be the way into a text selection.
+                        'max-sm:[-webkit-touch-callout:none] max-sm:select-none',
                         // Room kept for the clock sitting in the corner, so the
                         // last word never runs under it. Telegram reserves the
                         // same gap, which is why a one-word bubble there is
@@ -443,7 +514,16 @@ export function RoomView({
                           where every chat app puts it — above it, the name was
                           a line of its own competing with the words. */}
                       {mine || !startsRun ? null : (
-                        <span className="text-accent block text-xs font-semibold">
+                        /*
+                         * Takes back the gutter the clock is holding. `pr-14`
+                         * keeps a last line of words clear of a clock sitting
+                         * in the bottom corner — but the name is the first
+                         * line and the clock is nowhere near it, and paying
+                         * 3.5rem for that on a phone is what sent a name of
+                         * four short words onto two, with the room to its
+                         * right empty.
+                         */
+                        <span className="text-accent -mr-11 block text-xs font-semibold">
                           {speaker?.name ?? t('formerMember')}
                         </span>
                       )}
@@ -481,12 +561,7 @@ export function RoomView({
                       phone — where nothing hides behind a hover — it was all
                       anyone saw. */}
                   {message.pending || message.deletedAt ? null : (
-                    <MessageActions
-                      mine={mine}
-                      onReact={(emoji) => void react(message, emoji)}
-                      onReply={() => setReplyingTo(message)}
-                      onRecall={recallable ? () => void recall(message) : undefined}
-                    />
+                    <MessageActions mine={mine} onReact={(emoji) => void react(message, emoji)} />
                   )}
                 </div>
               </div>
@@ -494,6 +569,34 @@ export function RoomView({
           )
         }}
       />
+
+      {menu ? (
+        <MessageMenu
+          at={menu.at}
+          onClose={() => setMenu(null)}
+          onReply={() => {
+            setReplyingTo(menu.message)
+            setMenu(null)
+          }}
+          onCopy={
+            isSticker(menu.message.body)
+              ? undefined
+              : () => {
+                  void copy(menu.message.body)
+                  setMenu(null)
+                }
+          }
+          onRecall={
+            menu.message.userId === me
+              ? () => {
+                  void recall(menu.message)
+                  setMenu(null)
+                }
+              : undefined
+          }
+        />
+      ) : null}
+
       {/* Between the transcript and the box, and it reserves no space: a
           permanent empty line under a conversation is a worse trade than the
           layout shifting by one row for four seconds. */}
@@ -681,31 +784,28 @@ function withReaction(message: Shown, emoji: string, me: string): Shown {
   return { ...message, reactions: next }
 }
 
+/** Where a floating panel sits, in viewport coordinates. */
+export type Anchor = { bottom: number; left?: number; right?: number }
+
 /**
- * Everything you can do to a message, behind one button.
+ * Reacting, behind one button.
  *
- * The panel floats over the conversation rather than taking a line in it,
- * which is what a reaction picker looks like everywhere. That means escaping
- * the transcript: it is a scroll box, and anything positioned inside one is
- * cut off at its edge. So the panel is rendered into the document and placed
- * in viewport coordinates against the button that opened it.
+ * Only the six faces. Everything that is *done* to a message — replying,
+ * copying, taking it back — answers to the message itself now: a right-click
+ * on a pointer, a press and hold on a phone. A button that opened a menu of
+ * everything made the common case, which is a reaction, two steps deep.
  */
 function MessageActions({
   mine,
   onReact,
-  onReply,
-  onRecall,
 }: {
   /** Your own messages sit against the right margin, and so does this. */
   mine: boolean
   onReact: (emoji: string) => void
-  onReply: () => void
-  /** Absent when the message is not yours to take back. */
-  onRecall?: () => void
 }) {
   const t = useTranslations('chat')
   const trigger = useRef<HTMLButtonElement>(null)
-  const [at, setAt] = useState<{ bottom: number; left?: number; right?: number } | null>(null)
+  const [at, setAt] = useState<Anchor | null>(null)
 
   const open = () => {
     const box = trigger.current?.getBoundingClientRect()
@@ -743,28 +843,131 @@ function MessageActions({
       </Button>
 
       {at ? (
-        <FloatingActions
-          at={at}
-          onClose={() => setAt(null)}
-          onPick={(emoji) => {
-            onReact(emoji)
-            setAt(null)
-          }}
-          onReply={() => {
-            onReply()
-            setAt(null)
-          }}
-          onRecall={
-            onRecall
-              ? () => {
-                  onRecall()
+        <FloatingPanel at={at} onClose={() => setAt(null)}>
+          <div className="flex items-center gap-0.5">
+            {REACTIONS.map((emoji) => (
+              <button
+                key={emoji}
+                type="button"
+                aria-label={t('reactWith', { emoji })}
+                onClick={() => {
+                  onReact(emoji)
                   setAt(null)
-                }
-              : undefined
-          }
-        />
+                }}
+                className="hover:bg-surface-2 flex size-9 items-center justify-center rounded-full text-lg"
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        </FloatingPanel>
       ) : null}
     </>
+  )
+}
+
+/**
+ * The shell both panels float in.
+ *
+ * Escaping the transcript is the whole reason it exists: that is a scroll box,
+ * and anything positioned inside one is cut off at its edge. So this renders
+ * into the document and is placed in viewport coordinates.
+ *
+ * Closed by a scroll as well as by a tap elsewhere — the coordinates were
+ * taken once, and a panel that stayed put while the conversation moved under
+ * it would end up pointing at the wrong message.
+ */
+function FloatingPanel({
+  at,
+  onClose,
+  children,
+}: {
+  at: Anchor
+  onClose: () => void
+  children: React.ReactNode
+}) {
+  const panel = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const away = (event: PointerEvent) => {
+      if (!panel.current?.contains(event.target as Node)) onClose()
+    }
+    const key = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+
+    document.addEventListener('pointerdown', away)
+    document.addEventListener('keydown', key)
+    // Capture, because the transcript scrolls rather than the window.
+    window.addEventListener('scroll', onClose, true)
+    window.addEventListener('resize', onClose)
+    return () => {
+      document.removeEventListener('pointerdown', away)
+      document.removeEventListener('keydown', key)
+      window.removeEventListener('scroll', onClose, true)
+      window.removeEventListener('resize', onClose)
+    }
+  }, [onClose])
+
+  return createPortal(
+    <div
+      ref={panel}
+      style={at}
+      className="glass border-border-base fixed z-50 flex flex-col gap-0.5 rounded-2xl border p-0.5 shadow-lg"
+    >
+      {children}
+    </div>,
+    document.body,
+  )
+}
+
+/**
+ * What is done to a message, opened from the message.
+ *
+ * One of these for the whole transcript rather than one per row: only one can
+ * be open, and a menu per message is a hundred listeners for the one that is
+ * showing.
+ */
+function MessageMenu({
+  at,
+  onClose,
+  onReply,
+  onCopy,
+  onRecall,
+}: {
+  at: Anchor
+  onClose: () => void
+  onReply: () => void
+  /** Absent when there are no words to take — a sticker is an id, not text. */
+  onCopy?: () => void
+  /** Absent when the message is not yours to take back. */
+  onRecall?: () => void
+}) {
+  const t = useTranslations('chat')
+  const item =
+    'hover:bg-surface-2 flex h-9 w-full items-center gap-2 rounded-xl px-3 text-left text-sm'
+
+  return (
+    <FloatingPanel at={at} onClose={onClose}>
+      <div className="flex w-40 flex-col gap-0.5">
+        <button type="button" onClick={onReply} className={item}>
+          <CornerUpLeft className="size-4" />
+          {t('reply')}
+        </button>
+        {onCopy ? (
+          <button type="button" onClick={onCopy} className={item}>
+            <Copy className="size-4" />
+            {t('copy')}
+          </button>
+        ) : null}
+        {onRecall ? (
+          <button type="button" onClick={onRecall} className={`${item} text-bad`}>
+            <Trash2 className="size-4" />
+            {t('recall')}
+          </button>
+        ) : null}
+      </div>
+    </FloatingPanel>
   )
 }
 
@@ -809,93 +1012,5 @@ function ReactionPills({
         </button>
       ))}
     </span>
-  )
-}
-
-/**
- * The six choices, then reply and recall, over everything.
- *
- * Closed by a scroll as well as by a tap elsewhere: the coordinates were taken
- * once, and a panel that stayed put while the conversation moved under it
- * would end up pointing at the wrong message.
- */
-function FloatingActions({
-  at,
-  onPick,
-  onReply,
-  onRecall,
-  onClose,
-}: {
-  at: { bottom: number; left?: number; right?: number }
-  onPick: (emoji: string) => void
-  onReply: () => void
-  onRecall?: () => void
-  onClose: () => void
-}) {
-  const t = useTranslations('chat')
-  const panel = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const away = (event: PointerEvent) => {
-      if (!panel.current?.contains(event.target as Node)) onClose()
-    }
-    const key = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
-    }
-
-    document.addEventListener('pointerdown', away)
-    document.addEventListener('keydown', key)
-    // Capture, because the transcript scrolls rather than the window.
-    window.addEventListener('scroll', onClose, true)
-    window.addEventListener('resize', onClose)
-    return () => {
-      document.removeEventListener('pointerdown', away)
-      document.removeEventListener('keydown', key)
-      window.removeEventListener('scroll', onClose, true)
-      window.removeEventListener('resize', onClose)
-    }
-  }, [onClose])
-
-  return createPortal(
-    <div
-      ref={panel}
-      style={at}
-      className="glass border-border-base fixed z-50 flex flex-col gap-0.5 rounded-2xl border p-0.5 shadow-lg"
-    >
-      <div className="flex items-center gap-0.5">
-        {REACTIONS.map((emoji) => (
-          <button
-            key={emoji}
-            type="button"
-            aria-label={t('reactWith', { emoji })}
-            onClick={() => onPick(emoji)}
-            className="hover:bg-surface-2 flex size-9 items-center justify-center rounded-full text-lg"
-          >
-            {emoji}
-          </button>
-        ))}
-      </div>
-      <div className="border-border-base flex items-center gap-0.5 border-t pt-0.5">
-        <button
-          type="button"
-          onClick={onReply}
-          className="hover:bg-surface-2 flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl text-sm"
-        >
-          <CornerUpLeft className="size-4" />
-          {t('reply')}
-        </button>
-        {onRecall ? (
-          <button
-            type="button"
-            onClick={onRecall}
-            className="hover:bg-surface-2 text-bad flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl text-sm"
-          >
-            <Trash2 className="size-4" />
-            {t('recall')}
-          </button>
-        ) : null}
-      </div>
-    </div>,
-    document.body,
   )
 }

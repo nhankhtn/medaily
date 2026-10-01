@@ -1715,7 +1715,10 @@
     "photoInvalid": "Chọn một file ảnh nhé",
     "photoTooLarge": "Ảnh này nặng hơn 5 MB, chọn ảnh nhẹ hơn nhé",
     "photoDisabled": "App chưa bật phần ảnh",
-    "photoUploading": "Đang tải ảnh lên…"
+    "photoUploading": "Đang tải ảnh lên…",
+    "copy": "Chép",
+    "copied": "Đã chép",
+    "copyFailed": "Không chép được"
   },
   "activity": {
     "title": "Những gì đã đổi",

@@ -1715,7 +1715,10 @@
     "photoInvalid": "Pick an image file",
     "photoTooLarge": "That picture is over 5 MB. Pick a smaller one",
     "photoDisabled": "Pictures are not set up on this app",
-    "photoUploading": "Sending the picture…"
+    "photoUploading": "Sending the picture…",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyFailed": "Could not copy that"
   },
   "activity": {
     "title": "What changed",
