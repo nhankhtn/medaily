@@ -6,6 +6,45 @@ Dates are the day the document was written, not the day the code shipped. A
 line here is the cheapest way to know whether what you are reading is older
 than the code.
 
+## 2026-10-01
+
+**Added**
+
+- [features.md](features.md) finally has a **Chat** section, closing the gap
+  the 2026-09-30 entry below admits to. Rooms of two kinds, invites that are
+  spent on first use, optimistic send, recall, reactions and stickers, who
+  sits on which side, and who may do what — including that the ranks live on
+  the member's seat rather than on the room's `createdBy`, so a room older
+  than that column still knows its owner.
+- [database.md](database.md) gained a second half: the **MongoDB collections**.
+  Until now the document described 46 Postgres tables and said nothing about
+  where the activity trail or any chat message actually lives. Four chat
+  collections and `activity`, their indexes, and why there are no transactions
+  in any of it.
+- **Locked messages.** `CHAT_MESSAGE_KEY` and `CHAT_MESSAGE_KEY_SPARE`, written
+  up in both documents, because this is the one feature where getting it wrong
+  destroys data rather than breaking a screen. Each message is encrypted under
+  a key of its own; that key is wrapped once per environment key, which is how
+  a spare opens everything the main one can. Both documents say plainly that
+  the server holds the key and this is **not** end-to-end, and that a key added
+  after the first message opens nothing written before it.
+- Unread counts: the badge on the nav, the per-room number, why your own
+  messages never count, and why the mark follows the newest message that has
+  landed rather than the newest one drawn.
+- Budgets: the monthly total, moving back through past months, setting a
+  budget on a month already gone, and the copy into each new month on the
+  first night of it.
+- Opening your bank's own app from a transfer, with the phone-only and
+  both-banks-known conditions that decide whether the button is there at all.
+- `⌘B` folds the sidebar — the one shortcut that still fires while typing, and
+  why it is held off in the markdown editor.
+- The markdown editor's `/` menu and its `?` panel.
+- **What changed** narrowed to money and the door, in both
+  [features.md](features.md) and [database.md](database.md).
+- [README.md](README.md) now tells you to update the Mongo half of
+  `database.md` when a collection's shape moves. Those collections have no
+  migration file to force the issue.
+
 ## 2026-09-30
 
 **Added**
@@ -37,7 +76,7 @@ than the code.
   the nightly job, and refused outright when its `project_id` does not match
   the project the browser signs in to.
 
-**Known gap**
+**Known gap** *(closed 2026-10-01)*
 
 - `features.md` still has no chat section at all — it predates this change and
   was not filled in here. Rooms, invites, recall and now the typing indicator

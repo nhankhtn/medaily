@@ -206,6 +206,13 @@ already filed under it alone.
 
 **Knowledge** (`/knowledge`) holds notes in Markdown.
 
+**Writing in the editor.** Type `/` on an empty line for a list of blocks —
+heading, list, quote, table, code. Markdown shorthands work as you type: `#`
+for a heading, `-` for a list, `>` for a quote, a backtick fence for code. The
+`?` button in the editor's corner lists all of them, so the question "how do I
+make a table" has an answer inside the editor rather than outside it. The
+editor also opens full-screen when the dialog is too small to write in.
+
 **Wiki links.** Write `[[Title of another note]]` in the body. On save the
 link is recorded, matching the title whatever the casing. Click a note's title
 to open it: the body renders resolved links as real links, and **Linked from**
@@ -255,9 +262,25 @@ Accounts, categories, transactions, budgets, assets and investments.
 Then log income, expense or transfer. A transfer moves money between your own
 accounts and counts as neither income nor expense.
 
-Amounts format as you type: `100000` becomes `100.000`. Budgets are a monthly
-limit per category; click a budget's name to change the amount. Investment
-prices are typed by hand — the app fetches no market data.
+Amounts format as you type: `100000` becomes `100.000`. Investment prices are
+typed by hand — the app fetches no market data.
+
+**Budgets** are a monthly limit per category; click a budget's name to change
+the amount. The page totals them, so the question "how much did I allow myself
+this month" has an answer without adding up rows.
+
+Last month's budgets are copied into the new one **on the first night of each
+month**, by the nightly job. A month you have never opened therefore still has
+limits to go over, which is the only way the overspending it reports means
+anything. You can move back to any past month and see how it ended — and set a
+budget on a month already gone, because the reason to look at one is usually
+to work out what it should have been.
+
+**Paying someone.** A transfer to a person can open your bank's own app with
+the account number, amount and reference already filled in. It appears only on
+a phone, only for the banks that registered a link, and only once the account
+you are paying from and the one you are paying to are both known — your bank
+is the app that opens, theirs is where the money lands.
 
 **With no signal.** Adding a transaction works offline, the way the daily log
 does. Open `/finance` once with a connection and the page is kept; after that
@@ -342,6 +365,87 @@ original.
 
 ---
 
+## Chat — `/chat`
+
+Conversations with the other people who use this instance. It is a side room,
+not a product: the app is a personal log, and chat exists because some of what
+you track is arranged with somebody else.
+
+**Rooms are of two kinds.** A direct room is between two people and there can
+only ever be one of them — opening a conversation twice finds the first rather
+than making a second. A group room has a name and as many people as you
+invite.
+
+**Getting someone in.** The gear beside the room's name opens a short menu;
+**Add someone** offers a link to copy or an email to send to. A link is good
+for 48 hours and for **one** person: it is a credential, so it is spent the
+moment it is used. Opening one lands on the room list with a dialog naming the
+room you were asked into, rather than a page of its own — you are being asked
+a question, not sent somewhere.
+
+The email field never says whether that address has an account. Both answers
+read the same, deliberately: a form that says "no such person" is a form that
+tells you who is here.
+
+**Sending.** Your own message appears the moment you send it, not when the
+server agrees, and settles in place when it does. Emoji and stickers sit
+beside the box; a message that is nothing but emoji is drawn large, the way
+every chat app has trained people to expect. Press a message to react to it.
+Fifty messages load at a time and older ones arrive as you scroll up.
+
+**Taking it back.** You can recall your own message, and only your own. The
+row stays with a line saying it was withdrawn — the conversation is never
+rewritten to look like something was not said.
+
+**What is waiting.** The nav carries how many rooms have something unread,
+and the list says how many messages each one holds — a room list that looks
+the same whether or not anybody wrote to you is one you have to open to use.
+Your own messages never count: sending something is not a reason for a room to
+ask to be read. Opening a room marks it read from the newest message that has
+actually landed, so a bubble still in flight cannot move the mark past
+something you have not seen.
+
+**Who is where.** Your messages sit on the right, everyone else's on the
+left, each with a face. The side says who, which is why a name is only drawn
+above other people's. When someone is typing, you see it — the one live signal
+that carries any content at all.
+
+### Who may do what
+
+Only the person who made the room can invite, rename, remove somebody, or
+delete it. Everybody else can read, write, recall their own, and leave.
+
+**Deleting a room takes the messages with it, for everyone.** There is no
+copy, and nothing asks twice beyond the confirmation.
+
+This is decided on the server, not by hiding menu items. The ranks live on the
+member's seat in the room rather than on a "who made this" column, so a room
+that predates that column still knows its owner.
+
+### What the server can read
+
+Messages are **locked before they reach the database** when
+`CHAT_MESSAGE_KEY` is set. Each message is encrypted under a key of its own,
+which is then wrapped once per key in the environment — which is how a spare
+key opens everything the main one can.
+
+Be clear about what this is: **the server holds the key, so this is not
+end-to-end.** It protects a database dump, a stray backup, and whoever runs
+the cluster. It does not protect against someone who has the application
+server. Telegram's group chats make exactly this trade, and for the same
+reason — a conversation you can read on a new device is a conversation the
+server can read too.
+
+Without the variable, messages are stored as they always were, and rows of
+both kinds live together: switching it on migrates nothing, and switching it
+off strands everything written while it was on.
+
+**Lose the keys and the messages are gone.** There is no recovery. Keep a copy
+somewhere that is not the database, and set both keys *before* the first
+message — a key added later opens nothing written before it.
+
+---
+
 ## Analytics, dashboard and search
 
 **Dashboard** (`/`) is today at a glance: the day's numbers against yesterday,
@@ -385,6 +489,11 @@ is pursued over time and has a sense of progress.** Where it could honestly be
 either, it comes back as a to-do — a to-do is one line to delete, a goal is a
 record to unpick.
 
+**⌘B / Ctrl-B** folds the sidebar away and brings it back. It is the one
+shortcut that still fires while you are typing, because the reason to want
+more width is usually that you are writing something — and it is held off in
+the markdown editor, where those keys mean bold.
+
 **Keyboard shortcuts** — press `?`, or use the button beside the capture
 launcher, or open it from Settings. **Every shortcut is editable**: click a
 key, press the new one. Two-key sequences work (`g` then `d`), conflicts are
@@ -403,6 +512,12 @@ score weighs; your own activities; keyboard shortcuts.
 **Your data** exports as JSON (everything) or CSV (one module), and imports
 back with a dry run that reports what would be created before anything is
 written.
+
+**What changed** records a trail of **money and the door**: accounts,
+transactions, categories, chat rooms, and signing in and out. It deliberately
+stops there. A trail that records every habit ticked buries the entries anyone
+actually goes looking for, and those are the ones about access and about
+money.
 
 ---
 
@@ -435,3 +550,5 @@ Everything below is off unless configured, and the UI hides rather than breaks.
 | Quick capture | Gemini key | Capture launcher hidden — finance, goals and to-dos all go through it |
 | Photos | `CLOUDINARY_*` | Photo UI hidden |
 | Crash alerts | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Errors go to the console only |
+| Chat | `MONGODB_URI` | The Chat page is not offered at all |
+| Locked messages | `CHAT_MESSAGE_KEY`, `CHAT_MESSAGE_KEY_SPARE` | Messages are stored as plain text in Mongo |

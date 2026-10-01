@@ -337,3 +337,106 @@ differing only in the period column (`week_start_date`, `month_start_date`,
 | --- | --- |
 | `insights` | `kind`, `severity`, `payload` jsonb, `dedupe_key` (so the same observation is not raised twice), `dismissed_at`, `snoozed_until` |
 | `ai_reports` | `kind`, `period_start`/`period_end`, `question`, `model`, `prompt_version`, `content_md`. The model and prompt version are stored so an old report can be read in context |
+
+---
+
+# The second database — MongoDB
+
+Not everything is in Postgres. The **activity trail** and **chat** live in
+MongoDB, reached through `MONGODB_URI`. Leave it blank and neither is offered:
+no driver connects, and the pages are not there to click.
+
+Why a second store at all: both are append-heavy logs of things that happened,
+neither joins against the relational schema, and the trail expires on its own.
+Neither has a migration file — collections and indexes are created on first
+use by `readyCollection`, so there is nothing to run before a deploy.
+
+**No transactions anywhere in here.** Mongo has them, but they need a replica
+set and the mongod the integration tests run against is standalone — code that
+works on Atlas and fails in CI is the worst kind. Every write is idempotent by
+key instead, so a retry is always safe and an interrupted sequence leaves
+something harmless rather than something wrong.
+
+## `activity`
+
+One document per recorded action. Scoped by `userId` like every Postgres
+table.
+
+| Field | Notes |
+| --- | --- |
+| `userId`, `at`, `action` | `action` reads `entity.verb` — `transaction.create`, `session.login` |
+| `entityId` | Which row it was about, so a trail leads back to a record |
+| `label` | What a person would call it. **Never an amount, never the contents of a journal entry** — a log that quotes what it watched is a second copy of the thing it was meant to be a record *about* |
+| `requestId` | Ties a row to the server console lines and the alert for one request |
+| `before` | The row as it stood beforehand. A create has none |
+
+Only **money and the door** are recorded: accounts, transactions, categories,
+chat rooms, and signing in and out. A trail that recorded every habit ticked
+would bury the entries anyone actually goes looking for.
+
+A TTL index on `at` expires documents after `ACTIVITY_LOG_DAYS` (90 when
+blank). A log that grows forever is a liability, not an asset.
+
+## Chat — four collections
+
+| Collection | `_id` | Fields worth knowing |
+| --- | --- | --- |
+| `chat_rooms` | uuid | `kind` (`direct` \| `group`), `title`, `createdBy`, `doorbellKey`, `directKey`, `lastMessageAt` |
+| `chat_members` | `roomId:userId` | `role` (`owner` \| `member`), `joinedAt`, `leftAt`, `lastReadMessageId` |
+| `chat_messages` | ObjectId | `roomId`, `userId`, `kind` (`text` \| `sticker`), `body` **or** `bodyEnc`, `clientId`, `deletedAt`, `reactions` |
+| `chat_invites` | the code | `roomId`, `email`, `expiresAt`, `maxUses`, `usedCount`, `revokedAt` |
+
+Notes on the ones that are not obvious:
+
+- **`directKey`** is the two user ids in a fixed order, uniquely indexed. That
+  index is what stops two people opening the same direct room at once and
+  getting one each.
+- **`doorbellKey`** is what the browser listens on for a nudge that something
+  arrived. It carries no content — see [realtime.md](realtime.md) — and it is
+  rotated when somebody is removed, so a person taken out of a room stops
+  being able to hear it ring.
+- **`clientId`** is decided by the browser before the first attempt and is
+  unique per room, which is what makes a resend harmless.
+- **`_id` is an ObjectId on messages and nothing else**, because it sorts by
+  creation time: `{ roomId, _id }` is the paging index, and no separate
+  sequence column is needed.
+- **`role` on the seat is the only word on ownership.** `createdBy` on the
+  room is nullable and predates the rank, so nothing authorises on it.
+- **`reactions`** is emoji to the user ids who pressed it, kept on the message
+  because a reaction is never read apart from the message it is on.
+- **`userId` goes null, the words stay**, when somebody erases their account.
+  That is the choice this app made, and every screen that draws a message has
+  to survive it.
+
+### `body` and `bodyEnc`
+
+A message's words are in one of two places, and both kinds of row live
+together permanently. **Exactly one field is ever present** — a document is
+not a row with a fixed set of columns, so the unused one is simply not
+written rather than written empty.
+
+| State | `body` | `bodyEnc` |
+| --- | --- | --- |
+| No `CHAT_MESSAGE_KEY` set | the words | — |
+| Locked | — | `{ v, iv, ct, wraps }` |
+| Recalled | — | — |
+
+A recalled message is therefore known by `deletedAt` alone, which was already
+the only thing that marked it. Nothing has to tell an empty message from a
+withdrawn one, because an empty message cannot be sent.
+
+`ct` is the message encrypted under a key made for that message alone, which
+is never stored. `wraps` maps a key id — the first 8 hex of the key's SHA-256,
+which says *which* key without saying anything about it — to that message key
+wrapped under it. Two entries, one per environment key, is what lets the spare
+open everything the main one can.
+
+Everything is AES-256-GCM, with `messageId:roomId` as additional authenticated
+data. Without that, anyone who could write to this database could lift a
+locked body out of one message and drop it into another and it would still
+open; with it, a body that has been moved no longer opens at all.
+
+The key never leaves the server, so **this is not end-to-end encryption.** It
+defends a dump, a backup and the cluster's operator. It does not defend
+against someone holding the application server. Switching it on migrates
+nothing. Switching it off strands everything written while it was on.
