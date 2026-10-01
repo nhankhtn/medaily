@@ -67,7 +67,9 @@ export async function upsertMilestone(
     const rows = await db
       .update(goalMilestones)
       .set({ ...values, updatedAt: new Date() })
-      .where(eq(goalMilestones.id, values.id))
+      // The goal id pins the milestone to a goal the caller has already
+      // checked, so an id lifted from someone else's goal updates nothing.
+      .where(and(eq(goalMilestones.id, values.id), eq(goalMilestones.goalId, values.goalId)))
       .returning()
     const row = rows[0]
     if (!row) throw new Error('milestone not found')
@@ -98,7 +100,8 @@ const METRIC_COLUMNS: Record<MetricKey, string> = {
 }
 
 export function isMetricKey(value: string): value is MetricKey {
-  return value in METRIC_COLUMNS
+  // `in` would also accept `constructor` and `toString`, which then reach `sql.raw`.
+  return Object.hasOwn(METRIC_COLUMNS, value)
 }
 
 /**

@@ -349,6 +349,9 @@ export const leaveRoom = audited('chatRoom.leave', async (input: unknown) => {
   }
 
   await store.removeMember(parsed.data, userId)
+  // Leaving is the same as being taken out: whoever walked away still holds
+  // the old key, and must stop being able to hear the room ring.
+  await store.rotateDoorbell(parsed.data)
   // Nothing else would: MongoDB has no cascade, and an empty room holds a
   // conversation nobody can reach.
   await sweepIfEmpty(parsed.data, { store })
@@ -592,6 +595,16 @@ export const acceptInvite = audited('chatRoom.join', async (input: unknown) => {
 
   const invite = await store.findInvite(parsed.data)
   if (!invite) return { ok: false as const, error: 'not_found' as const }
+
+  // An invite written for an address is for that address. A forwarded link
+  // must not seat whoever opens it first and spend the one use. Same answer
+  // as an unknown code, so the link does not say who it was meant for.
+  if (invite.email) {
+    const identities = await listIdentities({ userIds: [userId] })
+    if (!identities.some((identity) => identity.email?.toLowerCase() === invite.email)) {
+      return { ok: false as const, error: 'not_found' as const }
+    }
+  }
 
   const already = await store.findMember(invite.roomId, userId)
   if (already && already.leftAt === null) {

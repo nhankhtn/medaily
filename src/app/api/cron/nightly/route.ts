@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { formatBytes } from '@/lib/alerts/report'
 import { env } from '@/lib/env'
@@ -104,7 +105,7 @@ const validateCronSecret = async (request: Request): Promise<NextResponse | null
     await log.error('cron', 'the nightly run cannot start: CRON_SECRET is not set', { userAgent })
     return NextResponse.json({ error: 'not configured' }, { status: 503 })
   }
-  if (request.headers.get('authorization') !== `Bearer ${secret}`) {
+  if (!sameSecret(request.headers.get('authorization'), `Bearer ${secret}`)) {
     await log.error('cron', `the nightly run refused ${caller}: wrong or missing secret`, {
       userAgent,
     })
@@ -112,6 +113,14 @@ const validateCronSecret = async (request: Request): Promise<NextResponse | null
   }
 
   return null
+}
+
+/** Constant-time, so the response time says nothing about how much of the secret matched. */
+function sameSecret(given: string | null, expected: string): boolean {
+  if (given === null) return false
+  const a = Buffer.from(given)
+  const b = Buffer.from(expected)
+  return a.length === b.length && timingSafeEqual(a, b)
 }
 
 const handleSweepNoteImages = async (userIds: string[]) => {

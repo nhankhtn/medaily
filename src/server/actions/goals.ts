@@ -52,6 +52,11 @@ export async function toggleMilestone(input: unknown) {
     .object({ goalId: z.string().uuid(), milestoneId: z.string().uuid() })
     .parse(input)
 
+  // Milestones carry no owner of their own; the goal is what proves they are yours.
+  if (!(await findGoal(await getCurrentUserId(), goalId))) {
+    return { ok: false as const, error: 'not_found' as const }
+  }
+
   const milestones = await findMilestonesFor([goalId])
   const target = milestones.find((milestone) => milestone.id === milestoneId)
   if (!target) return { ok: false as const, error: 'not_found' as const }

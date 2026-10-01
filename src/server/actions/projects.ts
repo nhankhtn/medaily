@@ -5,8 +5,11 @@ import { z } from 'zod'
 import { getCurrentUserId } from '@/lib/auth/current-user'
 import { PATHS } from '@/lib/paths'
 import { isoDateSchema } from '@/lib/validation/daily'
+import { findGoal } from '@/server/repositories/goals'
+import { ownedOrNull } from '@/server/services/ownership'
 import {
   deleteTask,
+  findProject,
   findTask,
   insertProject,
   insertTask,
@@ -39,7 +42,8 @@ export async function saveProject(input: unknown) {
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
   const userId = await getCurrentUserId()
-  const { id, ...values } = parsed.data
+  const { id, ...rest } = parsed.data
+  const values = { ...rest, goalId: await ownedOrNull(userId, rest.goalId, findGoal) }
 
   const project = id
     ? await updateProject(userId, id, values)
@@ -73,7 +77,12 @@ export async function saveTask(input: unknown) {
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
   const userId = await getCurrentUserId()
-  const { id, ...values } = parsed.data
+  const { id, ...rest } = parsed.data
+  const [projectId, parentTaskId] = await Promise.all([
+    ownedOrNull(userId, rest.projectId, findProject),
+    ownedOrNull(userId, rest.parentTaskId, findTask),
+  ])
+  const values = { ...rest, projectId, parentTaskId }
 
   // `completed_at` follows the status, so "done" always carries its timestamp.
   const completedAt = values.status === 'done' ? new Date() : null

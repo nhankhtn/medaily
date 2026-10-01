@@ -1,5 +1,5 @@
 import type { CustomMetric } from '@/lib/db/schema'
-import { db } from '@/lib/db'
+import { db, type DbOrTx } from '@/lib/db'
 import type { DailyLog } from '@/lib/db/schema'
 import { addDays, rangeOfLastDays, today, type ISODate } from '@/lib/dates'
 import type { DailyLogPatchInput } from '@/lib/validation/daily'
@@ -36,7 +36,9 @@ function toDbPatch(patch: DailyLogPatchInput): DailyLogPatch {
   const { sleepHours, ...rest } = patch
   return {
     ...rest,
-    ...(sleepHours === undefined ? {} : { sleepHours: sleepHours === null ? null : String(sleepHours) }),
+    ...(sleepHours === undefined
+      ? {}
+      : { sleepHours: sleepHours === null ? null : String(sleepHours) }),
   }
 }
 
@@ -65,10 +67,24 @@ export async function saveDailyLog(
     const saved = await upsertLog(settings.userId, date, { ...toDbPatch(patch), source }, tx)
     // Before the habits recompute, so one bound to a custom metric sees today's
     // number rather than yesterday's.
-    if (custom) await saveCustomValues(saved.id, custom, tx)
+    if (custom)
+      await saveCustomValues(saved.id, await ownCustomValues(settings.userId, custom, tx), tx)
     await recomputeDerivedHabitLogs(tx, settings.userId, date, settings.weekStart)
     return { saved, previous }
   })
+}
+
+/**
+ * Keeps only the values keyed by this person's own metrics. The keys arrive
+ * from the form, so a foreign metric id is dropped rather than written.
+ */
+async function ownCustomValues(
+  userId: string,
+  custom: Record<string, number | boolean | string | null>,
+  tx: DbOrTx,
+): Promise<Record<string, number | boolean | string | null>> {
+  const own = new Set((await findCustomMetrics(userId, tx)).map((metric) => metric.id))
+  return Object.fromEntries(Object.entries(custom).filter(([id]) => own.has(id)))
 }
 
 export async function saveManyDailyLogs(
@@ -81,7 +97,12 @@ export async function saveManyDailyLogs(
 
   return db.transaction(async (tx) => {
     for (const row of rows) {
-      await upsertLog(settings.userId, row.date, { ...toDbPatch(row.patch), source: 'catch_up' }, tx)
+      await upsertLog(
+        settings.userId,
+        row.date,
+        { ...toDbPatch(row.patch), source: 'catch_up' },
+        tx,
+      )
       await recomputeDerivedHabitLogs(tx, settings.userId, row.date, settings.weekStart)
     }
     return rows.length

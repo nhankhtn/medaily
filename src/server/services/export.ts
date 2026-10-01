@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { getCurrentUserId } from '@/lib/auth/current-user'
+import { foreignKeysOf, isRowOwnedBy, type ForeignKey } from '@/server/repositories/foreign-keys'
 
 export const EXPORT_SCHEMA_VERSION = 1
 
@@ -55,7 +56,9 @@ export const EXPORT_TABLES = [
 export type ExportTable = (typeof EXPORT_TABLES)[number]
 
 /** Child tables reached through a parent, so they filter by the parent's id. */
-const CHILD_TABLES: Partial<Record<ExportTable, { parent: ExportTable; foreignKey: string; parentKey: string }>> = {
+const CHILD_TABLES: Partial<
+  Record<ExportTable, { parent: ExportTable; foreignKey: string; parentKey: string }>
+> = {
   custom_metric_values: { parent: 'daily_logs', foreignKey: 'daily_log_id', parentKey: 'id' },
   goal_milestones: { parent: 'goals', foreignKey: 'goal_id', parentKey: 'id' },
   workout_sets: { parent: 'workouts', foreignKey: 'workout_id', parentKey: 'id' },
@@ -133,6 +136,8 @@ export async function importPayload(payload: unknown, dryRun: boolean): Promise<
 
   summary.schemaVersion = parsed.schemaVersion
   const userId = await getCurrentUserId()
+  const foreignKeys = await foreignKeysOf(EXPORT_TABLES)
+  const ownsReference = referenceChecker(userId, parsed.tables ?? {}, dryRun)
 
   for (const table of EXPORT_TABLES) {
     const rows = parsed.tables?.[table]
@@ -149,6 +154,17 @@ export async function importPayload(payload: unknown, dryRun: boolean): Promise<
 
       const values: Record<string, unknown> = { ...(row as Record<string, unknown>) }
       if ('user_id' in values) values.user_id = userId
+
+      // Rewriting `user_id` is not enough: a child row (a milestone, a tag on a
+      // note) has no owner of its own and belongs to whoever owns its parent,
+      // and a parent id is just a value in the file. Every reference has to
+      // name a row this user owns, or the import writes into someone else's.
+      if (!(await referencesAreOwned(values, foreignKeys.get(table) ?? [], ownsReference))) {
+        skipped += 1
+        if (summary.errors.length < 20)
+          summary.errors.push(`${table}: refers to a row that is not yours`)
+        continue
+      }
 
       if (dryRun) {
         inserted += 1
@@ -172,9 +188,10 @@ export async function importPayload(payload: unknown, dryRun: boolean): Promise<
         inserted += 1
       } catch (error) {
         skipped += 1
-        if (summary.errors.length < 20) {
-          summary.errors.push(`${table}: ${error instanceof Error ? error.message : 'failed'}`)
-        }
+        // The driver's message names constraints and columns; it goes to the
+        // log, and the person gets which table the row was in.
+        console.error(`importPayload.execute: table=${table}`, error)
+        if (summary.errors.length < 20) summary.errors.push(`${table}: row could not be imported`)
       }
     }
 
@@ -184,6 +201,62 @@ export async function importPayload(payload: unknown, dryRun: boolean): Promise<
 
   summary.ok = true
   return summary
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * Whether `refTable.refColumn = id` names a row this user owns, remembered per
+ * import. Parents are written before their children, so by the time a child
+ * asks, an imported parent is already in the database under this user. A dry
+ * run writes nothing, so there a parent that is in the file counts too.
+ */
+function referenceChecker(
+  userId: string,
+  tables: Record<string, Record<string, unknown>[]>,
+  dryRun: boolean,
+): (refTable: string, refColumn: string, id: string) => Promise<boolean> {
+  const known = new Map<string, boolean>()
+
+  return async (refTable, refColumn, id) => {
+    const key = `${refTable}.${refColumn}:${id}`
+    const cached = known.get(key)
+    if (cached !== undefined) return cached
+
+    const inFile =
+      dryRun &&
+      Array.isArray(tables[refTable]) &&
+      tables[refTable].some(
+        (row) => typeof row === 'object' && row !== null && row[refColumn] === id,
+      )
+
+    let owned = inFile
+    if (!owned) {
+      try {
+        owned = await isRowOwnedBy(refTable, refColumn, id, userId)
+      } catch (error) {
+        console.error(`referenceChecker.isRowOwnedBy: table=${refTable}`, error)
+        owned = false
+      }
+    }
+
+    known.set(key, owned)
+    return owned
+  }
+}
+
+async function referencesAreOwned(
+  values: Record<string, unknown>,
+  foreignKeys: ForeignKey[],
+  owns: (refTable: string, refColumn: string, id: string) => Promise<boolean>,
+): Promise<boolean> {
+  for (const key of foreignKeys) {
+    const value = values[key.column]
+    if (value === null || value === undefined) continue
+    if (typeof value !== 'string' || !UUID.test(value)) return false
+    if (!(await owns(key.refTable, key.refColumn, value))) return false
+  }
+  return true
 }
 
 /** Per-module CSV, for spreadsheets rather than round-tripping. */

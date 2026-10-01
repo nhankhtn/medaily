@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
+import { escapeLike } from '@/lib/text'
 import { PATHS } from '@/lib/paths'
 import { MIN_QUERY_LENGTH, SEARCH_LIMIT } from '@/lib/search'
 
@@ -35,7 +36,7 @@ export async function searchEverything(
     WITH q AS (
       SELECT
         websearch_to_tsquery('simple', f_unaccent(${trimmed})) AS tsq,
-        '%' || f_unaccent(lower(${trimmed})) || '%'            AS pattern
+        '%' || f_unaccent(lower(${escapeLike(trimmed)})) || '%' AS pattern
     )
     SELECT 'note' AS type, n.id::text, n.title,
            left(coalesce(n.body_md, ''), 160) AS snippet,

@@ -1,5 +1,6 @@
 import { and, asc, between, desc, eq, gte, isNotNull, isNull, lt, lte, or, sql } from 'drizzle-orm'
 import { db, type DbOrTx } from '@/lib/db'
+import { escapeLike } from '@/lib/text'
 import {
   accounts,
   assets,
@@ -391,7 +392,7 @@ export async function findTransactionsPage(
   if (filters.search) {
     const needle = filters.search.toLowerCase()
     const matches = [
-      sql`f_unaccent(lower(coalesce(${transactions.merchant}, ''))) LIKE f_unaccent(${`%${needle}%`})`,
+      sql`f_unaccent(lower(coalesce(${transactions.merchant}, ''))) LIKE f_unaccent(${`%${escapeLike(needle)}%`})`,
     ]
     if (REFERENCE_RE.test(needle)) {
       // A prefix, because that is the end of the id a transfer reference

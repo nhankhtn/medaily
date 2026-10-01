@@ -144,7 +144,9 @@ export function mongoChatStore(uri: string): ChatStore {
     },
 
     setRoomAvatar: async (roomId, avatarUrl) => {
-      await (await roomsIn(uri)).updateOne(
+      await (
+        await roomsIn(uri)
+      ).updateOne(
         { _id: roomId },
         // Cleared by removing the field rather than writing null: a document
         // is not a row, and an absent face is absent.
@@ -235,6 +237,7 @@ export function mongoChatStore(uri: string): ChatStore {
     },
 
     listBackward: async (roomId, { before, limit }) => {
+      if (before && !isObjectIdHex(before)) return pageOf(uri, [], limit)
       const rows = await (
         await messagesIn(uri)
       )
@@ -246,6 +249,7 @@ export function mongoChatStore(uri: string): ChatStore {
     },
 
     listForward: async (roomId, { after, limit }) => {
+      if (after && !isObjectIdHex(after)) return pageOf(uri, [], limit)
       const rows = await (
         await messagesIn(uri)
       )
@@ -335,10 +339,7 @@ export function mongoChatStore(uri: string): ChatStore {
 
       // Separate statement, but it cannot be clobbered: both it and the strip
       // touch only this person's id, so two people reacting at once never meet.
-      await messages.updateOne(
-        { _id, roomId },
-        { $addToSet: { [`reactions.${emoji}`]: userId } },
-      )
+      await messages.updateOne({ _id, roomId }, { $addToSet: { [`reactions.${emoji}`]: userId } })
       return 'added'
     },
 
@@ -447,6 +448,14 @@ export function mongoChatStore(uri: string): ChatStore {
  * read receipts point at one, and so does recalling a message — so wrapping it
  * again would be ceremony that hides nothing.
  */
+/**
+ * A cursor is a message id from an earlier page; anything else names no page.
+ * `new ObjectId` would throw on it, turning a stale or forged cursor into a 500.
+ */
+function isObjectIdHex(value: string): boolean {
+  return /^[0-9a-f]{24}$/i.test(value)
+}
+
 async function pageOf(uri: string, rows: MessageDoc[], limit: number) {
   const items = await withQuotes(uri, rows.slice(0, limit))
   return { items, cursor: items.at(-1)?.id ?? null, more: rows.length > limit }
@@ -472,7 +481,9 @@ async function withQuotes(uri: string, docs: MessageDoc[]): Promise<ChatMessage[
   const items = docs.map((doc) => asMessage(doc)!)
 
   const wanted = new Set(
-    docs.map((doc) => doc.replyToId).filter((id): id is string => Boolean(id) && ObjectId.isValid(id!)),
+    docs
+      .map((doc) => doc.replyToId)
+      .filter((id): id is string => Boolean(id) && ObjectId.isValid(id!)),
   )
   if (wanted.size === 0) return items
 

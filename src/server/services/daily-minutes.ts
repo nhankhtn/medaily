@@ -3,7 +3,11 @@ import { db } from '@/lib/db'
 import { dailyLogs } from '@/lib/db/schema'
 import type { ISODate } from '@/lib/dates'
 import type { DailyMinutesColumn } from '@/lib/timer/activities'
-import { findCustomValues, saveCustomValues } from '@/server/repositories/custom-metrics'
+import {
+  findCustomMetric,
+  findCustomValues,
+  saveCustomValues,
+} from '@/server/repositories/custom-metrics'
 import { upsertLog } from '@/server/repositories/daily'
 import { recomputeDerivedHabitLogs } from '@/server/services/habit-derivation'
 
@@ -55,6 +59,10 @@ export async function addCustomMinutes(values: {
   weekStart: 'monday' | 'sunday'
 }): Promise<number> {
   const { userId, date, metricId, minutes, weekStart } = values
+
+  // A run queued offline names its metric from the client. One that is not
+  // this person's is dropped, not retried: no retry would ever make it theirs.
+  if (!(await findCustomMetric(userId, metricId))) return 0
 
   return db.transaction(async (tx) => {
     const log = await upsertLog(userId, date, {}, tx)

@@ -131,7 +131,13 @@ export async function customSnapshotFor(
     })
     .from(customMetricValues)
     .innerJoin(dailyLogs, eq(dailyLogs.id, customMetricValues.dailyLogId))
-    .innerJoin(customMetrics, eq(customMetrics.id, customMetricValues.customMetricId))
+    .innerJoin(
+      customMetrics,
+      and(
+        eq(customMetrics.id, customMetricValues.customMetricId),
+        eq(customMetrics.userId, userId),
+      ),
+    )
     .where(and(eq(dailyLogs.userId, userId), eq(dailyLogs.logDate, date)))
 
   const snapshot: Record<string, number | null> = {}
@@ -174,7 +180,13 @@ export async function aggregateCustomMetric(
     .select({ value: expression })
     .from(customMetricValues)
     .innerJoin(dailyLogs, eq(dailyLogs.id, customMetricValues.dailyLogId))
-    .innerJoin(customMetrics, eq(customMetrics.id, customMetricValues.customMetricId))
+    .innerJoin(
+      customMetrics,
+      and(
+        eq(customMetrics.id, customMetricValues.customMetricId),
+        eq(customMetrics.userId, userId),
+      ),
+    )
     .where(
       and(
         eq(dailyLogs.userId, userId),

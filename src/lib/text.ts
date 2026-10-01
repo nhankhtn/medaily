@@ -16,3 +16,11 @@ export function foldText(value: string): string {
     .replace(/[\u0300-\u036f]/g, '')
     .trim()
 }
+
+/**
+ * Makes a string match only itself inside a `LIKE` pattern. Postgres treats
+ * `\` as the escape character by default, so no `ESCAPE` clause is needed.
+ */
+export function escapeLike(value: string): string {
+  return value.replace(/[\\%_]/g, '\\$&')
+}

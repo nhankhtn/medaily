@@ -20,10 +20,19 @@ import journal from '../../../../drizzle/meta/_journal.json'
  */
 const EXPECTED_MIGRATIONS = journal.entries.length
 
+/**
+ * What kind of failure, without the driver's own sentence: that names the host
+ * and the database user, and this endpoint is public. The full text goes to
+ * the server log, where whoever fixes the deploy will look.
+ */
 function driverReason(error: unknown): string {
-  const cause = (error as { cause?: { message?: string } })?.cause
-  const message = cause?.message ?? (error instanceof Error ? error.message : 'unknown')
-  return message.replace(/\s+/g, ' ').slice(0, 200)
+  const cause = (error as { cause?: { message?: string; code?: string } })?.cause
+  const message = cause?.message ?? (error instanceof Error ? error.message : '')
+  if (/password authentication failed|no pg_hba\.conf entry/i.test(message)) return 'auth_failed'
+  if (/does not exist/i.test(message)) return 'database_missing'
+  if (/timeout|timed out/i.test(message)) return 'timeout'
+  const code = cause?.code ?? /\b(E[A-Z]{3,})\b/.exec(message)?.[1]
+  return code && /^[A-Z0-9_]{1,40}$/.test(code) ? code : 'unknown'
 }
 
 export async function GET() {
@@ -125,14 +134,13 @@ export async function GET() {
       { headers: { 'cache-control': 'no-store' } },
     )
   } catch (error) {
+    console.error('GET.execute: database unreachable', error)
     return NextResponse.json(
       {
         status: 'error',
         database: 'unreachable',
-        // Drizzle wraps driver errors, so the useful text ("ECONNREFUSED",
-        // "password authentication failed", "no pg_hba.conf entry") is on
-        // `cause`. It names the host or the auth failure without echoing the
-        // password, which is exactly what is needed to fix a deploy.
+        // A category (`ECONNREFUSED`, `auth_failed`, `timeout`), never the
+        // driver's text — see `driverReason`.
         reason: driverReason(error),
         ...config,
         roundTripMs: Date.now() - startedAt,

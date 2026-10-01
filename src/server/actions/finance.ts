@@ -709,9 +709,13 @@ export async function saveBudget(input: unknown) {
     .safeParse(input)
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
+  const userId = await getCurrentUserId()
+  const categoryId = ownedBy(parsed.data.categoryId, await findCategories(userId))
+  if (!categoryId) return { ok: false as const, error: 'not_found' as const }
+
   await upsertBudget({
-    userId: await getCurrentUserId(),
-    categoryId: parsed.data.categoryId,
+    userId,
+    categoryId,
     periodStart: parsed.data.periodStart,
     amount: String(parsed.data.amount),
   })

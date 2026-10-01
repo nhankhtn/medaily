@@ -18,6 +18,7 @@ import {
 import { saveSessionAndDerive } from '@/server/services/focus'
 import { recomputeDerivedHabitLogs } from '@/server/services/habit-derivation'
 import { getSettings } from '@/server/services/settings'
+import { ownedOrNull } from '@/server/services/ownership'
 
 const kindSchema = z.enum(['learning', 'deep_work', 'project'])
 const optionalId = z.string().uuid().nullable().optional()
@@ -169,11 +170,12 @@ export async function saveResource(input: unknown) {
   const parsed = resourceSchema.safeParse(input)
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
-  await upsertResource(await getCurrentUserId(), {
+  const userId = await getCurrentUserId()
+  await upsertResource(userId, {
     ...parsed.data,
     author: parsed.data.author ?? null,
     url: parsed.data.url ?? null,
-    topicId: parsed.data.topicId ?? null,
+    topicId: await ownedOrNull(userId, parsed.data.topicId ?? null, findTopic),
   })
 
   revalidateLearning()
