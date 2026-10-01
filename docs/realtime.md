@@ -16,8 +16,13 @@ slow timer that always works, and a doorbell that is fast and allowed to break.
 | --- | --- | --- |
 | A message appears after | 0–45 seconds | under a second |
 | Anybody has to reload | no | no |
-| Works signed in with the password | yes | no |
+| Works signed in with the password | yes | yes, when the server holds `FIREBASE_SERVICE_ACCOUNT` — otherwise falls back to the timer |
 | Works with Firestore down | yes | falls back to the timer |
+
+The password row depends on the deploy, not on the person. A Google sign-in
+leaves a Firebase session in the browser; a password sign-in does not, and the
+server has to vouch for it with a custom token — which it can only mint with
+the service account. See [Who Firestore thinks you are](#who-firestore-thinks-you-are).
 
 The 45 seconds is `FLOOR_MS` in `src/lib/hooks/use-room-live.ts`. While the tab
 is visible the room asks the server anyway on that interval, and it also asks
@@ -33,20 +38,42 @@ looking at a stale screen for as long as they kept it open.
 ```
 you send "hello"
   │
-  ├─ sendMessage(...)        → the text goes to MongoDB
-  │                            your own screen appends it locally, at once
-  ├─ stop()                  → retract your typing claim
-  └─ ringRoom(doorbellKey)   → one tiny write to Firestore: { seq: +1, at }
+  ├─ the row appears on your screen at once, under a client id
+  ├─ stop()                  → retract your typing claim (before the request)
+  ├─ sendMessage(...)        → the text goes to MongoDB; the stored row
+  │                            replaces the placeholder
+  └─ ringRoom(doorbellKey)   → only after it is saved: one tiny write to
+                               Firestore: { seq: +1, at }
                                      │
                                      ▼
                         their onSnapshot fires  (~0.1–0.3s)
                                      │
                         debounce 400ms  (one ask covers a burst)
                                      │
-                        catchUp() → loadNewMessages from the server
+                        catchUp():
+                          loadNewMessages, page after page while `more`
+                          then loadRecentMessages, to refresh rows already shown
                                      │
                         "hello" appears — fetched from MongoDB, never Firestore
 ```
+
+The order is deliberate at both ends. The claim is retracted **before** the
+request, because the name should go the moment the words do, not a round trip
+later. The ring goes **after** the save, so nobody is sent looking for a
+message that is not there yet.
+
+`catchUp` keeps paging while the server says there is more: stopping at the
+first page would move the cursor past messages that were never shown, leaving
+a hole nothing goes back for. Paging forward only brings rows that did not
+exist before, so it then reloads the most recent page and swaps in any row
+that changed — otherwise a recall or a reaction on a message already on screen
+would never reach anyone else.
+
+That is also why sending is not the only thing that rings. **Toggling a
+reaction and recalling a message ring the doorbell too** — `toggleReaction`
+returns the room's `doorbellKey` for it, and a recall rings the key the room
+was opened with. Without the ring, a recalled message would stay readable on
+other screens until the floor came round.
 
 Three properties are deliberate, and each one is load-bearing.
 
@@ -56,11 +83,45 @@ knows who may see what. A ring means "ask", never "here is what changed".
 
 **A ring is edge-triggered.** Nothing compares `seq` against what it was.
 A payload is attacker-writable, and a client that gated on a counter could be
-deafened for good by one absurdly large number.
+deafened for good by one absurdly large number. The one snapshot that is
+ignored is a local echo — `metadata.hasPendingWrites` — which is this tab's
+own ring before the server has seen it, not news from anyone else.
 
 **The channel is not the room id.** `doorbellKey` is a separate uuid, rotated
 by `rotateDoorbell` when somebody is removed from a room. Losing access means
 losing the ability to listen, without changing anything the room is keyed by.
+
+### Leaving is not removal
+
+Only `removeMember` rotates the key. **`leaveRoom` does not**, and neither does
+erasing an account. Somebody who leaves a room on their own keeps a working
+copy of its key: they can no longer read a message — that is the server's
+call, and it says no — but they can still hear the doorbell ring, which tells
+them when the room is busy, and still list its typing claims, which tells them
+which Firebase uids are active in it. This is a known gap, not a decision.
+
+### The unread badge listens too
+
+The room is not the only listener. `UnreadWatch`
+(`src/features/chat/unread-watch.tsx`) is mounted once in
+`src/app/(app)/layout.tsx` and listens to the doorbell of **every** room the
+person is in — the keys come from `unreadForShell`, out of the same read of the
+room list that produces the badge count.
+
+| | The room | The badge |
+| --- | --- | --- |
+| Listens to | one room's key | every room's key |
+| On a ring | `catchUp()` | `router.refresh()` |
+| Settles for | 400ms (`DEBOUNCE_MS`) | 800ms (`SETTLE_MS`) — several rooms can ring at once |
+| Floor | 45s (`FLOOR_MS`) | 60s (its own `FLOOR_MS`) |
+| On the tab becoming visible | asks | refreshes |
+
+Why every room's key rather than one channel per person: somebody would have
+to ring a per-person channel, and the only client that knows a message was
+sent is the sender's — which would then need everybody else's key. A key other
+people hold is not a key. Listening to the rooms costs no extra writes, because
+these are the channels the rooms already ring. Counting stays the server's
+job; a ring only asks the layout to render again.
 
 ### Why Firestore
 
@@ -96,13 +157,22 @@ The fix is in the rules rather than the code: the document is named by a
 Firebase uid, and `request.auth.uid == uid` is enforced on write. A claim can
 only be made in the claimant's own name. Knowing a channel key buys the ability
 to say "I am typing" as yourself — which every member of the room can do
-anyway — and nothing else. The reader then matches the uid against the room's
-roster and draws nothing for a uid it does not recognise.
+anyway — and nothing else.
 
-That is why `Speaker` carries `firebaseUid`, filled from
-`auth_identities.provider_uid` where the provider is `google`. Anybody who
-signed in with the password has none, and never appears as typing — the same
-people who have no live updates at all.
+The reader then matches uids against the room's roster. That is why `Speaker`
+carries `firebaseUid`: `speakersOf` fills it from `auth_identities.provider_uid`
+where the provider is `google`, and otherwise with the person's own id — the
+same uid the server mints a custom token under. It is null only for somebody
+who erased their account. The room uses it twice:
+
+- **Its own uid** comes from the roster too — `speakers[me]?.firebaseUid` —
+  rather than from Firebase directly. The roster is what the names are drawn
+  from, so if the two ever disagree the indicator should follow the one the UI
+  uses.
+- **Names** are resolved by looking each typing uid up by `firebaseUid`. A uid
+  with no member behind it is dropped, not shown as "former member": the
+  doorbell key is all it takes to make a claim, and an unrecognised claimant is
+  exactly the case not worth drawing.
 
 ### The numbers, and why each one
 
@@ -112,12 +182,40 @@ people who have no live updates at all.
 | `TYPING_THROTTLE_MS` | 3s | How often a typist re-announces. Comfortably under the TTL or the indicator blinks; nowhere near per-keystroke, or a fast typist bills a hundred writes per message. |
 | `SWEEP_MS` | 1s | How often the list is re-checked. A claim *expiring* is the passage of time and fires no snapshot — without the sweep the last person to stop typing types forever. |
 
+Typists are listed sorted by uid, not by time. They are drawn as names, and
+names that reorder themselves while two people type read as flicker.
+
+### Clocks that are wrong
+
+Every `at` is written by the claimant's device, so two of the rules in
+`src/lib/realtime/typing.ts` assume the clock can be off:
+
+- `shouldAnnounce` treats a last announcement **in the future** as due. A clock
+  that jumps backwards — a phone correcting itself, a laptop waking — would
+  otherwise silence the typist until real time caught up. It costs one extra
+  write.
+- `activeTypists` believes a claim while `Math.abs(now - at)` is under the TTL.
+  The window is symmetric: a claim from the future is a clock askew, not a
+  claim about later, and without the `abs` it would outlive an honest one by
+  however far ahead the clock was.
+
+The nightly sweep's `isStale` uses the same symmetric test, for the same
+reason.
+
+### Taking the claim back
+
 Sending retracts the claim rather than letting it time out. The message lands
 on the other screen instantly, and a name still marked as typing beside it for
 the rest of the TTL reads as the app being confused. That retraction is a
 delete, which is why the rules separate `delete` from `create, update`: on a
 delete `request.resource` is null, and a single `write` rule inspecting the
 written fields would refuse it.
+
+Leaving the room — unmounting, or switching to another channel — also
+retracts, but **only if this tab announced** since it last sent. A tab that
+merely watched has nothing to take back, and a delete it is not owed would be a
+wasted write per room visit. Closing the tab gives no time for the round trip
+at all, which is what the TTL is ultimately for.
 
 ### One document per person
 
@@ -137,6 +235,11 @@ anybody typed still reaches Firestore, and the roster, the messages and the
 membership all stay in MongoDB. It is worth knowing this changed, because the
 rules were previously small enough to be obviously right without it.
 
+Firebase Authentication holds a little more than it used to, as well. A
+password sign-in that trades a custom token for a session, by somebody who has
+never signed in with Google, creates a Firebase user under the app's own user
+id — a uuid, and nothing else about the person.
+
 ---
 
 ## Turning it on
@@ -151,6 +254,11 @@ NEXT_PUBLIC_FIREBASE_API_KEY=...
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
 ```
 
+A fourth is optional and server-side, read at run time:
+`FIREBASE_SERVICE_ACCOUNT`. Without it Google sign-ins get live updates and
+password sign-ins do not, and nothing is swept. See
+[What it costs to have](#what-it-costs-to-have).
+
 Then, in the Firebase console: create the Firestore database, and deploy the
 rules.
 
@@ -158,25 +266,45 @@ rules.
 pnpm firestore:rules      # or paste firestore.rules into the console
 ```
 
+The script is `npx -y firebase-tools deploy --only firestore:rules`, so
+`bun run firestore:rules` does the same thing; the first run asks you to
+`npx firebase-tools login`.
+
 **Pick `asia-southeast1`** (or whichever region is nearest the people using
 it). All Firestore traffic in this app is browser-to-Firestore — the server
 never touches it — so latency to the user is the whole of what you feel, and a
 database's location cannot be changed after it is created.
 
-### It fails quietly, by design
+To check what a deploy was built with, `/api/health` reports
+`realtimeConfigured`. It is `realtimeEnabled()` evaluated against the baked-in
+`NEXT_PUBLIC_*` values, so it answers what the browser was handed, not what the
+process can see now. It does not say the rules are deployed.
 
-The `onSnapshot` error callback in `src/lib/realtime/firestore.ts` is an empty
-block. Chat must not break when Firestore is unreachable, so being refused by
-rules is swallowed exactly like being offline.
+### It fails quietly, but not silently
 
-The consequence: **rules that deny show up as "live updates never arrive", with
-nothing in the console.** If it is not working, check that the rules deployed
-before you check anything else.
+Chat must not break when Firestore is unreachable, so nothing here throws at
+the person using it. But "quiet" used to mean "nothing in the console", and
+that made a missing rule indistinguishable from a missing flag. Today:
 
-The second thing to check: were you signed in with Google? `pickRealtimeSignal`
-returns `NO_REALTIME` when there is no Firebase session, and the password path
-has none. Testing with a password account and concluding Firestore is broken is
-the easy mistake.
+| What closed | What the console says |
+| --- | --- |
+| A gate in `provider.ts` — no Firebase config, the flag not `"1"`, or no session that could be opened | `[realtime] live updates are off: <reason>`, once per reason per page |
+| Opening a session with a custom token threw | `[realtime] could not open a Firebase session`, with the error |
+| A typing watch, announce or retract was refused | `[realtime] typing <where> was refused: <code>`, once per `where` and code; on `permission-denied` it adds a hint to run `pnpm firestore:rules` |
+| The doorbell listener was refused | **nothing** — its `onSnapshot` error callback is still an empty block |
+| A ring was refused | nothing — `ringRoom` swallows it, and the floor covers it |
+
+So if live updates never arrive, look in the console first. If it says nothing
+and typing names do appear, the doorbell's rules are the suspect: that one
+listener is the only part still silent. Over WebChannel a refused write still
+answers 200, so the network tab will not tell you either.
+
+The second thing to check is the session. `pickRealtimeSignal` returns
+`NO_REALTIME` only when there is no Firebase session **and** none could be
+opened. A password sign-in on a deploy without `FIREBASE_SERVICE_ACCOUNT` is
+the usual cause, and the console line names it. Testing with a password
+account on such a deploy and concluding Firestore is broken is the easy
+mistake.
 
 Third: the clock. `ring` and `announce` both write `at: Date.now()` from the
 device, and the rules require it within a minute of server time. A device badly
@@ -192,8 +320,8 @@ browser.
 
 **Channel documents** are orphaned when a room is deleted — `deleteRoom` only
 touches MongoDB — and every time `rotateDoorbell` mints a new key. After a
-rotation nobody holds the old key, and the rules require it, so no browser can
-reach that document even to delete it.
+rotation nobody still in the room holds the old key, and the rules require it,
+so no browser of theirs can reach that document even to delete it.
 
 **Typing claims** normally retract themselves when a message is sent or the
 room is left. A tab closed mid-word gives no time for the round trip, and a
@@ -218,10 +346,17 @@ Three things bound what a mistake here costs:
 | --- | --- |
 | `MAX_DELETES_PER_RUN` = 500 | A blast radius, not a performance limit. A wrong threshold or a clock years ahead costs a bounded number of rows and a confusing line in the report. |
 | A document with no readable `at` is **kept** | Unexplained, so reported as skipped rather than guessed at. "Delete what you do not understand" is the wrong default for a scheduled job. |
-| Deletions are sorted | A run cut off by the cap takes the same first half every night and finishes, rather than an arbitrary half forever. |
+| Claims are deleted in sorted order | Within a channel, a run cut off by the cap takes the same claims first every night rather than an arbitrary set. Channels themselves are visited in the order Firestore lists them. |
 
 Being cut off is harmless in the other direction too: a channel whose claims
 went but which survived the cap is found tomorrow with nothing under it.
+
+The run reports what it did as `{ channels, typing, skipped, capped }`, and the
+nightly route adds `failed` when the sweep threw. The job report on the phone
+is sent only on a night that deleted something or went wrong, and it carries
+the channels and claims removed, whether the cap was hit or the sweep failed,
+and — when there are any — how many documents were skipped for having no
+readable time.
 
 The decisions are in `src/lib/realtime/gc.ts`, pure and tested. The service
 only carries them out.
@@ -235,33 +370,67 @@ This is the only Firebase credential in the app with real power.
 environment is refused rather than trusted.
 
 Sign-in and the doorbell still run on public keys and security rules, with no
-secret to leak. Two things read this one: the sweep, and the custom token
-below. The containment is that both speak a narrow protocol rather than
-pulling in the Admin SDK, and that nothing else in the tree reads the key.
+secret to leak. Two things use this one, and both go through
+`readFirestoreAdminConfig` in `src/server/services/firestore-rest.ts`: the
+sweep, and the custom token in `src/server/services/firebase-custom-token.ts`.
+The containment is that both speak a narrow protocol rather than pulling in
+the Admin SDK, and that nothing else in the tree reads the key.
 
 Leave `FIREBASE_SERVICE_ACCOUNT` unset and nothing is swept, nothing
 complains, and the garbage stays — a couple of numeric fields per room. The
-typing indicator is the part that then stops being free: see below.
+typing indicator and the doorbell are the parts that then stop working for
+password sign-ins: see below. Set it but malformed, or for the wrong project,
+and the token path logs `FIREBASE_SERVICE_ACCOUNT is set but unusable` server
+side and returns nothing, while the sweep fails and says so in the nightly
+report.
 
 ### Who Firestore thinks you are
 
-Firestore rules tie a typing claim to `request.auth.uid`, so making one needs a
-Firebase session. Signing in with Google leaves one behind; signing in with the
+Firestore rules tie a typing claim to `request.auth.uid`, and every rule needs
+`request.auth != null`, so both the doorbell and typing need a Firebase
+session. Signing in with Google leaves one behind; signing in with the
 password never did, and that path exists precisely as the way back in when
 Firebase is unreachable. Live updates therefore belonged to whoever had
 arrived through Google — and on an iPhone, where One Tap never draws
 (`oneTapAvailable` returns `!isIos()`), the password form is the path of least
 resistance. The same person could see somebody typing on a laptop and not on
-their phone, with nothing on screen to say why.
+their phone, with nothing on screen to say why. Even a Google session does not
+last: Safari clears site data after a week idle, and a home-screen app keeps
+its own, while this app's cookie outlives both.
 
-So the server vouches instead. `realtimeToken` mints a Firebase custom token
-for the session it has already authenticated by cookie, and the browser trades
-it for a Firebase session when it finds none in storage. The uid is chosen
-server side — the Firebase uid Google sign-in already minted when there is one,
-so the two paths land on the same Firebase user, and otherwise the app's own
-id, which is a uuid and cannot collide with a Firebase uid. `speakersOf` picks
-the same uid by the same rule; if those two ever disagree, a typing document
-lands under a name no reader recognises and the indicator simply never draws.
+So the server vouches instead. In the browser, `provider.ts` does this:
+
+```
+realtimeOff()
+  │
+  ├─ await auth.authStateReady()   → wait for Firebase to restore from storage
+  ├─ currentUser?  ───────────────→ yes: on
+  └─ adopt(auth)                   → at most once per page
+       ├─ realtimeToken()          → server action; the cookie is the credential
+       │    null  ────────────────→ off, and the console says why, once
+       └─ signInWithCustomToken    → on
+```
+
+The wait matters. Firebase restores a session asynchronously, so for the first
+few hundred milliseconds of a page `currentUser` is null even for somebody who
+is signed in. Deciding then would conclude "no session" on a fresh load, and
+nothing asks again — the room would sit on the slow floor for as long as it
+stayed open.
+
+`realtimeToken` (`src/server/actions/realtime.ts`) mints a Firebase custom
+token for the session it has already authenticated by cookie. The uid is
+chosen server side, so a browser cannot ask to be somebody else — the Firebase
+uid Google sign-in already minted when there is one, so the two paths land on
+the same Firebase user, and otherwise the app's own id, which is a uuid and
+cannot collide with a Firebase uid. `speakersOf` picks the same uid by the
+same rule; if those two ever disagree, a typing document lands under a name no
+reader recognises and the indicator simply never draws.
+
+The token lives **55 minutes** — Firebase refuses anything over an hour, and
+the gap leaves room for clock skew. It only has to survive the exchange: once
+traded, the session is Firebase's own and refreshes itself. The browser asks
+for one **at most once per page load**; a second attempt would fail for the
+same reason as the first.
 
 This hands out no authority the project had not already given away: the rules
 read `request.auth != null`, and the project's sign-in is not gated by the
@@ -296,11 +465,15 @@ re-thinking what stops a far-future timestamp being parked there.
 | --- | --- |
 | `src/lib/realtime/signal.ts` | Both contracts, and the no-op and in-memory implementations |
 | `src/lib/realtime/typing.ts` | Every rule that decides whether a name appears — pure, and tested |
-| `src/lib/realtime/firestore.ts` | The only file that talks to Firestore |
-| `src/lib/realtime/provider.ts` | The gates: env, and a Firebase session |
+| `src/lib/realtime/firestore.ts` | The only browser file that talks to Firestore, and the once-per-code typing complaints |
+| `src/lib/realtime/provider.ts` | The gates: env, and a Firebase session — restored, or adopted from a custom token |
 | `src/lib/hooks/use-room-live.ts` | The doorbell, the 400ms debounce and the 45s floor |
 | `src/lib/hooks/use-typing.ts` | Watching, sweeping, throttling, retracting |
+| `src/features/chat/room-view.tsx` | What rings and when, `catchUp`, and turning typing uids into names |
+| `src/features/chat/unread-watch.tsx` | The badge's listener on every room, the 800ms settle and the 60s floor |
 | `src/lib/realtime/gc.ts` | What the nightly sweep may delete — pure, and tested |
-| `src/server/services/firestore-rest.ts` | The only holder of a powerful Firebase credential |
+| `src/server/actions/realtime.ts` | `realtimeToken`, the server action the browser trades for a Firebase session |
+| `src/server/services/firebase-custom-token.ts` | Choosing the uid and signing the custom token |
+| `src/server/services/firestore-rest.ts` | Reading and checking the service account, and the REST client the sweep uses |
 | `src/server/services/realtime-gc.ts` | The sweep itself, called from `/api/cron/nightly` |
 | `firestore.rules` | Deployed by hand. Read `firestore.ts` before loosening anything |

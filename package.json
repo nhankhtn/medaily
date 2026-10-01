@@ -6,7 +6,9 @@
   "packageManager": "pnpm@10.17.1",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "bun run docs:build && next build",
+    "docs:build": "bun install --cwd docs/site --frozen-lockfile && bun run --cwd docs/site build",
+    "docs:dev": "bun run --cwd docs/site start",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",

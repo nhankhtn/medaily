@@ -74,6 +74,25 @@ export async function proxy(request: NextRequest) {
     return onwards
   }
 
+  /*
+   * The docs describe the schema and the reasoning behind the Firestore rules,
+   * which is the owner's business, not every account's. Only the configured
+   * username and password open them; anyone else signed in gets the same 404
+   * as a page that does not exist, so the gate does not announce itself.
+   *
+   * `sub` is checked as well as `provider` so that changing AUTH_USERNAME
+   * shuts out a session issued to the old one.
+   */
+  if (
+    session &&
+    (pathname === PATHS.docs || pathname.startsWith(`${PATHS.docs}/`)) &&
+    !(auth.configured && session.provider === 'password' && session.sub === auth.username)
+  ) {
+    const hidden = new NextResponse('Not Found', { status: 404 })
+    hidden.headers.set(REQUEST_ID_HEADER, requestId)
+    return hidden
+  }
+
   if (session) {
     const response = forward()
 

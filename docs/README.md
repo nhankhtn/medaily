@@ -9,6 +9,11 @@ Four documents, each answering a different question.
 | [realtime.md](realtime.md) | How live updates work, and what Firestore holds |
 | [CHANGELOG.md](CHANGELOG.md) | What changed in these documents, and when |
 
+The same files are rendered as a searchable site at `/docs` in the running
+app, for the configured password account only (`bun run docs:dev` serves it
+on its own while writing). Edit the `.md` files here; `site/` only renders
+them.
+
 ## Keeping them honest
 
 Documentation that drifts is worse than none: it is read with the same trust

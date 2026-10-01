@@ -8,6 +8,52 @@ than the code.
 
 ## 2026-10-01
 
+**Audited against the code**
+
+All three documents were read line by line against the code as it stands
+today, and every claim below was checked in the source before it was written.
+
+- [features.md](features.md), corrected. `/knowledge` is a redirect to
+  `/learning?tab=notes`. Your own activities live under **Daily log → Set
+  up**, not Settings, and Settings has no density control. Finance has four
+  tabs, not two. Budgets are copied by a nightly check plus **Copy last
+  month**, not on "the first night". The payment sheet works on a desktop too;
+  only the bank-app link is phone-only. Sub-tasks and weighted milestones were
+  described but have no UI. The timer has seven activities, not two. Offline
+  also covers adding a transaction and stopping the timer. `S`, `[`, `]`, `T`
+  work on the daily log only. Quick capture depends on `AI_SERVICE_*`, not a
+  Gemini key. Without `MONGODB_URI` Chat still shows in the nav and 404s. Chat
+  invites send no email. The "What changed" trail also records goals, habits,
+  notes and people. `⌘B` does not fire while typing.
+- [features.md](features.md), added. The welcome and legal pages, the first
+  few days (tour, checklist, add to home screen), the dashboard, **Journal**,
+  **Career**, the editor, the assistant, Get in touch, the overnight job, the
+  shell and phone dock, People in full, chat replies, one reaction per person,
+  message runs and group pictures, the offline timer, remembered accounts and
+  One Tap, the owner-only `/docs`, and the missing rows in the optional
+  services table. Health, Projects, Goals, Habits, Reviews, Analytics,
+  Calendar, the palette and shortcuts were deepened.
+- [database.md](database.md). 47 tables plus two views, not 46.
+  `timer_filings` and the Career tables (`skills`, `achievements`,
+  `portfolio_items`) were missing, as was every column from migrations 0015
+  to 0024. `updated_at` **is** kept by a trigger that `drizzle/views.sql`
+  installs, and the owner row is seeded there too, not by a migration. Habit
+  frequency is `specific_days`, not `weekdays`. `timer_state.activity`
+  replaced `target`. The budgets unique key does not include `amount`. The
+  activity trail stores `current` and `request`, not `before`, and covers far
+  more than money and sign-in. Foreign keys that do not exist, ON DELETE
+  rules, unique and CHECK constraints, chat replies and avatars, and every
+  Mongo index are now written down.
+- [realtime.md](realtime.md). Password sign-ins **do** get live updates and
+  typing when `FIREBASE_SERVICE_ACCOUNT` is set (custom token), so the table,
+  the typing section and the troubleshooting advice were wrong. `stop()` runs
+  before `sendMessage`, not after. `catchUp` also refreshes recalls and
+  reactions. Typing refusals are logged; only the doorbell stays silent.
+  Added: the unread badge as a second doorbell listener with its own 60 s
+  floor, reactions and recalls ringing the doorbell, clock skew, the
+  `authStateReady()` wait, the 55-minute token, and the plain statement that
+  leaving a room does not rotate its key.
+
 **Added**
 
 - [features.md](features.md) finally has a **Chat** section, closing the gap
