@@ -1694,7 +1694,8 @@
     "photoRemoved": "Picture removed",
     "photoInvalid": "Pick an image file",
     "photoTooLarge": "That picture is over 5 MB. Pick a smaller one",
-    "photoDisabled": "Pictures are not set up on this app"
+    "photoDisabled": "Pictures are not set up on this app",
+    "photoUploading": "Sending the picture…"
   },
   "activity": {
     "title": "What changed",

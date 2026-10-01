@@ -122,7 +122,19 @@ export function RoomAvatarPicker({
             {initial}
           </span>
         )}
-        <span className="absolute inset-0 flex items-center justify-center bg-black/45 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+        {/*
+         * Held open while the upload runs. Hover is what reveals this the
+         * rest of the time, and a phone has no hover — so the one moment
+         * the spinner exists for was the one moment it could not be seen.
+         */}
+        <span
+          className={cn(
+            'absolute inset-0 flex items-center justify-center bg-black/45 transition-opacity',
+            busy
+              ? 'opacity-100'
+              : 'opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100',
+          )}
+        >
           {busy ? (
             <Loader2 className="size-6 animate-spin text-white" />
           ) : (
@@ -139,7 +151,9 @@ export function RoomAvatarPicker({
         onChange={(event) => void upload(event.target.files?.[0])}
       />
 
-      {avatarUrl ? (
+      {busy ? (
+        <p className="text-text-subtle text-xs">{uploading ? t('photoUploading') : tc('saving')}</p>
+      ) : avatarUrl ? (
         <button
           type="button"
           onClick={clear}

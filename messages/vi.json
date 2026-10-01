@@ -1694,7 +1694,8 @@
     "photoRemoved": "Đã gỡ ảnh",
     "photoInvalid": "Chọn một file ảnh nhé",
     "photoTooLarge": "Ảnh này nặng hơn 5 MB, chọn ảnh nhẹ hơn nhé",
-    "photoDisabled": "App chưa bật phần ảnh"
+    "photoDisabled": "App chưa bật phần ảnh",
+    "photoUploading": "Đang tải ảnh lên…"
   },
   "activity": {
     "title": "Những gì đã đổi",
