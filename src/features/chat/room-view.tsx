@@ -77,6 +77,7 @@ export function RoomView({
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
 
+  const [sentAt, setSentAt] = useState<number | undefined>(undefined)
   const [menu, setMenu] = useState<{ at: Anchor; message: Shown } | null>(null)
   const hold = useRef<ReturnType<typeof setTimeout> | null>(null)
   const heldFrom = useRef<{ x: number; y: number } | null>(null)
@@ -235,6 +236,9 @@ export function RoomView({
     setSending(true)
     setDraft('')
     setMessages((shown) => [...shown, optimistic])
+    // Whatever they had scrolled up to read, writing something is asking to
+    // be at the bottom again.
+    setSentAt(Date.now())
     // Before the request, not after: the name should go the moment the words
     // do, not a round trip later.
     stop()
@@ -387,6 +391,7 @@ export function RoomView({
         onLoadMore={() => void loadOlder()}
         loadMorePosition="start"
         stickToBottom
+        pinSignal={sentAt}
         loadingMoreLabel={t('loadOlder')}
         listClassName=""
         /*

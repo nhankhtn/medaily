@@ -57,6 +57,15 @@ export type VirtualInfiniteListProps<T> = {
    * yanked back by somebody else typing.
    */
   stickToBottom?: boolean
+  /**
+   * Changing this goes to the newest row whatever the reader was doing.
+   *
+   * For the one case where that is right: they just sent something. Nobody
+   * writes a message in order to stay where they were, and every chat app
+   * jumps to it — so this is not the pin being overridden, it is the reader
+   * having asked for the bottom in the plainest way there is.
+   */
+  pinSignal?: number
   /** IntersectionObserver rootMargin before the sentinel. */
   loadMoreMargin?: string
   loadingMoreLabel?: ReactNode
@@ -86,6 +95,7 @@ export function VirtualInfiniteList<T>({
   onLoadMore,
   loadMorePosition = 'end',
   stickToBottom = false,
+  pinSignal,
   loadMoreMargin = DEFAULT_LOAD_MARGIN,
   loadingMoreLabel,
   className,
@@ -154,6 +164,12 @@ export function VirtualInfiniteList<T>({
     overscan,
     initialRect: { width: 1, height: viewportHeight },
   })
+
+  useEffect(() => {
+    if (pinSignal === undefined || !mounted) return
+    pinned.current = true
+    pin.current()
+  }, [pinSignal, mounted])
 
   /**
    * The changes that arrive without a render.
@@ -274,14 +290,17 @@ export function VirtualInfiniteList<T>({
       className={shellClass}
       style={shellStyle}
       /*
-       * The gestures, and only the gestures, let go of the newest line.
-       * `pointerDown` is in the list for the scrollbar itself, which produces
-       * scroll events and no wheel.
+       * The gestures that mean "I am looking at something else", and only
+       * those. A press is not one of them: `pointerDown` was in this list for
+       * the scrollbar, and it caught every tap on a message as well — one tap
+       * anywhere in the transcript and nothing ever scrolled to a new message
+       * again. Dragging a scrollbar is the case this gives up on, and a yank
+       * back there is a smaller harm than a conversation that stops following
+       * itself after a single touch.
        */
       onWheel={() => void (pinned.current = false)}
       onTouchMove={() => void (pinned.current = false)}
       onKeyDown={() => void (pinned.current = false)}
-      onPointerDown={() => void (pinned.current = false)}
       onScroll={(event) => {
         // Only ever takes the pin back up: a scroll this component caused
         // must not be read as the reader asking to be left alone. A few
