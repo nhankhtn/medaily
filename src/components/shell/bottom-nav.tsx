@@ -10,8 +10,26 @@ import { isChatRoomPath } from '@/lib/paths'
 import { cn } from '@/lib/utils'
 import { SignOutButton } from './sign-out-button'
 
+/**
+ * A count on the corner of an icon.
+ *
+ * Over the icon rather than beside it: the dock gives each destination a fifth
+ * of the width and nothing to spare, and a badge in the line would push the
+ * icon off the middle of its own tile.
+ */
+function NavBadge({ count, label }: { count: number; label: string }) {
+  return (
+    <span
+      aria-label={label}
+      className="bg-accent text-accent-text absolute -top-1.5 -right-2.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-medium tabular-nums"
+    >
+      {count > 9 ? '9+' : count}
+    </span>
+  )
+}
+
 /** Five destinations, thumb-reachable, everything else under More (spec 22.3). */
-export function BottomNav() {
+export function BottomNav({ badges = {} }: { badges?: Record<string, number> }) {
   const pathname = usePathname()
   const t = useTranslations('nav')
   /*
@@ -39,6 +57,12 @@ export function BottomNav() {
   }, [moreOpen])
 
   const moreActive = MORE_NAV_ITEMS.some((item) => pathname.startsWith(item.href))
+  /*
+   * Chat is not one of the four on the bar, so without this a room waiting on
+   * a phone has nowhere to say so — the dock looked the same either way and
+   * the only way to find out was to open More and look.
+   */
+  const moreWaiting = MORE_NAV_ITEMS.reduce((sum, item) => sum + (badges[item.key] ?? 0), 0)
 
   /*
    * Stands down inside a conversation, the way the capture box already does.
@@ -83,9 +107,14 @@ export function BottomNav() {
                   key={item.key}
                   href={item.href}
                   onClick={() => setOpenedOn(null)}
-                  className="glass-chip flex aspect-square flex-col items-center justify-center gap-2 rounded-[1.35rem] p-2 text-center"
+                  className="glass-chip relative flex aspect-square flex-col items-center justify-center gap-2 rounded-[1.35rem] p-2 text-center"
                 >
-                  <item.icon className="text-accent size-6" />
+                  <span className="relative">
+                    <item.icon className="text-accent size-6" />
+                    {badges[item.key] ? (
+                      <NavBadge count={badges[item.key]!} label={String(badges[item.key])} />
+                    ) : null}
+                  </span>
                   <span className="text-text-muted text-xs leading-tight">{t(item.key)}</span>
                 </Link>
               ))}
@@ -148,7 +177,12 @@ export function BottomNav() {
                 moreOpen || moreActive ? 'text-accent' : 'text-text-subtle',
               )}
             >
-              <MoreHorizontal className="size-5" />
+              <span className="relative">
+                <MoreHorizontal className="size-5" />
+                {moreWaiting > 0 ? (
+                  <NavBadge count={moreWaiting} label={String(moreWaiting)} />
+                ) : null}
+              </span>
               <span className="text-[10px] leading-none">{t('more')}</span>
             </button>
           </li>
