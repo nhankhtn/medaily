@@ -497,6 +497,17 @@
       "iosIntro": "Safari không có nút cho việc này nên phải bấm hai bước.",
       "iosStepShare": "Bấm nút Chia sẻ ở thanh dưới của Safari",
       "iosStepAdd": "Chọn Thêm vào MH chính"
+    },
+    "notifications": {
+      "title": "Thông báo",
+      "help": "Nhận thông báo trên thiết bị này khi có người nhắn cho bạn. Mỗi thiết bị phải bật riêng.",
+      "turnOn": "Bật cho thiết bị này",
+      "turnOff": "Tắt cho thiết bị này",
+      "on": "Đã bật thông báo cho thiết bị này",
+      "off": "Thiết bị này sẽ không nhận thông báo",
+      "failed": "Không đăng ký được thiết bị này",
+      "blocked": "Trình duyệt đang chặn thông báo cho trang này. Cho phép trong cài đặt trình duyệt rồi quay lại.",
+      "iosNeedsInstall": "Trên iPhone và iPad, thông báo chỉ tới được app đã thêm vào màn hình chính — không tới tab Safari."
     }
   },
   "analytics": {

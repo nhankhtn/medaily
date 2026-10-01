@@ -199,6 +199,67 @@ async function networkFirst(request, cacheName) {
   }
 }
 
+/*
+ * Notifications.
+ *
+ * Written against the raw Push API rather than Firebase's SDK, which would
+ * mean `importScripts` of a compat bundle and the end of this file being plain
+ * readable JS with nothing to build. The server sends data-only messages for
+ * exactly that reason: the payload arrives here and this draws it.
+ *
+ * The rule that comes with data-only is that a push event **must** end in a
+ * visible notification. A browser that receives pushes showing nothing revokes
+ * the permission — on iOS quickly — so every path below, including the one for
+ * a payload that makes no sense, calls `showNotification`.
+ */
+self.addEventListener('push', (event) => {
+  event.waitUntil(
+    (async () => {
+      let data = {}
+      try {
+        data = event.data ? event.data.json() : {}
+      } catch {
+        /* Not ours, or not JSON. Something is still shown — see above. */
+      }
+
+      const title = typeof data.title === 'string' && data.title ? data.title : 'medaily'
+      const body = typeof data.body === 'string' ? data.body : ''
+      const url = typeof data.url === 'string' && data.url.startsWith('/') ? data.url : '/'
+
+      await self.registration.showNotification(title, {
+        body,
+        icon: '/icon.svg',
+        badge: '/icon.svg',
+        // Same tag replaces rather than stacks: one room is one line on the
+        // lock screen however many messages arrive while the phone is down.
+        tag: typeof data.tag === 'string' && data.tag ? data.tag : 'medaily',
+        data: { url },
+      })
+    })(),
+  )
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const url = event.notification.data?.url ?? '/'
+
+  event.waitUntil(
+    (async () => {
+      // Reuse a window that is already open rather than stacking another copy
+      // of the app on top of itself — on a phone that is the difference
+      // between returning to the conversation and launching a second one.
+      const open = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      for (const client of open) {
+        if (new URL(client.url).origin !== self.location.origin) continue
+        await client.focus()
+        if ('navigate' in client) await client.navigate(url)
+        return
+      }
+      await self.clients.openWindow(url)
+    })(),
+  )
+})
+
 self.addEventListener('fetch', (event) => {
   const { request } = event
   if (request.method !== 'GET') return

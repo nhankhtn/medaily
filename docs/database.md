@@ -34,6 +34,7 @@ configurable **day rollover hour**, so "today" is not midnight.
 erDiagram
     users ||--|| user_settings : "settings"
     users ||--o{ auth_identities : "sign-in methods"
+    users ||--o{ push_devices : "browsers to notify"
     users ||--o{ daily_logs : "one row per day"
     users ||--o{ habits : ""
     users ||--o{ goals : ""
@@ -117,6 +118,25 @@ How a user signs in. A user can hold several.
 | `provider_uid` | text | Unique with `provider`. The Firebase uid, or the username |
 | `email` | text | As the provider reported it |
 | `last_login_at` | timestamptz | |
+
+### `push_devices`
+
+Where a person's notifications can reach them. One row per browser that asked
+for them — a phone and a laptop are two.
+
+Keyed by the **token**, not by `(user_id, token)`. FCM hands the same string
+back to whoever registers the same browser, so after a sign-out and a sign-in
+by somebody else the row has to change owner rather than be joined by a second
+one; getting that wrong sends one person's notifications to the other's phone.
+
+Cascades with the user, which is what keeps account removal from having to
+remember it.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `token` | text, not null | Unique. The FCM registration token — the address |
+| `user_agent` | text | Only to tell two rows apart; never trusted |
+| `last_seen_at` | timestamptz | Moved forward each time the browser confirms the token |
 
 ## The daily log
 

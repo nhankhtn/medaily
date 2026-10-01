@@ -8,6 +8,7 @@ import { chatEnabled } from '@/lib/chat/provider'
 import { UnreadWatch } from '@/features/chat/unread-watch'
 import { unreadForShell } from '@/server/services/chat'
 import { CaptureBox } from '@/features/capture/capture-box'
+import { PushRefresh } from '@/features/settings/push-refresh'
 import { PendingSaves } from '@/features/daily/pending-saves'
 import { PendingTransactions } from '@/features/finance/pending-transactions'
 import { PendingTimerStops } from '@/features/timer/pending-stops'
@@ -56,6 +57,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <BottomNav />
       <UnreadWatch channels={chat.channels} />
       <CaptureBox enabled={aiServiceConfigured()} assistant={assistantEnabled()} />
+      <PushRefresh />
       <PendingSaves />
       <PendingTransactions />
       <PendingTimerStops />

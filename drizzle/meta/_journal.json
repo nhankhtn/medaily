@@ -176,6 +176,13 @@
       "when": 1790165238803,
       "tag": "0024_payment_qr",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1790842150861,
+      "tag": "0025_push_devices",
+      "breakpoints": true
     }
   ]
 }

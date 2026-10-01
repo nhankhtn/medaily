@@ -497,6 +497,17 @@
       "iosIntro": "Safari has no button for this, so it takes two taps.",
       "iosStepShare": "Tap Share at the bottom of Safari",
       "iosStepAdd": "Choose Add to Home Screen"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "help": "Get a notification on this device when somebody sends you a message. Each device is asked separately.",
+      "turnOn": "Turn on for this device",
+      "turnOff": "Turn off for this device",
+      "on": "Notifications are on for this device",
+      "off": "This device will not be notified",
+      "failed": "This device could not be registered",
+      "blocked": "Notifications are blocked for this site. Allow them in your browser settings, then come back.",
+      "iosNeedsInstall": "On iPhone and iPad, notifications only reach an app added to the Home Screen — not a Safari tab."
     }
   },
   "analytics": {

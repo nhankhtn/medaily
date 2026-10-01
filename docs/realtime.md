@@ -459,6 +459,69 @@ re-thinking what stops a far-future timestamp being parked there.
 
 ---
 
+## Notifications
+
+A doorbell reaches a tab that is open. A notification reaches a phone that is
+face down, which is the other half of the same problem.
+
+FCM itself is free on the Spark plan — unlimited messages, no overage. What it
+costs is in two other places.
+
+### Data-only, and why
+
+Every message is sent **without** a `notification` block. One carrying it is
+drawn by the browser, so the words are fixed at send time and cannot be
+shortened, replaced or collapsed on the device. Data-only hands the payload to
+the service worker and `sw.js` draws it — which is also what keeps the Firebase
+SDK out of that file. It is plain JS with no build step on purpose, and
+`importScripts` of a compat bundle would end that.
+
+The price is a rule that must not be broken: **a push event has to end in a
+visible notification.** A browser receiving pushes that show nothing revokes
+the permission, so every path in the `push` handler calls `showNotification`,
+including the one for a payload it cannot parse.
+
+### iOS, again
+
+**iOS delivers web push only to an app added to the Home Screen.** Not Safari,
+not Chrome — the same WebKit underneath, and neither issues a token. So the
+settings card checks for an installed app *before* it checks the permission: an
+iPhone in Safari reports `default` and then delivers nothing, and asking
+somebody to allow notifications there sends them to do something that cannot
+work. What they get instead is the install steps.
+
+FCM also rotates tokens on its own, with reports of it doing so on iOS after a
+handful of notifications. `PushRefresh` re-registers on every load of the shell
+for that reason — a token stored once, at the moment somebody pressed the
+button, is a device that quietly stops being reachable with nothing to see.
+
+### Permission is not the same as on
+
+Two facts, and conflating them breaks both directions. The browser permission
+is granted once and a page cannot take it back. This app's own record —
+`medaily.push.enabled`, per browser — is what "on" means here.
+
+Without the second, "turn off" would leave a button that still said turn off,
+and the silent refresh on the next load would register the device again,
+undoing what somebody had just asked for.
+
+Signing out clears the record and deletes the row. Otherwise the previous
+person keeps buzzing that phone until somebody signs in and the token changes
+owner — and a token moving owner is exactly what `push_devices_token_uniq`
+exists for.
+
+### What it needs
+
+`NEXT_PUBLIC_FIREBASE_VAPID_KEY` (Firebase Console → Project settings → Cloud
+Messaging → Web configuration), and `FIREBASE_SERVICE_ACCOUNT` widened to
+`roles/firebasemessaging.admin` on top of `roles/datastore.user`. Unset, the
+card never appears and chat works exactly as before.
+
+A token FCM refuses with 404 or 403 is deleted on the spot rather than retried
+nightly: it is dead for everyone, not just for this send.
+
+---
+
 ## Where the pieces are
 
 | File | What it holds |
@@ -476,4 +539,8 @@ re-thinking what stops a far-future timestamp being parked there.
 | `src/server/services/firebase-custom-token.ts` | Choosing the uid and signing the custom token |
 | `src/server/services/firestore-rest.ts` | Reading and checking the service account, and the REST client the sweep uses |
 | `src/server/services/realtime-gc.ts` | The sweep itself, called from `/api/cron/nightly` |
+| `src/lib/push/client.ts` | Permission, availability, and this app's own record |
+| `src/server/services/google-auth.ts` | The one service account, and a token per scope |
+| `src/server/services/push.ts` | Sending, and dropping a token FCM refuses |
+| `src/server/services/chat-notify.ts` | What a room's notification says — the wording is tested |
 | `firestore.rules` | Deployed by hand. Read `firestore.ts` before loosening anything |

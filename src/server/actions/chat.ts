@@ -7,6 +7,7 @@ import { getCurrentUserId } from '@/lib/auth/current-user'
 import { clientKey } from '@/lib/client-ip'
 import { headers } from 'next/headers'
 import { pickChatStore } from '@/lib/chat/provider'
+import { notifyRoom } from '@/server/services/chat-notify'
 import { directKeyOf, MESSAGE_PAGE } from '@/lib/chat/types'
 import { PATHS } from '@/lib/paths'
 import { createLimit } from '@/lib/rate-limit'
@@ -188,6 +189,24 @@ export async function sendMessage(input: unknown) {
   await store.touchRoom(parsed.data.roomId, new Date())
 
   const room = await store.findRoom(parsed.data.roomId)
+
+  /*
+   * Everyone in the room but the sender. Not awaited for its result and never
+   * allowed to throw: a message that saved and did not buzz a phone is a worse
+   * notification, not a failed send.
+   *
+   * The body goes in the payload rather than a count, because a notification
+   * that says "1 new message" is one more tap to learn what a glance could
+   * have told you. The device already holds the words of this conversation.
+   */
+  void notifyRoom({
+    roomId: parsed.data.roomId,
+    senderId: userId,
+    title: room?.title ?? null,
+    kind: parsed.data.kind,
+    body: parsed.data.body,
+    store,
+  })
   revalidatePath(PATHS.chat)
   // The key rather than the room id: whoever holds it can be told the room
   // changed, and taking somebody out of the room takes that with them.

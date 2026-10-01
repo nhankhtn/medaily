@@ -91,6 +91,30 @@ today, and every claim below was checked in the source before it was written.
   `database.md` when a collection's shape moves. Those collections have no
   migration file to force the issue.
 
+## 2026-10-04
+
+**Added**
+
+- Push notifications for chat, and a section in [realtime.md](realtime.md) for
+  the two things about them that are not obvious: messages are sent data-only
+  so `sw.js` draws them and stays free of the Firebase SDK, and iOS delivers
+  web push only to an app added to the Home Screen — so the settings card
+  checks for an installed app before it checks the permission.
+- `push_devices` (migration `0025_push_devices`): one row per browser, keyed by
+  the token rather than by (user, token), because FCM hands the same string
+  back to whoever registers the same browser and the row has to change owner
+  after a sign-out rather than be joined by a second one. Cascades with the
+  user, which is one fewer thing for account removal to remember.
+- `NEXT_PUBLIC_FIREBASE_VAPID_KEY`, and `FIREBASE_SERVICE_ACCOUNT` now wants
+  `roles/firebasemessaging.admin` as well. Unset, the card never appears.
+
+**Changed**
+
+- The service-account credential and its token exchange moved out of
+  `firestore-rest.ts` into `google-auth.ts`, shared with the sender. A token is
+  minted per scope rather than once with both, so a bug in one cannot act as
+  the other.
+
 ## 2026-09-30
 
 **Added**

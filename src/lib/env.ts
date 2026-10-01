@@ -64,6 +64,14 @@ const envSchema = z.object({
   // on a slow timer instead, which is what the password sign-in path gets
   // anyway since it has no Firebase session to listen with.
   NEXT_PUBLIC_REALTIME_ENABLED: z.string().optional(),
+
+  /*
+   * The Web Push certificate key pair. Public by design: it identifies the
+   * project to the browser's push service and authorises nothing. Blank and the
+   * notifications card never appears — sending uses FIREBASE_SERVICE_ACCOUNT,
+   * which then also needs `roles/firebasemessaging.admin`.
+   */
+  NEXT_PUBLIC_FIREBASE_VAPID_KEY: z.string().optional(),
   // Analytics only. Sign-in works without both; the counter does not start.
   NEXT_PUBLIC_FIREBASE_APP_ID: z.string().optional(),
   NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: z.string().optional(),
@@ -177,6 +185,7 @@ export const env: Env = parsed.success
       NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
       NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
       NEXT_PUBLIC_REALTIME_ENABLED: process.env.NEXT_PUBLIC_REALTIME_ENABLED,
+      NEXT_PUBLIC_FIREBASE_VAPID_KEY: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
       NEXT_PUBLIC_FIREBASE_APP_ID: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
       NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
       AUTH_OWNER_EMAIL: process.env.AUTH_OWNER_EMAIL,

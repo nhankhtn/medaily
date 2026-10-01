@@ -1,117 +1,27 @@
-import { importPKCS8, SignJWT } from 'jose'
-import { env } from '@/lib/env'
+import {
+  accessToken,
+  GoogleAuthError,
+  readServiceAccount,
+  SCOPES,
+  type ServiceAccount,
+} from './google-auth'
 
 /**
  * Enough of the Firestore REST API to list and delete documents, as the
  * service account.
  *
- * **Not `firebase-admin`.** `firebase-verify.ts` next door makes the same
- * choice for the same reason: the Admin SDK is a large dependency with a gRPC
- * transport, and what is needed here is three HTTP calls. `jose` is already in
- * the tree for verifying ID tokens, and it signs the assertion Google wants in
- * exchange for an access token.
- *
- * This holds the only Firebase credential in the app with any power. Sign-in
- * and the doorbell still run on public keys and security rules; what the
- * credential buys is the nightly sweep, and — through `readFirestoreAdminConfig`
- * — the custom token that gives a password sign-in a Firebase identity to type
- * under. Two readers now, so the containment is no longer "one file": it is
- * that both speak a narrow protocol rather than pulling in the Admin SDK, and
- * that nothing else in the tree reads the key.
+ * The credential and the token exchange live in `google-auth.ts`, shared with
+ * the push sender. What is here is only the three calls the sweep makes.
  */
 
-const TOKEN_URL = 'https://oauth2.googleapis.com/token'
-const SCOPE = 'https://www.googleapis.com/auth/datastore'
 const API = 'https://firestore.googleapis.com/v1'
 
-export type FirestoreAdminConfig = {
-  projectId: string
-  clientEmail: string
-  privateKey: string
-}
+export type FirestoreAdminConfig = ServiceAccount
+export const FirestoreRestError = GoogleAuthError
 
-export class FirestoreRestError extends Error {}
-
-/**
- * The service account, or `null` when the sweep is simply not configured.
- *
- * The project id is checked against the one the browser signs in to. A
- * credential for a different project would let the nightly job delete from
- * somewhere nobody was looking — a staging key left in a production
- * environment is exactly how that happens — so a mismatch is refused rather
- * than trusted.
- */
+/** The service account, or `null` when the sweep is simply not configured. */
 export function readFirestoreAdminConfig(): FirestoreAdminConfig | null {
-  const raw = env.FIREBASE_SERVICE_ACCOUNT?.trim()
-  if (!raw) return null
-
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(raw)
-  } catch {
-    throw new FirestoreRestError('FIREBASE_SERVICE_ACCOUNT is not valid JSON')
-  }
-
-  const account = parsed as { project_id?: unknown; client_email?: unknown; private_key?: unknown }
-  if (
-    typeof account.project_id !== 'string' ||
-    typeof account.client_email !== 'string' ||
-    typeof account.private_key !== 'string'
-  ) {
-    throw new FirestoreRestError(
-      'FIREBASE_SERVICE_ACCOUNT needs project_id, client_email and private_key',
-    )
-  }
-
-  const expected = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
-  if (expected && account.project_id !== expected) {
-    throw new FirestoreRestError(
-      `FIREBASE_SERVICE_ACCOUNT is for ${account.project_id}, but this deploy signs in to ${expected}`,
-    )
-  }
-
-  return {
-    projectId: account.project_id,
-    clientEmail: account.client_email,
-    privateKey: account.private_key,
-  }
-}
-
-/**
- * Trades a self-signed assertion for an access token.
- *
- * Not cached. The job runs once a night and asks once; a cache would be a
- * lifetime to get wrong for no saving at all.
- */
-async function accessToken(config: FirestoreAdminConfig): Promise<string> {
-  const key = await importPKCS8(config.privateKey, 'RS256')
-  const assertion = await new SignJWT({ scope: SCOPE })
-    .setProtectedHeader({ alg: 'RS256' })
-    .setIssuer(config.clientEmail)
-    .setSubject(config.clientEmail)
-    .setAudience(TOKEN_URL)
-    .setIssuedAt()
-    .setExpirationTime('10m')
-    .sign(key)
-
-  const response = await fetch(TOKEN_URL, {
-    method: 'POST',
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-      assertion,
-    }),
-  })
-
-  if (!response.ok) {
-    throw new FirestoreRestError(`could not get an access token: ${response.status}`)
-  }
-
-  const body = (await response.json()) as { access_token?: unknown }
-  if (typeof body.access_token !== 'string') {
-    throw new FirestoreRestError('the token response carried no access_token')
-  }
-  return body.access_token
+  return readServiceAccount()
 }
 
 /** One document as the REST API returns it, narrowed to what the sweep reads. */
@@ -126,7 +36,7 @@ export type FirestoreRest = {
 
 /** Opens a client. One access token serves the whole run. */
 export async function firestoreRest(config: FirestoreAdminConfig): Promise<FirestoreRest> {
-  const token = await accessToken(config)
+  const token = await accessToken(config, SCOPES.datastore)
   const root = `projects/${config.projectId}/databases/(default)/documents`
   const authorized = { authorization: `Bearer ${token}` }
 
@@ -148,7 +58,7 @@ export async function firestoreRest(config: FirestoreAdminConfig): Promise<Fires
         // a 404, which here means the same thing.
         if (response.status === 404) return documents
         if (!response.ok) {
-          throw new FirestoreRestError(`listing ${collectionPath} failed: ${response.status}`)
+          throw new GoogleAuthError(`listing ${collectionPath} failed: ${response.status}`)
         }
 
         const body = (await response.json()) as {
@@ -169,7 +79,7 @@ export async function firestoreRest(config: FirestoreAdminConfig): Promise<Fires
       })
       // Already gone is the outcome asked for.
       if (response.ok || response.status === 404) return
-      throw new FirestoreRestError(`deleting ${documentPath} failed: ${response.status}`)
+      throw new GoogleAuthError(`deleting ${documentPath} failed: ${response.status}`)
     },
   }
 }
