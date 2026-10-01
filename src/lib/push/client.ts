@@ -29,6 +29,17 @@ function vapidKey(): string {
 }
 
 /**
+ * The other half of the configuration, and the half that is easy to miss.
+ *
+ * A deploy can carry a Web Push certificate and still have no sender id, and
+ * then the card appears, the browser asks, somebody says yes — and `getToken`
+ * throws. Checked here so the offer is never made.
+ */
+function senderId(): string {
+  return process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? ''
+}
+
+/**
  * Whether this app is using the permission, as opposed to merely having it.
  *
  * Two different facts, and conflating them breaks both directions. The browser
@@ -99,7 +110,7 @@ export function announcePushChange(): void {
 
 export function pushAvailability(): PushAvailability {
   if (typeof window === 'undefined') return 'unsupported'
-  if (!firebaseConfigured() || !vapidKey()) return 'unsupported'
+  if (!firebaseConfigured() || !vapidKey() || !senderId()) return 'unsupported'
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return 'unsupported'
   if (!('Notification' in window)) return 'unsupported'
 
@@ -140,9 +151,12 @@ async function tokenFor(ask: boolean): Promise<string | null> {
       vapidKey: vapidKey(),
       serviceWorkerRegistration: registration,
     })
-  } catch {
-    // Blocked, offline, or the project has no Web Push certificate. None of
-    // them is worth an error on a settings page.
+  } catch (error) {
+    // Blocked, offline, or the project is not configured for messaging. None
+    // of them is worth an error on a settings page — but the screen can only
+    // say "could not register this device", so the reason goes where whoever
+    // is fixing it will look.
+    console.info('[push] no token for this browser', error)
     return null
   }
 }

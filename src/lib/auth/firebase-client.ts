@@ -33,10 +33,17 @@ function firebaseConfig() {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? '',
     authDomain: authDomain(),
     projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? '',
-    // Both only matter to analytics, and both are absent on a deploy that
-    // only signs people in. Firebase ignores what it is not asked for, so
-    // they sit in the one config rather than in a second one that would
-    // initialise a second app for the same project.
+    /*
+     * Messaging will not issue a token without the sender id — it is the
+     * number the push service registers the subscription against, and leaving
+     * it out failed every registration with nothing on screen but "could not
+     * register this device". `appId` is wanted by messaging too.
+     *
+     * The rest only matters to analytics. Firebase ignores what it is not
+     * asked for, so all of it sits in the one config rather than in a second
+     * one that would initialise a second app for the same project.
+     */
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? '',
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? '',
     measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID ?? '',
   }
