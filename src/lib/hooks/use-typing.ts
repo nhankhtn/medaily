@@ -38,7 +38,6 @@ export function useTyping(channel: string | null, me: string | null) {
     let stopWatching: (() => void) | null = null
 
     void pickTypingChannel().then((picked) => {
-      console.log('pickTypingChannel', picked)
       if (stopped) return
       transport.current = picked
       stopWatching = picked.watch(channel, setEntries)
