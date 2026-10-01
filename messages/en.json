@@ -1362,6 +1362,12 @@
       "gotIt": "Got it",
       "later": "Not now"
     },
+    "notifyOffer": {
+      "title": "Get told when someone messages you",
+      "body": "This browser only — a phone and a laptop are asked separately.",
+      "turnOn": "Turn on",
+      "no": "No thanks"
+    },
     "tour": {
       "daily": {
         "title": "Everything starts here",

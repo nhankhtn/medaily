@@ -61,6 +61,42 @@ export function setPushEnabledHere(on: boolean): void {
   }
 }
 
+/**
+ * Whether this browser has already been asked, once, on arriving.
+ *
+ * Asked once and never again: somebody who said no said it about the feature,
+ * not about today, and a second ask is the kind of thing people turn a whole
+ * app off over. Settings still offers it for as long as they want it.
+ *
+ * A browser that refuses storage reads as already asked. The alternative is
+ * asking on every single load of a private window, which is the worst of both.
+ */
+const OFFERED_KEY = 'medaily.push.offered'
+
+export function pushOfferedHere(): boolean {
+  try {
+    return localStorage.getItem(OFFERED_KEY) === '1'
+  } catch {
+    return true
+  }
+}
+
+export function markPushOffered(): void {
+  try {
+    localStorage.setItem(OFFERED_KEY, '1')
+  } catch {
+    /* private mode — nothing to remember with, and nothing to be done */
+  }
+}
+
+/** Dispatched after the answer changes, so anything showing it re-reads. */
+export const PUSH_CHANGED = 'medaily:push-changed'
+
+/** The permission is not a React value; this is how the app notices. */
+export function announcePushChange(): void {
+  window.dispatchEvent(new Event(PUSH_CHANGED))
+}
+
 export function pushAvailability(): PushAvailability {
   if (typeof window === 'undefined') return 'unsupported'
   if (!firebaseConfigured() || !vapidKey()) return 'unsupported'

@@ -1362,6 +1362,12 @@
       "gotIt": "Đã hiểu",
       "later": "Để sau"
     },
+    "notifyOffer": {
+      "title": "Có người nhắn thì báo cho bạn nhé",
+      "body": "Chỉ riêng trình duyệt này. Điện thoại và máy tính phải bật riêng.",
+      "turnOn": "Bật",
+      "no": "Thôi"
+    },
     "tour": {
       "daily": {
         "title": "Mọi thứ bắt đầu từ đây",

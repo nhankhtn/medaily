@@ -6,9 +6,11 @@ import { useState, useSyncExternalStore } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
+  announcePushChange as announce,
   enablePush,
   pushAvailability,
   pushEnabledHere,
+  PUSH_CHANGED,
   refreshPushToken,
   setPushEnabledHere,
   type PushAvailability,
@@ -23,17 +25,9 @@ import { IosInstallSteps } from './install-app'
  * phone and a laptop each have to be asked. The state is read after mount —
  * the server has no `Notification` to consult and would have to guess.
  */
-/** Dispatched after the answer changes, so the card re-reads it. */
-const CHANGED = 'medaily:push-changed'
-
 function subscribe(onChange: () => void): () => void {
-  window.addEventListener(CHANGED, onChange)
-  return () => window.removeEventListener(CHANGED, onChange)
-}
-
-/** The permission is not a React value; this is the one place that notices. */
-function announce(): void {
-  window.dispatchEvent(new Event(CHANGED))
+  window.addEventListener(PUSH_CHANGED, onChange)
+  return () => window.removeEventListener(PUSH_CHANGED, onChange)
 }
 
 export function NotificationsPanel() {
