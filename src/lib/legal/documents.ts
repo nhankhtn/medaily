@@ -23,7 +23,7 @@ export type LegalDocument = 'terms' | 'privacy'
 export const LEGAL_DOCUMENTS: readonly LegalDocument[] = ['terms', 'privacy'] as const
 
 /** Shown beside the title so a reader knows which version they are reading. */
-export const LEGAL_UPDATED_ON = '2026-09-27'
+export const LEGAL_UPDATED_ON = '2026-10-01'
 
 type Document = { title: string; body: string }
 
@@ -126,6 +126,15 @@ third-party script reading what you write.
 - Notes sent through the contact form go to **Telegram**.
 - Sign-in is handled by **Google Firebase**, which verifies who you are. Your
   password, if you have one with Google, is never seen by this app.
+
+**What you write in a chat room is locked before it reaches that database.**
+It is encrypted with a key the app holds, so a copy of the database on its own
+— a backup, an export, or whoever runs the machines it sits on — reads as
+nothing.
+
+Because the app holds the key, this is **not** end-to-end encryption: whoever
+runs this app can read what you write in a room. If that matters for something
+you were about to say, do not say it here.
 
 Data therefore leaves Vietnam and is processed in the United States.
 
@@ -268,6 +277,15 @@ thứ ba nào đọc những gì bạn viết.
 - Tin gửi qua form liên hệ đi tới **Telegram**.
 - Đăng nhập do **Google Firebase** xử lý để xác minh bạn là ai. Mật khẩu
   Google của bạn không bao giờ đi qua app này.
+
+**Những gì bạn viết trong phòng chat được khoá lại trước khi xuống cơ sở dữ
+liệu đó.** Nó được mã hoá bằng một chiếc khoá do app giữ, nên ai cầm được bản
+sao của cơ sở dữ liệu — bản backup, bản export, hay người vận hành máy chủ
+chứa nó — cũng chỉ thấy một mớ không đọc được.
+
+Nhưng vì khoá nằm ở app, đây **không phải** mã hoá đầu cuối: người vận hành
+app này đọc được những gì bạn viết trong phòng. Nếu điều đó có ảnh hưởng tới
+chuyện bạn định nói, thì đừng nói ở đây.
 
 Nghĩa là dữ liệu ra khỏi Việt Nam và được xử lý tại Mỹ.
 

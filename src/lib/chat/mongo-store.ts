@@ -1,6 +1,7 @@
 import { ObjectId } from 'mongodb'
 import { readyCollection } from '@/lib/mongo/client'
 import type { ChatStore } from './store'
+import { bodyAad, openBody, sealBody, type SealedBody } from './message-crypto'
 import type {
   ChatInvite,
   ChatMember,
@@ -45,7 +46,12 @@ type MessageDoc = {
   roomId: string
   userId: string | null
   kind?: MessageKind
-  body: string
+  /**
+   * Exactly one of these is ever present: the words, or the words locked.
+   * Neither, once the message has been recalled.
+   */
+  body?: string
+  bodyEnc?: SealedBody
   createdAt: Date
   clientId: string
   deletedAt?: Date | null
@@ -183,12 +189,16 @@ export function mongoChatStore(uri: string): ChatStore {
 
     appendMessage: async (message) => {
       const messages = await messagesIn(uri)
+      // The id is made here rather than by Mongo, because the body is locked
+      // against it and there is nothing to lock against until it exists.
+      const id = new ObjectId()
+      const sealed = sealBody(message.body, bodyAad(id.toHexString(), message.roomId))
       const doc: MessageDoc = {
-        _id: new ObjectId(),
+        _id: id,
         roomId: message.roomId,
         userId: message.userId,
         kind: message.kind,
-        body: message.body,
+        ...(sealed ? { bodyEnc: sealed } : { body: message.body }),
         createdAt: new Date(),
         clientId: message.clientId,
         deletedAt: null,
@@ -293,7 +303,7 @@ export function mongoChatStore(uri: string): ChatStore {
         await messagesIn(uri)
       ).updateOne(
         { _id: new ObjectId(messageId), roomId, userId, deletedAt: null },
-        { $set: { deletedAt: new Date(), body: '' } },
+        { $set: { deletedAt: new Date() }, $unset: { body: '', bodyEnc: '' } },
       )
       return updated.matchedCount > 0
     },
@@ -425,7 +435,9 @@ function asMessage(doc: MessageDoc | null): ChatMessage | null {
     // text.
     kind: doc.kind ?? 'text',
     userId: doc.userId ?? null,
-    body: doc.body,
+    body: doc.bodyEnc
+      ? openBody(doc.bodyEnc, bodyAad(doc._id.toHexString(), doc.roomId))
+      : (doc.body ?? ''),
     createdAt: doc.createdAt.toISOString(),
     deletedAt: doc.deletedAt?.toISOString() ?? null,
     reactions: readReactions(doc.reactions),

@@ -14,6 +14,15 @@ import { z } from 'zod'
  * Command-line entry points want the opposite — call `assertEnv()` there to
  * refuse to run at all (spec 26.1).
  */
+/**
+ * 32 bytes, written as base64 — which is 43 characters and a '='. Matched as
+ * text rather than decoded, because this module is read on the client too and
+ * `Buffer` is not there.
+ */
+const base64Key = z
+  .string()
+  .regex(/^[A-Za-z0-9+/]{43}=$/, 'must be 32 bytes of base64 (43 characters and an =)')
+
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -86,6 +95,20 @@ const envSchema = z.object({
   // How long a trail is kept, enforced by a TTL index rather than by anyone
   // remembering. A log that grows forever is a liability, not an asset.
   ACTIVITY_LOG_DAYS: z.coerce.number().int().min(1).max(3650).default(90),
+
+  /*
+   * Locks the words of a chat message before they reach Mongo. The key stays
+   * on the server, so this guards the database — a dump, a backup, whoever
+   * runs the cluster — and not the machine itself. Absent, messages are
+   * written as they always were.
+   *
+   * SPARE opens everything the main key does: the way back in after a lost
+   * key, and the way through a rotation. Checked for length here rather than
+   * at the first message, because a key that is quietly the wrong size fails
+   * in the one place nobody is watching.
+   */
+  CHAT_MESSAGE_KEY: base64Key.optional(),
+  CHAT_MESSAGE_KEY_SPARE: base64Key.optional(),
 
   /*
    * The only Firebase credential with any power in this app, and the only
@@ -162,6 +185,8 @@ export const env: Env = parsed.success
       AUTH_ALLOW_SIGNUP: process.env.AUTH_ALLOW_SIGNUP,
       MONGODB_URI: process.env.MONGODB_URI,
       ACTIVITY_LOG_DAYS: Number(process.env.ACTIVITY_LOG_DAYS) || 90,
+      CHAT_MESSAGE_KEY: process.env.CHAT_MESSAGE_KEY,
+      CHAT_MESSAGE_KEY_SPARE: process.env.CHAT_MESSAGE_KEY_SPARE,
       FIREBASE_SERVICE_ACCOUNT: process.env.FIREBASE_SERVICE_ACCOUNT,
       CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
       CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
