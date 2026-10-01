@@ -587,7 +587,10 @@ async function speakersOf(ids: string[]): Promise<Record<string, Speaker>> {
         id: row.id,
         name: row.displayName,
         imageUrl: row.imageUrl ?? null,
-        firebaseUid: uidOf.get(row.id) ?? null,
+        // Mirrors `realtimeUidFor`, which decides the uid the token is
+        // minted under — the two have to agree or a typing document lands
+        // under a name no reader recognises.
+        firebaseUid: uidOf.get(row.id) ?? row.id,
       },
     ]),
   )

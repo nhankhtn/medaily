@@ -11,10 +11,13 @@ import { env } from '@/lib/env'
  * the tree for verifying ID tokens, and it signs the assertion Google wants in
  * exchange for an access token.
  *
- * This is the only thing in the app that holds a Firebase credential with any
- * power. Everything else — sign-in, the doorbell, the typing indicator — runs
- * on public keys and security rules. Keeping it in one small file, reachable
- * only from the nightly job, is the containment.
+ * This holds the only Firebase credential in the app with any power. Sign-in
+ * and the doorbell still run on public keys and security rules; what the
+ * credential buys is the nightly sweep, and — through `readFirestoreAdminConfig`
+ * — the custom token that gives a password sign-in a Firebase identity to type
+ * under. Two readers now, so the containment is no longer "one file": it is
+ * that both speak a narrow protocol rather than pulling in the Admin SDK, and
+ * that nothing else in the tree reads the key.
  */
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token'

@@ -234,15 +234,43 @@ This is the only Firebase credential in the app with real power.
 `NEXT_PUBLIC_FIREBASE_PROJECT_ID`, so a staging key left in a production
 environment is refused rather than trusted.
 
-Everything else here — sign-in, the doorbell, the typing indicator — runs on
-public keys and security rules, with no secret to leak. That property is
-genuinely weaker now, and the containment is that one small file
-(`src/server/services/firestore-rest.ts`) holds the credential, speaks the REST
-API rather than pulling in the Admin SDK, and is reachable only from the
-nightly job.
+Sign-in and the doorbell still run on public keys and security rules, with no
+secret to leak. Two things read this one: the sweep, and the custom token
+below. The containment is that both speak a narrow protocol rather than
+pulling in the Admin SDK, and that nothing else in the tree reads the key.
 
 Leave `FIREBASE_SERVICE_ACCOUNT` unset and nothing is swept, nothing
-complains, and the garbage stays — a couple of numeric fields per room.
+complains, and the garbage stays — a couple of numeric fields per room. The
+typing indicator is the part that then stops being free: see below.
+
+### Who Firestore thinks you are
+
+Firestore rules tie a typing claim to `request.auth.uid`, so making one needs a
+Firebase session. Signing in with Google leaves one behind; signing in with the
+password never did, and that path exists precisely as the way back in when
+Firebase is unreachable. Live updates therefore belonged to whoever had
+arrived through Google — and on an iPhone, where One Tap never draws
+(`oneTapAvailable` returns `!isIos()`), the password form is the path of least
+resistance. The same person could see somebody typing on a laptop and not on
+their phone, with nothing on screen to say why.
+
+So the server vouches instead. `realtimeToken` mints a Firebase custom token
+for the session it has already authenticated by cookie, and the browser trades
+it for a Firebase session when it finds none in storage. The uid is chosen
+server side — the Firebase uid Google sign-in already minted when there is one,
+so the two paths land on the same Firebase user, and otherwise the app's own
+id, which is a uuid and cannot collide with a Firebase uid. `speakersOf` picks
+the same uid by the same rule; if those two ever disagree, a typing document
+lands under a name no reader recognises and the indicator simply never draws.
+
+This hands out no authority the project had not already given away: the rules
+read `request.auth != null`, and the project's sign-in is not gated by the
+app's allowlists, so that already meant any Google account on the internet.
+What keeps a room private is the 122-bit channel key.
+
+Without the service account nothing breaks — the token comes back null, the
+console says so once, and the room falls back to asking on the slow floor, the
+same as before.
 
 ### By hand, if you prefer
 

@@ -1,3 +1,4 @@
+import type { Auth } from 'firebase/auth'
 import { NO_REALTIME, NO_TYPING, type RealtimeSignal, type TypingChannel } from './signal'
 
 /**
@@ -39,7 +40,6 @@ export async function pickRealtimeSignal(): Promise<RealtimeSignal> {
  * does not mean untangling it from the other.
  */
 export async function pickTypingChannel(): Promise<TypingChannel> {
-  console.log('pickTypingChannel', await realtimeOff())
   if (await realtimeOff()) return NO_TYPING
 
   const { firestoreTyping } = await import('./firestore')
@@ -51,7 +51,7 @@ const REASONS = {
   flag: 'NEXT_PUBLIC_REALTIME_ENABLED is not "1" in this build. It is baked in at build time, so setting it needs a restart or a redeploy.',
   firebase: 'this build has no Firebase project configured.',
   session:
-    'this session signed in with a username and password, which leaves no Firebase session to listen with. Sign in with Google for live updates.',
+    'this session has no Firebase session and one could not be minted. Set FIREBASE_SERVICE_ACCOUNT (see .env.example) so the server can vouch for password sign-ins, or sign in with Google.',
 } as const
 
 const said = new Set<keyof typeof REASONS>()
@@ -84,9 +84,43 @@ async function realtimeOff(): Promise<boolean> {
   // on the slow poll for as long as it stayed open, with live updates
   // configured and perfectly able to work.
   await auth.authStateReady()
-  if (!auth.currentUser) return explain('session')
+  if (auth.currentUser) return false
 
-  return false
+  // Nothing in storage. The password path never put a Firebase session there,
+  // and on iOS neither did Google: Safari clears site data after a week idle,
+  // and a home-screen app keeps its own, while this app's own cookie outlives
+  // both. So ask the server to vouch rather than conclude anything about how
+  // this person signed in.
+  if (await adopt(auth)) return false
+
+  return explain('session')
+}
+
+/** One attempt per page. A second would fail for the same reason as the first. */
+let adopted: Promise<boolean> | null = null
+
+function adopt(auth: Auth): Promise<boolean> {
+  adopted ??= (async () => {
+    const [{ signInWithCustomToken }, { realtimeToken }] = await Promise.all([
+      import('firebase/auth'),
+      import('@/server/actions/realtime'),
+    ])
+
+    try {
+      const minted = await realtimeToken()
+      if (!minted) return false
+      await signInWithCustomToken(auth, minted.token)
+      return true
+    } catch (error) {
+      // Logged rather than thrown: chat works without this, and a page that
+      // will not render because a transport could not be opened is worse than
+      // one that falls back to asking on a timer.
+      console.info('[realtime] could not open a Firebase session', error)
+      return false
+    }
+  })()
+
+  return adopted
 }
 
 function explain(reason: keyof typeof REASONS): true {

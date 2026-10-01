@@ -109,13 +109,15 @@ export type Speaker = {
   name: string
   imageUrl: string | null
   /**
-   * Firebase uid, when this person has one — the name Firestore knows them by.
+   * The name Firestore knows this person by.
    *
    * The typing indicator is the only thing that reads it: Firestore rules tie
    * a write to `request.auth.uid`, so a claim of "I am typing" can only be made
    * in your own name. Matching that back to a member needs the uid here.
-   * `null` for anyone who signed in with the password, who therefore never
-   * appears as typing — the same people who have no live updates at all.
+   *
+   * Their Firebase uid when Google sign-in has minted one, otherwise their id,
+   * which is what the server mints a custom token under. Null only for someone
+   * who erased their account.
    */
   firebaseUid: string | null
 }
