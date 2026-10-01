@@ -266,6 +266,113 @@ export function describeChatStore(name: string, makeStore: () => Promise<ChatSto
     })
   })
 
+  describe(`${name}: reactions`, () => {
+    it('adds one, and counts it under the person who chose it', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      const sent = await store.appendMessage(message('r1', 'u1', 'hay đó', 'c1'))
+
+      expect(await store.toggleReaction('r1', sent.id, 'u2', '👍')).toBe('added')
+      const [shown] = (await store.listBackward('r1', { limit: 10 })).items
+      expect(shown?.reactions).toEqual({ '👍': ['u2'] })
+    })
+
+    /** One control, both directions: tapping what you already chose takes it back. */
+    it('takes it back on a second tap, and drops the emoji with the last person', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      const sent = await store.appendMessage(message('r1', 'u1', 'hay đó', 'c1'))
+      await store.toggleReaction('r1', sent.id, 'u2', '👍')
+
+      expect(await store.toggleReaction('r1', sent.id, 'u2', '👍')).toBe('removed')
+      const [shown] = (await store.listBackward('r1', { limit: 10 })).items
+      expect(shown?.reactions, 'an emoji nobody chose is not a row to draw').toEqual({})
+    })
+
+    it('keeps several people under one emoji', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      const sent = await store.appendMessage(message('r1', 'u1', 'hay đó', 'c1'))
+      await store.toggleReaction('r1', sent.id, 'u2', '👍')
+      await store.toggleReaction('r1', sent.id, 'u3', '👍')
+
+      const [shown] = (await store.listBackward('r1', { limit: 10 })).items
+      expect(shown?.reactions['👍']?.sort()).toEqual(['u2', 'u3'])
+    })
+
+    it('leaves one person reaction alone when another takes theirs back', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      const sent = await store.appendMessage(message('r1', 'u1', 'hay đó', 'c1'))
+      await store.toggleReaction('r1', sent.id, 'u2', '👍')
+      await store.toggleReaction('r1', sent.id, 'u3', '👍')
+      await store.toggleReaction('r1', sent.id, 'u2', '👍')
+
+      const [shown] = (await store.listBackward('r1', { limit: 10 })).items
+      expect(shown?.reactions).toEqual({ '👍': ['u3'] })
+    })
+
+    it('holds more than one emoji on the same message', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      const sent = await store.appendMessage(message('r1', 'u1', 'hay đó', 'c1'))
+      await store.toggleReaction('r1', sent.id, 'u2', '👍')
+      await store.toggleReaction('r1', sent.id, 'u2', '❤️')
+
+      const [shown] = (await store.listBackward('r1', { limit: 10 })).items
+      expect(Object.keys(shown?.reactions ?? {}).sort()).toEqual(['❤️', '👍'])
+    })
+
+    it('answers nothing for a message that is not there', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      expect(await store.toggleReaction('r1', '507f1f77bcf86cd799439011', 'u2', '👍')).toBeNull()
+    })
+
+    /** A room id that does not own the message is somebody reaching in. */
+    it('answers nothing when the message belongs to another room', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      await store.createRoom(room('r2'))
+      const sent = await store.appendMessage(message('r1', 'u1', 'hay đó', 'c1'))
+
+      expect(await store.toggleReaction('r2', sent.id, 'u2', '👍')).toBeNull()
+    })
+
+    it('starts every message with none', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      const sent = await store.appendMessage(message('r1', 'u1', 'hay đó', 'c1'))
+
+      expect(sent.reactions).toEqual({})
+    })
+  })
+
+  describe(`${name}: stickers`, () => {
+    it('keeps a sticker as its own kind, with the id as the body', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      const sent = await store.appendMessage({
+        roomId: 'r1',
+        userId: 'u1',
+        kind: 'sticker',
+        body: 'party',
+        clientId: 'c1',
+      })
+
+      expect(sent).toMatchObject({ kind: 'sticker', body: 'party' })
+      expect((await store.listBackward('r1', { limit: 10 })).items[0]?.kind).toBe('sticker')
+    })
+
+    it('reads a message with no kind as text, the way every older row was', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      const sent = await store.appendMessage(message('r1', 'u1', 'xin chào', 'c1'))
+
+      expect(sent.kind).toBe('text')
+    })
+  })
+
   describe(`${name}: invites`, () => {
     const soon = () => new Date(Date.now() + 3_600_000).toISOString()
 
@@ -393,7 +500,7 @@ function seat(roomId: string, userId: string) {
 }
 
 function message(roomId: string, userId: string, body: string, clientId: string) {
-  return { roomId, userId, body, clientId }
+  return { roomId, userId, body, clientId, kind: 'text' as const }
 }
 
 function invite(code: string, over: Partial<Parameters<ChatStore['createInvite']>[0]> = {}) {

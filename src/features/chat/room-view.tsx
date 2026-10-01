@@ -1,19 +1,26 @@
 'use client'
 
-import { Send, Trash2 } from 'lucide-react'
+import { Send, SmilePlus, Trash2 } from 'lucide-react'
 import { useFormatter, useTranslations } from 'next-intl'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { VirtualInfiniteList } from '@/components/ui/virtual-infinite-list'
-import type { ChatMessage, ChatRoom, MessagePage, Speaker } from '@/lib/chat/types'
+import type { ChatMessage, ChatRoom, MessageKind, MessagePage, Speaker } from '@/lib/chat/types'
 import { ringRoom, useRoomLive } from '@/lib/hooks/use-room-live'
+import { isSticker, REACTIONS } from '@/lib/chat/stickers'
+import { onlyEmoji } from '@/lib/chat/only-emoji'
+import { EmojiPicker, StickerPicker } from './pickers'
+import { StickerArt } from './sticker-art'
 import { useTyping } from '@/lib/hooks/use-typing'
 import { Avatar } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import {
   deleteMessage,
   loadNewMessages,
+  loadRecentMessages,
+  toggleReaction,
   loadOlderMessages,
   markRoomRead,
   sendMessage,
@@ -86,6 +93,15 @@ export function RoomView({
         }
         more = result.more
       }
+
+      // Paging forward only ever brings what did not exist before. A recall or
+      // a reaction on something already on screen has to be fetched again, or
+      // the other people in the room keep reading words that were taken back.
+      const recent = await loadRecentMessages(room.id)
+      if (recent.ok) {
+        const changed = new Map(recent.items.map((m) => [m.id, m]))
+        setMessages((shown) => shown.map((m) => changed.get(m.id) ?? m))
+      }
     } finally {
       catchingUp.current = false
     }
@@ -137,7 +153,10 @@ export function RoomView({
    */
   const submit = async (event: React.FormEvent) => {
     event.preventDefault()
-    const body = draft.trim()
+    await send('text', draft.trim())
+  }
+
+  const send = async (kind: MessageKind, body: string) => {
     if (body === '' || sending) return
 
     const clientId = crypto.randomUUID()
@@ -145,7 +164,9 @@ export function RoomView({
       id: clientId,
       roomId: room.id,
       userId: me,
+      kind,
       body,
+      reactions: {},
       // Left blank rather than guessed: the time a message was sent is the
       // server's to say, and the row is not showing a clock until it has.
       createdAt: '',
@@ -160,7 +181,7 @@ export function RoomView({
     // do, not a round trip later.
     stop()
 
-    const result = await sendMessage({ roomId: room.id, body, clientId })
+    const result = await sendMessage({ roomId: room.id, kind, body, clientId })
     setSending(false)
 
     if (!result.ok) {
@@ -185,6 +206,29 @@ export function RoomView({
     void ringRoom(result.doorbellKey)
   }
 
+  /**
+   * Adding and removing are the same tap, so the row is corrected before the
+   * server answers and put back if it disagrees — a reaction that lags behind
+   * the finger reads as a button that did not work.
+   */
+  const react = async (message: Shown, emoji: string) => {
+    if (message.pending) return
+
+    const mine = (message.reactions[emoji] ?? []).includes(me)
+    setMessages((shown) => shown.map((m) => (m.id === message.id ? withReaction(m, emoji, me) : m)))
+
+    const result = await toggleReaction({ roomId: room.id, messageId: message.id, emoji })
+    if (!result.ok) {
+      setMessages((shown) =>
+        shown.map((m) => (m.id === message.id ? withReaction(m, emoji, me) : m)),
+      )
+      return
+    }
+    // Told so everybody else's screen picks the change up on its next ring.
+    void ringRoom(result.doorbellKey)
+    void mine
+  }
+
   const recall = async (message: ChatMessage) => {
     const result = await deleteMessage({ roomId: room.id, messageId: message.id })
     if (!result.ok) return
@@ -197,11 +241,14 @@ export function RoomView({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
       <VirtualInfiniteList
+        fill
         items={messages}
         getKey={(message) => message.id}
         estimateSize={ROW_ESTIMATE}
+        // Kept for the estimate the virtualiser starts from; `fill` is what
+        // decides the height once the parent has one.
         maxVisibleRows={{ base: 7, sm: 9 }}
         hasMore={Boolean(older)}
         loadingMore={loadingOlder}
@@ -262,19 +309,38 @@ export function RoomView({
                     </button>
                   ) : null}
 
-                  <p
-                    className={cn(
-                      'min-w-0 rounded-2xl px-3 py-1.5 text-sm break-words whitespace-pre-wrap',
-                      mine ? 'bg-accent text-accent-text' : 'bg-surface-2',
-                      message.deletedAt && 'text-text-subtle bg-surface-2 italic',
-                      // Faded until the server has it. Showing it as though it
-                      // had landed would be a lie on the one occasion it
-                      // matters: when the send is about to fail.
-                      message.pending && 'opacity-60',
-                    )}
-                  >
-                    {message.deletedAt ? t('recalled') : message.body}
-                  </p>
+                  {message.kind === 'sticker' && !message.deletedAt && isSticker(message.body) ? (
+                    // No bubble: a sticker is the message, and a coloured box
+                    // round it would only fight the disc it is drawn on.
+                    <span className={cn('px-1', message.pending && 'opacity-60')}>
+                      <StickerArt id={message.body} size={96} />
+                    </span>
+                  ) : (
+                    <p
+                      className={cn(
+                        'min-w-0 rounded-2xl px-3 py-1.5 text-sm break-words whitespace-pre-wrap',
+                        mine ? 'bg-accent text-accent-text' : 'bg-surface-2',
+                        message.deletedAt && 'text-text-subtle bg-surface-2 italic',
+                        // Faded until the server has it. Showing it as though
+                        // it had landed would be a lie on the one occasion it
+                        // matters: when the send is about to fail.
+                        message.pending && 'opacity-60',
+                        // A message that is only emoji is the message, so it
+                        // is drawn at the size somebody meant it to be read at.
+                        onlyEmoji(message.body) && 'bg-transparent px-1 text-4xl leading-tight',
+                      )}
+                    >
+                      {message.deletedAt ? t('recalled') : message.body}
+                    </p>
+                  )}
+                  {message.pending ? null : (
+                    <ReactionBar
+                      reactions={message.reactions}
+                      me={me}
+                      mine={mine}
+                      onToggle={(emoji) => void react(message, emoji)}
+                    />
+                  )}
                 </div>
 
                 {message.pending ? null : (
@@ -297,7 +363,9 @@ export function RoomView({
             : t('typingMany', { count: typingNames.length })}
         </p>
       ) : null}
-      <form onSubmit={submit} className="flex items-end gap-2">
+      <form onSubmit={submit} className="flex items-end gap-1 sm:gap-2">
+        <EmojiPicker onPick={(emoji) => setDraft((was) => was + emoji)} />
+        <StickerPicker onPick={(id) => void send('sticker', id)} />
         <textarea
           value={draft}
           onChange={(event) => {
@@ -320,5 +388,184 @@ export function RoomView({
         </Button>
       </form>
     </div>
+  )
+}
+
+/** One tap, both directions — the same shape the server settles on. */
+function withReaction(message: Shown, emoji: string, me: string): Shown {
+  const who = message.reactions[emoji] ?? []
+  const next = { ...message.reactions }
+
+  if (who.includes(me)) {
+    const left = who.filter((id) => id !== me)
+    if (left.length === 0) delete next[emoji]
+    else next[emoji] = left
+  } else {
+    next[emoji] = [...who, me]
+  }
+
+  return { ...message, reactions: next }
+}
+
+/**
+ * What is already on a message, plus a way to add to it.
+ *
+ * The row of choices only appears on hover or focus: six emoji under every
+ * line would be louder than the conversation.
+ */
+/**
+ * What is already on a message, and a way to add to it.
+ *
+ * The row of choices floats over the conversation rather than taking a line in
+ * it, which is what a reaction picker looks like everywhere. That means
+ * escaping the transcript: it is a scroll box, and anything positioned inside
+ * one is cut off at its edge. So the panel is rendered into the document and
+ * placed in viewport coordinates against the button that opened it.
+ */
+function ReactionBar({
+  reactions,
+  me,
+  mine,
+  onToggle,
+}: {
+  reactions: Record<string, string[]>
+  me: string
+  /** Your own messages sit against the right margin, and so does this. */
+  mine: boolean
+  onToggle: (emoji: string) => void
+}) {
+  const t = useTranslations('chat')
+  const trigger = useRef<HTMLButtonElement>(null)
+  const [at, setAt] = useState<{ bottom: number; left?: number; right?: number } | null>(null)
+  const chosen = Object.entries(reactions).filter(([, who]) => who.length > 0)
+
+  const open = () => {
+    const box = trigger.current?.getBoundingClientRect()
+    if (!box) return
+    setAt({
+      // Anchored by its bottom edge, so the panel needs no measured height to
+      // sit just above the button.
+      bottom: window.innerHeight - box.top + 8,
+      ...(mine
+        ? { right: Math.max(8, window.innerWidth - box.right) }
+        : { left: Math.max(8, box.left) }),
+    })
+  }
+
+  return (
+    <>
+      <Button
+        ref={trigger}
+        type="button"
+        variant="ghost"
+        size="iconSm"
+        aria-label={t('react')}
+        aria-expanded={at !== null}
+        onClick={() => (at ? setAt(null) : open())}
+        // Always there on a phone, where there is no hovering to reveal it;
+        // out of the way on a pointer, where a button under every line would
+        // be louder than the conversation.
+        className={cn(
+          'shrink-0 opacity-100 transition-opacity sm:opacity-0',
+          'sm:group-hover:opacity-100 sm:focus-visible:opacity-100',
+          at && 'sm:opacity-100',
+        )}
+      >
+        <SmilePlus className="size-4" />
+      </Button>
+
+      {at ? (
+        <FloatingReactions
+          at={at}
+          onClose={() => setAt(null)}
+          onPick={(emoji) => {
+            onToggle(emoji)
+            setAt(null)
+          }}
+        />
+      ) : null}
+
+      {chosen.length > 0 ? (
+        <span className="flex flex-wrap items-center gap-1">
+          {chosen.map(([emoji, who]) => (
+            <button
+              key={emoji}
+              type="button"
+              onClick={() => onToggle(emoji)}
+              aria-pressed={who.includes(me)}
+              className={cn(
+                'border-border-base flex h-7 shrink-0 items-center gap-1 rounded-full border px-2 text-sm',
+                who.includes(me) ? 'border-accent bg-accent/10' : 'bg-surface-2',
+              )}
+            >
+              <span>{emoji}</span>
+              <span className="text-text-subtle text-xs tabular-nums">{who.length}</span>
+            </button>
+          ))}
+        </span>
+      ) : null}
+    </>
+  )
+}
+
+/**
+ * The six choices, over everything.
+ *
+ * Closed by a scroll as well as by a tap elsewhere: the coordinates were taken
+ * once, and a panel that stayed put while the conversation moved under it
+ * would end up pointing at the wrong message.
+ */
+function FloatingReactions({
+  at,
+  onPick,
+  onClose,
+}: {
+  at: { bottom: number; left?: number; right?: number }
+  onPick: (emoji: string) => void
+  onClose: () => void
+}) {
+  const t = useTranslations('chat')
+  const panel = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const away = (event: PointerEvent) => {
+      if (!panel.current?.contains(event.target as Node)) onClose()
+    }
+    const key = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+
+    document.addEventListener('pointerdown', away)
+    document.addEventListener('keydown', key)
+    // Capture, because the transcript scrolls rather than the window.
+    window.addEventListener('scroll', onClose, true)
+    window.addEventListener('resize', onClose)
+    return () => {
+      document.removeEventListener('pointerdown', away)
+      document.removeEventListener('keydown', key)
+      window.removeEventListener('scroll', onClose, true)
+      window.removeEventListener('resize', onClose)
+    }
+  }, [onClose])
+
+  return createPortal(
+    <div
+      ref={panel}
+      style={at}
+      className="glass border-border-base fixed z-50 flex items-center gap-0.5 rounded-full border p-0.5 shadow-lg"
+    >
+      {REACTIONS.map((emoji) => (
+        <button
+          key={emoji}
+          type="button"
+          aria-label={t('reactWith', { emoji })}
+          onClick={() => onPick(emoji)}
+          className="hover:bg-surface-2 flex size-9 items-center justify-center rounded-full text-lg"
+        >
+          {emoji}
+        </button>
+      ))}
+    </div>,
+    document.body,
   )
 }

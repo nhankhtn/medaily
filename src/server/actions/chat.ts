@@ -19,6 +19,7 @@ import {
   sweepIfEmpty,
 } from '@/server/services/chat'
 import { newInviteCode } from '@/lib/chat/invite-code'
+import { isReaction, isSticker } from '@/lib/chat/stickers'
 import { audited } from '@/server/services/audited'
 
 /** A conversation, not a firehose. Generous for typing, useless for flooding. */
@@ -86,6 +87,29 @@ export async function loadOlderMessages(input: unknown) {
  * and keeping the cursor would step over messages that were never shown, and
  * nothing goes back for them.
  */
+/**
+ * The newest page again, for changes rather than arrivals.
+ *
+ * Paging forward from a cursor only ever brings things that did not exist
+ * before, so a recall or a reaction on a message already on screen would never
+ * reach anybody else — they would keep reading words their author had taken
+ * back. This re-reads the recent window so those land too.
+ *
+ * Bounded to one page on purpose: something changed further up than that is
+ * picked up on the next scroll or reload, and the alternative is re-reading a
+ * conversation of unknown length every time somebody taps an emoji.
+ */
+export async function loadRecentMessages(input: unknown) {
+  const parsed = roomIdSchema.safeParse(input)
+  if (!parsed.success) return { ok: false as const }
+
+  const userId = await getCurrentUserId()
+  if (!(await allowed(parsed.data, userId))) return { ok: false as const }
+
+  const page = await pickChatStore().listBackward(parsed.data, { limit: MESSAGE_PAGE })
+  return { ok: true as const, items: [...page.items].reverse() }
+}
+
 export async function loadNewMessages(input: unknown) {
   const parsed = z
     .object({ roomId: roomIdSchema, after: messageIdSchema.nullable() })
@@ -109,8 +133,15 @@ export async function sendMessage(input: unknown) {
   const parsed = z
     .object({
       roomId: roomIdSchema,
+      // A sticker's body is its id and nothing else. Checked against the pack
+      // rather than trusted: without this the field is a way to store a string
+      // that the room then renders as a picture.
+      kind: z.enum(['text', 'sticker']).default('text'),
       body: z.string().trim().min(1).max(4000),
       clientId: z.string().min(1).max(64),
+    })
+    .refine((value) => value.kind !== 'sticker' || isSticker(value.body), {
+      message: 'unknown sticker',
     })
     .safeParse(input)
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
@@ -128,6 +159,7 @@ export async function sendMessage(input: unknown) {
   const message = await store.appendMessage({
     roomId: parsed.data.roomId,
     userId,
+    kind: parsed.data.kind,
     body: parsed.data.body,
     clientId: parsed.data.clientId,
   })
@@ -156,6 +188,43 @@ export async function deleteMessage(input: unknown) {
   // The moment comes back so the screen can mark the row recalled without
   // inventing a time of its own.
   return removed ? { ok: true as const, at: new Date().toISOString() } : { ok: false as const }
+}
+
+/**
+ * Adds or takes back one person's reaction.
+ *
+ * The emoji is checked against the fixed row rather than stored as given: this
+ * writes a key into a document, and an open vocabulary would let anybody grow
+ * it with whatever they liked.
+ */
+export async function toggleReaction(input: unknown) {
+  const parsed = z
+    .object({
+      roomId: roomIdSchema,
+      messageId: messageIdSchema,
+      emoji: z.string().max(16).refine(isReaction, { message: 'unknown reaction' }),
+    })
+    .safeParse(input)
+  if (!parsed.success) return { ok: false as const }
+
+  const store = pickChatStore()
+  const userId = await getCurrentUserId()
+  try {
+    await assertMember(parsed.data.roomId, userId, { store })
+  } catch {
+    return { ok: false as const }
+  }
+
+  const did = await store.toggleReaction(
+    parsed.data.roomId,
+    parsed.data.messageId,
+    userId,
+    parsed.data.emoji,
+  )
+  if (!did) return { ok: false as const }
+
+  const room = await store.findRoom(parsed.data.roomId)
+  return { ok: true as const, did, doorbellKey: room?.doorbellKey ?? null }
 }
 
 export async function markRoomRead(input: unknown) {
@@ -257,6 +326,54 @@ export const leaveRoom = audited('chatRoom.leave', async (input: unknown) => {
   // Nothing else would: MongoDB has no cascade, and an empty room holds a
   // conversation nobody can reach.
   await sweepIfEmpty(parsed.data, { store })
+
+  revalidatePath(PATHS.chat)
+  return { ok: true as const }
+})
+
+export const renameRoom = audited('chatRoom.rename', async (input: unknown) => {
+  const parsed = z
+    .object({ roomId: roomIdSchema, title: z.string().trim().min(1).max(120) })
+    .safeParse(input)
+  if (!parsed.success) return { ok: false as const }
+
+  const store = pickChatStore()
+  try {
+    // Anyone in the room could be trusted with the name, but a room is read by
+    // the list it sits in, and renaming it changes that line for everybody.
+    await assertCanInvite(parsed.data.roomId, await getCurrentUserId(), { store })
+  } catch {
+    return { ok: false as const }
+  }
+
+  await store.renameRoom(parsed.data.roomId, parsed.data.title)
+
+  revalidatePath(PATHS.chat)
+  revalidatePath(PATHS.chatRoom(parsed.data.roomId))
+  return { ok: true as const }
+})
+
+/**
+ * Takes the room down for everybody, not just for the person asking.
+ *
+ * Owner only, and that is the difference from leaving: leaving is a decision
+ * about yourself, and this one is made on behalf of people who are not here
+ * to be asked. The messages go with it, because a room is the only way to
+ * reach them and nothing else would ever collect them.
+ */
+export const deleteRoom = audited('chatRoom.delete', async (input: unknown) => {
+  const parsed = roomIdSchema.safeParse(input)
+  if (!parsed.success) return { ok: false as const }
+
+  const store = pickChatStore()
+  try {
+    await assertCanInvite(parsed.data, await getCurrentUserId(), { store })
+  } catch {
+    return { ok: false as const }
+  }
+
+  await store.deleteMessagesIn(parsed.data)
+  await store.deleteRoom(parsed.data)
 
   revalidatePath(PATHS.chat)
   return { ok: true as const }

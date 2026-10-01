@@ -109,7 +109,13 @@ describe('sweeping an empty room', () => {
   /** Nothing else does this: MongoDB has no cascade to lean on. */
   it('takes the room and its messages once the last person goes', async () => {
     await room('r1', [['u1', 'owner']])
-    await store.appendMessage({ roomId: 'r1', userId: 'u1', body: 'bye', clientId: 'c1' })
+    await store.appendMessage({
+      roomId: 'r1',
+      userId: 'u1',
+      kind: 'text',
+      body: 'bye',
+      clientId: 'c1',
+    })
     await store.removeMember('r1', 'u1')
 
     expect(await sweepIfEmpty('r1', { store })).toBe(true)

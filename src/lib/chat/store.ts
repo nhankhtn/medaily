@@ -1,7 +1,7 @@
 import type { ChatInvite, ChatMember, ChatMessage, ChatRoom, MessagePage } from './types'
 
 export type NewRoom = Omit<ChatRoom, 'lastMessageAt' | 'createdAt'>
-export type NewMessage = Omit<ChatMessage, 'id' | 'createdAt' | 'deletedAt'> & {
+export type NewMessage = Omit<ChatMessage, 'id' | 'createdAt' | 'deletedAt' | 'reactions'> & {
   /** Supplied by the browser so a retried send returns the first message, not a second one. */
   clientId: string
 }
@@ -36,6 +36,7 @@ export type ChatStore = {
   listRoomsFor: (userId: string) => Promise<ChatRoom[]>
   rotateDoorbell: (roomId: string) => Promise<string>
   touchRoom: (roomId: string, at: Date) => Promise<void>
+  renameRoom: (roomId: string, title: string) => Promise<void>
   deleteRoom: (roomId: string) => Promise<void>
 
   // — members —
@@ -60,6 +61,19 @@ export type ChatStore = {
   ) => Promise<MessagePage>
   /** Answers false when the message is not this person's to delete. */
   softDeleteMessage: (roomId: string, messageId: string, userId: string) => Promise<boolean>
+  /**
+   * Adds or removes one person's reaction, and says which it did.
+   *
+   * One call rather than two, because the screen has one control: tapping an
+   * emoji you already chose takes it back. Answering `null` means there was no
+   * such message to react to.
+   */
+  toggleReaction: (
+    roomId: string,
+    messageId: string,
+    userId: string,
+    emoji: string,
+  ) => Promise<'added' | 'removed' | null>
 
   // — invites —
   createInvite: (invite: NewInvite) => Promise<ChatInvite>
@@ -100,6 +114,7 @@ export const NO_CHAT: ChatStore = {
   listRoomsFor: async () => [],
   rotateDoorbell: async () => '',
   touchRoom: async () => {},
+  renameRoom: async () => {},
   deleteRoom: async () => {},
   addMember: async () => {},
   findMember: async () => null,
@@ -113,6 +128,7 @@ export const NO_CHAT: ChatStore = {
   listBackward: async () => ({ items: [], cursor: null, more: false }),
   listForward: async () => ({ items: [], cursor: null, more: false }),
   softDeleteMessage: async () => false,
+  toggleReaction: async () => null,
   createInvite: async () => {
     throw new Error('chat is not configured')
   },
@@ -188,6 +204,10 @@ export function inMemoryChatStore(): ChatStore {
       const room = rooms.get(roomId)
       if (room) room.lastMessageAt = at.toISOString()
     },
+    renameRoom: async (roomId, title) => {
+      const room = rooms.get(roomId)
+      if (room) room.title = title
+    },
     deleteRoom: async (roomId) => {
       rooms.delete(roomId)
       for (let i = members.length - 1; i >= 0; i--) {
@@ -222,6 +242,7 @@ export function inMemoryChatStore(): ChatStore {
         id: nextId(),
         createdAt: new Date().toISOString(),
         deletedAt: null,
+        reactions: {} as Record<string, string[]>,
       }
       messages.push(made)
       return copy(made)
@@ -240,6 +261,24 @@ export function inMemoryChatStore(): ChatStore {
         .slice(0, limit + 1)
       return page(rows, limit)
     },
+    toggleReaction: async (roomId, messageId, userId, emoji) => {
+      const found = messages.find((m) => m.id === messageId && m.roomId === roomId)
+      if (!found) return null
+
+      const who = found.reactions[emoji] ?? []
+      if (who.includes(userId)) {
+        const left = who.filter((id) => id !== userId)
+        // The key goes with the last person, so an emoji nobody chose any more
+        // does not sit there as an empty row.
+        if (left.length === 0) delete found.reactions[emoji]
+        else found.reactions[emoji] = left
+        return 'removed'
+      }
+
+      found.reactions[emoji] = [...who, userId]
+      return 'added'
+    },
+
     softDeleteMessage: async (roomId, messageId, userId) => {
       const found = messages.find(
         (m) => m.id === messageId && m.roomId === roomId && m.userId === userId,

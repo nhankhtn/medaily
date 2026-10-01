@@ -37,9 +37,16 @@ export type ChatMember = {
   lastReadMessageId: string | null
 }
 
+export type MessageKind = 'text' | 'sticker'
+
 export type ChatMessage = {
   id: string
   roomId: string
+  /**
+   * What `body` holds. A sticker keeps its id there rather than in a field of
+   * its own: one column, and a message is one thing or the other, never both.
+   */
+  kind: MessageKind
   /**
    * Null once the author erased their account. The words stay — that is the
    * choice this app made — but nothing points back at a person any more, and
@@ -49,6 +56,15 @@ export type ChatMessage = {
   body: string
   createdAt: string
   deletedAt: string | null
+  /**
+   * Who reacted with what, emoji to user ids.
+   *
+   * Kept on the message rather than beside it: a reaction is never read apart
+   * from the message it is on, and both the vocabulary and the room's size
+   * bound how large this can get. Empty rather than absent, so nothing has to
+   * check before counting.
+   */
+  reactions: Record<string, string[]>
 }
 
 export type ChatInvite = {

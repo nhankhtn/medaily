@@ -36,7 +36,13 @@ describe('erasing somebody from chat', () => {
 
   it('takes their name off what they wrote, and leaves the words', async () => {
     await room('r1', ['u1', 'u2'])
-    await store.appendMessage({ roomId: 'r1', userId: 'u1', body: 'tôi viết', clientId: 'a' })
+    await store.appendMessage({
+      roomId: 'r1',
+      userId: 'u1',
+      kind: 'text',
+      body: 'tôi viết',
+      clientId: 'a',
+    })
     await eraseChat('u1', { store })
 
     const [left] = (await store.listBackward('r1', { limit: 50 })).items
@@ -46,7 +52,13 @@ describe('erasing somebody from chat', () => {
 
   it('cannot be found by looking for them afterwards', async () => {
     await room('r1', ['u1', 'u2'])
-    await store.appendMessage({ roomId: 'r1', userId: 'u1', body: 'x', clientId: 'a' })
+    await store.appendMessage({
+      roomId: 'r1',
+      userId: 'u1',
+      kind: 'text',
+      body: 'x',
+      clientId: 'a',
+    })
     await eraseChat('u1', { store })
 
     await store.anonymiseMessagesOf('u1')
@@ -58,7 +70,13 @@ describe('erasing somebody from chat', () => {
 
   it('leaves everybody else alone', async () => {
     await room('r1', ['u1', 'u2'])
-    await store.appendMessage({ roomId: 'r1', userId: 'u2', body: 'của tôi', clientId: 'b' })
+    await store.appendMessage({
+      roomId: 'r1',
+      userId: 'u2',
+      kind: 'text',
+      body: 'của tôi',
+      clientId: 'b',
+    })
     await eraseChat('u1', { store })
 
     expect((await store.listBackward('r1', { limit: 50 })).items[0]?.userId).toBe('u2')
@@ -78,7 +96,13 @@ describe('erasing somebody from chat', () => {
   /** Nothing else sweeps these: a room with nobody in it is unreachable. */
   it('takes a room that is now empty, and its messages with it', async () => {
     await room('alone', ['u1'])
-    await store.appendMessage({ roomId: 'alone', userId: 'u1', body: 'một mình', clientId: 'c' })
+    await store.appendMessage({
+      roomId: 'alone',
+      userId: 'u1',
+      kind: 'text',
+      body: 'một mình',
+      clientId: 'c',
+    })
     await eraseChat('u1', { store })
 
     expect(await store.findRoom('alone')).toBeNull()
@@ -103,7 +127,13 @@ describe('erasing somebody from chat', () => {
   /** Erasure has no transaction behind it, so running it twice must be safe. */
   it('can be run again without doing harm', async () => {
     await room('r1', ['u1', 'u2'])
-    await store.appendMessage({ roomId: 'r1', userId: 'u1', body: 'x', clientId: 'a' })
+    await store.appendMessage({
+      roomId: 'r1',
+      userId: 'u1',
+      kind: 'text',
+      body: 'x',
+      clientId: 'a',
+    })
     await eraseChat('u1', { store })
     await eraseChat('u1', { store })
 

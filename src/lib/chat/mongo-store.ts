@@ -1,7 +1,15 @@
 import { ObjectId } from 'mongodb'
 import { readyCollection } from '@/lib/mongo/client'
 import type { ChatStore } from './store'
-import type { ChatInvite, ChatMember, ChatMessage, ChatRoom, MemberRole, RoomKind } from './types'
+import type {
+  ChatInvite,
+  ChatMember,
+  ChatMessage,
+  ChatRoom,
+  MemberRole,
+  MessageKind,
+  RoomKind,
+} from './types'
 
 const ROOMS = 'chat_rooms'
 const MEMBERS = 'chat_members'
@@ -36,10 +44,12 @@ type MessageDoc = {
   _id: ObjectId
   roomId: string
   userId: string | null
+  kind?: MessageKind
   body: string
   createdAt: Date
   clientId: string
   deletedAt?: Date | null
+  reactions?: Record<string, string[]>
 }
 
 type InviteDoc = {
@@ -123,6 +133,10 @@ export function mongoChatStore(uri: string): ChatStore {
       await (await roomsIn(uri)).updateOne({ _id: roomId }, { $set: { lastMessageAt: at } })
     },
 
+    renameRoom: async (roomId, title) => {
+      await (await roomsIn(uri)).updateOne({ _id: roomId }, { $set: { title } })
+    },
+
     deleteRoom: async (roomId) => {
       await (await roomsIn(uri)).deleteOne({ _id: roomId })
       await (await membersIn(uri)).deleteMany({ roomId })
@@ -173,6 +187,7 @@ export function mongoChatStore(uri: string): ChatStore {
         _id: new ObjectId(),
         roomId: message.roomId,
         userId: message.userId,
+        kind: message.kind,
         body: message.body,
         createdAt: new Date(),
         clientId: message.clientId,
@@ -215,6 +230,36 @@ export function mongoChatStore(uri: string): ChatStore {
         .limit(limit + 1)
         .toArray()
       return pageOf(rows, limit)
+    },
+
+    toggleReaction: async (roomId, messageId, userId, emoji) => {
+      if (!ObjectId.isValid(messageId)) return null
+      const messages = await messagesIn(uri)
+      const _id = new ObjectId(messageId)
+
+      // Two statements rather than a read and a write, so two people reacting
+      // at the same moment cannot overwrite each other's. `$addToSet` is a
+      // no-op when the id is already there, which is how "did it add?" is
+      // answered without asking first.
+      const added = await messages.updateOne(
+        { _id, roomId, [`reactions.${emoji}`]: { $ne: userId } },
+        { $addToSet: { [`reactions.${emoji}`]: userId } },
+      )
+      if (added.modifiedCount > 0) return 'added'
+
+      const removed = await messages.updateOne(
+        { _id, roomId },
+        { $pull: { [`reactions.${emoji}`]: userId } },
+      )
+      if (removed.modifiedCount === 0) return null
+
+      // An emoji nobody chose any more is unset, so it stops being a row the
+      // screen has to draw with a count of zero.
+      await messages.updateOne(
+        { _id, roomId, [`reactions.${emoji}`]: { $size: 0 } },
+        { $unset: { [`reactions.${emoji}`]: '' } },
+      )
+      return 'removed'
     },
 
     softDeleteMessage: async (roomId, messageId, userId) => {
@@ -351,10 +396,14 @@ function asMessage(doc: MessageDoc | null): ChatMessage | null {
   return {
     id: doc._id.toHexString(),
     roomId: doc.roomId,
+    // Absent on every row written before stickers existed, and those were all
+    // text.
+    kind: doc.kind ?? 'text',
     userId: doc.userId ?? null,
     body: doc.body,
     createdAt: doc.createdAt.toISOString(),
     deletedAt: doc.deletedAt?.toISOString() ?? null,
+    reactions: readReactions(doc.reactions),
   }
 }
 
@@ -371,6 +420,23 @@ function asInvite(doc: InviteDoc | null): ChatInvite | null {
     revokedAt: doc.revokedAt?.toISOString() ?? null,
     createdAt: doc.createdAt.toISOString(),
   }
+}
+
+/**
+ * A stored document is whatever an older deploy wrote, so this is checked
+ * rather than cast — and it is rendered straight into the room, which is the
+ * part that makes checking worth the lines.
+ */
+function readReactions(stored: unknown): Record<string, string[]> {
+  if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return {}
+
+  const out: Record<string, string[]> = {}
+  for (const [emoji, who] of Object.entries(stored as Record<string, unknown>)) {
+    if (!Array.isArray(who)) continue
+    const ids = who.filter((id): id is string => typeof id === 'string')
+    if (ids.length > 0) out[emoji] = ids
+  }
+  return out
 }
 
 function isDuplicateKey(error: unknown): boolean {
