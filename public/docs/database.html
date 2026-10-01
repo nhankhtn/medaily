@@ -1,0 +1,1465 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-database" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.10.2">
+<title data-rh="true">Database | Medaily Docs</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="robots" content="noindex, nofollow"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="http://localhost/docs/database"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Database | Medaily Docs"><meta data-rh="true" name="description" content="PostgreSQL, 47 tables and two views, one Drizzle schema file per module under"><meta data-rh="true" property="og:description" content="PostgreSQL, 47 tables and two views, one Drizzle schema file per module under"><link data-rh="true" rel="canonical" href="http://localhost/docs/database"><link data-rh="true" rel="alternate" href="http://localhost/docs/database" hreflang="en"><link data-rh="true" rel="alternate" href="http://localhost/docs/database" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Database","item":"http://localhost/docs/database"}]}</script><link rel="stylesheet" href="/docs/assets/css/styles.55dbd2d6.css">
+<script src="/docs/assets/js/runtime~main.11e38509.js" defer="defer"></script>
+<script src="/docs/assets/js/main.ee88c964.js" defer="defer"></script>
+</head>
+<body>
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")),document.documentElement.setAttribute("data-theme-choice",t||"system")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/docs/"><b class="navbar__title text--truncate">Medaily Docs</b></a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs/">Docs</a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"><div class="navbar__search searchBarContainer_NW3z" dir="ltr"><svg aria-hidden="true" class="searchIcon_T3tP" focusable="false" viewBox="0 0 16 16"><path fill="currentColor" d="M6.02945 10.20327a4.17382 4.17382 0 1 1 4.17382-4.17382 4.15609 4.15609 0 0 1-4.17382 4.17382Zm9.69195 4.2199-4.8225-4.82338A5.88021 5.88021 0 0 0 12.058 6.02856 6.00467 6.00467 0 1 0 9.59979 10.8989l4.82338 4.82338a.89729.89729 0 0 0 1.29912 0 .89749.89749 0 0 0-.00087-1.29909Z"></path></svg><input placeholder="Search" aria-label="Search" class="navbar__search-input searchInput_YFbd" value=""><div class="loadingRing_RJI3 searchBarLoadingRing_YnHq"><div></div><div></div><div></div><div></div></div></div></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><aside class="theme-doc-sidebar-container docSidebarContainer_YfHR"><div class="sidebarViewport_aRkj"><div class="sidebar_njMd"><nav aria-label="Docs sidebar" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs/"><span class="linkLabel_WmDU">Documentation</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs/features"><span class="linkLabel_WmDU">Features</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link menu__link--active" aria-current="page" href="/docs/database"><span class="linkLabel_WmDU">Database</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs/realtime"><span class="linkLabel_WmDU">Live updates</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs/CHANGELOG"><span class="linkLabel_WmDU">Documentation changelog</span></a></li></ul></nav><button type="button" title="Collapse sidebar" aria-label="Collapse sidebar" class="button button--secondary button--outline collapseSidebarButton_PEFL"><svg width="20" height="20" aria-hidden="true" class="collapseSidebarButtonIcon_kv0_"><g fill="#7a7a7a"><path d="M9.992 10.023c0 .2-.062.399-.172.547l-4.996 7.492a.982.982 0 01-.828.454H1c-.55 0-1-.453-1-1 0-.2.059-.403.168-.551l4.629-6.942L.168 3.078A.939.939 0 010 2.528c0-.548.45-.997 1-.997h2.996c.352 0 .649.18.828.45L9.82 9.472c.11.148.172.347.172.55zm0 0"></path><path d="M19.98 10.023c0 .2-.058.399-.168.547l-4.996 7.492a.987.987 0 01-.828.454h-3c-.547 0-.996-.453-.996-1 0-.2.059-.403.168-.551l4.625-6.942-4.625-6.945a.939.939 0 01-.168-.55 1 1 0 01.996-.997h3c.348 0 .649.18.828.45l4.996 7.492c.11.148.168.347.168.55zm0 0"></path></g></svg></button></div></div></aside><main class="docMainContainer_TBSr"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><nav class="theme-doc-breadcrumbs breadcrumbsContainer_Z_bl" aria-label="Breadcrumbs"><ul class="breadcrumbs"><li class="breadcrumbs__item"><a aria-label="Home page" class="breadcrumbs__link" href="/docs/"><svg viewBox="0 0 24 24" class="breadcrumbHomeIcon_YNFT"><path d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z" fill="currentColor"></path></svg></a></li><li class="breadcrumbs__item breadcrumbs__item--active"><span class="breadcrumbs__link">Database</span></li></ul></nav><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>Database</h1></header>
+<p>PostgreSQL, 47 tables and two views, one Drizzle schema file per module under
+<code>src/lib/db/schema/</code>. Migrations live in <code>drizzle/</code> and are applied with
+<code>pnpm db:migrate</code> — never automatically, and never after the code that needs
+them (see the deploy rule in <code>CLAUDE.md</code>).</p>
+<p><code>scripts/migrate.ts</code> runs the numbered migrations first and then re-applies
+<code>drizzle/views.sql</code> on every run. That file is idempotent and holds what a
+migration cannot express well, or what has to exist after every migration: the
+two views, the <code>updated_at</code> and search triggers, the <code>unaccent</code> extension, and
+the owner row.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="conventions">Conventions<a href="#conventions" class="hash-link" aria-label="Direct link to Conventions" title="Direct link to Conventions" translate="no">​</a></h2>
+<p>These repeat on almost every table and are not described again below.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Column</th><th>Meaning</th></tr></thead><tbody><tr><td><code>id</code></td><td><code>uuid</code>, primary key, <code>gen_random_uuid()</code></td></tr><tr><td><code>user_id</code></td><td><code>uuid</code> → <code>users.id</code>, <code>ON DELETE CASCADE</code>. <strong>Every repository query filters on it.</strong> Deleting the user deletes everything they own</td></tr><tr><td><code>created_at</code> / <code>updated_at</code></td><td><code>timestamptz</code>, default <code>now()</code>. <code>updated_at</code> is kept by a <code>BEFORE UPDATE</code> trigger (<code>set_updated_at()</code>, installed by <code>drizzle/views.sql</code> on every table that has the column), so a write that forgets it is still stamped. Some repositories also set it explicitly; the trigger wins either way</td></tr><tr><td><code>archived_at</code></td><td><code>timestamptz</code> nullable. Non-null means hidden from lists but still joinable, so history stays readable. Rows are archived, not deleted</td></tr><tr><td><code>note</code> / <code>notes</code></td><td>free text the user writes; never parsed</td></tr><tr><td><code>sort_order</code></td><td><code>integer</code>, manual ordering inside a list</td></tr></tbody></table>
+<p>Dates use <code>date</code> (no timezone) for anything the user thinks of as a day, and
+<code>timestamptz</code> for machine instants. The difference matters: the app has a
+configurable <strong>day rollover hour</strong>, so &quot;today&quot; is not midnight.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="map">Map<a href="#map" class="hash-link" aria-label="Direct link to Map" title="Direct link to Map" translate="no">​</a></h2>
+<!-- -->
+<p>Finance, health, knowledge, people, career and reviews hang off <code>users</code> the
+same way and are shown in their own sections.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="core">Core<a href="#core" class="hash-link" aria-label="Direct link to Core" title="Direct link to Core" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="users"><code>users</code><a href="#users" class="hash-link" aria-label="Direct link to users" title="Direct link to users" translate="no">​</a></h3>
+<p>The account. One row per person; the app was single-user first, so a fixed
+owner id (<code>00000000-0000-4000-8000-000000000001</code>, with its <code>user_settings</code>
+row) is inserted by <code>drizzle/views.sql</code> after every migration run — <code>ON CONFLICT DO NOTHING</code>, so it is never duplicated — and still owns everything
+written then.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td><code>display_name</code></td><td>text, not null</td><td>Defaults to <code>&#x27;Me&#x27;</code></td></tr><tr><td><code>email</code></td><td>text</td><td>From the Google profile; unique case-insensitively (<code>lower(email)</code>) where present. The owner row has none</td></tr><tr><td><code>image_url</code></td><td>text</td><td>Google avatar</td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="user_settings"><code>user_settings</code><a href="#user_settings" class="hash-link" aria-label="Direct link to user_settings" title="Direct link to user_settings" translate="no">​</a></h3>
+<p>One row per user, created on first use. Everything the app reads before it can
+render: the clock, the palette, the maths.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td><code>locale</code></td><td>enum <code>en</code>/<code>vi</code></td><td>Mirrored into a cookie so the first server render is already right</td></tr><tr><td><code>timezone</code></td><td>text</td><td>Default <code>Asia/Ho_Chi_Minh</code></td></tr><tr><td><code>day_rollover_hour</code></td><td>smallint</td><td>Default <code>4</code>. A log written at 01:00 belongs to the previous day — this is why</td></tr><tr><td><code>week_start</code></td><td>enum <code>monday</code>/<code>sunday</code></td><td>Drives every weekly range</td></tr><tr><td><code>theme</code></td><td>text</td><td>Free text validated against the registry in <code>lib/themes.ts</code>, so a new theme needs no migration</td></tr><tr><td><code>density</code>, <code>accent</code></td><td>text</td><td>Presentation only</td></tr><tr><td><code>unit_system</code></td><td>enum <code>metric</code>/<code>imperial</code></td><td></td></tr><tr><td><code>default_currency</code></td><td>text</td><td>Default <code>VND</code></td></tr><tr><td><code>score_weights</code>, <code>score_targets</code></td><td>jsonb</td><td>Merged <strong>over</strong> the defaults on read, so a partially written blob can never produce an undefined target</td></tr><tr><td><code>streak_thresholds</code></td><td>jsonb</td><td>What counts as &quot;done&quot; for a streak, per metric</td></tr><tr><td><code>streak_grace_enabled</code></td><td>boolean</td><td>One missed day does not break a streak</td></tr><tr><td><code>insight_thresholds</code></td><td>jsonb</td><td>When a rule-generated observation is worth showing</td></tr><tr><td><code>reminder_time</code></td><td>time</td><td>Default <code>21:00</code></td></tr><tr><td><code>notification_prefs</code>, <code>dashboard_cards</code></td><td>jsonb</td><td></td></tr><tr><td><code>hidden_daily_fields</code></td><td>jsonb</td><td>Daily-log fields the form stops asking for (<code>0017</code>). <strong>Hidden, never deleted</strong>: the column and its history stay, the field is just not offered</td></tr><tr><td><code>onboarding</code></td><td>jsonb</td><td>Only <code>tourSeenAt</code> and <code>checklistDismissedAt</code>. Progress itself is derived from real rows, so the checklist cannot claim something the database does not contain</td></tr><tr><td><code>shortcuts</code></td><td>jsonb</td><td><strong>Only the keys the user changed</strong>; the rest come from the registry, so a default can change later for everyone who never touched it</td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="auth_identities"><code>auth_identities</code><a href="#auth_identities" class="hash-link" aria-label="Direct link to auth_identities" title="Direct link to auth_identities" translate="no">​</a></h3>
+<p>How a user signs in. A user can hold several.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td><code>provider</code></td><td>enum</td><td><code>password</code> (the env credential pair) or <code>google</code></td></tr><tr><td><code>provider_uid</code></td><td>text</td><td>Unique with <code>provider</code>. The Firebase uid, or the username</td></tr><tr><td><code>email</code></td><td>text</td><td>As the provider reported it</td></tr><tr><td><code>last_login_at</code></td><td>timestamptz</td><td></td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="push_devices"><code>push_devices</code><a href="#push_devices" class="hash-link" aria-label="Direct link to push_devices" title="Direct link to push_devices" translate="no">​</a></h3>
+<p>Where a person&#x27;s notifications can reach them. One row per browser that asked
+for them — a phone and a laptop are two.</p>
+<p>Keyed by the <strong>token</strong>, not by <code>(user_id, token)</code>. FCM hands the same string
+back to whoever registers the same browser, so after a sign-out and a sign-in
+by somebody else the row has to change owner rather than be joined by a second
+one; getting that wrong sends one person&#x27;s notifications to the other&#x27;s phone.</p>
+<p>Cascades with the user, which is what keeps account removal from having to
+remember it.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td><code>token</code></td><td>text, not null</td><td>Unique. The FCM registration token — the address</td></tr><tr><td><code>user_agent</code></td><td>text</td><td>Only to tell two rows apart; never trusted</td></tr><tr><td><code>last_seen_at</code></td><td>timestamptz</td><td>Moved forward each time the browser confirms the token</td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="the-daily-log">The daily log<a href="#the-daily-log" class="hash-link" aria-label="Direct link to The daily log" title="Direct link to The daily log" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="daily_logs"><code>daily_logs</code><a href="#daily_logs" class="hash-link" aria-label="Direct link to daily_logs" title="Direct link to daily_logs" translate="no">​</a></h3>
+<p>One row per user per day — the spine of the app. <strong>Past-only</strong>: it records
+what happened, never what is planned. Intent lives in <code>planned_blocks</code> and
+<code>project_tasks</code>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td><code>log_date</code></td><td>date, not null</td><td>Unique with <code>user_id</code>. The <em>logical</em> day, after rollover</td></tr><tr><td><code>energy</code>, <code>mood</code></td><td>smallint</td><td>1–10</td></tr><tr><td><code>sleep_hours</code></td><td>numeric(3,1)</td><td></td></tr><tr><td><code>bedtime</code>, <code>wake_time</code></td><td>time</td><td></td></tr><tr><td><code>technical_study_minutes</code></td><td>smallint</td><td>May be superseded by timed sessions — see <code>v_daily_effective</code></td></tr><tr><td><code>deep_work_minutes</code></td><td>smallint</td><td>Same</td></tr><tr><td><code>exercise_minutes</code>, <code>exercise_type</code></td><td>smallint, text</td><td></td></tr><tr><td><code>reading_minutes</code>, <code>reading_pages</code></td><td>smallint</td><td></td></tr><tr><td><code>entertainment_minutes</code>, <code>english_minutes</code></td><td>smallint</td><td></td></tr><tr><td><code>daily_win</code>, <code>daily_problem</code></td><td>text</td><td>Seeded into the period review as suggestions</td></tr><tr><td><code>tomorrow_priority</code></td><td>text</td><td>Shown on the <strong>Today</strong> page the next day</td></tr><tr><td><code>note</code></td><td>text</td><td></td></tr><tr><td><code>source</code></td><td>enum <code>log_source</code></td><td><code>manual</code>, <code>catch_up</code> or <code>import</code>. The enum is shared with <code>habit_logs</code>, which also uses <code>derived</code></td></tr></tbody></table>
+<p>Every metric column is nullable on purpose: <strong>null is &quot;not recorded&quot;, not
+zero</strong>, and averages must not treat a blank day as a zero day. <code>CHECK</code>s hold
+each value in range (1–10, 0–24 hours, 0–1440 minutes), and <code>no_future_log</code>
+refuses a <code>log_date</code> later than <code>CURRENT_DATE + 1</code> — the extra day tolerates
+clock skew between the app server and the database, not planning ahead.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="custom_metrics--custom_metric_values"><code>custom_metrics</code> / <code>custom_metric_values</code><a href="#custom_metrics--custom_metric_values" class="hash-link" aria-label="Direct link to custom_metrics--custom_metric_values" title="Direct link to custom_metrics--custom_metric_values" translate="no">​</a></h3>
+<p>Activities the user added themselves, so the fixed columns above are not the
+ceiling.</p>
+<p><code>custom_metrics</code> — the definition:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td><code>key</code></td><td>text, not null</td><td>What a habit or a goal binds to. Unique with <code>user_id</code>. Lowercase slug, proposed from the English name but editable, and never one of the built-in metric names</td></tr><tr><td><code>label_en</code>, <code>label_vi</code></td><td>text, not null</td><td>Shown per locale</td></tr><tr><td><code>type</code></td><td>enum</td><td><code>number</code>, <code>duration</code>, <code>boolean</code>, <code>scale</code>, <code>text</code> — decides which input the daily log renders. <code>duration</code> is minutes, and is the only kind the timer offers to run</td></tr><tr><td><code>unit</code></td><td>text</td><td>Display only. No conversion, no maths</td></tr><tr><td><code>min</code>, <code>max</code></td><td>numeric</td><td>Bounds for the stepper</td></tr><tr><td><code>aggregation</code></td><td>enum</td><td>How a goal totals it: <code>sum</code>, <code>avg</code>, <code>count_days</code>, <code>latest</code></td></tr></tbody></table>
+<p><code>custom_metric_values</code> — one value per day per metric. Primary key is
+<code>(daily_log_id, custom_metric_id)</code>; there is no <code>id</code>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td><code>value_numeric</code> / <code>value_bool</code> / <code>value_text</code></td><td></td><td>Exactly one is non-null, enforced by a <code>CHECK</code>. Which one depends on the metric&#x27;s <code>type</code></td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="v_daily_effective-view"><code>v_daily_effective</code> (view)<a href="#v_daily_effective-view" class="hash-link" aria-label="Direct link to v_daily_effective-view" title="Direct link to v_daily_effective-view" translate="no">​</a></h3>
+<p>Not a table. Resolves <code>technical_study_minutes</code> and <code>deep_work_minutes</code>
+against timed <code>focus_sessions</code>, so a number typed by hand and a number counted
+by the timer can never disagree. Habits, goals, streaks, the score and
+analytics all read the view, not the raw columns.</p>
+<p>A day is in the view if it has a <code>daily_logs</code> row <strong>or</strong> a focus session —
+anchoring on the log alone made a timed session invisible until something was
+also typed into that day. On a session-only day <code>id</code> and every log column are
+null.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Column</th><th>Notes</th></tr></thead><tbody><tr><td>every <code>daily_logs</code> column</td><td>As stored</td></tr><tr><td><code>effective_study_minutes</code></td><td>Sum of <code>learning</code> sessions that day, else the typed <code>technical_study_minutes</code></td></tr><tr><td><code>effective_deep_work_minutes</code></td><td>Sum of <code>deep_work</code> and <code>project</code> sessions, else the typed <code>deep_work_minutes</code></td></tr><tr><td><code>session_count</code></td><td>All sessions that day; <code>0</code>, not null, when there are none</td></tr><tr><td><code>learning_session_count</code>, <code>execution_session_count</code></td><td>Per kind (<code>execution</code> is <code>deep_work</code> + <code>project</code>), so a hint can name the sessions it is actually describing</td></tr></tbody></table>
+<p>Sessions win whenever any exist for that kind: the typed number is the
+fallback, never added on top.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="habits-and-goals">Habits and goals<a href="#habits-and-goals" class="hash-link" aria-label="Direct link to Habits and goals" title="Direct link to Habits and goals" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="habits"><code>habits</code><a href="#habits" class="hash-link" aria-label="Direct link to habits" title="Direct link to habits" translate="no">​</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td><code>name</code>, <code>category</code>, <code>icon</code>, <code>color</code></td><td>text</td><td><code>category</code> defaults to <code>&#x27;life&#x27;</code></td></tr><tr><td><code>frequency_type</code></td><td>enum <code>habit_frequency</code></td><td><code>daily</code>, <code>weekly</code>, <code>specific_days</code>, <code>interval</code></td></tr><tr><td><code>target_count</code></td><td>smallint</td><td>Times per period, at least 1</td></tr><tr><td><code>weekdays</code></td><td>smallint[]</td><td>For <code>specific_days</code>; a <code>CHECK</code> requires at least one</td></tr><tr><td><code>interval_days</code></td><td>smallint</td><td>For <code>interval</code>; a <code>CHECK</code> requires it there, at least 1</td></tr><tr><td><code>linked_metric</code></td><td>text</td><td>A metric key — built-in <strong>or</strong> a <code>custom_metrics.key</code></td></tr><tr><td><code>linked_operator</code></td><td>enum</td><td><code>gte</code>, <code>lte</code>, <code>eq</code> …</td></tr><tr><td><code>linked_threshold</code></td><td>numeric</td><td>&quot;sleep ≥ 7&quot; ticks itself from the log, so the same fact is never entered twice. Metric, operator and threshold are set together or not at all (<code>link_complete</code>)</td></tr><tr><td><code>start_date</code>, <code>end_date</code></td><td>date</td><td><code>start_date</code> not null; <code>end_date ≥ start_date</code></td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="habit_logs"><code>habit_logs</code><a href="#habit_logs" class="hash-link" aria-label="Direct link to habit_logs" title="Direct link to habit_logs" translate="no">​</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td><code>log_date</code></td><td>date</td><td>Unique with <code>habit_id</code></td></tr><tr><td><code>count</code>, <code>completed</code></td><td>smallint, boolean</td><td></td></tr><tr><td><code>source</code></td><td>enum <code>log_source</code></td><td><code>manual</code>, or <code>derived</code> when the tick came from the daily log</td></tr></tbody></table>
+<p>A derived tick is <strong>deleted</strong> when the condition stops holding, not set to
+false — &quot;not done&quot; and &quot;never ticked&quot; must stay indistinguishable for
+completion-rate maths.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="goals--goal_milestones"><code>goals</code> / <code>goal_milestones</code><a href="#goals--goal_milestones" class="hash-link" aria-label="Direct link to goals--goal_milestones" title="Direct link to goals--goal_milestones" translate="no">​</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td><code>status</code></td><td>enum <code>goal_status</code></td><td><code>active</code>, <code>completed</code>, <code>paused</code>, <code>cancelled</code></td></tr><tr><td><code>priority</code></td><td>enum <code>priority</code></td><td><code>low</code>, <code>medium</code>, <code>high</code>; shared with projects and tasks</td></tr><tr><td><code>start_date</code>, <code>target_date</code></td><td>date</td><td><code>target_date ≥ start_date</code></td></tr><tr><td><code>progress_mode</code></td><td>enum</td><td><code>manual</code>, <code>metric</code> or <code>milestones</code></td></tr><tr><td><code>progress_manual</code></td><td>numeric</td><td>0–100, for <code>manual</code></td></tr><tr><td><code>metric_key</code></td><td>text</td><td>Built-in or custom</td></tr><tr><td><code>metric_aggregation</code></td><td>enum</td><td><code>sum</code>, <code>avg</code>, <code>count_days</code>, <code>latest</code></td></tr><tr><td><code>metric_period</code></td><td>enum</td><td><code>total</code>, <code>weekly</code> or <code>monthly</code> — the window the target applies to</td></tr><tr><td><code>metric_target</code></td><td>numeric</td><td><code>metric</code> mode requires key, aggregation, period and a target above zero, enforced by a <code>CHECK</code></td></tr><tr><td><code>metric_direction</code></td><td>enum</td><td><code>at_least</code> or <code>at_most</code></td></tr><tr><td><code>recurrence</code></td><td>enum</td><td><code>weekly</code>, <code>monthly</code>, <code>quarterly</code>, <code>yearly</code>; null for a one-off goal</td></tr><tr><td><code>sort_order</code></td><td>integer</td><td>Hand-arranged order within a status (<code>0014</code>), written by dragging a card</td></tr><tr><td><code>completed_at</code></td><td>timestamptz</td><td></td></tr><tr><td><code>goal_milestones.weight</code></td><td>numeric</td><td>Milestones contribute proportionally, not equally. Above zero</td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="work-and-time">Work and time<a href="#work-and-time" class="hash-link" aria-label="Direct link to Work and time" title="Direct link to Work and time" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="projects--project_tasks"><code>projects</code> / <code>project_tasks</code><a href="#projects--project_tasks" class="hash-link" aria-label="Direct link to projects--project_tasks" title="Direct link to projects--project_tasks" translate="no">​</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td><code>projects.status</code></td><td>enum</td><td><code>planned</code>, <code>active</code>, <code>on_hold</code>, <code>done</code>, <code>dropped</code></td></tr><tr><td><code>projects.goal_id</code></td><td>uuid</td><td>A project can serve a goal. <code>ON DELETE SET NULL</code> — deleting the goal keeps the project</td></tr><tr><td><code>project_tasks.project_id</code></td><td>uuid, <strong>nullable</strong></td><td>Null means a standalone task — &quot;call mum&quot; needs no project. <code>ON DELETE CASCADE</code>: deleting a project deletes its tasks</td></tr><tr><td><code>project_tasks.parent_task_id</code></td><td>uuid</td><td>One level only; deeper trees turn a personal tool into Jira. <strong>No foreign key</strong> in the database — the one-level rule and the parent&#x27;s existence are the application&#x27;s job</td></tr><tr><td><code>project_tasks.status</code></td><td>enum</td><td><code>todo</code>, <code>doing</code>, <code>blocked</code>, <code>done</code></td></tr><tr><td><code>project_tasks.priority</code></td><td>enum <code>priority</code></td><td><code>low</code>, <code>medium</code>, <code>high</code></td></tr><tr><td><code>project_tasks.due_date</code></td><td>date</td><td>What the <strong>Today</strong> page filters on</td></tr><tr><td><code>project_tasks.estimate_minutes</code></td><td>smallint</td><td>0–10080 (one week)</td></tr><tr><td><code>project_tasks.completed_at</code></td><td>timestamptz</td><td>Follows <code>status</code></td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="focus_sessions"><code>focus_sessions</code><a href="#focus_sessions" class="hash-link" aria-label="Direct link to focus_sessions" title="Direct link to focus_sessions" translate="no">​</a></h3>
+<p>Timed work. One shape records learning, deep work and project time, so one
+query path serves them all.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td><code>session_date</code></td><td>date</td><td>The rollover-aware logical day, which keeps the join to <code>v_daily_effective</code> free of timezone maths</td></tr><tr><td><code>started_at</code>, <code>ended_at</code></td><td>timestamptz</td><td>Nullable — a session typed by hand has no clock times. When both are set, <code>ended_at ≥ started_at</code> (<code>timestamps_ordered</code>)</td></tr><tr><td><code>minutes</code></td><td>smallint, not null</td><td>1–1440</td></tr><tr><td><code>kind</code></td><td>enum</td><td><code>learning</code>, <code>deep_work</code>, <code>project</code></td></tr><tr><td><code>topic_id</code>, <code>project_id</code>, <code>task_id</code></td><td>uuid</td><td>Attribution, each <code>ON DELETE SET NULL</code>. This is what makes a project&#x27;s &quot;time spent&quot; derivable rather than typed</td></tr><tr><td><code>source</code></td><td>enum</td><td><code>manual</code> or <code>timer</code></td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="timer_state"><code>timer_state</code><a href="#timer_state" class="hash-link" aria-label="Direct link to timer_state" title="Direct link to timer_state" translate="no">​</a></h3>
+<p>At most one running timer per user — <code>user_id</code> is the primary key.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td><code>started_at</code></td><td>timestamptz</td><td>Start of the current stretch, not of the whole run</td></tr><tr><td><code>paused_at</code></td><td>timestamptz</td><td>Non-null while paused</td></tr><tr><td><code>accumulated_seconds</code></td><td>integer</td><td>Time banked before the current stretch, so pausing does not lose it</td></tr><tr><td><code>mode</code></td><td>enum</td><td><code>stopwatch</code> or <code>countdown</code></td></tr><tr><td><code>target_seconds</code></td><td>integer</td><td>For <code>countdown</code>; 60–86400</td></tr><tr><td><code>activity</code></td><td>text, not null</td><td>Default <code>&#x27;learning&#x27;</code> (<code>0010</code>). An activity id from <code>lib/timer/activities.ts</code> — <code>learning</code>, <code>deep_work</code>, <code>project</code>, <code>exercise</code>, <code>reading</code>, <code>english</code>, <code>entertainment</code>, or <code>custom:&lt;metric id&gt;</code> — and it decides where the finished run is filed: a focus session, a workout, a daily-log column, or a custom metric. Text, so a new activity is one entry in that file and no migration</td></tr><tr><td><code>target</code></td><td>enum <code>timer_target</code></td><td><code>focus</code> or <code>workout</code>. <strong>Superseded by <code>activity</code></strong>; kept only so a migration can run ahead of the deploy without breaking the version still serving, and dropped in a later pass</td></tr><tr><td><code>kind</code></td><td>enum <code>focus_kind</code></td><td>The focus kind, for a run that files as a session</td></tr><tr><td><code>workout_type</code></td><td>text</td><td>For <code>exercise</code></td></tr><tr><td><code>topic_id</code>, <code>project_id</code>, <code>task_id</code></td><td>uuid</td><td>Attribution carried onto the session, each <code>ON DELETE SET NULL</code></td></tr><tr><td><code>note</code></td><td>text</td><td></td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="timer_filings"><code>timer_filings</code><a href="#timer_filings" class="hash-link" aria-label="Direct link to timer_filings" title="Direct link to timer_filings" translate="no">​</a></h3>
+<p>One row per completed run that was filed — <code>id</code>, <code>user_id</code>, <code>created_at</code>, and
+nothing else (<code>0019</code>). <strong>The <code>id</code> is chosen by the client</strong>, not generated: a
+run timed offline is queued on the device and may be sent more than once when
+the connection comes back. The filing claims its id here first with an insert
+that does nothing on conflict, so a retry finds the claim and files nothing,
+and daily minutes cannot be counted twice. If filing into the real table
+fails, the claim is deleted so the queue can try again.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="planned_blocks"><code>planned_blocks</code><a href="#planned_blocks" class="hash-link" aria-label="Direct link to planned_blocks" title="Direct link to planned_blocks" translate="no">​</a></h3>
+<p>Time blocking. <strong>This is where forward-looking intent lives</strong>, since daily
+logs are past-only, and it is what &quot;plan vs actual&quot; compares against.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td><code>block_date</code>, <code>start_time</code>, <code>end_time</code></td><td></td><td><code>end_time &gt; start_time</code>, enforced by a <code>CHECK</code></td></tr><tr><td><code>kind</code></td><td>enum</td><td><code>learning</code>, <code>deep_work</code>, <code>project</code>, <code>exercise</code>, <code>other</code></td></tr><tr><td><code>project_id</code>, <code>task_id</code>, <code>topic_id</code></td><td>uuid</td><td>What the block is for</td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="events"><code>events</code><a href="#events" class="hash-link" aria-label="Direct link to events" title="Direct link to events" translate="no">​</a></h3>
+<p>Calendar entries, exported one-way as ICS.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td><code>starts_at</code>, <code>ends_at</code></td><td>timestamptz</td><td></td></tr><tr><td><code>all_day</code></td><td>boolean</td><td>Changes how the ICS line is written</td></tr><tr><td><code>recurrence_rule</code>, <code>recurrence_until</code></td><td>enum, date</td><td>Expanded in <code>lib/planning/recurrence.ts</code>; a monthly event skips months without the day rather than sliding</td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="reminders"><code>reminders</code><a href="#reminders" class="hash-link" aria-label="Direct link to reminders" title="Direct link to reminders" translate="no">​</a></h3>
+<p>One reminders table serves every module.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td><code>due_on</code></td><td>date, not null</td><td></td></tr><tr><td><code>recurrence</code></td><td>enum <code>recurrence_rule</code></td><td><code>daily</code> … <code>yearly</code></td></tr><tr><td><code>person_id</code></td><td>uuid</td><td>Set when it is about someone. <code>ON DELETE CASCADE</code> — a reminder about a deleted person goes with them</td></tr><tr><td><code>entity_type</code>, <code>entity_id</code></td><td>text, uuid</td><td>A loose pointer at anything else. Deliberately not a foreign key</td></tr><tr><td><code>done_at</code>, <code>snoozed_until</code></td><td></td><td></td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="learning-and-knowledge">Learning and knowledge<a href="#learning-and-knowledge" class="hash-link" aria-label="Direct link to Learning and knowledge" title="Direct link to Learning and knowledge" translate="no">​</a></h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Table</th><th>Columns worth knowing</th></tr></thead><tbody><tr><td><code>topics</code></td><td><code>name</code>, <code>category</code>, <code>parent_id</code> (one hierarchy for study subjects; <strong>no foreign key</strong> — the tree is kept by the application)</td></tr><tr><td><code>resources</code></td><td><code>type</code> (<code>book</code>, <code>course</code>, <code>article</code>, <code>video</code>, <code>other</code>), <code>title</code>, <code>author</code>, <code>url</code>, <code>status</code> (<code>backlog</code>, <code>in_progress</code>, <code>done</code>, <code>dropped</code>), <code>progress_percent</code> (0–100), <code>rating</code> (1–5), <code>topic_id</code>, <code>started_at</code>/<code>finished_at</code> (dates)</td></tr><tr><td><code>notes</code></td><td><code>title</code> (not null), <code>body_md</code> Markdown, <code>type</code> (<code>note</code>, <code>concept</code>, <code>bookmark</code>, <code>lesson</code>), <code>url</code> (for a bookmark), <code>topic_id</code>, <code>resource_id</code>, <code>learned_on</code> (the day a lesson was learned, not typed), <code>search_tsv</code></td></tr><tr><td><code>note_links</code></td><td><code>source_note_id</code> → <code>target_note_id</code>, plus <code>target_title</code> so a <code>[[wiki link]]</code> to a note that does not exist yet is kept, not dropped. Primary key is <code>(source_note_id, target_title)</code> — no <code>id</code>. <code>target_note_id</code> is nullable and <code>ON DELETE CASCADE</code>, like the source</td></tr><tr><td><code>tags</code> / <code>note_tags</code></td><td>Free-form tags, <code>name</code> unique per user. <code>note_tags</code> is keyed <code>(note_id, tag_id)</code>. A lesson&#x27;s <strong>place</strong> — home, office — is a tag, not a column, because places change and a tag costs no migration</td></tr><tr><td><code>journal_entries</code></td><td><code>entry_date</code>, <code>title</code> (optional), <code>body_md</code>, <code>mood</code>, <code>tags</code> (a text array, not <code>note_tags</code>), <code>search_tsv</code>. Many per day — distinct from <code>daily_logs.note</code>, the one quick line inside the day&#x27;s log</td></tr></tbody></table>
+<p><code>search_tsv</code> is maintained by a trigger (see <code>drizzle/views.sql</code>) rather than
+a generated column, because the diacritic-folding function has to exist before
+the column that uses it — and migrations run before that SQL. The vector is
+<code>title</code> weighted <code>A</code> plus <code>body_md</code> weighted <code>B</code>, under the <code>simple</code>
+configuration and an <code>unaccent</code> wrapper, so a Vietnamese word matches with or
+without its diacritics.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="finance">Finance<a href="#finance" class="hash-link" aria-label="Direct link to Finance" title="Direct link to Finance" translate="no">​</a></h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Table</th><th>Columns worth knowing</th></tr></thead><tbody><tr><td><code>accounts</code></td><td><code>type</code> (<code>cash</code>, <code>bank</code>, <code>credit_card</code>, <code>e_wallet</code>, <code>investment</code>, <code>loan</code>, plus the brands <code>bidv</code>, <code>vcb</code>, <code>vib</code>, <code>momo</code> from <code>0015</code>), <code>currency</code> (three letters, <code>CHECK</code>ed), <code>opening_balance</code></td></tr><tr><td><code>finance_categories</code></td><td><code>kind</code> (<code>income</code>/<code>expense</code>), <code>note</code> (<code>0018</code> — a short hint of what belongs in the bucket, &quot;coffee shops, not groceries&quot;, read by people and by AI capture; matching the model&#x27;s answer back still keys off <code>name</code>), <code>parent_id</code> (<strong>no foreign key</strong>), <code>icon</code>, <code>color</code></td></tr><tr><td><code>transactions</code></td><td><code>occurred_on</code>, <code>amount</code>, <code>kind</code> (<code>income</code>/<code>expense</code>/<code>transfer</code>), <code>account_id</code>, <code>counter_account_id</code> (the other side of a transfer), <code>category_id</code>, <code>fx_rate</code>, <code>merchant</code> (the one line the ledger shows and the only one search reads — <code>0023</code> folded the old <code>note</code> column into it and dropped it), <code>tags</code>, plus the people columns below</td></tr><tr><td><code>recurring_transactions</code></td><td><code>name</code>, <code>amount</code>, <code>kind</code>, <code>account_id</code>, <code>category_id</code>, <code>rule</code>, <code>next_due_on</code>, <code>ends_on</code></td></tr><tr><td><code>budgets</code></td><td><code>category_id</code>, <code>period_start</code>, <code>amount</code> (above zero). Unique on <code>(user_id, category_id, period_start)</code> — one budget per category per period. <code>rollover</code> carries an unspent remainder</td></tr><tr><td><code>assets</code></td><td><code>kind</code> (<code>asset</code>/<code>liability</code>), <code>value</code>, <code>as_of</code></td></tr><tr><td><code>investments</code></td><td><code>symbol</code>, <code>quantity</code>, <code>avg_cost</code>, <code>last_price</code>, <code>priced_at</code> — prices are typed by hand, with their date; the app fetches no market data</td></tr></tbody></table>
+<p>Money is <code>numeric</code>, never a float, and <strong>always stored positive</strong>
+(<code>amount_positive</code>): the direction is <code>kind</code>, not a sign. A transfer must name
+a <code>counter_account_id</code> different from <code>account_id</code>
+(<code>transfer_has_counter_account</code>), and is one row touching both accounts so
+income is never inflated.</p>
+<p>Deleting an account deletes its transactions and recurring transactions
+(<code>ON DELETE CASCADE</code> on <code>account_id</code>); deleting the counter account, a
+category or a person only clears the pointer (<code>SET NULL</code>).</p>
+<p><code>transactions</code> has two pointers at <code>people</code>, and they mean different things:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td><code>person_id</code></td><td>uuid → <code>people</code>, <code>SET NULL</code></td><td>A <strong>debt</strong> (<code>0016</code>). Money out is lending or paying them back, money in is them paying back or you borrowing; one signed total per person falls out of that. Balances count these rows, but <strong>income and expense totals exclude them</strong> — lending money is not losing it</td></tr><tr><td><code>payee_person_id</code></td><td>uuid → <code>people</code>, <code>SET NULL</code></td><td>Who the money is handed to, when paying for something and settling up with whoever covered it are two moments (<code>0022</code>). Moves no balance — the expense already left the account</td></tr><tr><td><code>transferred_at</code></td><td>timestamptz</td><td>Set once that hand-off is made or waved off (<code>0022</code>). Null is the only state that still asks for something. A flag rather than derived, because the transfer happens in another app and leaves no row</td></tr></tbody></table>
+<p>Balances come from the <code>v_account_balances</code> view, so the arithmetic lives in
+one place: one row per account with <code>account_id</code>, <code>user_id</code>, <code>name</code>, <code>type</code>,
+<code>currency</code> and <code>balance</code> — <code>opening_balance</code> plus income, minus expense, minus
+transfers out, plus transfers in through <code>counter_account_id</code>.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="health">Health<a href="#health" class="hash-link" aria-label="Direct link to Health" title="Direct link to Health" translate="no">​</a></h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Table</th><th>Columns worth knowing</th></tr></thead><tbody><tr><td><code>workouts</code></td><td><code>performed_on</code>, <code>type</code>, <code>duration_minutes</code> (1–1440), <code>distance_km</code>, <code>calories</code>, <code>rpe</code> (rate of perceived exertion, 1–10)</td></tr><tr><td><code>workout_sets</code></td><td><code>workout_id</code>, <code>exercise</code>, <code>sets</code>, <code>reps</code>, <code>weight_kg</code>, <code>rest_seconds</code></td></tr><tr><td><code>body_measurements</code></td><td><code>measured_on</code> (unique per user — one measurement a day), <code>weight_kg</code>, <code>body_fat_pct</code>, <code>waist_cm</code>, <code>resting_hr</code>, <code>blood_pressure</code>. Stored metric; the display follows <code>unit_system</code></td></tr><tr><td><code>nutrition_logs</code></td><td><code>log_date</code> (unique per user), <code>calories</code>, <code>protein_g</code>, <code>carbs_g</code>, <code>fat_g</code>, <code>water_ml</code>. Four numbers a day beats searching a food database</td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="people">People<a href="#people" class="hash-link" aria-label="Direct link to People" title="Direct link to People" translate="no">​</a></h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Table</th><th>Columns worth knowing</th></tr></thead><tbody><tr><td><code>people</code></td><td><code>name</code>, <code>relationship</code> (<code>family</code>, <code>friend</code>, <code>colleague</code>, <code>mentor</code>, <code>partner</code>, <code>other</code>; default <code>friend</code>), <code>company</code>, <code>role</code>, <code>birthday</code>, <code>phone</code>, <code>email</code>, <code>socials</code>, <code>contact_interval_days</code> (the desired cadence — anyone past it appears in &quot;reach out&quot;), plus the payment columns below</td></tr><tr><td><code>interactions</code></td><td><code>person_id</code> (<code>ON DELETE CASCADE</code>), <code>occurred_on</code>, <code>channel</code> (<code>in_person</code>, <code>call</code>, <code>message</code>, <code>email</code>, <code>other</code>), <code>summary</code></td></tr><tr><td><code>person_photos</code></td><td><code>public_id</code> (the Cloudinary handle, unique per user), <code>format</code>, <code>width</code>, <code>height</code>, <code>bytes</code>, <code>caption</code>, <code>taken_on</code>. The file lives on Cloudinary; only what is needed to build a URL is stored</td></tr></tbody></table>
+<p>Where money sent to a person lands — flat columns on <code>people</code> rather than a
+table, because one account each covers everyone this is for:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td><code>bank_bin</code></td><td>text</td><td>The Napas code the VietQR payload is built from — the six digits a bank app shows beside its name, not the SWIFT code (<code>0022</code>)</td></tr><tr><td><code>bank_account_number</code></td><td>text</td><td><code>0022</code></td></tr><tr><td><code>bank_account_name</code></td><td>text</td><td>Shown before the transfer so a wrong row is caught by eye, not by the bank (<code>0022</code>)</td></tr><tr><td><code>momo_phone</code></td><td>text</td><td><code>0022</code></td></tr><tr><td><code>payment_qr</code></td><td>text</td><td>A QR the person sent, kept as the string it decodes to (<code>0024</code>)</td></tr></tbody></table>
+<p>Only someone payable reaches the transfer picker: <code>bank_bin</code> <strong>and</strong>
+<code>bank_account_number</code> both set, or <code>momo_phone</code>, or <code>payment_qr</code>.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="career">Career<a href="#career" class="hash-link" aria-label="Direct link to Career" title="Direct link to Career" translate="no">​</a></h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Table</th><th>Columns worth knowing</th></tr></thead><tbody><tr><td><code>skills</code></td><td><code>name</code>, <code>category</code>, <code>level</code> (1–5, default 1), <code>target_level</code> (1–5), <code>topic_id</code> (<code>SET NULL</code>), <code>archived_at</code></td></tr><tr><td><code>achievements</code></td><td><code>title</code>, <code>achieved_on</code>, <code>description</code>, <code>impact</code>, <code>link</code>. Captured when it happens, not remembered at review time</td></tr><tr><td><code>portfolio_items</code></td><td><code>title</code>, <code>url</code>, <code>description</code>, <code>tech</code> (text array), <code>project_id</code> (<code>SET NULL</code>)</td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="reviews-and-generated-output">Reviews and generated output<a href="#reviews-and-generated-output" class="hash-link" aria-label="Direct link to Reviews and generated output" title="Direct link to Reviews and generated output" translate="no">​</a></h2>
+<p><code>weekly_reviews</code>, <code>monthly_reviews</code> and <code>yearly_reviews</code> share one shape,
+differing only in the period column (<code>week_start_date</code>, <code>month_start_date</code>,
+<code>year</code>), each unique per user.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td><code>what_worked</code>, <code>what_didnt</code>, <code>change_next</code>, <code>top_priority</code>, <code>reflection</code></td><td>text</td><td></td></tr><tr><td><code>metrics_snapshot</code></td><td>jsonb</td><td>Frozen on finalise, so a review read a year later shows what it showed then</td></tr><tr><td><code>snapshot_version</code></td><td>integer</td><td></td></tr><tr><td><code>finalized_at</code></td><td>timestamptz</td><td>Null means a draft, which recomputes from raw logs every time it is opened</td></tr></tbody></table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Table</th><th>Columns worth knowing</th></tr></thead><tbody><tr><td><code>insights</code></td><td><code>kind</code>, <code>severity</code> (<code>low</code>, <code>medium</code>, <code>high</code>, <code>win</code>), <code>payload</code> jsonb, <code>dedupe_key</code> (unique with <code>user_id</code>, so the same observation is not raised twice), <code>period_start</code>/<code>period_end</code>, <code>generated_at</code>, <code>dismissed_at</code>, <code>snoozed_until</code>. Persisted so a dismiss or snooze survives a reload. No <code>created_at</code>/<code>updated_at</code></td></tr><tr><td><code>ai_reports</code></td><td><code>kind</code> (<code>weekly</code>, <code>monthly</code>, <code>question</code>), <code>period_start</code>/<code>period_end</code>, <code>question</code>, <code>model</code>, <code>prompt_version</code>, <code>content_md</code>. The model and prompt version are stored so an old report can be read in context</td></tr></tbody></table>
+<hr>
+<h1>The second database — MongoDB</h1>
+<p>Not everything is in Postgres. The <strong>activity trail</strong> and <strong>chat</strong> live in
+MongoDB, reached through <code>MONGODB_URI</code>. Leave it blank and neither is offered:
+no driver connects, and the pages are not there to click.</p>
+<p>Why a second store at all: both are append-heavy logs of things that happened,
+neither joins against the relational schema, and the trail expires on its own.
+Neither has a migration file — collections and indexes are created on first
+use by <code>readyCollection</code>, so there is nothing to run before a deploy.</p>
+<p><strong>No transactions anywhere in here.</strong> Mongo has them, but they need a replica
+set and the mongod the integration tests run against is standalone — code that
+works on Atlas and fails in CI is the worst kind. Every write is idempotent by
+key instead, so a retry is always safe and an interrupted sequence leaves
+something harmless rather than something wrong.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="activity"><code>activity</code><a href="#activity" class="hash-link" aria-label="Direct link to activity" title="Direct link to activity" translate="no">​</a></h2>
+<p>One document per recorded action. Scoped by <code>userId</code> like every Postgres
+table.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Field</th><th>Notes</th></tr></thead><tbody><tr><td><code>userId</code>, <code>at</code>, <code>action</code></td><td><code>action</code> reads <code>entity.verb</code> — <code>transaction.create</code>, <code>session.login</code></td></tr><tr><td><code>entityId</code></td><td>Which row it was about, so a trail leads back to a record</td></tr><tr><td><code>label</code></td><td>What a person would call it. <strong>Never an amount, never the contents of a journal entry</strong> — a log that quotes what it watched is a second copy of the thing it was meant to be a record <em>about</em></td></tr><tr><td><code>requestId</code></td><td>Ties a row to the server console lines and the alert for one request</td></tr><tr><td><code>current</code></td><td>Snapshot of the row as it stood before the action. A create has none</td></tr><tr><td><code>request</code></td><td>Snapshot of what the action was asked to make it. A delete has none</td></tr></tbody></table>
+<p><code>_id</code> is the default ObjectId. The trail pages on it — <code>_id</code> is monotonic in
+creation time and unique, so it orders and breaks ties in one field — and the
+cursor handed out is that id in base64url, so nothing outside the store knows
+it is an ObjectId.</p>
+<p>A snapshot is a flat map of field to display string (or null), built by the
+domain code that knows how a person reads it — only that code can turn a
+<code>categoryId</code> into &quot;Ăn uống&quot;. <strong>A field left out is a field the trail does not
+follow</strong>; that is the whole privacy control. Both sides are stored rather than
+the difference between them: a difference is a reading, readings improve, and
+the list of changed fields is worked out when the trail is read. Rows written
+before snapshots existed have neither and read as empty.</p>
+<p>What is recorded, per <code>src/lib/activity/types.ts</code>:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Entity</th><th>Verbs</th></tr></thead><tbody><tr><td><code>transaction</code></td><td><code>create</code>, <code>update</code>, <code>delete</code>, <code>restore</code></td></tr><tr><td><code>account</code>, <code>category</code></td><td><code>create</code>, <code>update</code>, <code>delete</code></td></tr><tr><td><code>habit</code>, <code>person</code></td><td><code>create</code>, <code>update</code>, <code>delete</code>, <code>restore</code></td></tr><tr><td><code>goal</code>, <code>note</code></td><td><code>create</code>, <code>update</code>, <code>delete</code></td></tr><tr><td><code>daily</code></td><td><code>update</code> — in the vocabulary, but nothing writes it yet</td></tr><tr><td><code>session</code></td><td><code>login</code>, <code>logout</code></td></tr><tr><td><code>chatRoom</code></td><td><code>create</code>, <code>rename</code>, <code>delete</code>, <code>join</code>, <code>leave</code>, <code>invite</code>, <code>remove</code> — who could read a room, never the messages</td></tr></tbody></table>
+<p>Ticks, logs and timer runs are not recorded: a trail of every habit ticked
+would bury the entries anyone actually goes looking for. A stored action this
+build has no label for, written by an older deploy, is skipped on read rather
+than shown as a raw key.</p>
+<p>Two indexes: <code>user_id_desc</code> on <code>{ userId, _id: -1 }</code>, the only read there is,
+and <code>ttl</code> on <code>at</code>, which expires documents after <code>ACTIVITY_LOG_DAYS</code> (90 when
+blank). A log that grows forever is a liability, not an asset.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="chat--four-collections">Chat — four collections<a href="#chat--four-collections" class="hash-link" aria-label="Direct link to Chat — four collections" title="Direct link to Chat — four collections" translate="no">​</a></h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Collection</th><th><code>_id</code></th><th>Fields worth knowing</th></tr></thead><tbody><tr><td><code>chat_rooms</code></td><td>uuid</td><td><code>kind</code> (<code>direct</code> | <code>group</code>), <code>title</code>, <code>createdBy</code>, <code>doorbellKey</code>, <code>directKey</code>, <code>avatarUrl</code>, <code>lastMessageAt</code>, <code>createdAt</code></td></tr><tr><td><code>chat_members</code></td><td><code>roomId:userId</code></td><td><code>role</code> (<code>owner</code> | <code>member</code>), <code>joinedAt</code>, <code>leftAt</code>, <code>lastReadMessageId</code></td></tr><tr><td><code>chat_messages</code></td><td>ObjectId</td><td><code>roomId</code>, <code>userId</code>, <code>kind</code> (<code>text</code> | <code>sticker</code>), <code>body</code> <strong>or</strong> <code>bodyEnc</code>, <code>clientId</code>, <code>createdAt</code>, <code>deletedAt</code>, <code>reactions</code>, <code>replyToId</code></td></tr><tr><td><code>chat_invites</code></td><td>the code</td><td><code>roomId</code>, <code>createdBy</code>, <code>email</code>, <code>expiresAt</code>, <code>maxUses</code>, <code>usedCount</code>, <code>revokedAt</code>, <code>createdAt</code></td></tr></tbody></table>
+<p><code>kind</code> is fixed when the room is made, never derived from how many people are
+in it. <code>src/lib/chat/types.ts</code> also declares a third kind, <code>challenge</code>, but
+nothing creates or reads one yet.</p>
+<p>Notes on the ones that are not obvious:</p>
+<ul>
+<li class=""><strong><code>directKey</code></strong> is the two user ids in a fixed order, uniquely indexed. That
+index is what stops two people opening the same direct room at once and
+getting one each.</li>
+<li class=""><strong><code>doorbellKey</code></strong> is what the browser listens on for a nudge that something
+arrived. It carries no content — see <a class="" href="/docs/realtime">realtime.md</a> — and it is
+rotated when somebody is removed, so a person taken out of a room stops
+being able to hear it ring.</li>
+<li class=""><strong><code>clientId</code></strong> is decided by the browser before the first attempt and is
+unique per room, which is what makes a resend harmless.</li>
+<li class=""><strong><code>_id</code> is an ObjectId on messages</strong> — and on the activity trail, for the
+same reason — because it sorts by creation time: <code>{ roomId, _id }</code> is the
+paging index, and no separate sequence column is needed. Rooms, seats and
+invites use ids that mean something instead. Unlike the trail, the message
+cursor is the hex id itself, since read receipts and recalls already name
+messages by it.</li>
+<li class=""><strong><code>role</code> on the seat is the only word on ownership.</strong> <code>createdBy</code> on the
+room is nullable and predates the rank, so nothing authorises on it.</li>
+<li class=""><strong><code>reactions</code></strong> is emoji to the user ids who pressed it, kept on the message
+because a reaction is never read apart from the message it is on. <strong>One
+reaction per person</strong>: choosing another emoji moves theirs rather than adding
+a second, tapping the one already chosen takes it back, and an emoji nobody
+holds any more is dropped from the map rather than kept with a count of zero.</li>
+<li class=""><strong><code>replyToId</code></strong> is the hex id of the message being answered, and only the
+id: the quoted words are never copied in. A copy would not follow a recall,
+and bodies are sealed at rest, so a snippet in the clear beside them would
+undo that. The quote (<code>replyTo</code>, a trimmed preview) is resolved on read, one
+extra query per page; a quote whose message is gone resolves to null.</li>
+<li class=""><strong><code>avatarUrl</code></strong> is a group&#x27;s picture as a delivery URL, the same shape as
+<code>users.image_url</code>. Absent on a direct room, which wears the other person&#x27;s
+face, and removed rather than set to null when cleared.</li>
+<li class=""><strong><code>userId</code> goes null, the words stay</strong>, when somebody erases their account.
+That is the choice this app made, and every screen that draws a message has
+to survive it.</li>
+</ul>
+<p>Indexes, all created by <code>readyCollection</code> on first use:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Collection</th><th>Index</th><th>Purpose</th></tr></thead><tbody><tr><td><code>chat_rooms</code></td><td><code>direct_uniq</code> — <code>directKey</code>, unique, partial on the field existing</td><td>One direct room per pair; group rooms omit the field so they are not all &quot;the same&quot; room</td></tr><tr><td><code>chat_rooms</code></td><td><code>doorbell</code> — <code>doorbellKey</code>, unique</td><td></td></tr><tr><td><code>chat_members</code></td><td><code>user_rooms</code> — <code>{ userId, leftAt }</code></td><td>A person&#x27;s open rooms</td></tr><tr><td><code>chat_members</code></td><td><code>room</code> — <code>roomId</code></td><td></td></tr><tr><td><code>chat_messages</code></td><td><code>room_seq</code> — <code>{ roomId, _id }</code></td><td>Paging, in both directions</td></tr><tr><td><code>chat_messages</code></td><td><code>room_client</code> — <code>{ roomId, clientId }</code>, unique</td><td>What makes a resend harmless</td></tr><tr><td><code>chat_messages</code></td><td><code>user</code> — <code>userId</code></td><td>Erasing an account</td></tr><tr><td><code>chat_invites</code></td><td><code>email</code> — sparse; <code>room</code> — <code>roomId</code></td><td></td></tr></tbody></table>
+<p>No TTL on any chat collection. A conversation that deletes itself after a while
+is a bug.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="body-and-bodyenc"><code>body</code> and <code>bodyEnc</code><a href="#body-and-bodyenc" class="hash-link" aria-label="Direct link to body-and-bodyenc" title="Direct link to body-and-bodyenc" translate="no">​</a></h3>
+<p>A message&#x27;s words are in one of two places, and both kinds of row live
+together permanently. <strong>Exactly one field is ever present</strong> — a document is
+not a row with a fixed set of columns, so the unused one is simply not
+written rather than written empty.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>State</th><th><code>body</code></th><th><code>bodyEnc</code></th></tr></thead><tbody><tr><td>No <code>CHAT_MESSAGE_KEY</code> set</td><td>the words</td><td>—</td></tr><tr><td>Locked</td><td>—</td><td><code>{ v, iv, ct, wraps }</code></td></tr><tr><td>Recalled</td><td>—</td><td>—</td></tr></tbody></table>
+<p>A recalled message is therefore known by <code>deletedAt</code> alone, which was already
+the only thing that marked it. Nothing has to tell an empty message from a
+withdrawn one, because an empty message cannot be sent.</p>
+<p><code>ct</code> is the message encrypted under a key made for that message alone, which
+is never stored. <code>wraps</code> maps a key id — the first 8 hex of the key&#x27;s SHA-256,
+which says <em>which</em> key without saying anything about it — to that message key
+wrapped under it. Two entries, one per environment key, is what lets the spare
+open everything the main one can.</p>
+<p>Everything is AES-256-GCM, with <code>messageId:roomId</code> as additional authenticated
+data. Without that, anyone who could write to this database could lift a
+locked body out of one message and drop it into another and it would still
+open; with it, a body that has been moved no longer opens at all.</p>
+<p>The key never leaves the server, so <strong>this is not end-to-end encryption.</strong> It
+defends a dump, a backup and the cluster&#x27;s operator. It does not defend
+against someone holding the application server. Switching it on migrates
+nothing. Switching it off strands everything written while it was on.</p></div></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"><a class="pagination-nav__link pagination-nav__link--prev" href="/docs/features"><div class="pagination-nav__sublabel">Previous</div><div class="pagination-nav__label">Features</div></a><a class="pagination-nav__link pagination-nav__link--next" href="/docs/realtime"><div class="pagination-nav__sublabel">Next</div><div class="pagination-nav__label">Live updates</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#conventions" class="table-of-contents__link toc-highlight">Conventions</a></li><li><a href="#map" class="table-of-contents__link toc-highlight">Map</a></li><li><a href="#core" class="table-of-contents__link toc-highlight">Core</a><ul><li><a href="#users" class="table-of-contents__link toc-highlight"><code>users</code></a></li><li><a href="#user_settings" class="table-of-contents__link toc-highlight"><code>user_settings</code></a></li><li><a href="#auth_identities" class="table-of-contents__link toc-highlight"><code>auth_identities</code></a></li><li><a href="#push_devices" class="table-of-contents__link toc-highlight"><code>push_devices</code></a></li></ul></li><li><a href="#the-daily-log" class="table-of-contents__link toc-highlight">The daily log</a><ul><li><a href="#daily_logs" class="table-of-contents__link toc-highlight"><code>daily_logs</code></a></li><li><a href="#custom_metrics--custom_metric_values" class="table-of-contents__link toc-highlight"><code>custom_metrics</code> / <code>custom_metric_values</code></a></li><li><a href="#v_daily_effective-view" class="table-of-contents__link toc-highlight"><code>v_daily_effective</code> (view)</a></li></ul></li><li><a href="#habits-and-goals" class="table-of-contents__link toc-highlight">Habits and goals</a><ul><li><a href="#habits" class="table-of-contents__link toc-highlight"><code>habits</code></a></li><li><a href="#habit_logs" class="table-of-contents__link toc-highlight"><code>habit_logs</code></a></li><li><a href="#goals--goal_milestones" class="table-of-contents__link toc-highlight"><code>goals</code> / <code>goal_milestones</code></a></li></ul></li><li><a href="#work-and-time" class="table-of-contents__link toc-highlight">Work and time</a><ul><li><a href="#projects--project_tasks" class="table-of-contents__link toc-highlight"><code>projects</code> / <code>project_tasks</code></a></li><li><a href="#focus_sessions" class="table-of-contents__link toc-highlight"><code>focus_sessions</code></a></li><li><a href="#timer_state" class="table-of-contents__link toc-highlight"><code>timer_state</code></a></li><li><a href="#timer_filings" class="table-of-contents__link toc-highlight"><code>timer_filings</code></a></li><li><a href="#planned_blocks" class="table-of-contents__link toc-highlight"><code>planned_blocks</code></a></li><li><a href="#events" class="table-of-contents__link toc-highlight"><code>events</code></a></li><li><a href="#reminders" class="table-of-contents__link toc-highlight"><code>reminders</code></a></li></ul></li><li><a href="#learning-and-knowledge" class="table-of-contents__link toc-highlight">Learning and knowledge</a></li><li><a href="#finance" class="table-of-contents__link toc-highlight">Finance</a></li><li><a href="#health" class="table-of-contents__link toc-highlight">Health</a></li><li><a href="#people" class="table-of-contents__link toc-highlight">People</a></li><li><a href="#career" class="table-of-contents__link toc-highlight">Career</a></li><li><a href="#reviews-and-generated-output" class="table-of-contents__link toc-highlight">Reviews and generated output</a></li><li><a href="#activity" class="table-of-contents__link toc-highlight"><code>activity</code></a></li><li><a href="#chat--four-collections" class="table-of-contents__link toc-highlight">Chat — four collections</a><ul><li><a href="#body-and-bodyenc" class="table-of-contents__link toc-highlight"><code>body</code> and <code>bodyEnc</code></a></li></ul></li></ul></div></div></div></div></main></div></div></div></div>
+</body>
+</html>

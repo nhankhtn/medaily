@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-realtime" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.10.2">
+<title data-rh="true">Live updates | Medaily Docs</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="robots" content="noindex, nofollow"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="http://localhost/docs/realtime"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Live updates | Medaily Docs"><meta data-rh="true" name="description" content="How a message somebody else sent reaches your screen, and how &quot;somebody is"><meta data-rh="true" property="og:description" content="How a message somebody else sent reaches your screen, and how &quot;somebody is"><link data-rh="true" rel="canonical" href="http://localhost/docs/realtime"><link data-rh="true" rel="alternate" href="http://localhost/docs/realtime" hreflang="en"><link data-rh="true" rel="alternate" href="http://localhost/docs/realtime" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Live updates","item":"http://localhost/docs/realtime"}]}</script><link rel="stylesheet" href="/docs/assets/css/styles.55dbd2d6.css">
+<script src="/docs/assets/js/runtime~main.11e38509.js" defer="defer"></script>
+<script src="/docs/assets/js/main.ee88c964.js" defer="defer"></script>
+</head>
+<body>
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")),document.documentElement.setAttribute("data-theme-choice",t||"system")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/docs/"><b class="navbar__title text--truncate">Medaily Docs</b></a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/docs/">Docs</a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"><div class="navbar__search searchBarContainer_NW3z" dir="ltr"><svg aria-hidden="true" class="searchIcon_T3tP" focusable="false" viewBox="0 0 16 16"><path fill="currentColor" d="M6.02945 10.20327a4.17382 4.17382 0 1 1 4.17382-4.17382 4.15609 4.15609 0 0 1-4.17382 4.17382Zm9.69195 4.2199-4.8225-4.82338A5.88021 5.88021 0 0 0 12.058 6.02856 6.00467 6.00467 0 1 0 9.59979 10.8989l4.82338 4.82338a.89729.89729 0 0 0 1.29912 0 .89749.89749 0 0 0-.00087-1.29909Z"></path></svg><input placeholder="Search" aria-label="Search" class="navbar__search-input searchInput_YFbd" value=""><div class="loadingRing_RJI3 searchBarLoadingRing_YnHq"><div></div><div></div><div></div><div></div></div></div></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><aside class="theme-doc-sidebar-container docSidebarContainer_YfHR"><div class="sidebarViewport_aRkj"><div class="sidebar_njMd"><nav aria-label="Docs sidebar" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs/"><span class="linkLabel_WmDU">Documentation</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs/features"><span class="linkLabel_WmDU">Features</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs/database"><span class="linkLabel_WmDU">Database</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link menu__link--active" aria-current="page" href="/docs/realtime"><span class="linkLabel_WmDU">Live updates</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/docs/CHANGELOG"><span class="linkLabel_WmDU">Documentation changelog</span></a></li></ul></nav><button type="button" title="Collapse sidebar" aria-label="Collapse sidebar" class="button button--secondary button--outline collapseSidebarButton_PEFL"><svg width="20" height="20" aria-hidden="true" class="collapseSidebarButtonIcon_kv0_"><g fill="#7a7a7a"><path d="M9.992 10.023c0 .2-.062.399-.172.547l-4.996 7.492a.982.982 0 01-.828.454H1c-.55 0-1-.453-1-1 0-.2.059-.403.168-.551l4.629-6.942L.168 3.078A.939.939 0 010 2.528c0-.548.45-.997 1-.997h2.996c.352 0 .649.18.828.45L9.82 9.472c.11.148.172.347.172.55zm0 0"></path><path d="M19.98 10.023c0 .2-.058.399-.168.547l-4.996 7.492a.987.987 0 01-.828.454h-3c-.547 0-.996-.453-.996-1 0-.2.059-.403.168-.551l4.625-6.942-4.625-6.945a.939.939 0 01-.168-.55 1 1 0 01.996-.997h3c.348 0 .649.18.828.45l4.996 7.492c.11.148.168.347.168.55zm0 0"></path></g></svg></button></div></div></aside><main class="docMainContainer_TBSr"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><nav class="theme-doc-breadcrumbs breadcrumbsContainer_Z_bl" aria-label="Breadcrumbs"><ul class="breadcrumbs"><li class="breadcrumbs__item"><a aria-label="Home page" class="breadcrumbs__link" href="/docs/"><svg viewBox="0 0 24 24" class="breadcrumbHomeIcon_YNFT"><path d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z" fill="currentColor"></path></svg></a></li><li class="breadcrumbs__item breadcrumbs__item--active"><span class="breadcrumbs__link">Live updates</span></li></ul></nav><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>Live updates</h1></header>
+<p>How a message somebody else sent reaches your screen, and how &quot;somebody is
+typing&quot; gets there without Firestore learning what anybody wrote.</p>
+<p>Every page in this app is server-rendered per request. There is no socket and
+no long-lived process to hold one — the deploy target is serverless. So
+&quot;instant&quot; here is built out of two pieces that fail in opposite directions: a
+slow timer that always works, and a doorbell that is fast and allowed to break.</p>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="the-two-paths">The two paths<a href="#the-two-paths" class="hash-link" aria-label="Direct link to The two paths" title="Direct link to The two paths" translate="no">​</a></h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th></th><th>Without the doorbell</th><th>With the doorbell</th></tr></thead><tbody><tr><td>A message appears after</td><td>0–45 seconds</td><td>under a second</td></tr><tr><td>Anybody has to reload</td><td>no</td><td>no</td></tr><tr><td>Works signed in with the password</td><td>yes</td><td>yes, when the server holds <code>FIREBASE_SERVICE_ACCOUNT</code> — otherwise falls back to the timer</td></tr><tr><td>Works with Firestore down</td><td>yes</td><td>falls back to the timer</td></tr></tbody></table>
+<p>The password row depends on the deploy, not on the person. A Google sign-in
+leaves a Firebase session in the browser; a password sign-in does not, and the
+server has to vouch for it with a custom token — which it can only mint with
+the service account. See <a href="#who-firestore-thinks-you-are" class="">Who Firestore thinks you are</a>.</p>
+<p>The 45 seconds is <code>FLOOR_MS</code> in <code>src/lib/hooks/use-room-live.ts</code>. While the tab
+is visible the room asks the server anyway on that interval, and it also asks
+the moment the tab becomes visible again. <strong>That floor is what makes the
+doorbell an optimisation rather than a dependency.</strong> Without it, a sender whose
+browser died between saving the message and ringing would leave everyone else
+looking at a stale screen for as long as they kept it open.</p>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="the-doorbell">The doorbell<a href="#the-doorbell" class="hash-link" aria-label="Direct link to The doorbell" title="Direct link to The doorbell" translate="no">​</a></h2>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">you send &quot;hello&quot;</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  │</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  ├─ the row appears on your screen at once, under a client id</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  ├─ stop()                  → retract your typing claim (before the request)</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  ├─ sendMessage(...)        → the text goes to MongoDB; the stored row</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  │                            replaces the placeholder</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  └─ ringRoom(doorbellKey)   → only after it is saved: one tiny write to</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">                               Firestore: { seq: +1, at }</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">                                     │</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">                                     ▼</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">                        their onSnapshot fires  (~0.1–0.3s)</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">                                     │</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">                        debounce 400ms  (one ask covers a burst)</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">                                     │</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">                        catchUp():</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">                          loadNewMessages, page after page while `more`</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">                          then loadRecentMessages, to refresh rows already shown</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">                                     │</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">                        &quot;hello&quot; appears — fetched from MongoDB, never Firestore</span><br></div></code></pre></div></div>
+<p>The order is deliberate at both ends. The claim is retracted <strong>before</strong> the
+request, because the name should go the moment the words do, not a round trip
+later. The ring goes <strong>after</strong> the save, so nobody is sent looking for a
+message that is not there yet.</p>
+<p><code>catchUp</code> keeps paging while the server says there is more: stopping at the
+first page would move the cursor past messages that were never shown, leaving
+a hole nothing goes back for. Paging forward only brings rows that did not
+exist before, so it then reloads the most recent page and swaps in any row
+that changed — otherwise a recall or a reaction on a message already on screen
+would never reach anyone else.</p>
+<p>That is also why sending is not the only thing that rings. <strong>Toggling a
+reaction and recalling a message ring the doorbell too</strong> — <code>toggleReaction</code>
+returns the room&#x27;s <code>doorbellKey</code> for it, and a recall rings the key the room
+was opened with. Without the ring, a recalled message would stay readable on
+other screens until the floor came round.</p>
+<p>Three properties are deliberate, and each one is load-bearing.</p>
+<p><strong>The signal carries nothing.</strong> Firestore holds a counter and a time. The text
+lives in MongoDB and is fetched from the server, which is the only party that
+knows who may see what. A ring means &quot;ask&quot;, never &quot;here is what changed&quot;.</p>
+<p><strong>A ring is edge-triggered.</strong> Nothing compares <code>seq</code> against what it was.
+A payload is attacker-writable, and a client that gated on a counter could be
+deafened for good by one absurdly large number. The one snapshot that is
+ignored is a local echo — <code>metadata.hasPendingWrites</code> — which is this tab&#x27;s
+own ring before the server has seen it, not news from anyone else.</p>
+<p><strong>The channel is not the room id.</strong> <code>doorbellKey</code> is a separate uuid, rotated
+by <code>rotateDoorbell</code> when somebody is removed from a room. Losing access means
+losing the ability to listen, without changing anything the room is keyed by.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="leaving-is-not-removal">Leaving is not removal<a href="#leaving-is-not-removal" class="hash-link" aria-label="Direct link to Leaving is not removal" title="Direct link to Leaving is not removal" translate="no">​</a></h3>
+<p>Only <code>removeMember</code> rotates the key. <strong><code>leaveRoom</code> does not</strong>, and neither does
+erasing an account. Somebody who leaves a room on their own keeps a working
+copy of its key: they can no longer read a message — that is the server&#x27;s
+call, and it says no — but they can still hear the doorbell ring, which tells
+them when the room is busy, and still list its typing claims, which tells them
+which Firebase uids are active in it. This is a known gap, not a decision.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="the-unread-badge-listens-too">The unread badge listens too<a href="#the-unread-badge-listens-too" class="hash-link" aria-label="Direct link to The unread badge listens too" title="Direct link to The unread badge listens too" translate="no">​</a></h3>
+<p>The room is not the only listener. <code>UnreadWatch</code>
+(<code>src/features/chat/unread-watch.tsx</code>) is mounted once in
+<code>src/app/(app)/layout.tsx</code> and listens to the doorbell of <strong>every</strong> room the
+person is in — the keys come from <code>unreadForShell</code>, out of the same read of the
+room list that produces the badge count.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th></th><th>The room</th><th>The badge</th></tr></thead><tbody><tr><td>Listens to</td><td>one room&#x27;s key</td><td>every room&#x27;s key</td></tr><tr><td>On a ring</td><td><code>catchUp()</code></td><td><code>router.refresh()</code></td></tr><tr><td>Settles for</td><td>400ms (<code>DEBOUNCE_MS</code>)</td><td>800ms (<code>SETTLE_MS</code>) — several rooms can ring at once</td></tr><tr><td>Floor</td><td>45s (<code>FLOOR_MS</code>)</td><td>60s (its own <code>FLOOR_MS</code>)</td></tr><tr><td>On the tab becoming visible</td><td>asks</td><td>refreshes</td></tr></tbody></table>
+<p>Why every room&#x27;s key rather than one channel per person: somebody would have
+to ring a per-person channel, and the only client that knows a message was
+sent is the sender&#x27;s — which would then need everybody else&#x27;s key. A key other
+people hold is not a key. Listening to the rooms costs no extra writes, because
+these are the channels the rooms already ring. Counting stays the server&#x27;s
+job; a ring only asks the layout to render again.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="why-firestore">Why Firestore<a href="#why-firestore" class="hash-link" aria-label="Direct link to Why Firestore" title="Direct link to Why Firestore" translate="no">​</a></h3>
+<p>It is the only thing already in this stack that a browser can hold a cheap,
+authenticated, persistent connection to. The alternatives were a socket server
+(needs a process that outlives a request) or a paid service. The Firebase
+project was already there for Google sign-in.</p>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="the-typing-indicator">The typing indicator<a href="#the-typing-indicator" class="hash-link" aria-label="Direct link to The typing indicator" title="Direct link to The typing indicator" translate="no">​</a></h2>
+<p>This is the one exception to &quot;the signal carries nothing&quot;, and it is an
+exception because it has to be: <strong>there is nothing on the server to go and ask.</strong>
+Typing is not a fact worth storing — it is true for four seconds and then it is
+a lie. So the claim itself travels, and the client reads it.</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">channels/{doorbellKey}/typing/{firebaseUid}  →  { at: &lt;millis&gt; }</span><br></div></code></pre></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="why-it-cannot-lie-about-who">Why it cannot lie about who<a href="#why-it-cannot-lie-about-who" class="hash-link" aria-label="Direct link to Why it cannot lie about who" title="Direct link to Why it cannot lie about who" translate="no">​</a></h3>
+<p>Being signed in to this Firebase project means very little: the project&#x27;s
+sign-in is not gated by this app&#x27;s allowlists, so it means &quot;any Google
+account&quot;. For the doorbell that is fine — the worst a stranger with a channel
+key can do is ring it, and everyone wastes one fetch that returns nothing.</p>
+<p>For a payload the UI <strong>draws</strong>, it is not fine. Anyone with the key could make
+your screen say a name that is not typing.</p>
+<p>The fix is in the rules rather than the code: the document is named by a
+Firebase uid, and <code>request.auth.uid == uid</code> is enforced on write. A claim can
+only be made in the claimant&#x27;s own name. Knowing a channel key buys the ability
+to say &quot;I am typing&quot; as yourself — which every member of the room can do
+anyway — and nothing else.</p>
+<p>The reader then matches uids against the room&#x27;s roster. That is why <code>Speaker</code>
+carries <code>firebaseUid</code>: <code>speakersOf</code> fills it from <code>auth_identities.provider_uid</code>
+where the provider is <code>google</code>, and otherwise with the person&#x27;s own id — the
+same uid the server mints a custom token under. It is null only for somebody
+who erased their account. The room uses it twice:</p>
+<ul>
+<li class=""><strong>Its own uid</strong> comes from the roster too — <code>speakers[me]?.firebaseUid</code> —
+rather than from Firebase directly. The roster is what the names are drawn
+from, so if the two ever disagree the indicator should follow the one the UI
+uses.</li>
+<li class=""><strong>Names</strong> are resolved by looking each typing uid up by <code>firebaseUid</code>. A uid
+with no member behind it is dropped, not shown as &quot;former member&quot;: the
+doorbell key is all it takes to make a claim, and an unrecognised claimant is
+exactly the case not worth drawing.</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="the-numbers-and-why-each-one">The numbers, and why each one<a href="#the-numbers-and-why-each-one" class="hash-link" aria-label="Direct link to The numbers, and why each one" title="Direct link to The numbers, and why each one" translate="no">​</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Constant</th><th>Value</th><th>Why</th></tr></thead><tbody><tr><td><code>TYPING_TTL_MS</code></td><td>6s</td><td>How long a claim is believed. Nothing deletes a record when a tab dies, so this is the only thing that ends one.</td></tr><tr><td><code>TYPING_THROTTLE_MS</code></td><td>3s</td><td>How often a typist re-announces. Comfortably under the TTL or the indicator blinks; nowhere near per-keystroke, or a fast typist bills a hundred writes per message.</td></tr><tr><td><code>SWEEP_MS</code></td><td>1s</td><td>How often the list is re-checked. A claim <em>expiring</em> is the passage of time and fires no snapshot — without the sweep the last person to stop typing types forever.</td></tr></tbody></table>
+<p>Typists are listed sorted by uid, not by time. They are drawn as names, and
+names that reorder themselves while two people type read as flicker.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="clocks-that-are-wrong">Clocks that are wrong<a href="#clocks-that-are-wrong" class="hash-link" aria-label="Direct link to Clocks that are wrong" title="Direct link to Clocks that are wrong" translate="no">​</a></h3>
+<p>Every <code>at</code> is written by the claimant&#x27;s device, so two of the rules in
+<code>src/lib/realtime/typing.ts</code> assume the clock can be off:</p>
+<ul>
+<li class=""><code>shouldAnnounce</code> treats a last announcement <strong>in the future</strong> as due. A clock
+that jumps backwards — a phone correcting itself, a laptop waking — would
+otherwise silence the typist until real time caught up. It costs one extra
+write.</li>
+<li class=""><code>activeTypists</code> believes a claim while <code>Math.abs(now - at)</code> is under the TTL.
+The window is symmetric: a claim from the future is a clock askew, not a
+claim about later, and without the <code>abs</code> it would outlive an honest one by
+however far ahead the clock was.</li>
+</ul>
+<p>The nightly sweep&#x27;s <code>isStale</code> uses the same symmetric test, for the same
+reason.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="taking-the-claim-back">Taking the claim back<a href="#taking-the-claim-back" class="hash-link" aria-label="Direct link to Taking the claim back" title="Direct link to Taking the claim back" translate="no">​</a></h3>
+<p>Sending retracts the claim rather than letting it time out. The message lands
+on the other screen instantly, and a name still marked as typing beside it for
+the rest of the TTL reads as the app being confused. That retraction is a
+delete, which is why the rules separate <code>delete</code> from <code>create, update</code>: on a
+delete <code>request.resource</code> is null, and a single <code>write</code> rule inspecting the
+written fields would refuse it.</p>
+<p>Leaving the room — unmounting, or switching to another channel — also
+retracts, but <strong>only if this tab announced</strong> since it last sent. A tab that
+merely watched has nothing to take back, and a delete it is not owed would be a
+wasted write per room visit. Closing the tab gives no time for the round trip
+at all, which is what the TTL is ultimately for.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="one-document-per-person">One document per person<a href="#one-document-per-person" class="hash-link" aria-label="Direct link to One document per person" title="Direct link to One document per person" translate="no">​</a></h3>
+<p>Not one field per person on the channel document. Firestore sustains about one
+write per second per document, and three people typing into one would start
+dropping each other&#x27;s.</p>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="what-firestore-ends-up-holding">What Firestore ends up holding<a href="#what-firestore-ends-up-holding" class="hash-link" aria-label="Direct link to What Firestore ends up holding" title="Direct link to What Firestore ends up holding" translate="no">​</a></h2>
+<p>Before the typing indicator: nothing about anybody. One document per room with
+a counter and a time.</p>
+<p>After it: <strong>that a Firebase uid was active in a room at a time.</strong> No word
+anybody typed still reaches Firestore, and the roster, the messages and the
+membership all stay in MongoDB. It is worth knowing this changed, because the
+rules were previously small enough to be obviously right without it.</p>
+<p>Firebase Authentication holds a little more than it used to, as well. A
+password sign-in that trades a custom token for a session, by somebody who has
+never signed in with Google, creates a Firebase user under the app&#x27;s own user
+id — a uuid, and nothing else about the person.</p>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="turning-it-on">Turning it on<a href="#turning-it-on" class="hash-link" aria-label="Direct link to Turning it on" title="Direct link to Turning it on" translate="no">​</a></h2>
+<p>Three environment variables, all needed, all read at <strong>build</strong> time because
+<code>NEXT_PUBLIC_*</code> is baked into the bundle — adding them on the host means a
+redeploy:</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">NEXT_PUBLIC_REALTIME_ENABLED=1</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">NEXT_PUBLIC_FIREBASE_API_KEY=...</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">NEXT_PUBLIC_FIREBASE_PROJECT_ID=...</span><br></div></code></pre></div></div>
+<p>A fourth is optional and server-side, read at run time:
+<code>FIREBASE_SERVICE_ACCOUNT</code>. Without it Google sign-ins get live updates and
+password sign-ins do not, and nothing is swept. See
+<a href="#what-it-costs-to-have" class="">What it costs to have</a>.</p>
+<p>Then, in the Firebase console: create the Firestore database, and deploy the
+rules.</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token function" style="color:#d73a49">pnpm</span><span class="token plain"> firestore:rules      </span><span class="token comment" style="color:#999988;font-style:italic"># or paste firestore.rules into the console</span><br></div></code></pre></div></div>
+<p>The script is <code>npx -y firebase-tools deploy --only firestore:rules</code>, so
+<code>bun run firestore:rules</code> does the same thing; the first run asks you to
+<code>npx firebase-tools login</code>.</p>
+<p><strong>Pick <code>asia-southeast1</code></strong> (or whichever region is nearest the people using
+it). All Firestore traffic in this app is browser-to-Firestore — the server
+never touches it — so latency to the user is the whole of what you feel, and a
+database&#x27;s location cannot be changed after it is created.</p>
+<p>To check what a deploy was built with, <code>/api/health</code> reports
+<code>realtimeConfigured</code>. It is <code>realtimeEnabled()</code> evaluated against the baked-in
+<code>NEXT_PUBLIC_*</code> values, so it answers what the browser was handed, not what the
+process can see now. It does not say the rules are deployed.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="it-fails-quietly-but-not-silently">It fails quietly, but not silently<a href="#it-fails-quietly-but-not-silently" class="hash-link" aria-label="Direct link to It fails quietly, but not silently" title="Direct link to It fails quietly, but not silently" translate="no">​</a></h3>
+<p>Chat must not break when Firestore is unreachable, so nothing here throws at
+the person using it. But &quot;quiet&quot; used to mean &quot;nothing in the console&quot;, and
+that made a missing rule indistinguishable from a missing flag. Today:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>What closed</th><th>What the console says</th></tr></thead><tbody><tr><td>A gate in <code>provider.ts</code> — no Firebase config, the flag not <code>&quot;1&quot;</code>, or no session that could be opened</td><td><code>[realtime] live updates are off: &lt;reason&gt;</code>, once per reason per page</td></tr><tr><td>Opening a session with a custom token threw</td><td><code>[realtime] could not open a Firebase session</code>, with the error</td></tr><tr><td>A typing watch, announce or retract was refused</td><td><code>[realtime] typing &lt;where&gt; was refused: &lt;code&gt;</code>, once per <code>where</code> and code; on <code>permission-denied</code> it adds a hint to run <code>pnpm firestore:rules</code></td></tr><tr><td>The doorbell listener was refused</td><td><strong>nothing</strong> — its <code>onSnapshot</code> error callback is still an empty block</td></tr><tr><td>A ring was refused</td><td>nothing — <code>ringRoom</code> swallows it, and the floor covers it</td></tr></tbody></table>
+<p>So if live updates never arrive, look in the console first. If it says nothing
+and typing names do appear, the doorbell&#x27;s rules are the suspect: that one
+listener is the only part still silent. Over WebChannel a refused write still
+answers 200, so the network tab will not tell you either.</p>
+<p>The second thing to check is the session. <code>pickRealtimeSignal</code> returns
+<code>NO_REALTIME</code> only when there is no Firebase session <strong>and</strong> none could be
+opened. A password sign-in on a deploy without <code>FIREBASE_SERVICE_ACCOUNT</code> is
+the usual cause, and the console line names it. Testing with a password
+account on such a deploy and concluding Firestore is broken is the easy
+mistake.</p>
+<p>Third: the clock. <code>ring</code> and <code>announce</code> both write <code>at: Date.now()</code> from the
+device, and the rules require it within a minute of server time. A device badly
+out of sync gets its writes refused, and its messages arrive for everyone else
+on the 45-second floor instead.</p>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="housekeeping">Housekeeping<a href="#housekeeping" class="hash-link" aria-label="Direct link to Housekeeping" title="Direct link to Housekeeping" translate="no">​</a></h2>
+<p>Two kinds of document accumulate, and neither can clean itself from the
+browser.</p>
+<p><strong>Channel documents</strong> are orphaned when a room is deleted — <code>deleteRoom</code> only
+touches MongoDB — and every time <code>rotateDoorbell</code> mints a new key. After a
+rotation nobody still in the room holds the old key, and the rules require it,
+so no browser of theirs can reach that document even to delete it.</p>
+<p><strong>Typing claims</strong> normally retract themselves when a message is sent or the
+room is left. A tab closed mid-word gives no time for the round trip, and a
+device whose clock is wrong has its writes refused, so some are left behind.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="the-nightly-sweep">The nightly sweep<a href="#the-nightly-sweep" class="hash-link" aria-label="Direct link to The nightly sweep" title="Direct link to The nightly sweep" translate="no">​</a></h3>
+<p><code>sweepRealtimeChannels</code> runs last in <code>/api/cron/nightly</code>. It lists <code>channels</code>,
+and for each one:</p>
+<ul>
+<li class="">deletes typing claims older than <strong>1 hour</strong> (<code>TYPING_STALE_MS</code>)</li>
+<li class="">if the channel itself is older than <strong>30 days</strong> (<code>CHANNEL_STALE_MS</code>), deletes
+<strong>every</strong> claim under it and then the channel document</li>
+</ul>
+<p><strong>Order matters.</strong> Firestore does not delete a document&#x27;s sub-collections with
+it. Deleting the channel first would leave its claims under a document that no
+longer exists — invisible in the console unless you already know to look.</p>
+<p>Three things bound what a mistake here costs:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Guard</th><th>Why</th></tr></thead><tbody><tr><td><code>MAX_DELETES_PER_RUN</code> = 500</td><td>A blast radius, not a performance limit. A wrong threshold or a clock years ahead costs a bounded number of rows and a confusing line in the report.</td></tr><tr><td>A document with no readable <code>at</code> is <strong>kept</strong></td><td>Unexplained, so reported as skipped rather than guessed at. &quot;Delete what you do not understand&quot; is the wrong default for a scheduled job.</td></tr><tr><td>Claims are deleted in sorted order</td><td>Within a channel, a run cut off by the cap takes the same claims first every night rather than an arbitrary set. Channels themselves are visited in the order Firestore lists them.</td></tr></tbody></table>
+<p>Being cut off is harmless in the other direction too: a channel whose claims
+went but which survived the cap is found tomorrow with nothing under it.</p>
+<p>The run reports what it did as <code>{ channels, typing, skipped, capped }</code>, and the
+nightly route adds <code>failed</code> when the sweep threw. The job report on the phone
+is sent only on a night that deleted something or went wrong, and it carries
+the channels and claims removed, whether the cap was hit or the sweep failed,
+and — when there are any — how many documents were skipped for having no
+readable time.</p>
+<p>The decisions are in <code>src/lib/realtime/gc.ts</code>, pure and tested. The service
+only carries them out.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="what-it-costs-to-have">What it costs to have<a href="#what-it-costs-to-have" class="hash-link" aria-label="Direct link to What it costs to have" title="Direct link to What it costs to have" translate="no">​</a></h3>
+<p>This is the only Firebase credential in the app with real power.
+<code>FIREBASE_SERVICE_ACCOUNT</code> holds the whole service-account JSON and wants
+<code>roles/datastore.user</code>; its <code>project_id</code> is checked against
+<code>NEXT_PUBLIC_FIREBASE_PROJECT_ID</code>, so a staging key left in a production
+environment is refused rather than trusted.</p>
+<p>Sign-in and the doorbell still run on public keys and security rules, with no
+secret to leak. Two things use this one, and both go through
+<code>readFirestoreAdminConfig</code> in <code>src/server/services/firestore-rest.ts</code>: the
+sweep, and the custom token in <code>src/server/services/firebase-custom-token.ts</code>.
+The containment is that both speak a narrow protocol rather than pulling in
+the Admin SDK, and that nothing else in the tree reads the key.</p>
+<p>Leave <code>FIREBASE_SERVICE_ACCOUNT</code> unset and nothing is swept, nothing
+complains, and the garbage stays — a couple of numeric fields per room. The
+typing indicator and the doorbell are the parts that then stop working for
+password sign-ins: see below. Set it but malformed, or for the wrong project,
+and the token path logs <code>FIREBASE_SERVICE_ACCOUNT is set but unusable</code> server
+side and returns nothing, while the sweep fails and says so in the nightly
+report.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="who-firestore-thinks-you-are">Who Firestore thinks you are<a href="#who-firestore-thinks-you-are" class="hash-link" aria-label="Direct link to Who Firestore thinks you are" title="Direct link to Who Firestore thinks you are" translate="no">​</a></h3>
+<p>Firestore rules tie a typing claim to <code>request.auth.uid</code>, and every rule needs
+<code>request.auth != null</code>, so both the doorbell and typing need a Firebase
+session. Signing in with Google leaves one behind; signing in with the
+password never did, and that path exists precisely as the way back in when
+Firebase is unreachable. Live updates therefore belonged to whoever had
+arrived through Google — and on an iPhone, where One Tap never draws
+(<code>oneTapAvailable</code> returns <code>!isIos()</code>), the password form is the path of least
+resistance. The same person could see somebody typing on a laptop and not on
+their phone, with nothing on screen to say why. Even a Google session does not
+last: Safari clears site data after a week idle, and a home-screen app keeps
+its own, while this app&#x27;s cookie outlives both.</p>
+<p>So the server vouches instead. In the browser, <code>provider.ts</code> does this:</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">realtimeOff()</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  │</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  ├─ await auth.authStateReady()   → wait for Firebase to restore from storage</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  ├─ currentUser?  ───────────────→ yes: on</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  └─ adopt(auth)                   → at most once per page</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">       ├─ realtimeToken()          → server action; the cookie is the credential</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">       │    null  ────────────────→ off, and the console says why, once</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">       └─ signInWithCustomToken    → on</span><br></div></code></pre></div></div>
+<p>The wait matters. Firebase restores a session asynchronously, so for the first
+few hundred milliseconds of a page <code>currentUser</code> is null even for somebody who
+is signed in. Deciding then would conclude &quot;no session&quot; on a fresh load, and
+nothing asks again — the room would sit on the slow floor for as long as it
+stayed open.</p>
+<p><code>realtimeToken</code> (<code>src/server/actions/realtime.ts</code>) mints a Firebase custom
+token for the session it has already authenticated by cookie. The uid is
+chosen server side, so a browser cannot ask to be somebody else — the Firebase
+uid Google sign-in already minted when there is one, so the two paths land on
+the same Firebase user, and otherwise the app&#x27;s own id, which is a uuid and
+cannot collide with a Firebase uid. <code>speakersOf</code> picks the same uid by the
+same rule; if those two ever disagree, a typing document lands under a name no
+reader recognises and the indicator simply never draws.</p>
+<p>The token lives <strong>55 minutes</strong> — Firebase refuses anything over an hour, and
+the gap leaves room for clock skew. It only has to survive the exchange: once
+traded, the session is Firebase&#x27;s own and refreshes itself. The browser asks
+for one <strong>at most once per page load</strong>; a second attempt would fail for the
+same reason as the first.</p>
+<p>This hands out no authority the project had not already given away: the rules
+read <code>request.auth != null</code>, and the project&#x27;s sign-in is not gated by the
+app&#x27;s allowlists, so that already meant any Google account on the internet.
+What keeps a room private is the 122-bit channel key.</p>
+<p>Without the service account nothing breaks — the token comes back null, the
+console says so once, and the room falls back to asking on the slow floor, the
+same as before.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="by-hand-if-you-prefer">By hand, if you prefer<a href="#by-hand-if-you-prefer" class="hash-link" aria-label="Direct link to By hand, if you prefer" title="Direct link to By hand, if you prefer" translate="no">​</a></h3>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">npx firebase-tools firestore:delete </span><span class="token parameter variable" style="color:#36acaa">--recursive</span><span class="token plain"> channels</span><br></div></code></pre></div></div>
+<p><code>--recursive</code> is not optional: sub-collections outlive the documents above
+them. Nothing is lost either way — the next <code>ring</code> re-creates what it needs
+with <code>setDoc(..., { merge: true })</code>, and the worst case is one message arriving
+on the 45-second floor.</p>
+<p>A TTL policy would be tidier but does not work as written: Firestore TTL
+requires a <code>Timestamp</code> field, and <code>at</code> is a plain number the rules explicitly
+require to be a number. Changing it means changing the write, the rule, and
+re-thinking what stops a far-future timestamp being parked there.</p>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="notifications">Notifications<a href="#notifications" class="hash-link" aria-label="Direct link to Notifications" title="Direct link to Notifications" translate="no">​</a></h2>
+<p>A doorbell reaches a tab that is open. A notification reaches a phone that is
+face down, which is the other half of the same problem.</p>
+<p>FCM itself is free on the Spark plan — unlimited messages, no overage. What it
+costs is in two other places.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="data-only-and-why">Data-only, and why<a href="#data-only-and-why" class="hash-link" aria-label="Direct link to Data-only, and why" title="Direct link to Data-only, and why" translate="no">​</a></h3>
+<p>Every message is sent <strong>without</strong> a <code>notification</code> block. One carrying it is
+drawn by the browser, so the words are fixed at send time and cannot be
+shortened, replaced or collapsed on the device. Data-only hands the payload to
+the service worker and <code>sw.js</code> draws it — which is also what keeps the Firebase
+SDK out of that file. It is plain JS with no build step on purpose, and
+<code>importScripts</code> of a compat bundle would end that.</p>
+<p>The price is a rule that must not be broken: <strong>a push event has to end in a
+visible notification.</strong> A browser receiving pushes that show nothing revokes
+the permission, so every path in the <code>push</code> handler calls <code>showNotification</code>,
+including the one for a payload it cannot parse.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="ios-again">iOS, again<a href="#ios-again" class="hash-link" aria-label="Direct link to iOS, again" title="Direct link to iOS, again" translate="no">​</a></h3>
+<p><strong>iOS delivers web push only to an app added to the Home Screen.</strong> Not Safari,
+not Chrome — the same WebKit underneath, and neither issues a token. So the
+settings card checks for an installed app <em>before</em> it checks the permission: an
+iPhone in Safari reports <code>default</code> and then delivers nothing, and asking
+somebody to allow notifications there sends them to do something that cannot
+work. What they get instead is the install steps.</p>
+<p>FCM also rotates tokens on its own, with reports of it doing so on iOS after a
+handful of notifications. <code>PushRefresh</code> re-registers on every load of the shell
+for that reason — a token stored once, at the moment somebody pressed the
+button, is a device that quietly stops being reachable with nothing to see.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="permission-is-not-the-same-as-on">Permission is not the same as on<a href="#permission-is-not-the-same-as-on" class="hash-link" aria-label="Direct link to Permission is not the same as on" title="Direct link to Permission is not the same as on" translate="no">​</a></h3>
+<p>Two facts, and conflating them breaks both directions. The browser permission
+is granted once and a page cannot take it back. This app&#x27;s own record —
+<code>medaily.push.enabled</code>, per browser — is what &quot;on&quot; means here.</p>
+<p>Without the second, &quot;turn off&quot; would leave a button that still said turn off,
+and the silent refresh on the next load would register the device again,
+undoing what somebody had just asked for.</p>
+<p>Signing out clears the record and deletes the row. Otherwise the previous
+person keeps buzzing that phone until somebody signs in and the token changes
+owner — and a token moving owner is exactly what <code>push_devices_token_uniq</code>
+exists for.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="what-it-needs">What it needs<a href="#what-it-needs" class="hash-link" aria-label="Direct link to What it needs" title="Direct link to What it needs" translate="no">​</a></h3>
+<p><code>NEXT_PUBLIC_FIREBASE_VAPID_KEY</code> (Firebase Console → Project settings → Cloud
+Messaging → Web configuration), and <code>FIREBASE_SERVICE_ACCOUNT</code> widened to
+<code>roles/firebasemessaging.admin</code> on top of <code>roles/datastore.user</code>. Unset, the
+card never appears and chat works exactly as before.</p>
+<p>A token FCM refuses with 404 or 403 is deleted on the spot rather than retried
+nightly: it is dead for everyone, not just for this send.</p>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="where-the-pieces-are">Where the pieces are<a href="#where-the-pieces-are" class="hash-link" aria-label="Direct link to Where the pieces are" title="Direct link to Where the pieces are" translate="no">​</a></h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>File</th><th>What it holds</th></tr></thead><tbody><tr><td><code>src/lib/realtime/signal.ts</code></td><td>Both contracts, and the no-op and in-memory implementations</td></tr><tr><td><code>src/lib/realtime/typing.ts</code></td><td>Every rule that decides whether a name appears — pure, and tested</td></tr><tr><td><code>src/lib/realtime/firestore.ts</code></td><td>The only browser file that talks to Firestore, and the once-per-code typing complaints</td></tr><tr><td><code>src/lib/realtime/provider.ts</code></td><td>The gates: env, and a Firebase session — restored, or adopted from a custom token</td></tr><tr><td><code>src/lib/hooks/use-room-live.ts</code></td><td>The doorbell, the 400ms debounce and the 45s floor</td></tr><tr><td><code>src/lib/hooks/use-typing.ts</code></td><td>Watching, sweeping, throttling, retracting</td></tr><tr><td><code>src/features/chat/room-view.tsx</code></td><td>What rings and when, <code>catchUp</code>, and turning typing uids into names</td></tr><tr><td><code>src/features/chat/unread-watch.tsx</code></td><td>The badge&#x27;s listener on every room, the 800ms settle and the 60s floor</td></tr><tr><td><code>src/lib/realtime/gc.ts</code></td><td>What the nightly sweep may delete — pure, and tested</td></tr><tr><td><code>src/server/actions/realtime.ts</code></td><td><code>realtimeToken</code>, the server action the browser trades for a Firebase session</td></tr><tr><td><code>src/server/services/firebase-custom-token.ts</code></td><td>Choosing the uid and signing the custom token</td></tr><tr><td><code>src/server/services/firestore-rest.ts</code></td><td>Reading and checking the service account, and the REST client the sweep uses</td></tr><tr><td><code>src/server/services/realtime-gc.ts</code></td><td>The sweep itself, called from <code>/api/cron/nightly</code></td></tr><tr><td><code>src/lib/push/client.ts</code></td><td>Permission, availability, and this app&#x27;s own record</td></tr><tr><td><code>src/server/services/google-auth.ts</code></td><td>The one service account, and a token per scope</td></tr><tr><td><code>src/server/services/push.ts</code></td><td>Sending, and dropping a token FCM refuses</td></tr><tr><td><code>src/server/services/chat-notify.ts</code></td><td>What a room&#x27;s notification says — the wording is tested</td></tr><tr><td><code>firestore.rules</code></td><td>Deployed by hand. Read <code>firestore.ts</code> before loosening anything</td></tr></tbody></table></div></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"><a class="pagination-nav__link pagination-nav__link--prev" href="/docs/database"><div class="pagination-nav__sublabel">Previous</div><div class="pagination-nav__label">Database</div></a><a class="pagination-nav__link pagination-nav__link--next" href="/docs/CHANGELOG"><div class="pagination-nav__sublabel">Next</div><div class="pagination-nav__label">Documentation changelog</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#the-two-paths" class="table-of-contents__link toc-highlight">The two paths</a></li><li><a href="#the-doorbell" class="table-of-contents__link toc-highlight">The doorbell</a><ul><li><a href="#leaving-is-not-removal" class="table-of-contents__link toc-highlight">Leaving is not removal</a></li><li><a href="#the-unread-badge-listens-too" class="table-of-contents__link toc-highlight">The unread badge listens too</a></li><li><a href="#why-firestore" class="table-of-contents__link toc-highlight">Why Firestore</a></li></ul></li><li><a href="#the-typing-indicator" class="table-of-contents__link toc-highlight">The typing indicator</a><ul><li><a href="#why-it-cannot-lie-about-who" class="table-of-contents__link toc-highlight">Why it cannot lie about who</a></li><li><a href="#the-numbers-and-why-each-one" class="table-of-contents__link toc-highlight">The numbers, and why each one</a></li><li><a href="#clocks-that-are-wrong" class="table-of-contents__link toc-highlight">Clocks that are wrong</a></li><li><a href="#taking-the-claim-back" class="table-of-contents__link toc-highlight">Taking the claim back</a></li><li><a href="#one-document-per-person" class="table-of-contents__link toc-highlight">One document per person</a></li></ul></li><li><a href="#what-firestore-ends-up-holding" class="table-of-contents__link toc-highlight">What Firestore ends up holding</a></li><li><a href="#turning-it-on" class="table-of-contents__link toc-highlight">Turning it on</a><ul><li><a href="#it-fails-quietly-but-not-silently" class="table-of-contents__link toc-highlight">It fails quietly, but not silently</a></li></ul></li><li><a href="#housekeeping" class="table-of-contents__link toc-highlight">Housekeeping</a><ul><li><a href="#the-nightly-sweep" class="table-of-contents__link toc-highlight">The nightly sweep</a></li><li><a href="#what-it-costs-to-have" class="table-of-contents__link toc-highlight">What it costs to have</a></li><li><a href="#who-firestore-thinks-you-are" class="table-of-contents__link toc-highlight">Who Firestore thinks you are</a></li><li><a href="#by-hand-if-you-prefer" class="table-of-contents__link toc-highlight">By hand, if you prefer</a></li></ul></li><li><a href="#notifications" class="table-of-contents__link toc-highlight">Notifications</a><ul><li><a href="#data-only-and-why" class="table-of-contents__link toc-highlight">Data-only, and why</a></li><li><a href="#ios-again" class="table-of-contents__link toc-highlight">iOS, again</a></li><li><a href="#permission-is-not-the-same-as-on" class="table-of-contents__link toc-highlight">Permission is not the same as on</a></li><li><a href="#what-it-needs" class="table-of-contents__link toc-highlight">What it needs</a></li></ul></li><li><a href="#where-the-pieces-are" class="table-of-contents__link toc-highlight">Where the pieces are</a></li></ul></div></div></div></div></main></div></div></div></div>
+</body>
+</html>

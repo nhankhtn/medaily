@@ -15,5 +15,7 @@ tsconfig.tsbuildinfo
 next-env.d.ts
 .vercel
 .env*
-# Docusaurus build output (bun run docs:build), served at /docs
-public/docs/
+# The /docs site is built by hand (bun run docs:build) and committed, so a
+# deploy does not install Docusaurus and run a second bundler to publish a
+# page nobody changed. tests/unit/docs-built.test.ts fails when the committed
+# site is older than the documents it was built from.

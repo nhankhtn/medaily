@@ -6,8 +6,8 @@
   "packageManager": "pnpm@10.17.1",
   "scripts": {
     "dev": "next dev",
-    "build": "bun run docs:build && next build",
-    "docs:build": "bun install --cwd docs/site --frozen-lockfile && bun run --cwd docs/site build",
+    "build": "next build",
+    "docs:build": "bun install --cwd docs/site --frozen-lockfile && bun run --cwd docs/site build && tsx scripts/docs-stamp.ts",
     "docs:dev": "bun run --cwd docs/site start",
     "start": "next start",
     "lint": "eslint .",
