@@ -78,8 +78,13 @@ const envSchema = z.object({
    * cannot be turned on.
    */
   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: z.string().optional(),
-  // Analytics only. Sign-in works without both; the counter does not start.
+  /**
+   * Analytics, and messaging — which asks Installations to name this browser
+   * before it will issue a token, and Installations will not do that without
+   * an app id. Sign-in works without it.
+   */
   NEXT_PUBLIC_FIREBASE_APP_ID: z.string().optional(),
+  // Analytics only. The counter does not start without it; nothing else cares.
   NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: z.string().optional(),
 
   // Who may sign in. Empty lists with signup off means owner-only.

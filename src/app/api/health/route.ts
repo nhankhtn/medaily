@@ -106,7 +106,7 @@ export async function GET() {
     realtimeConfigured: realtimeEnabled(),
     /*
      * Whether a browser can be offered notifications at all. Both halves or
-     * neither: the certificate names the project to the push service and the
+     * neither: the certificate names the project to the push service, the
      * sender id is what a subscription is registered against, and a build
      * carrying one without the other asks for permission and then cannot
      * finish. Baked at build time like `realtimeConfigured` above, with the
@@ -115,7 +115,8 @@ export async function GET() {
      */
     pushConfigured:
       Boolean(process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY) &&
-      Boolean(process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID),
+      Boolean(process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID) &&
+      Boolean(process.env.NEXT_PUBLIC_FIREBASE_APP_ID),
     /*
      * Whether anything can be sent. The other half of the same feature and a
      * separate line, because they fail in opposite directions: without the two

@@ -40,6 +40,19 @@ function senderId(): string {
 }
 
 /**
+ * The third of them, and the least obvious.
+ *
+ * Messaging asks Installations for an identity for this browser before it will
+ * issue a token, and Installations refuses without an app id — nothing about
+ * the message says push, it arrives as
+ * `installations/missing-app-config-values`. Everywhere else in this app the
+ * app id is an analytics detail that nothing misses.
+ */
+function appId(): string {
+  return process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? ''
+}
+
+/**
  * Whether this app is using the permission, as opposed to merely having it.
  *
  * Two different facts, and conflating them breaks both directions. The browser
@@ -110,7 +123,7 @@ export function announcePushChange(): void {
 
 export function pushAvailability(): PushAvailability {
   if (typeof window === 'undefined') return 'unsupported'
-  if (!firebaseConfigured() || !vapidKey() || !senderId()) return 'unsupported'
+  if (!firebaseConfigured() || !vapidKey() || !senderId() || !appId()) return 'unsupported'
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return 'unsupported'
   if (!('Notification' in window)) return 'unsupported'
 
