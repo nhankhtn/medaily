@@ -72,6 +72,49 @@ export type ChatMessage = {
    * check before counting.
    */
   reactions: Record<string, string[]>
+  /**
+   * The message this one answers, resolved for drawing — never stored here.
+   *
+   * A copy of the quoted words would be a second place the same sentence
+   * lives: it would not follow a recall, and bodies are sealed at rest, so
+   * writing a snippet in the clear beside them would undo that for whichever
+   * lines somebody happened to reply to. What is stored is an id; this is what
+   * comes back from resolving it, trimmed to what a quote needs.
+   *
+   * Null when nothing was being answered, and also when the answer outlived
+   * what it answered — a quoted message in a page nobody kept.
+   */
+  replyTo: ReplyPreview | null
+}
+
+/** Just enough of a message to draw a quote above the answer to it. */
+export type ReplyPreview = {
+  id: string
+  userId: string | null
+  kind: MessageKind
+  /** Trimmed, and empty once the quoted message was recalled. */
+  body: string
+  deleted: boolean
+}
+
+/** A quote is a pointer, not a copy. Past this it stops being a glance. */
+export const PREVIEW_CHARS = 120
+
+/** The quoted body as a reader sees it: one line, bounded. */
+export function previewBody(body: string): string {
+  const flat = body.replace(/\s+/g, ' ').trim()
+  return flat.length > PREVIEW_CHARS ? `${flat.slice(0, PREVIEW_CHARS - 1)}…` : flat
+}
+
+/** What a resolved quote looks like, from the message it points at. */
+export function previewOf(message: ChatMessage): ReplyPreview {
+  return {
+    id: message.id,
+    userId: message.userId,
+    kind: message.kind,
+    body: message.deletedAt ? '' : previewBody(message.body),
+    deleted: message.deletedAt !== null,
+  }
 }
 
 export type ChatInvite = {

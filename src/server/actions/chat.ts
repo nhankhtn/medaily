@@ -147,6 +147,7 @@ export async function sendMessage(input: unknown) {
       kind: z.enum(['text', 'sticker']).default('text'),
       body: z.string().trim().min(1).max(4000),
       clientId: z.string().min(1).max(64),
+      replyToId: messageIdSchema.optional(),
     })
     .refine((value) => value.kind !== 'sticker' || isSticker(value.body), {
       message: 'unknown sticker',
@@ -164,12 +165,25 @@ export async function sendMessage(input: unknown) {
 
   if (!sends.take(userId).allowed) return { ok: false as const, error: 'rate_limited' as const }
 
+  /*
+   * Only a message from this room may be quoted. Without the check an id from
+   * a room somebody is not in would come back resolved, and the quote is
+   * rendered — which would turn a reply box into a way to read one line at a
+   * time out of any conversation whose message ids you could guess.
+   */
+  let replyToId: string | undefined
+  if (parsed.data.replyToId) {
+    const quoted = await store.findMessage(parsed.data.roomId, parsed.data.replyToId)
+    if (quoted) replyToId = quoted.id
+  }
+
   const message = await store.appendMessage({
     roomId: parsed.data.roomId,
     userId,
     kind: parsed.data.kind,
     body: parsed.data.body,
     clientId: parsed.data.clientId,
+    ...(replyToId ? { replyToId } : {}),
   })
   await store.touchRoom(parsed.data.roomId, new Date())
 

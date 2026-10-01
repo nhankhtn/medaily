@@ -16,6 +16,8 @@ import {
   type CaptureModule,
   type CaptureModuleKey,
 } from '@/lib/capture/modules'
+import { usePathname } from 'next/navigation'
+import { isChatRoomPath } from '@/lib/paths'
 import { cn } from '@/lib/utils'
 import { AssistantChat } from '@/features/capture/assistant-chat'
 import { ReviewChat } from '@/features/capture/review-chat'
@@ -49,9 +51,18 @@ export function CaptureBox({
 }) {
   const t = useTranslations('capture')
   const tc = useTranslations('common')
+  const pathname = usePathname()
   const [open, setOpen] = useState(false)
 
-  useShortcut('capture', () => setOpen((previous) => !previous), enabled)
+  /*
+   * Stood down inside one room's conversation. The composer already owns the
+   * bottom of that screen, and a second box floating over it is two places to
+   * type with no way to tell which one a message is going to. The shortcut
+   * goes with it — summoning a hidden panel would be worse than either.
+   */
+  const shadowed = isChatRoomPath(pathname)
+
+  useShortcut('capture', () => setOpen((previous) => !previous), enabled && !shadowed)
 
   // Escape closes from anywhere in the panel, including a focused field, and
   // is not the registry's to hand out.
@@ -64,7 +75,7 @@ export function CaptureBox({
     return () => window.removeEventListener('keydown', onKey)
   }, [enabled, open])
 
-  if (!enabled) return null
+  if (!enabled || shadowed) return null
 
   return (
     <div

@@ -912,3 +912,45 @@ input[type='number'] {
     display: none;
   }
 }
+
+/*
+ * The surface a conversation is read on.
+ *
+ * Bubbles need something to be bubbles *against*. On a plain card the
+ * incoming ones — `--surface-2`, a translucent wash — sit at almost the same
+ * value as what is behind them, and the whole transcript flattens into a
+ * column of text. The wallpaper is what every chat app uses to push them
+ * forward, and it is the reason Telegram's bubbles read as objects.
+ *
+ * Built from gradients rather than an image: no request, no asset to ship, and
+ * it re-tints with the accent instead of needing a second file per theme. Two
+ * soft pools plus a faint diagonal weave, all well under the text contrast
+ * floor — this has to stay scenery, or it becomes something to read.
+ */
+.chat-wallpaper {
+  background-image:
+    radial-gradient(60% 50% at 12% 8%, color-mix(in oklch, var(--accent) 12%, transparent), transparent 70%),
+    radial-gradient(55% 45% at 88% 92%, color-mix(in oklch, var(--accent) 10%, transparent), transparent 72%),
+    repeating-linear-gradient(
+      45deg,
+      color-mix(in oklch, var(--text) 3%, transparent) 0 1px,
+      transparent 1px 11px
+    );
+  background-attachment: local, local, local;
+}
+
+/* The weave is cheap contrast on a bright screen and visual noise on a dark
+   one, where the same lines read as banding. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .chat-wallpaper {
+    background-image:
+      radial-gradient(60% 50% at 12% 8%, color-mix(in oklch, var(--accent) 16%, transparent), transparent 70%),
+      radial-gradient(55% 45% at 88% 92%, color-mix(in oklch, var(--accent) 12%, transparent), transparent 72%);
+  }
+}
+
+:root[data-theme='dark'] .chat-wallpaper {
+  background-image:
+    radial-gradient(60% 50% at 12% 8%, color-mix(in oklch, var(--accent) 16%, transparent), transparent 70%),
+    radial-gradient(55% 45% at 88% 92%, color-mix(in oklch, var(--accent) 12%, transparent), transparent 72%);
+}

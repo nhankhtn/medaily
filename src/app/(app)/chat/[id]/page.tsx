@@ -91,7 +91,10 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
         />
       </div>
 
-      <Card className="flex min-h-0 flex-1 flex-col p-4">
+      {/* Tight on a phone: the padding was a frame round a conversation, and
+          every pixel of it came out of the width a bubble had to say something
+          in. Roomier once there is a screen to spare. */}
+      <Card className="chat-wallpaper flex min-h-0 flex-1 flex-col p-2 sm:p-3">
         <RoomView
           room={loaded.room}
           me={userId}

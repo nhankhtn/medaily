@@ -1,6 +1,6 @@
 'use client'
 
-import { Send, SmilePlus, Trash2 } from 'lucide-react'
+import { CornerUpLeft, Send, SmilePlus, Trash2, X } from 'lucide-react'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -8,10 +8,19 @@ import { createPortal } from 'react-dom'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { VirtualInfiniteList } from '@/components/ui/virtual-infinite-list'
-import type { ChatMessage, ChatRoom, MessageKind, MessagePage, Speaker } from '@/lib/chat/types'
+import {
+  previewOf,
+  type ChatMessage,
+  type ChatRoom,
+  type MessageKind,
+  type MessagePage,
+  type ReplyPreview,
+  type Speaker,
+} from '@/lib/chat/types'
 import { ringRoom, useRoomLive } from '@/lib/hooks/use-room-live'
 import { isSticker, REACTIONS } from '@/lib/chat/stickers'
 import { onlyEmoji } from '@/lib/chat/only-emoji'
+import { dayKeyOf, layoutAt } from '@/lib/chat/grouping'
 import { EmojiPicker, StickerPicker } from './pickers'
 import { StickerArt } from './sticker-art'
 import { useTyping } from '@/lib/hooks/use-typing'
@@ -143,6 +152,25 @@ export function RoomView({
    * member": the doorbell key is all it takes to make a claim, and an
    * unrecognised claimant is exactly the case not worth drawing.
    */
+  /*
+   * The clock the transcript is laid out against.
+   *
+   * Two things read it: a message with no server time yet, which was typed a
+   * moment ago by definition, and the date separators deciding what counts as
+   * today. The second is why it ticks rather than being taken once — a room
+   * left open across midnight would keep calling yesterday "today", and the
+   * separator is the one thing on screen whose whole job is to say which day
+   * it is. A minute is far finer than the question needs.
+   */
+  /** The message the box is currently answering, or nothing. */
+  const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null)
+
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const tick = setInterval(() => setNow(Date.now()), 60_000)
+    return () => clearInterval(tick)
+  }, [])
+
   const typingNames = typists
     .map((uid) => Object.values(speakers).find((speaker) => speaker.firebaseUid === uid)?.name)
     .filter((name): name is string => Boolean(name))
@@ -188,6 +216,10 @@ export function RoomView({
       kind,
       body,
       reactions: {},
+      // Drawn from what is on screen, not fetched: the message being answered
+      // is the one the finger just touched, and asking the server to describe
+      // a row already standing there would be a round trip to learn nothing.
+      replyTo: replyingTo ? previewOf(replyingTo) : null,
       // Left blank rather than guessed: the time a message was sent is the
       // server's to say, and the row is not showing a clock until it has.
       createdAt: '',
@@ -202,12 +234,24 @@ export function RoomView({
     // do, not a round trip later.
     stop()
 
-    const result = await sendMessage({ roomId: room.id, kind, body, clientId })
+    const answering = replyingTo
+    setReplyingTo(null)
+
+    const result = await sendMessage({
+      roomId: room.id,
+      kind,
+      body,
+      clientId,
+      ...(answering ? { replyToId: answering.id } : {}),
+    })
     setSending(false)
 
     if (!result.ok) {
       setMessages((shown) => shown.filter((m) => m.id !== clientId))
       setDraft(body)
+      // The quote comes back with the words. Losing it would make the retry a
+      // different message from the one that failed.
+      setReplyingTo(answering)
       toast.error(t(result.error === 'rate_limited' ? 'tooFast' : 'sendFailed'))
       return
     }
@@ -277,98 +321,188 @@ export function RoomView({
         loadMorePosition="start"
         stickToBottom
         loadingMoreLabel={t('loadOlder')}
-        listClassName="space-y-1"
+        listClassName=""
         empty={<p className="text-text-subtle py-8 text-center text-sm">{t('emptyRoom')}</p>}
-        renderItem={(message) => {
+        renderItem={(message, index) => {
           const mine = message.userId === me
           const speaker = message.userId ? speakers[message.userId] : undefined
           const recallable = mine && !message.deletedAt && !message.pending
+          const { startsRun, endsRun, startsDay } = layoutAt(messages, index, now)
+          const bare =
+            (message.kind === 'sticker' && !message.deletedAt && isSticker(message.body)) ||
+            (!message.deletedAt && onlyEmoji(message.body))
 
           /*
            * Side says who, so the name does not have to. Mine on the right in
            * the accent, everyone else's on the left — the arrangement every
-           * chat app has trained people to read at a glance, which is why the
-           * name above the bubble is only drawn for other people. Reading
-           * "Bạn" over every second line is repeating what the side already
-           * said.
+           * chat app has trained people to read at a glance.
+           *
+           * Runs are what make it a conversation rather than a log. Five
+           * messages from one person say the name once, wear one face, and sit
+           * two pixels apart; the next person starts eight pixels down. The
+           * corners follow: the tail corner is square only on the last of a
+           * run, so a stack reads as one block of speech.
            */
           return (
-            <div className={cn('group flex px-1 py-0.5', mine ? 'justify-end' : 'justify-start')}>
-              <div
-                className={cn(
-                  'flex max-w-[80%] min-w-0 flex-col gap-0.5 sm:max-w-[70%]',
-                  mine ? 'items-end' : 'items-start',
-                )}
-              >
-                {mine ? null : (
-                  <span className="text-text-subtle px-1 text-xs font-medium">
-                    {speaker?.name ?? t('formerMember')}
-                  </span>
-                )}
+            <div className={cn(startsRun ? 'mt-2' : 'mt-0.5', 'first:mt-0')}>
+              {startsDay ? <DaySeparator at={message.createdAt} now={now} /> : null}
 
-                <div className="flex min-w-0 items-end gap-1.5">
-                  {/* Only for other people, as every chat app does it: your own
-                      face beside your own words tells you nothing you did not
-                      already know, and it costs a column of width. */}
-                  {mine ? null : (
+              <div className={cn('group flex px-1', mine ? 'justify-end' : 'justify-start')}>
+                <div className={cn('flex max-w-[85%] items-end gap-1.5 sm:max-w-[70%]', mine && 'flex-row-reverse')}>
+                  {/*
+                    Only for other people, and only on the last of a run: a face
+                    beside every line of one person talking is five copies of
+                    the same information. The empty box keeps the stack above it
+                    aligned, which is the whole reason it is drawn at all.
+                  */}
+                  {mine ? null : endsRun ? (
                     <Avatar
                       name={speaker?.name ?? t('formerMember')}
                       src={speaker?.imageUrl}
-                      className="size-6"
+                      className="size-7 shrink-0"
                     />
+                  ) : (
+                    <span aria-hidden className="size-7 shrink-0" />
                   )}
-                  {/* Outside the bubble and before it, so it never covers a
-                      word and never moves the text when it appears. */}
-                  {recallable ? (
-                    <button
-                      type="button"
-                      onClick={() => void recall(message)}
-                      aria-label={t('recall')}
-                      className="text-text-subtle hover:text-bad shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-                    >
-                      <Trash2 className="size-3.5" />
-                    </button>
-                  ) : null}
 
-                  {message.kind === 'sticker' && !message.deletedAt && isSticker(message.body) ? (
-                    // No bubble: a sticker is the message, and a coloured box
-                    // round it would only fight the disc it is drawn on.
-                    <span className={cn('px-1', message.pending && 'opacity-60')}>
-                      <StickerArt id={message.body} size={96} />
+                  {bare ? (
+                    // No bubble: a sticker or a line of nothing but emoji is
+                    // the message, and a coloured box round it would only fight
+                    // what is drawn inside.
+                    <span
+                      className={cn(
+                        'flex flex-col',
+                        mine ? 'items-end' : 'items-start',
+                        message.pending && 'opacity-60',
+                      )}
+                    >
+                      {/* Asked again here rather than trusted from `bare`:
+                          `isSticker` is what narrows the body to an id, and a
+                          cast in its place would be the same check written so
+                          it cannot fail. */}
+                      {isSticker(message.body) ? (
+                        <StickerArt id={message.body} size={96} />
+                      ) : (
+                        <span className="px-1 text-4xl leading-tight">{message.body}</span>
+                      )}
+                      <ReactionPills
+                        reactions={message.reactions}
+                        me={me}
+                        onToggle={(emoji) => void react(message, emoji)}
+                      />
+                      {message.pending ? null : (
+                        <span className="text-text-subtle px-1 text-[10px] tabular-nums">
+                          {format.dateTime(new Date(message.createdAt), 'clock')}
+                        </span>
+                      )}
                     </span>
                   ) : (
-                    <p
+                    <div
                       className={cn(
-                        'min-w-0 rounded-2xl px-3 py-1.5 text-sm break-words whitespace-pre-wrap',
+                        'relative min-w-0 rounded-2xl px-3 py-1.5 text-sm',
+                        // Room kept for the clock sitting in the corner, so the
+                        // last word never runs under it. Telegram reserves the
+                        // same gap, which is why a one-word bubble there is
+                        // wider than the word.
+                        'pr-14',
                         mine ? 'bg-accent text-accent-text' : 'bg-surface-2',
+                        // Square on the tail side except at the end of the run.
+                        mine
+                          ? endsRun
+                            ? 'rounded-br-md'
+                            : 'rounded-r-md'
+                          : endsRun
+                            ? 'rounded-bl-md'
+                            : 'rounded-l-md',
+                        !startsRun && (mine ? 'rounded-tr-md' : 'rounded-tl-md'),
                         message.deletedAt && 'text-text-subtle bg-surface-2 italic',
                         // Faded until the server has it. Showing it as though
                         // it had landed would be a lie on the one occasion it
                         // matters: when the send is about to fail.
                         message.pending && 'opacity-60',
-                        // A message that is only emoji is the message, so it
-                        // is drawn at the size somebody meant it to be read at.
-                        onlyEmoji(message.body) && 'bg-transparent px-1 text-4xl leading-tight',
                       )}
                     >
-                      {message.deletedAt ? t('recalled') : message.body}
-                    </p>
+                      {/* Inside the bubble and only once per run, which is
+                          where every chat app puts it — above it, the name was
+                          a line of its own competing with the words. */}
+                      {mine || !startsRun ? null : (
+                        <span className="text-accent block text-xs font-semibold">
+                          {speaker?.name ?? t('formerMember')}
+                        </span>
+                      )}
+
+                      {message.replyTo && !message.deletedAt ? (
+                        <Quote preview={message.replyTo} speakers={speakers} mine={mine} />
+                      ) : null}
+
+                      <span className="block break-words whitespace-pre-wrap">
+                        {message.deletedAt ? t('recalled') : message.body}
+                      </span>
+
+                      <ReactionPills
+                        reactions={message.reactions}
+                        me={me}
+                        onToggle={(emoji) => void react(message, emoji)}
+                      />
+
+                      {message.pending ? null : (
+                        <span
+                          className={cn(
+                            'absolute right-2.5 bottom-1 text-[10px] tabular-nums',
+                            mine ? 'text-accent-text/70' : 'text-text-subtle',
+                          )}
+                        >
+                          {format.dateTime(new Date(message.createdAt), 'clock')}
+                        </span>
+                      )}
+                    </div>
                   )}
+
+                  {/* Outside the bubble, on the side away from the words, so
+                      it never covers one and never moves the text when it
+                      appears. */}
+                  {message.pending || message.deletedAt ? null : (
+                    <button
+                      type="button"
+                      onClick={() => setReplyingTo(message)}
+                      aria-label={t('reply')}
+                      // Same visibility rule as the others: there is no hover
+                      // on a phone, and a control that only appears to a mouse
+                      // is a control half the people never find.
+                      className={cn(
+                        'text-text-subtle hover:text-text shrink-0 transition-opacity',
+                        'opacity-100 sm:opacity-0',
+                        'sm:group-hover:opacity-100 sm:focus-visible:opacity-100',
+                      )}
+                    >
+                      <CornerUpLeft className="size-3.5" />
+                    </button>
+                  )}
+
+                  {recallable ? (
+                    <button
+                      type="button"
+                      onClick={() => void recall(message)}
+                      aria-label={t('recall')}
+                      // Always there on a phone, where there is no hovering to
+                      // reveal it. Without the `sm:` the button was invisible
+                      // and unreachable on touch, which is to say a message
+                      // could not be taken back on the device most of them are
+                      // sent from.
+                      className={cn(
+                        'text-text-subtle hover:text-bad shrink-0 transition-opacity',
+                        'opacity-100 sm:opacity-0',
+                        'sm:group-hover:opacity-100 sm:focus-visible:opacity-100',
+                      )}
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  ) : null}
+
                   {message.pending ? null : (
-                    <ReactionBar
-                      reactions={message.reactions}
-                      me={me}
-                      mine={mine}
-                      onToggle={(emoji) => void react(message, emoji)}
-                    />
+                    <ReactionBar mine={mine} onToggle={(emoji) => void react(message, emoji)} />
                   )}
                 </div>
-
-                {message.pending ? null : (
-                  <span className="text-text-subtle px-1 text-[11px] tabular-nums">
-                    {format.dateTime(new Date(message.createdAt), 'clock')}
-                  </span>
-                )}
               </div>
             </div>
           )
@@ -384,6 +518,30 @@ export function RoomView({
             : t('typingMany', { count: typingNames.length })}
         </p>
       ) : null}
+      {replyingTo ? (
+        <div className="glass flex items-center gap-2 rounded-[var(--radius)] px-2 py-1.5">
+          <CornerUpLeft className="text-text-subtle size-3.5 shrink-0" />
+          <div className="min-w-0 flex-1 border-l-2 border-accent pl-2">
+            <p className="text-accent truncate text-xs font-medium">
+              {replyingTo.userId === me
+                ? t('you')
+                : (speakers[replyingTo.userId ?? '']?.name ?? t('formerMember'))}
+            </p>
+            <p className="text-text-muted truncate text-xs">
+              {previewOf(replyingTo).body || t('recalled')}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setReplyingTo(null)}
+            aria-label={t('cancelReply')}
+            className="text-text-subtle hover:text-text flex size-7 shrink-0 items-center justify-center rounded-full"
+          >
+            <X className="size-3.5" />
+          </button>
+        </div>
+      ) : null}
+
       <form onSubmit={submit} className="flex items-end gap-1 sm:gap-2">
         <StickerPicker onPick={(id) => void send('sticker', id)} />
         <div className="relative flex-1">
@@ -437,19 +595,103 @@ export function RoomView({
   )
 }
 
-/** One tap, both directions — the same shape the server settles on. */
-function withReaction(message: Shown, emoji: string, me: string): Shown {
-  const who = message.reactions[emoji] ?? []
-  const next = { ...message.reactions }
+/**
+ * The day a run of messages belongs to, as a line across the conversation.
+ *
+ * Without it a transcript is one unbroken column and "15:50" could be today or
+ * three weeks ago. Centred and small on purpose: it is punctuation, not a
+ * heading.
+ */
+function DaySeparator({ at, now }: { at: string; now: number }) {
+  const t = useTranslations('common')
+  const format = useFormatter()
 
-  if (who.includes(me)) {
+  const when = at === '' ? new Date(now) : new Date(at)
+  const today = dayKeyOf({ userId: null, createdAt: '' }, now)
+  const key = dayKeyOf({ userId: null, createdAt: when.toISOString() }, now)
+  const yesterday = dayKeyOf(
+    { userId: null, createdAt: new Date(now - 24 * 60 * 60 * 1000).toISOString() },
+    now,
+  )
+
+  const label =
+    key === today ? t('today') : key === yesterday ? t('yesterday') : format.dateTime(when, 'weekdayDayMonth')
+
+  return (
+    <div className="flex justify-center py-2">
+      <span className="glass text-text-subtle rounded-full px-2.5 py-0.5 text-[11px] font-medium">
+        {label}
+      </span>
+    </div>
+  )
+}
+
+/**
+ * The message an answer is answering, drawn above it.
+ *
+ * A bar down the left rather than a box: it has to read as something quoted
+ * from elsewhere, not as a second message nested inside this one. The colour
+ * follows the bubble it sits in, because the accent that reads as a quote on a
+ * grey bubble disappears entirely on an accent-coloured one.
+ */
+function Quote({
+  preview,
+  speakers,
+  mine,
+}: {
+  preview: ReplyPreview
+  speakers: Record<string, Speaker>
+  mine: boolean
+}) {
+  const t = useTranslations('chat')
+  const who = preview.userId ? speakers[preview.userId]?.name : null
+
+  return (
+    <span
+      className={cn(
+        'mb-1 block min-w-0 border-l-2 pl-2',
+        mine ? 'border-accent-text/50' : 'border-accent',
+      )}
+    >
+      <span
+        className={cn(
+          'block truncate text-xs font-medium',
+          mine ? 'text-accent-text/80' : 'text-accent',
+        )}
+      >
+        {who ?? t('formerMember')}
+      </span>
+      <span
+        className={cn('block truncate text-xs', mine ? 'text-accent-text/70' : 'text-text-muted')}
+      >
+        {preview.deleted
+          ? t('recalled')
+          : preview.kind === 'sticker'
+            ? t('stickerQuote')
+            : preview.body}
+      </span>
+    </span>
+  )
+}
+
+/**
+ * One tap, both directions — the same shape the server settles on.
+ *
+ * Off everything first, because there is one reaction per person: tapping a
+ * second emoji moves yours rather than adding to it. The screen has to agree
+ * with the store on that or the optimistic row shows two of yours for the
+ * length of a round trip and then one of them vanishes.
+ */
+function withReaction(message: Shown, emoji: string, me: string): Shown {
+  const had = (message.reactions[emoji] ?? []).includes(me)
+
+  const next: Record<string, string[]> = {}
+  for (const [key, who] of Object.entries(message.reactions)) {
     const left = who.filter((id) => id !== me)
-    if (left.length === 0) delete next[emoji]
-    else next[emoji] = left
-  } else {
-    next[emoji] = [...who, me]
+    if (left.length > 0) next[key] = left
   }
 
+  if (!had) next[emoji] = [...(next[emoji] ?? []), me]
   return { ...message, reactions: next }
 }
 
@@ -469,13 +711,9 @@ function withReaction(message: Shown, emoji: string, me: string): Shown {
  * placed in viewport coordinates against the button that opened it.
  */
 function ReactionBar({
-  reactions,
-  me,
   mine,
   onToggle,
 }: {
-  reactions: Record<string, string[]>
-  me: string
   /** Your own messages sit against the right margin, and so does this. */
   mine: boolean
   onToggle: (emoji: string) => void
@@ -483,7 +721,6 @@ function ReactionBar({
   const t = useTranslations('chat')
   const trigger = useRef<HTMLButtonElement>(null)
   const [at, setAt] = useState<{ bottom: number; left?: number; right?: number } | null>(null)
-  const chosen = Object.entries(reactions).filter(([, who]) => who.length > 0)
 
   const open = () => {
     const box = trigger.current?.getBoundingClientRect()
@@ -531,26 +768,51 @@ function ReactionBar({
         />
       ) : null}
 
-      {chosen.length > 0 ? (
-        <span className="flex flex-wrap items-center gap-1">
-          {chosen.map(([emoji, who]) => (
-            <button
-              key={emoji}
-              type="button"
-              onClick={() => onToggle(emoji)}
-              aria-pressed={who.includes(me)}
-              className={cn(
-                'border-border-base flex h-7 shrink-0 items-center gap-1 rounded-full border px-2 text-sm',
-                who.includes(me) ? 'border-accent bg-accent/10' : 'bg-surface-2',
-              )}
-            >
-              <span>{emoji}</span>
-              <span className="text-text-subtle text-xs tabular-nums">{who.length}</span>
-            </button>
-          ))}
-        </span>
-      ) : null}
     </>
+  )
+}
+
+/**
+ * What is already on a message, drawn in the bubble's own footprint.
+ *
+ * Beside the bubble they were a second object competing with it for the 85%
+ * a message is allowed, and a long sentence with three reactions ended up
+ * narrower than the same sentence without them. Inside, they hang off the end
+ * of the words the way they do everywhere else, and the bubble grows to hold
+ * them instead of shrinking to make room.
+ */
+function ReactionPills({
+  reactions,
+  me,
+  onToggle,
+}: {
+  reactions: Record<string, string[]>
+  me: string
+  onToggle: (emoji: string) => void
+}) {
+  const chosen = Object.entries(reactions).filter(([, who]) => who.length > 0)
+  if (chosen.length === 0) return null
+
+  return (
+    <span className="mt-1 flex flex-wrap items-center gap-1">
+      {chosen.map(([emoji, who]) => (
+        <button
+          key={emoji}
+          type="button"
+          onClick={() => onToggle(emoji)}
+          aria-pressed={who.includes(me)}
+          className={cn(
+            'flex h-6 shrink-0 items-center gap-1 rounded-full px-1.5 text-xs',
+            who.includes(me)
+              ? 'bg-accent/15 ring-accent/50 ring-1'
+              : 'bg-text/10',
+          )}
+        >
+          <span className="text-sm leading-none">{emoji}</span>
+          <span className="tabular-nums">{who.length}</span>
+        </button>
+      ))}
+    </span>
   )
 }
 

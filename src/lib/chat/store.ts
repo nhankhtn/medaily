@@ -1,10 +1,15 @@
-import type { ChatInvite, ChatMember, ChatMessage, ChatRoom, MessagePage } from './types'
+import { previewOf, type ChatInvite, type ChatMember, type ChatMessage, type ChatRoom, type MessagePage } from './types'
 
 /** A room is always made faceless; the picture is set afterwards, if at all. */
 export type NewRoom = Omit<ChatRoom, 'lastMessageAt' | 'createdAt' | 'avatarUrl'>
-export type NewMessage = Omit<ChatMessage, 'id' | 'createdAt' | 'deletedAt' | 'reactions'> & {
+export type NewMessage = Omit<
+  ChatMessage,
+  'id' | 'createdAt' | 'deletedAt' | 'reactions' | 'replyTo'
+> & {
   /** Supplied by the browser so a retried send returns the first message, not a second one. */
   clientId: string
+  /** The message being answered. Only the id is stored; the quote is resolved on read. */
+  replyToId?: string | null
 }
 export type NewInvite = Omit<ChatInvite, 'usedCount' | 'revokedAt' | 'createdAt'>
 
@@ -75,10 +80,26 @@ export type ChatStore = {
     rooms: { roomId: string; after: string | null }[],
   ) => Promise<Record<string, number>>
 
+  /**
+   * One message, scoped to the room that owns it.
+   *
+   * The room id is not decoration: it is what stops an id from another
+   * conversation resolving. A reply quotes what it answers, and a quote of
+   * something from a room you are not in would be a way to read that room one
+   * line at a time.
+   */
+  findMessage: (roomId: string, messageId: string) => Promise<ChatMessage | null>
+
   /** Answers false when the message is not this person's to delete. */
   softDeleteMessage: (roomId: string, messageId: string, userId: string) => Promise<boolean>
   /**
-   * Adds or removes one person's reaction, and says which it did.
+   * Sets one person's reaction to a message, and says what it did.
+   *
+   * **One per person.** Choosing a second emoji replaces the first rather than
+   * adding to it — a reaction is a response to a message, and somebody who
+   * answers with four of them is using the row as a sentence. That rule lives
+   * here rather than in the screen, because two tabs open at once would walk
+   * straight past a rule enforced on the way in.
    *
    * One call rather than two, because the screen has one control: tapping an
    * emoji you already chose takes it back. Answering `null` means there was no
@@ -146,6 +167,7 @@ export const NO_CHAT: ChatStore = {
   listBackward: async () => ({ items: [], cursor: null, more: false }),
   listForward: async () => ({ items: [], cursor: null, more: false }),
   countUnread: async () => ({}),
+  findMessage: async () => null,
   softDeleteMessage: async () => false,
   toggleReaction: async () => null,
   createInvite: async () => {
@@ -170,7 +192,8 @@ export const NO_CHAT: ChatStore = {
 export function inMemoryChatStore(): ChatStore {
   const rooms = new Map<string, ChatRoom>()
   const members: ChatMember[] = []
-  const messages: (ChatMessage & { clientId: string })[] = []
+  /** `replyToId` is what is stored; `replyTo` is resolved on the way out. */
+  const messages: (ChatMessage & { clientId: string; replyToId: string | null })[] = []
   const invites = new Map<string, ChatInvite>()
   let seq = 0
 
@@ -186,9 +209,26 @@ export function inMemoryChatStore(): ChatStore {
     members.find((m) => m.roomId === roomId && m.userId === userId)
   const live = (roomId: string) => messages.filter((m) => m.roomId === roomId)
 
+  /**
+   * Quotes resolved where every page passes through.
+   *
+   * Looked up rather than copied in at write time, so a quote of a message
+   * that was later recalled says so instead of still showing the words.
+   * A quote whose message is gone resolves to null — the answer survives what
+   * it answered.
+   */
+  const withQuotes = (rows: (ChatMessage & { replyToId: string | null })[]): ChatMessage[] =>
+    rows.map((row) => {
+      const quoted = row.replyToId ? messages.find((m) => m.id === row.replyToId) : undefined
+      return { ...row, replyTo: quoted ? previewOf(quoted) : null }
+    })
+
   /** One row past the limit is how a page knows another exists, without counting. */
-  const page = (rows: ChatMessage[], limit: number): MessagePage => {
-    const items = rows.slice(0, limit)
+  const page = (
+    rows: (ChatMessage & { replyToId: string | null })[],
+    limit: number,
+  ): MessagePage => {
+    const items = withQuotes(rows.slice(0, limit))
     return { items: items.map(copy), cursor: items.at(-1)?.id ?? null, more: rows.length > limit }
   }
 
@@ -272,9 +312,15 @@ export function inMemoryChatStore(): ChatStore {
         createdAt: new Date().toISOString(),
         deletedAt: null,
         reactions: {} as Record<string, string[]>,
+        replyToId: message.replyToId ?? null,
+        replyTo: null,
       }
       messages.push(made)
-      return copy(made)
+      return copy(withQuotes([made])[0]!)
+    },
+    findMessage: async (roomId, messageId) => {
+      const found = messages.find((m) => m.id === messageId && m.roomId === roomId)
+      return found ? copy(withQuotes([found])[0]!) : null
     },
     listBackward: async (roomId, { before, limit }) => {
       const rows = live(roomId)
@@ -309,17 +355,19 @@ export function inMemoryChatStore(): ChatStore {
       const found = messages.find((m) => m.id === messageId && m.roomId === roomId)
       if (!found) return null
 
-      const who = found.reactions[emoji] ?? []
-      if (who.includes(userId)) {
+      const had = (found.reactions[emoji] ?? []).includes(userId)
+
+      // Off every emoji first, so choosing a second one moves the reaction
+      // rather than adding to it. Also how "take it back" is expressed: the
+      // emoji that was already chosen simply is not put back on.
+      for (const [key, who] of Object.entries(found.reactions)) {
         const left = who.filter((id) => id !== userId)
-        // The key goes with the last person, so an emoji nobody chose any more
-        // does not sit there as an empty row.
-        if (left.length === 0) delete found.reactions[emoji]
-        else found.reactions[emoji] = left
-        return 'removed'
+        if (left.length === 0) delete found.reactions[key]
+        else found.reactions[key] = left
       }
 
-      found.reactions[emoji] = [...who, userId]
+      if (had) return 'removed'
+      found.reactions[emoji] = [...(found.reactions[emoji] ?? []), userId]
       return 'added'
     },
 

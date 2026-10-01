@@ -11,6 +11,7 @@ import type {
   MessageKind,
   RoomKind,
 } from './types'
+import { previewOf } from './types'
 
 const ROOMS = 'chat_rooms'
 const MEMBERS = 'chat_members'
@@ -57,6 +58,8 @@ type MessageDoc = {
   clientId: string
   deletedAt?: Date | null
   reactions?: Record<string, string[]>
+  /** Hex id of the message this one answers. The quote itself is never stored. */
+  replyToId?: string
 }
 
 type InviteDoc = {
@@ -212,11 +215,12 @@ export function mongoChatStore(uri: string): ChatStore {
         createdAt: new Date(),
         clientId: message.clientId,
         deletedAt: null,
+        ...(message.replyToId ? { replyToId: message.replyToId } : {}),
       }
 
       try {
         await messages.insertOne(doc)
-        return asMessage(doc)!
+        return (await withQuotes(uri, [doc]))[0]!
       } catch (error) {
         // A send whose reply never arrived, tried again. The unique index on
         // (roomId, clientId) is what makes the second attempt a read.
@@ -226,7 +230,7 @@ export function mongoChatStore(uri: string): ChatStore {
           clientId: message.clientId,
         })
         if (!already) throw error
-        return asMessage(already)!
+        return (await withQuotes(uri, [already]))[0]!
       }
     },
 
@@ -238,7 +242,7 @@ export function mongoChatStore(uri: string): ChatStore {
         .sort({ _id: -1 })
         .limit(limit + 1)
         .toArray()
-      return pageOf(rows, limit)
+      return pageOf(uri, rows, limit)
     },
 
     listForward: async (roomId, { after, limit }) => {
@@ -249,7 +253,7 @@ export function mongoChatStore(uri: string): ChatStore {
         .sort({ _id: 1 })
         .limit(limit + 1)
         .toArray()
-      return pageOf(rows, limit)
+      return pageOf(uri, rows, limit)
     },
 
     countUnread: async (userId, rooms) => {
@@ -282,29 +286,67 @@ export function mongoChatStore(uri: string): ChatStore {
       const messages = await messagesIn(uri)
       const _id = new ObjectId(messageId)
 
-      // Two statements rather than a read and a write, so two people reacting
-      // at the same moment cannot overwrite each other's. `$addToSet` is a
-      // no-op when the id is already there, which is how "did it add?" is
-      // answered without asking first.
-      const added = await messages.updateOne(
-        { _id, roomId, [`reactions.${emoji}`]: { $ne: userId } },
+      /*
+       * One reaction per person, so choosing a second emoji moves the first
+       * rather than joining it.
+       *
+       * The strip runs as an aggregation pipeline because the emoji somebody
+       * already chose is not known here — `$pull` needs a field name, and the
+       * field is whichever one holds their id. `findOneAndUpdate` returning
+       * the document as it was is what makes this one statement instead of a
+       * read and a write: the pre-state says whether they were taking the
+       * reaction back, and nobody can slip between the asking and the doing.
+       */
+      const before = await messages.findOneAndUpdate(
+        { _id, roomId },
+        [
+          {
+            $set: {
+              reactions: {
+                $arrayToObject: {
+                  $filter: {
+                    input: {
+                      $map: {
+                        input: { $objectToArray: { $ifNull: ['$reactions', {}] } },
+                        as: 'r',
+                        in: {
+                          k: '$$r.k',
+                          v: { $filter: { input: '$$r.v', cond: { $ne: ['$$this', userId] } } },
+                        },
+                      },
+                    },
+                    as: 'entry',
+                    // An emoji nobody chose any more is dropped, so it stops
+                    // being a row the screen draws with a count of zero.
+                    cond: { $gt: [{ $size: '$$entry.v' }, 0] },
+                  },
+                },
+              },
+            },
+          },
+        ],
+        { returnDocument: 'before' },
+      )
+      if (!before) return null
+
+      // Tapping the emoji already chosen is how it is taken back, and the
+      // strip above has already done it.
+      if ((before.reactions?.[emoji] ?? []).includes(userId)) return 'removed'
+
+      // Separate statement, but it cannot be clobbered: both it and the strip
+      // touch only this person's id, so two people reacting at once never meet.
+      await messages.updateOne(
+        { _id, roomId },
         { $addToSet: { [`reactions.${emoji}`]: userId } },
       )
-      if (added.modifiedCount > 0) return 'added'
+      return 'added'
+    },
 
-      const removed = await messages.updateOne(
-        { _id, roomId },
-        { $pull: { [`reactions.${emoji}`]: userId } },
-      )
-      if (removed.modifiedCount === 0) return null
-
-      // An emoji nobody chose any more is unset, so it stops being a row the
-      // screen has to draw with a count of zero.
-      await messages.updateOne(
-        { _id, roomId, [`reactions.${emoji}`]: { $size: 0 } },
-        { $unset: { [`reactions.${emoji}`]: '' } },
-      )
-      return 'removed'
+    findMessage: async (roomId, messageId) => {
+      if (!ObjectId.isValid(messageId)) return null
+      const messages = await messagesIn(uri)
+      const doc = await messages.findOne({ _id: new ObjectId(messageId), roomId })
+      return doc ? (await withQuotes(uri, [doc]))[0]! : null
     },
 
     softDeleteMessage: async (roomId, messageId, userId) => {
@@ -405,9 +447,46 @@ export function mongoChatStore(uri: string): ChatStore {
  * read receipts point at one, and so does recalling a message — so wrapping it
  * again would be ceremony that hides nothing.
  */
-function pageOf(rows: MessageDoc[], limit: number) {
-  const items = rows.slice(0, limit).map((row) => asMessage(row)!)
+async function pageOf(uri: string, rows: MessageDoc[], limit: number) {
+  const items = await withQuotes(uri, rows.slice(0, limit))
   return { items, cursor: items.at(-1)?.id ?? null, more: rows.length > limit }
+}
+
+/**
+ * Maps documents to messages, with the message each one answers filled in.
+ *
+ * Takes the documents rather than the mapped messages because `replyToId` is
+ * on the document and nowhere else — carrying it alongside would be a second
+ * list to keep in step with the first.
+ *
+ * One extra query per page, never one per message: the ids are collected and
+ * fetched together. Resolved on read rather than copied in on write for two
+ * reasons — a quote of a message later recalled has to say so instead of still
+ * showing the words, and bodies are sealed at rest, so a snippet written beside
+ * them in the clear would undo that for every line anybody replied to.
+ *
+ * A quote whose message is gone resolves to null. The answer outlives what it
+ * answered, which is the only thing it can do.
+ */
+async function withQuotes(uri: string, docs: MessageDoc[]): Promise<ChatMessage[]> {
+  const items = docs.map((doc) => asMessage(doc)!)
+
+  const wanted = new Set(
+    docs.map((doc) => doc.replyToId).filter((id): id is string => Boolean(id) && ObjectId.isValid(id!)),
+  )
+  if (wanted.size === 0) return items
+
+  const messages = await messagesIn(uri)
+  const quoted = await messages
+    .find({ _id: { $in: [...wanted].map((id) => new ObjectId(id)) } })
+    .toArray()
+  const byId = new Map(quoted.map((doc) => [doc._id.toHexString(), asMessage(doc)!]))
+
+  return items.map((item, index) => {
+    const id = docs[index]?.replyToId
+    const found = id ? byId.get(id) : undefined
+    return found ? { ...item, replyTo: previewOf(found) } : item
+  })
 }
 
 function asRoom(doc: RoomDoc | null): ChatRoom | null {
@@ -452,6 +531,9 @@ function asMessage(doc: MessageDoc | null): ChatMessage | null {
     createdAt: doc.createdAt.toISOString(),
     deletedAt: doc.deletedAt?.toISOString() ?? null,
     reactions: readReactions(doc.reactions),
+    // Filled by `withQuotes`, the only thing holding a collection to look the
+    // quoted message up in. A message mapped on its own has no quote drawn.
+    replyTo: null,
   }
 }
 

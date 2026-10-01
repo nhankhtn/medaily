@@ -406,15 +406,100 @@ export function describeChatStore(name: string, makeStore: () => Promise<ChatSto
       expect(shown?.reactions).toEqual({ '👍': ['u3'] })
     })
 
-    it('holds more than one emoji on the same message', async () => {
+    /**
+     * One per person. A reaction is a response to a message, and somebody
+     * answering with four of them is using the row as a sentence. Enforced in
+     * the store rather than the screen, because two tabs open at once walk
+     * straight past a rule enforced on the way in.
+     */
+    it('moves one person reaction rather than stacking a second', async () => {
       const store = await makeStore()
       await store.createRoom(room('r1'))
       const sent = await store.appendMessage(message('r1', 'u1', 'hay đó', 'c1'))
       await store.toggleReaction('r1', sent.id, 'u2', '👍')
+
+      expect(await store.toggleReaction('r1', sent.id, 'u2', '❤️')).toBe('added')
+      const [shown] = (await store.listBackward('r1', { limit: 10 })).items
+      expect(shown?.reactions).toEqual({ '❤️': ['u2'] })
+    })
+
+    /** The rule is one each, not one per message — a room still disagrees. */
+    it('holds a different emoji for each person', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      const sent = await store.appendMessage(message('r1', 'u1', 'hay đó', 'c1'))
+      await store.toggleReaction('r1', sent.id, 'u2', '👍')
+      await store.toggleReaction('r1', sent.id, 'u3', '❤️')
+
+      const [shown] = (await store.listBackward('r1', { limit: 10 })).items
+      expect(shown?.reactions).toEqual({ '👍': ['u2'], '❤️': ['u3'] })
+    })
+
+    /** Moving away from an emoji nobody else chose takes the row with it. */
+    it('drops the emoji somebody moved off, when they were the last on it', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      const sent = await store.appendMessage(message('r1', 'u1', 'hay đó', 'c1'))
+      await store.toggleReaction('r1', sent.id, 'u2', '👍')
+      await store.toggleReaction('r1', sent.id, 'u3', '👍')
       await store.toggleReaction('r1', sent.id, 'u2', '❤️')
 
       const [shown] = (await store.listBackward('r1', { limit: 10 })).items
-      expect(Object.keys(shown?.reactions ?? {}).sort()).toEqual(['❤️', '👍'])
+      expect(shown?.reactions).toEqual({ '👍': ['u3'], '❤️': ['u2'] })
+    })
+
+    it('quotes the message an answer points at', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      const asked = await store.appendMessage(message('r1', 'u1', 'mai họp mấy giờ', 'c1'))
+      await store.appendMessage({
+        ...message('r1', 'u2', '9h nhé', 'c2'),
+        replyToId: asked.id,
+      })
+
+      const [answer] = (await store.listBackward('r1', { limit: 1 })).items
+      expect(answer?.replyTo?.id).toBe(asked.id)
+      expect(answer?.replyTo?.userId).toBe('u1')
+      expect(answer?.replyTo?.body).toBe('mai họp mấy giờ')
+    })
+
+    /**
+     * Resolved on read, which is the whole reason the quote is an id and not a
+     * copy: a copy would still be showing words their author took back.
+     */
+    it('says the quoted message was recalled rather than still showing it', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      const asked = await store.appendMessage(message('r1', 'u1', 'xin lỗi nhầm', 'c1'))
+      await store.appendMessage({
+        ...message('r1', 'u2', 'không sao', 'c2'),
+        replyToId: asked.id,
+      })
+      await store.softDeleteMessage('r1', asked.id, 'u1')
+
+      const [answer] = (await store.listBackward('r1', { limit: 1 })).items
+      expect(answer?.replyTo?.deleted).toBe(true)
+      expect(answer?.replyTo?.body, 'the words go with the recall').toBe('')
+    })
+
+    it('draws no quote on a message that answers nothing', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      await store.appendMessage(message('r1', 'u1', 'chào', 'c1'))
+
+      const [shown] = (await store.listBackward('r1', { limit: 1 })).items
+      expect(shown?.replyTo).toBeNull()
+    })
+
+    /** The room id is what stops an id from another conversation resolving. */
+    it('does not find a message through the wrong room', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      await store.createRoom(room('r2'))
+      const sent = await store.appendMessage(message('r1', 'u1', 'riêng tư', 'c1'))
+
+      expect(await store.findMessage('r2', sent.id)).toBeNull()
+      expect((await store.findMessage('r1', sent.id))?.body).toBe('riêng tư')
     })
 
     it('answers nothing for a message that is not there', async () => {

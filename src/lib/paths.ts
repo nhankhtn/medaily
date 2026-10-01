@@ -97,6 +97,11 @@ export const PATHS = {
   /** What a stranger meets at `/`, before there is an account to sign in to. */
   welcome: '/welcome',
   /**
+   * The Docusaurus build in `public/docs/`. Only the configured password
+   * account may read it — see `src/proxy.ts`.
+   */
+  docs: '/docs',
+  /**
    * The offline worker. Public, and it has to be: a browser refuses to
    * register a worker whose script was redirected, so leaving it behind the
    * sign-in gate turns offline support off without saying so. Nothing in it
@@ -155,6 +160,21 @@ export function safeNextPath(value: string | null | undefined): string {
     return PATHS.home
   }
   return value.split(/[?#]/)[0] === PATHS.login ? PATHS.home : value
+}
+
+/**
+ * Whether this is one room's conversation, as opposed to the list of rooms.
+ *
+ * Used to stand things down that own the bottom of the screen elsewhere: the
+ * capture box floats there on every other route, and here the message composer
+ * already does. Two boxes to type into, one over the other, is the kind of
+ * thing nobody reports as a bug and everybody works around.
+ */
+export function isChatRoomPath(pathname: string): boolean {
+  if (!pathname.startsWith(`${PATHS.chat}/`)) return false
+  // `/chat/join/<code>` is an invitation, not a conversation — no composer
+  // there, so nothing to stand down for.
+  return !pathname.startsWith(`${PATHS.chat}/join`)
 }
 
 /** Reachable without a session; the proxy lets these through untouched. */
