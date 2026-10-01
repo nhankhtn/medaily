@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { notFound } from 'next/navigation'
+import { Avatar } from '@/components/ui/avatar'
 import { Card } from '@/components/ui/card'
 import { RoomSettings } from '@/features/chat/room-settings'
 import { RoomView } from '@/features/chat/room-view'
@@ -64,6 +65,12 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
             </Link>
           </Button>
 
+          <Avatar
+            name={loaded.room.title ?? t('untitled')}
+            src={loaded.room.avatarUrl}
+            className="size-10"
+          />
+
           <div className="min-w-0">
             <h1 className="truncate text-2xl font-semibold">
               {loaded.room.title ?? t('untitled')}
@@ -77,6 +84,7 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
         <RoomSettings
           roomId={loaded.room.id}
           owner={owner}
+          avatarUrl={loaded.room.avatarUrl}
           title={loaded.room.title}
           members={Object.values(loaded.speakers)}
           me={userId}

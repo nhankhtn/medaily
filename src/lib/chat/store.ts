@@ -1,6 +1,7 @@
 import type { ChatInvite, ChatMember, ChatMessage, ChatRoom, MessagePage } from './types'
 
-export type NewRoom = Omit<ChatRoom, 'lastMessageAt' | 'createdAt'>
+/** A room is always made faceless; the picture is set afterwards, if at all. */
+export type NewRoom = Omit<ChatRoom, 'lastMessageAt' | 'createdAt' | 'avatarUrl'>
 export type NewMessage = Omit<ChatMessage, 'id' | 'createdAt' | 'deletedAt' | 'reactions'> & {
   /** Supplied by the browser so a retried send returns the first message, not a second one. */
   clientId: string
@@ -37,6 +38,8 @@ export type ChatStore = {
   rotateDoorbell: (roomId: string) => Promise<string>
   touchRoom: (roomId: string, at: Date) => Promise<void>
   renameRoom: (roomId: string, title: string) => Promise<void>
+  /** Null clears it. The caller destroys whatever the old URL pointed at. */
+  setRoomAvatar: (roomId: string, avatarUrl: string | null) => Promise<void>
   deleteRoom: (roomId: string) => Promise<void>
 
   // — members —
@@ -119,6 +122,7 @@ export const NO_CHAT: ChatStore = {
   id: 'none',
   createRoom: async (room) => ({
     ...room,
+    avatarUrl: null,
     lastMessageAt: null,
     createdAt: new Date().toISOString(),
   }),
@@ -128,6 +132,7 @@ export const NO_CHAT: ChatStore = {
   rotateDoorbell: async () => '',
   touchRoom: async () => {},
   renameRoom: async () => {},
+  setRoomAvatar: async () => {},
   deleteRoom: async () => {},
   addMember: async () => {},
   findMember: async () => null,
@@ -194,7 +199,12 @@ export function inMemoryChatStore(): ChatStore {
       if (room.directKey && [...rooms.values()].some((r) => r.directKey === room.directKey)) {
         throw Object.assign(new Error('duplicate direct room'), { code: 11000 })
       }
-      const made: ChatRoom = { ...room, lastMessageAt: null, createdAt: new Date().toISOString() }
+      const made: ChatRoom = {
+        ...room,
+        avatarUrl: null,
+        lastMessageAt: null,
+        createdAt: new Date().toISOString(),
+      }
       rooms.set(made.id, made)
       return copy(made)
     },
@@ -221,6 +231,11 @@ export function inMemoryChatStore(): ChatStore {
     renameRoom: async (roomId, title) => {
       const room = rooms.get(roomId)
       if (room) room.title = title
+    },
+
+    setRoomAvatar: async (roomId, avatarUrl) => {
+      const room = rooms.get(roomId)
+      if (room) room.avatarUrl = avatarUrl
     },
     deleteRoom: async (roomId) => {
       rooms.delete(roomId)

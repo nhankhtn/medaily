@@ -83,6 +83,28 @@ export function describeChatStore(name: string, makeStore: () => Promise<ChatSto
     })
 
     /** Somebody removed from a room must stop being able to watch it. */
+    it('starts a room with no picture, and takes one and gives it back', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      expect(await store.findRoom('r1')).toMatchObject({ avatarUrl: null })
+
+      await store.setRoomAvatar('r1', 'https://example.test/one.jpg')
+      expect(await store.findRoom('r1')).toMatchObject({
+        avatarUrl: 'https://example.test/one.jpg',
+      })
+    })
+
+    // Null has to come back as null and not as the string before it, because
+    // the Mongo side clears the field rather than writing a null into it.
+    it('clears the picture back to nothing', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      await store.setRoomAvatar('r1', 'https://example.test/one.jpg')
+
+      await store.setRoomAvatar('r1', null)
+      expect(await store.findRoom('r1')).toMatchObject({ avatarUrl: null })
+    })
+
     it('gives the room a new doorbell key on demand', async () => {
       const store = await makeStore()
       const made = await store.createRoom(room('r1'))

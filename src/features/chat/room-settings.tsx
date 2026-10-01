@@ -1,6 +1,14 @@
 'use client'
 
-import { LogOut, Pencil, Settings, Trash2, UserMinus, UserPlus } from 'lucide-react'
+import {
+  Image as ImageIcon,
+  LogOut,
+  Pencil,
+  Settings,
+  Trash2,
+  UserMinus,
+  UserPlus,
+} from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
@@ -14,8 +22,9 @@ import type { Speaker } from '@/lib/chat/types'
 import { PATHS } from '@/lib/paths'
 import { deleteRoom, leaveRoom, removeMember, renameRoom } from '@/server/actions/chat'
 import { InvitePanel } from './invite-panel'
+import { RoomAvatarPicker } from './room-avatar'
 
-type Panel = 'none' | 'invite' | 'rename' | 'members'
+type Panel = 'none' | 'invite' | 'rename' | 'members' | 'photo'
 
 /**
  * What can be done to the room, rather than said in it — behind a gear beside
@@ -33,12 +42,14 @@ export function RoomSettings({
   roomId,
   owner,
   title,
+  avatarUrl,
   members,
   me,
 }: {
   roomId: string
   owner: boolean
   title: string | null
+  avatarUrl: string | null
   members: Speaker[]
   me: string
 }) {
@@ -115,6 +126,10 @@ export function RoomSettings({
                   <Pencil className="size-4" />
                   {t('renameRoom')}
                 </Button>
+                <Button variant="ghost" size="sm" className={item} onClick={() => open('photo')}>
+                  <ImageIcon className="size-4" />
+                  {t('roomPhoto')}
+                </Button>
                 <Button variant="ghost" size="sm" className={item} onClick={() => open('members')}>
                   <UserMinus className="size-4" />
                   {t('manageMembers')}
@@ -157,6 +172,12 @@ export function RoomSettings({
       <Dialog open={panel === 'invite'} onOpenChange={(next) => setPanel(next ? 'invite' : 'none')}>
         <DialogContent title={t('addMember')}>
           <InvitePanel roomId={roomId} />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={panel === 'photo'} onOpenChange={(next) => setPanel(next ? 'photo' : 'none')}>
+        <DialogContent title={t('roomPhoto')}>
+          <RoomAvatarPicker roomId={roomId} title={title ?? t('untitled')} avatarUrl={avatarUrl} />
         </DialogContent>
       </Dialog>
 

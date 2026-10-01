@@ -1,7 +1,7 @@
-import { MessageSquare } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { Avatar } from '@/components/ui/avatar'
 import { Card } from '@/components/ui/card'
 import { InviteDialog } from '@/features/chat/invite-dialog'
 import { NewRoom } from '@/features/chat/new-room'
@@ -45,7 +45,7 @@ export default async function ChatPage({
             <li key={room.id}>
               <Link href={PATHS.chatRoom(room.id)} className="block">
                 <Card className="hover:bg-surface-2 flex items-center gap-3 p-4 transition-colors">
-                  <MessageSquare className="text-text-subtle size-4 shrink-0" />
+                  <Avatar name={room.title ?? t('untitled')} src={room.avatarUrl} />
                   <span
                     className={cn(
                       'min-w-0 flex-1 truncate text-sm',

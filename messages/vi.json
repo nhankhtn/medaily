@@ -1686,7 +1686,15 @@
     "deleteConfirm": "Xoá phòng này? Mọi người sẽ mất hết tin nhắn trong đó.",
     "manageMembers": "Thành viên",
     "removeMember": "Gỡ khỏi phòng",
-    "removeConfirm": "Gỡ {name} khỏi phòng?"
+    "removeConfirm": "Gỡ {name} khỏi phòng?",
+    "roomPhoto": "Ảnh nhóm",
+    "changePhoto": "Đổi ảnh",
+    "removePhoto": "Gỡ ảnh",
+    "photoUpdated": "Đã đổi ảnh",
+    "photoRemoved": "Đã gỡ ảnh",
+    "photoInvalid": "Chọn một file ảnh nhé",
+    "photoTooLarge": "Ảnh này nặng hơn 5 MB, chọn ảnh nhẹ hơn nhé",
+    "photoDisabled": "App chưa bật phần ảnh"
   },
   "activity": {
     "title": "Những gì đã đổi",

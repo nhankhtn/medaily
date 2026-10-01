@@ -23,6 +23,13 @@ export type ChatRoom = {
   doorbellKey: string
   /** Set only on a direct room: the two user ids, sorted and joined. */
   directKey: string | null
+  /**
+   * A group's picture, as a delivery URL rather than a Cloudinary id — the
+   * same shape `users.image_url` holds, so every screen that draws a face
+   * draws this one the same way. Null on a direct room, which wears the face
+   * of the person you are talking to.
+   */
+  avatarUrl: string | null
   lastMessageAt: string | null
   createdAt: string
 }

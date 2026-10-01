@@ -1686,7 +1686,15 @@
     "deleteConfirm": "Delete this room? Everyone loses the messages in it.",
     "manageMembers": "Members",
     "removeMember": "Remove from the room",
-    "removeConfirm": "Remove {name} from the room?"
+    "removeConfirm": "Remove {name} from the room?",
+    "roomPhoto": "Group picture",
+    "changePhoto": "Change the picture",
+    "removePhoto": "Remove the picture",
+    "photoUpdated": "Picture changed",
+    "photoRemoved": "Picture removed",
+    "photoInvalid": "Pick an image file",
+    "photoTooLarge": "That picture is over 5 MB. Pick a smaller one",
+    "photoDisabled": "Pictures are not set up on this app"
   },
   "activity": {
     "title": "What changed",

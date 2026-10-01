@@ -21,6 +21,9 @@ import {
 import { newInviteCode } from '@/lib/chat/invite-code'
 import { isReaction, isSticker } from '@/lib/chat/stickers'
 import { audited } from '@/server/services/audited'
+import { createUploadTicket, destroyAsset } from '@/server/services/media'
+import { readCloudinaryConfig } from '@/lib/media/cloudinary'
+import { deliveryUrl, publicIdFromDeliveryUrl } from '@/lib/media/image-url'
 
 /** A conversation, not a firehose. Generous for typing, useless for flooding. */
 const sends = createLimit({ capacity: 30, refillMs: 60_000 })
@@ -370,6 +373,88 @@ export const renameRoom = audited('chatRoom.rename', async (input: unknown) => {
  * to be asked. The messages go with it, because a room is the only way to
  * reach them and nothing else would ever collect them.
  */
+/**
+ * A group's picture.
+ *
+ * Not audited, and deliberately: the trail here is for the access-control
+ * moments — who got in, who was put out — and a room's picture is neither.
+ * Owner-only all the same, because it is the line everybody in the room reads
+ * the conversation by.
+ */
+export async function requestRoomAvatarUpload(input: unknown) {
+  const parsed = roomIdSchema.safeParse(input)
+  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+
+  const store = pickChatStore()
+  try {
+    await assertCanInvite(parsed.data, await getCurrentUserId(), { store })
+  } catch {
+    return { ok: false as const, error: 'forbidden' as const }
+  }
+
+  // The folder is the room rather than the person, so the picture outlives
+  // whoever happened to upload it and a later owner replaces the same asset.
+  const ticket = createUploadTicket('rooms', await getCurrentUserId(), parsed.data)
+  if (!ticket) return { ok: false as const, error: 'disabled' as const }
+  return { ok: true as const, ticket }
+}
+
+export async function attachRoomAvatar(input: unknown) {
+  const parsed = z
+    .object({ roomId: roomIdSchema, publicId: z.string().min(1).max(300) })
+    .safeParse(input)
+  if (!parsed.success) return { ok: false as const }
+
+  const store = pickChatStore()
+  const userId = await getCurrentUserId()
+  try {
+    await assertCanInvite(parsed.data.roomId, userId, { store })
+  } catch {
+    return { ok: false as const }
+  }
+
+  // The signed ticket named this folder, but the browser sends back a public
+  // id of its own choosing — so the id is held to the folder it was signed
+  // for, or one room could be given a picture uploaded against another.
+  if (!parsed.data.publicId.includes(`/rooms/${parsed.data.roomId}/`)) {
+    return { ok: false as const }
+  }
+
+  const config = readCloudinaryConfig()
+  if (!config.configured) return { ok: false as const }
+
+  const room = await store.findRoom(parsed.data.roomId)
+  await dropAvatarAsset(room?.avatarUrl ?? null, config.cloudName, parsed.data.publicId)
+  await store.setRoomAvatar(
+    parsed.data.roomId,
+    deliveryUrl(config.cloudName, parsed.data.publicId, 'thumb'),
+  )
+
+  revalidatePath(PATHS.chat)
+  revalidatePath(PATHS.chatRoom(parsed.data.roomId))
+  return { ok: true as const }
+}
+
+export async function removeRoomAvatar(input: unknown) {
+  const parsed = roomIdSchema.safeParse(input)
+  if (!parsed.success) return { ok: false as const }
+
+  const store = pickChatStore()
+  try {
+    await assertCanInvite(parsed.data, await getCurrentUserId(), { store })
+  } catch {
+    return { ok: false as const }
+  }
+
+  const room = await store.findRoom(parsed.data)
+  await dropAvatarAsset(room?.avatarUrl ?? null, readCloudinaryConfig().cloudName, null)
+  await store.setRoomAvatar(parsed.data, null)
+
+  revalidatePath(PATHS.chat)
+  revalidatePath(PATHS.chatRoom(parsed.data))
+  return { ok: true as const }
+}
+
 export const deleteRoom = audited('chatRoom.delete', async (input: unknown) => {
   const parsed = roomIdSchema.safeParse(input)
   if (!parsed.success) return { ok: false as const }
@@ -594,4 +679,28 @@ async function speakersOf(ids: string[]): Promise<Record<string, Speaker>> {
       },
     ]),
   )
+}
+
+/**
+ * Lets go of the picture a room used to wear.
+ *
+ * Replacing is the only moment anything is deleted from Cloudinary here, and
+ * a failure to delete is logged rather than raised: the room has its new face
+ * either way, and an asset nobody points at costs storage, not correctness.
+ */
+async function dropAvatarAsset(
+  previousUrl: string | null,
+  cloudName: string,
+  keep: string | null,
+): Promise<void> {
+  if (!previousUrl) return
+
+  const previous = publicIdFromDeliveryUrl(previousUrl, cloudName)
+  if (!previous || previous === keep) return
+
+  try {
+    await destroyAsset(previous)
+  } catch (error) {
+    console.error('[chat] could not delete the room picture it replaced:', error)
+  }
 }

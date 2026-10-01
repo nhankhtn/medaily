@@ -27,6 +27,7 @@ type RoomDoc = {
   createdBy: string | null
   doorbellKey: string
   directKey?: string
+  avatarUrl?: string | null
   lastMessageAt?: Date | null
   createdAt: Date
 }
@@ -137,6 +138,15 @@ export function mongoChatStore(uri: string): ChatStore {
 
     touchRoom: async (roomId, at) => {
       await (await roomsIn(uri)).updateOne({ _id: roomId }, { $set: { lastMessageAt: at } })
+    },
+
+    setRoomAvatar: async (roomId, avatarUrl) => {
+      await (await roomsIn(uri)).updateOne(
+        { _id: roomId },
+        // Cleared by removing the field rather than writing null: a document
+        // is not a row, and an absent face is absent.
+        avatarUrl ? { $set: { avatarUrl } } : { $unset: { avatarUrl: '' } },
+      )
     },
 
     renameRoom: async (roomId, title) => {
@@ -409,6 +419,7 @@ function asRoom(doc: RoomDoc | null): ChatRoom | null {
     createdBy: doc.createdBy ?? null,
     doorbellKey: doc.doorbellKey,
     directKey: doc.directKey ?? null,
+    avatarUrl: doc.avatarUrl ?? null,
     lastMessageAt: doc.lastMessageAt?.toISOString() ?? null,
     createdAt: doc.createdAt.toISOString(),
   }
