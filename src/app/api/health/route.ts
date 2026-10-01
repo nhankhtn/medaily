@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 import { readAccessPolicy, readAuthConfig, readGoogleConfig } from '@/lib/auth/config'
 import { realtimeEnabled } from '@/lib/realtime/provider'
+import { readFirestoreAdminConfig } from '@/server/services/firestore-rest'
 import { databaseFingerprint } from '@/lib/db/fingerprint'
 // Imported, not read from disk: this has to travel with the deployed bundle,
 // and it is the only record of what migrations *this* build expects.
@@ -33,6 +34,20 @@ function driverReason(error: unknown): string {
   if (/timeout|timed out/i.test(message)) return 'timeout'
   const code = cause?.code ?? /\b(E[A-Z]{3,})\b/.exec(message)?.[1]
   return code && /^[A-Z0-9_]{1,40}$/.test(code) ? code : 'unknown'
+}
+
+/** Whether the sending credential can actually be read, and if not, in one word. */
+function serviceAccountState(): 'ok' | 'unset' | 'not_json' | 'incomplete' | 'wrong_project' {
+  if (!process.env.FIREBASE_SERVICE_ACCOUNT?.trim()) return 'unset'
+  try {
+    readFirestoreAdminConfig()
+    return 'ok'
+  } catch (error) {
+    const message = error instanceof Error ? error.message : ''
+    if (/valid JSON/i.test(message)) return 'not_json'
+    if (/but this deploy signs in to/i.test(message)) return 'wrong_project'
+    return 'incomplete'
+  }
 }
 
 export async function GET() {
@@ -89,6 +104,36 @@ export async function GET() {
      * still never arrive, the rules are the next thing to look at.
      */
     realtimeConfigured: realtimeEnabled(),
+    /*
+     * Whether a browser can be offered notifications at all. Both halves or
+     * neither: the certificate names the project to the push service and the
+     * sender id is what a subscription is registered against, and a build
+     * carrying one without the other asks for permission and then cannot
+     * finish. Baked at build time like `realtimeConfigured` above, with the
+     * same consequence — setting either after a deploy changes nothing until
+     * the next build.
+     */
+    pushConfigured:
+      Boolean(process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY) &&
+      Boolean(process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID),
+    /*
+     * Whether anything can be sent. The other half of the same feature and a
+     * separate line, because they fail in opposite directions: without the two
+     * above nobody can turn notifications on, and without this one they can —
+     * and then nothing ever arrives, which is the harder of the two to notice.
+     * Read at run time, so this one does answer for the process as it stands.
+     */
+    pushSendConfigured: serviceAccountState() === 'ok',
+    /*
+     * Why, when it is set and still unusable. Set-but-broken is the likely
+     * state rather than the exotic one: the credential is a JSON document with
+     * a PEM key in it living on one line of an environment file, and a key
+     * pasted with its real newlines truncates at the first of them. A boolean
+     * alone cannot tell that apart from "never filled in".
+     *
+     * A category, never the text — this endpoint is public.
+     */
+    pushSendProblem: serviceAccountState() === 'ok' ? null : serviceAccountState(),
   }
 
   if (!process.env.DATABASE_URL) {

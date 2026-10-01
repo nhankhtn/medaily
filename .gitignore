@@ -19,3 +19,12 @@ next-env.d.ts
 # deploy does not install Docusaurus and run a second bundler to publish a
 # page nobody changed. tests/unit/docs-built.test.ts fails when the committed
 # site is older than the documents it was built from.
+
+# The service-account JSON, if a copy is ever kept here — downloading it is the
+# first step of filling in FIREBASE_SERVICE_ACCOUNT, so a copy on disk is the
+# normal state rather than the odd one. It is the only credential in this repo
+# with real power, and the one shape of secret `.env*` above does not cover.
+service-account*.json
+*service-account.json
+.secret/
+.secrets/

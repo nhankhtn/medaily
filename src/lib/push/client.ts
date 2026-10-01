@@ -138,9 +138,21 @@ async function tokenFor(ask: boolean): Promise<string | null> {
     if ((await Notification.requestPermission()) !== 'granted') return null
   }
 
-  // The worker already running the offline cache, rather than letting the SDK
-  // register `firebase-messaging-sw.js` beside it: two workers on one origin
-  // means two scopes racing for the same fetch events.
+  /*
+   * The worker already running the offline cache, rather than letting the SDK
+   * register `firebase-messaging-sw.js` beside it: two workers on one origin
+   * means two scopes racing for the same fetch events.
+   *
+   * Asked for before waiting on it, because `ready` never settles when there
+   * is no registration at all — it waits for one to appear, forever. A dev
+   * build retires the worker on purpose, so pressing the button there left it
+   * spinning with nothing to report, and any browser that failed to register
+   * one would do the same.
+   */
+  if (!(await navigator.serviceWorker.getRegistration())) {
+    console.info('[push] no service worker here, so there is nothing to receive on')
+    return null
+  }
   const registration = await navigator.serviceWorker.ready
 
   const { getMessaging, getToken, isSupported } = await import('firebase/messaging')
