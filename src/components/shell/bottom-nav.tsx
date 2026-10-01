@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { BOTTOM_NAV_ITEMS, MORE_NAV_ITEMS } from '@/lib/nav'
+import { isChatRoomPath } from '@/lib/paths'
 import { cn } from '@/lib/utils'
 import { SignOutButton } from './sign-out-button'
 
@@ -39,6 +40,16 @@ export function BottomNav() {
 
   const moreActive = MORE_NAV_ITEMS.some((item) => pathname.startsWith(item.href))
 
+  /*
+   * Stands down inside a conversation, the way the capture box already does.
+   * A phone screen is mostly chrome, and a transcript is the one page where
+   * the composer is already holding the bottom edge — a dock above it spends
+   * a sixth of the screen on a way out of a page with a back arrow at the top
+   * of it. The hooks above still run, so this is a render decision and not a
+   * conditional hook.
+   */
+  if (isChatRoomPath(pathname)) return null
+
   return (
     <>
       {moreOpen ? (
@@ -54,7 +65,7 @@ export function BottomNav() {
             className="pointer-events-none absolute inset-0 opacity-80"
             style={{ background: 'var(--bg-atmosphere)' }}
           />
-          <div className="relative flex items-center justify-between pr-[max(1.25rem,env(safe-area-inset-right,0px))] pl-[max(1.25rem,env(safe-area-inset-left,0px))] pt-[env(safe-area-inset-top,0px)]">
+          <div className="relative flex items-center justify-between pt-[env(safe-area-inset-top,0px)] pr-[max(1.25rem,env(safe-area-inset-right,0px))] pl-[max(1.25rem,env(safe-area-inset-left,0px))]">
             <span className="flex h-14 items-center text-lg font-semibold">{t('more')}</span>
             <button
               type="button"
@@ -65,7 +76,7 @@ export function BottomNav() {
               <X className="size-5" />
             </button>
           </div>
-          <div className="relative h-[calc(100dvh-3.5rem-env(safe-area-inset-top,0px))] overflow-y-auto overscroll-contain pt-2 pb-[calc(7.5rem+env(safe-area-inset-bottom,0px))] pl-[max(1.25rem,env(safe-area-inset-left,0px))] pr-[max(1.25rem,env(safe-area-inset-right,0px))]">
+          <div className="relative h-[calc(100dvh-3.5rem-env(safe-area-inset-top,0px))] overflow-y-auto overscroll-contain pt-2 pr-[max(1.25rem,env(safe-area-inset-right,0px))] pb-[calc(7.5rem+env(safe-area-inset-bottom,0px))] pl-[max(1.25rem,env(safe-area-inset-left,0px))]">
             <div className="grid grid-cols-3 gap-3">
               {MORE_NAV_ITEMS.map((item) => (
                 <Link
@@ -74,8 +85,8 @@ export function BottomNav() {
                   onClick={() => setOpenedOn(null)}
                   className="glass-chip flex aspect-square flex-col items-center justify-center gap-2 rounded-[1.35rem] p-2 text-center"
                 >
-                  <item.icon className="size-6 text-accent" />
-                  <span className="text-xs leading-tight text-text-muted">{t(item.key)}</span>
+                  <item.icon className="text-accent size-6" />
+                  <span className="text-text-muted text-xs leading-tight">{t(item.key)}</span>
                 </Link>
               ))}
               {/* Language and theme live on the settings page, one tile away. */}

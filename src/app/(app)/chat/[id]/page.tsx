@@ -45,14 +45,13 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
          * top padding and its 3.5rem bar, then `main`'s `pt-4`, then what
          * the bottom needs — 2rem from `md` up.
          *
-         * On a phone it is the dock itself, not `main`'s padding: that
-         * padding is sized for the end of a long page and left a band of
-         * empty glass under the composer. The dock is its 3.75rem plus the
-         * gap it floats at, and 0.75rem more keeps the card off it; the
-         * negative margin hands back the padding so the page still does not
-         * scroll.
+         * On a phone it is `main`'s padding that is handed back, by the
+         * negative margin: that padding is sized for the end of a long page
+         * and left a band of empty glass under the composer. Nothing is kept
+         * clear below any more — the dock stands down in here — beyond the
+         * gutter, which is the home indicator's own room where there is one.
          */
-        'h-[calc(100dvh-max(0.75rem,env(safe-area-inset-top,0px))-3.5rem-1rem-max(0.75rem,env(safe-area-inset-bottom,0px))-4.5rem)]',
+        'h-[calc(100dvh-max(0.75rem,env(safe-area-inset-top,0px))-3.5rem-1rem-max(0.75rem,env(safe-area-inset-bottom,0px)))]',
         '-mb-[calc(8.5rem+env(safe-area-inset-bottom,0px))] md:mb-0',
         'md:h-[calc(100dvh-max(0.75rem,env(safe-area-inset-top,0px))-3.5rem-1rem-2rem)]',
       )}

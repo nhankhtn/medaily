@@ -322,7 +322,16 @@ export function RoomView({
         stickToBottom
         loadingMoreLabel={t('loadOlder')}
         listClassName=""
-        empty={<p className="text-text-subtle py-8 text-center text-sm">{t('emptyRoom')}</p>}
+        /*
+         * Fills, because an empty list drops the scroll box entirely and
+         * returns this node bare — so without a `flex-1` here the composer
+         * climbs to meet the line of text and sits halfway up an empty room.
+         */
+        empty={
+          <p className="text-text-subtle flex min-h-0 flex-1 items-center justify-center text-center text-sm">
+            {t('emptyRoom')}
+          </p>
+        }
         renderItem={(message, index) => {
           const mine = message.userId === me
           const speaker = message.userId ? speakers[message.userId] : undefined
@@ -339,12 +348,20 @@ export function RoomView({
            *
            * Runs are what make it a conversation rather than a log. Five
            * messages from one person say the name once, wear one face, and sit
-           * two pixels apart; the next person starts eight pixels down. The
-           * corners follow: the tail corner is square only on the last of a
-           * run, so a stack reads as one block of speech.
+           * two pixels apart; the next run starts sixteen pixels down. The gap
+           * between runs has to beat the gap inside one by enough to be read
+           * as a break rather than a wobble — at eight it did not, and a
+           * screen of messages five minutes apart, each its own run, came out
+           * as one undifferentiated column. The corners follow: the tail
+           * corner is square only on the last of a run, so a stack reads as
+           * one block of speech.
            */
+          // `index`, not `first:` — the virtualiser gives every row its own
+          // `<li>`, so each wrapper is the first child of its own parent and a
+          // `first:mt-0` matched all of them. The gap between runs was zero
+          // however large the class said it was.
           return (
-            <div className={cn(startsRun ? 'mt-2' : 'mt-0.5', 'first:mt-0')}>
+            <div className={cn(index === 0 ? 'mt-0' : startsRun ? 'mt-4' : 'mt-0.5')}>
               {startsDay ? <DaySeparator at={message.createdAt} now={now} /> : null}
 
               <div className={cn('group flex px-1', mine ? 'justify-end' : 'justify-start')}>
