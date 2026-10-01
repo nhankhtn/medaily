@@ -1,22 +1,30 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import type { CustomValues } from './custom-fields'
 import type { DailyFormValues } from './types'
 
 export const DRAFT_PREFIX = 'medaily.draft.'
 const PREFIX = DRAFT_PREFIX
 const DEBOUNCE_MS = 500
 
-type Draft = { values: DailyFormValues; savedAt: number }
+/**
+ * `custom` is optional only because drafts written before it existed are
+ * still in browsers. A missing one reads as "nothing typed into the custom
+ * fields", which is what those drafts meant.
+ */
+type Draft = { values: DailyFormValues; custom?: CustomValues; savedAt: number }
+
+export type RestoredDraft = { values: DailyFormValues; custom: CustomValues }
 
 /**
  * Spec 6.3 — the draft lives on the device, debounced, and survives refresh,
  * crash and tab loss. Server autosave was rejected: it writes on every tap and
  * makes undo meaningless.
  */
-export function useDraft(date: string, serverValues: DailyFormValues) {
+export function useDraft(date: string, serverValues: DailyFormValues, serverCustom: CustomValues) {
   const key = PREFIX + date
-  const [restored, setRestored] = useState<DailyFormValues | null>(null)
+  const [restored, setRestored] = useState<RestoredDraft | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -25,12 +33,19 @@ export function useDraft(date: string, serverValues: DailyFormValues) {
       if (!raw) return
       const draft = JSON.parse(raw) as Draft
       if (!draft?.values) return
-      if (JSON.stringify(draft.values) === JSON.stringify(serverValues)) {
+      const custom = draft.custom ?? {}
+      // Nothing to restore when the device holds what the server already has —
+      // and that has to include the custom fields, or a draft identical to the
+      // server except for one of them would be thrown away.
+      if (
+        JSON.stringify(draft.values) === JSON.stringify(serverValues) &&
+        JSON.stringify(custom) === JSON.stringify(serverCustom)
+      ) {
         localStorage.removeItem(key)
         return
       }
       // eslint-disable-next-line react-hooks/set-state-in-effect -- client-only storage read
-      setRestored(draft.values)
+      setRestored({ values: draft.values, custom })
     } catch {
       /* private mode or corrupt entry — start clean */
     }
@@ -40,11 +55,14 @@ export function useDraft(date: string, serverValues: DailyFormValues) {
   }, [key])
 
   const save = useCallback(
-    (values: DailyFormValues) => {
+    (values: DailyFormValues, custom: CustomValues) => {
       if (timer.current) clearTimeout(timer.current)
       timer.current = setTimeout(() => {
         try {
-          localStorage.setItem(key, JSON.stringify({ values, savedAt: Date.now() } satisfies Draft))
+          localStorage.setItem(
+            key,
+            JSON.stringify({ values, custom, savedAt: Date.now() } satisfies Draft),
+          )
         } catch {
           /* storage full or blocked — the form still works */
         }
