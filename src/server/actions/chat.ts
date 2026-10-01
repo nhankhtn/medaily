@@ -59,6 +59,11 @@ export async function loadRoom(input: unknown) {
   return {
     ok: true as const,
     room,
+    // The seat, not `room.createdBy`: that column is nullable, so every room
+    // made before it existed reports no owner at all and the person who made
+    // it loses the menu. The server authorises on the seat, and a screen that
+    // asks a different question than the server hides what it would allow.
+    owner: members.find((m) => m.userId === userId)?.role === 'owner',
     speakers: await speakersOf(members.map((m) => m.userId)),
     // Oldest first for the screen; the store reads newest first because that
     // is the page you want, not the order you read it in.

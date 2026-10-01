@@ -99,6 +99,28 @@ describe('who may invite', () => {
     await room('r1', [['u1', 'owner']])
     await expect(assertCanInvite('r1', 'stranger', { store })).rejects.toThrow(NotAMemberError)
   })
+
+  // The room screen once asked `room.createdBy === me` while this asked the
+  // seat. `createdBy` is nullable, so in every room older than that column the
+  // two disagreed: the server would have allowed the owner through, and the
+  // screen showed them a menu with nothing in it but the way out.
+  it('goes by the seat, not by who the room says made it', async () => {
+    await store.createRoom({
+      id: 'r2',
+      kind: 'group',
+      title: 'Phòng cũ',
+      createdBy: null,
+      doorbellKey: 'door-r2',
+      directKey: null,
+    })
+    await store.addMember({
+      roomId: 'r2',
+      userId: 'u1',
+      role: 'owner',
+      joinedAt: new Date().toISOString(),
+    })
+    await expect(assertCanInvite('r2', 'u1', { store })).resolves.toBeUndefined()
+  })
 })
 
 describe('sweeping an empty room', () => {

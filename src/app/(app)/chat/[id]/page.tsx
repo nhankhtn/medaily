@@ -25,7 +25,7 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
   // that it exists and is none of their business.
   if (!loaded.ok) notFound()
 
-  const owner = loaded.room.createdBy === userId
+  const owner = loaded.owner
   const members = Object.keys(loaded.speakers).length
 
   return (

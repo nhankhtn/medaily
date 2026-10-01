@@ -94,6 +94,7 @@ export function VirtualInfiniteList<T>({
 }: VirtualInfiniteListProps<T>) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLUListElement>(null)
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -154,6 +155,32 @@ export function VirtualInfiniteList<T>({
     initialRect: { width: 1, height: viewportHeight },
   })
 
+  /**
+   * Pinning once is not enough. The rows go in at `estimateSize` and are
+   * measured afterwards, so the height the first pin used is not the height
+   * the list ends up with; `fill` adds a second round of it, because the box
+   * only learns its own height once the flex parent has resolved. Both land
+   * after the layout effect above has run, and a conversation that opens
+   * halfway up is the result.
+   *
+   * Only while the reader is still at the bottom — `wasAtBottom` goes false
+   * the moment they scroll up, and nothing drags them back after that.
+   */
+  useEffect(() => {
+    const element = scrollRef.current
+    if (!mounted || !stickToBottom || !element) return
+
+    const pin = () => {
+      if (!wasAtBottom.current) return
+      element.scrollTop = element.scrollHeight
+    }
+
+    const observer = new ResizeObserver(pin)
+    observer.observe(element)
+    if (listRef.current) observer.observe(listRef.current)
+    return () => observer.disconnect()
+  }, [mounted, stickToBottom, items.length])
+
   useEffect(() => {
     if (!mounted || !hasMore || !onLoadMore || loadingMore) return
     const root = scrollRef.current
@@ -213,6 +240,7 @@ export function VirtualInfiniteList<T>({
       ) : null}
       {useVirtual ? (
         <ul
+          ref={listRef}
           className={cn('relative w-full', listClassName)}
           style={{ height: virtualizer.getTotalSize() }}
         >
@@ -233,7 +261,7 @@ export function VirtualInfiniteList<T>({
           })}
         </ul>
       ) : (
-        <ul className={cn('w-full', listClassName)}>
+        <ul ref={listRef} className={cn('w-full', listClassName)}>
           {items.map((item, index) => (
             <li key={getKey(item)}>{renderItem(item, index)}</li>
           ))}
