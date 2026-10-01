@@ -403,9 +403,20 @@ export function RoomView({
           aria-label={t('placeholder')}
           className="glass border-border-base min-h-10 flex-1 resize-none rounded-[var(--radius)] px-3 py-2 text-base sm:min-h-11 sm:text-sm"
         />
-        <Button type="submit" disabled={sending || draft.trim() === ''}>
+        {/*
+          * A square on a phone, where the word costs more room than it buys —
+          * the arrow beside a box you have just typed into is not ambiguous.
+          * `sr-only` rather than dropping the text, so it stays in the
+          * accessible tree and the button keeps its name.
+          */}
+        <Button
+          type="submit"
+          size="icon"
+          className="shrink-0 sm:w-auto sm:px-5"
+          disabled={sending || draft.trim() === ''}
+        >
           <Send className="size-4" />
-          {t('send')}
+          <span className="sr-only sm:not-sr-only">{t('send')}</span>
         </Button>
       </form>
     </div>
