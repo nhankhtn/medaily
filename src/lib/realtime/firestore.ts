@@ -56,9 +56,12 @@ export function firestoreSignal(): RealtimeSignal {
           if (snapshot.metadata.hasPendingWrites) return
           onRing()
         },
-        () => {
-          /* Offline, blocked, or refused by rules. The slow poll still runs. */
-        },
+        // Caught, because the slow poll still runs and a chat that interrupts
+        // you over a dropped socket is worse than one that is briefly late.
+        // Said, because this is the listener that silence is most expensive
+        // on: WebChannel logs a bare "transport errored" either way, so
+        // without the code there is no telling a reconnect from a refusal.
+        complain('doorbell'),
       ),
   }
 }
@@ -93,7 +96,7 @@ export function firestoreTyping(): TypingChannel {
       // updates either, so there is nobody to be consistent with but themselves.
       if (!uid) return
 
-      await setDoc(doc(typing(channel), uid), { at: Date.now() }).catch(complain('announce'))
+      await setDoc(doc(typing(channel), uid), { at: Date.now() }).catch(complain('typing announce'))
     },
 
     retract: async (channel) => {
@@ -102,7 +105,7 @@ export function firestoreTyping(): TypingChannel {
       // The only delete in this file, and the reason the rules separate
       // `delete` from `create, update`: on a delete `request.resource` is
       // null, so a rule that inspects the written fields would refuse it.
-      await deleteDoc(doc(typing(channel), uid)).catch(complain('retract'))
+      await deleteDoc(doc(typing(channel), uid)).catch(complain('typing retract'))
     },
 
     watch: (channel, onChange) =>
@@ -122,7 +125,7 @@ export function firestoreTyping(): TypingChannel {
         // Offline, blocked, or refused by rules: nobody appears to be typing,
         // which is right for the screen and useless for whoever has to work
         // out why. So it is said once, here.
-        complain('watch'),
+        complain('typing watch'),
       ),
   }
 }
@@ -130,7 +133,7 @@ export function firestoreTyping(): TypingChannel {
 const complained = new Set<string>()
 
 /**
- * Says once why a typing call did nothing.
+ * Says once why a realtime call did nothing.
  *
  * Every one of these is caught on purpose — a chat that interrupts you because
  * a presence write failed is worse than one that quietly stops showing who is
@@ -147,8 +150,8 @@ function complain(where: string) {
 
     const hint =
       code === 'permission-denied'
-        ? ' — the rules for channels/{channel}/typing/{uid} are not deployed. Run `pnpm firestore:rules`.'
+        ? ' — the rules in firestore.rules are not deployed, or not deployed to this project. Run `pnpm firestore:rules`.'
         : ''
-    console.info(`[realtime] typing ${where} was refused: ${code}${hint}`)
+    console.info(`[realtime] ${where} was refused: ${code}${hint}`)
   }
 }
