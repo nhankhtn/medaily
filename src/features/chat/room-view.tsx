@@ -458,49 +458,18 @@ export function RoomView({
                     </div>
                   )}
 
-                  {/* Outside the bubble, on the side away from the words, so
-                      it never covers one and never moves the text when it
-                      appears. */}
+                  {/* One control beside the bubble, not three. Reply and
+                      recall live in the panel it opens: a row of icons under
+                      every line was louder than the conversation, and on a
+                      phone — where nothing hides behind a hover — it was all
+                      anyone saw. */}
                   {message.pending || message.deletedAt ? null : (
-                    <button
-                      type="button"
-                      onClick={() => setReplyingTo(message)}
-                      aria-label={t('reply')}
-                      // Same visibility rule as the others: there is no hover
-                      // on a phone, and a control that only appears to a mouse
-                      // is a control half the people never find.
-                      className={cn(
-                        'text-text-subtle hover:text-text shrink-0 transition-opacity',
-                        'opacity-100 sm:opacity-0',
-                        'sm:group-hover:opacity-100 sm:focus-visible:opacity-100',
-                      )}
-                    >
-                      <CornerUpLeft className="size-3.5" />
-                    </button>
-                  )}
-
-                  {recallable ? (
-                    <button
-                      type="button"
-                      onClick={() => void recall(message)}
-                      aria-label={t('recall')}
-                      // Always there on a phone, where there is no hovering to
-                      // reveal it. Without the `sm:` the button was invisible
-                      // and unreachable on touch, which is to say a message
-                      // could not be taken back on the device most of them are
-                      // sent from.
-                      className={cn(
-                        'text-text-subtle hover:text-bad shrink-0 transition-opacity',
-                        'opacity-100 sm:opacity-0',
-                        'sm:group-hover:opacity-100 sm:focus-visible:opacity-100',
-                      )}
-                    >
-                      <Trash2 className="size-3.5" />
-                    </button>
-                  ) : null}
-
-                  {message.pending ? null : (
-                    <ReactionBar mine={mine} onToggle={(emoji) => void react(message, emoji)} />
+                    <MessageActions
+                      mine={mine}
+                      onReact={(emoji) => void react(message, emoji)}
+                      onReply={() => setReplyingTo(message)}
+                      onRecall={recallable ? () => void recall(message) : undefined}
+                    />
                   )}
                 </div>
               </div>
@@ -696,27 +665,26 @@ function withReaction(message: Shown, emoji: string, me: string): Shown {
 }
 
 /**
- * What is already on a message, plus a way to add to it.
+ * Everything you can do to a message, behind one button.
  *
- * The row of choices only appears on hover or focus: six emoji under every
- * line would be louder than the conversation.
+ * The panel floats over the conversation rather than taking a line in it,
+ * which is what a reaction picker looks like everywhere. That means escaping
+ * the transcript: it is a scroll box, and anything positioned inside one is
+ * cut off at its edge. So the panel is rendered into the document and placed
+ * in viewport coordinates against the button that opened it.
  */
-/**
- * What is already on a message, and a way to add to it.
- *
- * The row of choices floats over the conversation rather than taking a line in
- * it, which is what a reaction picker looks like everywhere. That means
- * escaping the transcript: it is a scroll box, and anything positioned inside
- * one is cut off at its edge. So the panel is rendered into the document and
- * placed in viewport coordinates against the button that opened it.
- */
-function ReactionBar({
+function MessageActions({
   mine,
-  onToggle,
+  onReact,
+  onReply,
+  onRecall,
 }: {
   /** Your own messages sit against the right margin, and so does this. */
   mine: boolean
-  onToggle: (emoji: string) => void
+  onReact: (emoji: string) => void
+  onReply: () => void
+  /** Absent when the message is not yours to take back. */
+  onRecall?: () => void
 }) {
   const t = useTranslations('chat')
   const trigger = useRef<HTMLButtonElement>(null)
@@ -758,16 +726,27 @@ function ReactionBar({
       </Button>
 
       {at ? (
-        <FloatingReactions
+        <FloatingActions
           at={at}
           onClose={() => setAt(null)}
           onPick={(emoji) => {
-            onToggle(emoji)
+            onReact(emoji)
             setAt(null)
           }}
+          onReply={() => {
+            onReply()
+            setAt(null)
+          }}
+          onRecall={
+            onRecall
+              ? () => {
+                  onRecall()
+                  setAt(null)
+                }
+              : undefined
+          }
         />
       ) : null}
-
     </>
   )
 }
@@ -817,19 +796,23 @@ function ReactionPills({
 }
 
 /**
- * The six choices, over everything.
+ * The six choices, then reply and recall, over everything.
  *
  * Closed by a scroll as well as by a tap elsewhere: the coordinates were taken
  * once, and a panel that stayed put while the conversation moved under it
  * would end up pointing at the wrong message.
  */
-function FloatingReactions({
+function FloatingActions({
   at,
   onPick,
+  onReply,
+  onRecall,
   onClose,
 }: {
   at: { bottom: number; left?: number; right?: number }
   onPick: (emoji: string) => void
+  onReply: () => void
+  onRecall?: () => void
   onClose: () => void
 }) {
   const t = useTranslations('chat')
@@ -860,19 +843,41 @@ function FloatingReactions({
     <div
       ref={panel}
       style={at}
-      className="glass border-border-base fixed z-50 flex items-center gap-0.5 rounded-full border p-0.5 shadow-lg"
+      className="glass border-border-base fixed z-50 flex flex-col gap-0.5 rounded-2xl border p-0.5 shadow-lg"
     >
-      {REACTIONS.map((emoji) => (
+      <div className="flex items-center gap-0.5">
+        {REACTIONS.map((emoji) => (
+          <button
+            key={emoji}
+            type="button"
+            aria-label={t('reactWith', { emoji })}
+            onClick={() => onPick(emoji)}
+            className="hover:bg-surface-2 flex size-9 items-center justify-center rounded-full text-lg"
+          >
+            {emoji}
+          </button>
+        ))}
+      </div>
+      <div className="border-border-base flex items-center gap-0.5 border-t pt-0.5">
         <button
-          key={emoji}
           type="button"
-          aria-label={t('reactWith', { emoji })}
-          onClick={() => onPick(emoji)}
-          className="hover:bg-surface-2 flex size-9 items-center justify-center rounded-full text-lg"
+          onClick={onReply}
+          className="hover:bg-surface-2 flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl text-sm"
         >
-          {emoji}
+          <CornerUpLeft className="size-4" />
+          {t('reply')}
         </button>
-      ))}
+        {onRecall ? (
+          <button
+            type="button"
+            onClick={onRecall}
+            className="hover:bg-surface-2 text-bad flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl text-sm"
+          >
+            <Trash2 className="size-4" />
+            {t('recall')}
+          </button>
+        ) : null}
+      </div>
     </div>,
     document.body,
   )

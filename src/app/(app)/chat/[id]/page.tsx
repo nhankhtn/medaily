@@ -43,10 +43,17 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
          * Everything the shell has already spent, so the column ends exactly
          * at the window and the page itself never scrolls: the header's own
          * top padding and its 3.5rem bar, then `main`'s `pt-4`, then what
-         * `main` leaves at the bottom — room for the dock on a phone, 2rem
-         * from `md` up.
+         * the bottom needs — 2rem from `md` up.
+         *
+         * On a phone it is the dock itself, not `main`'s padding: that
+         * padding is sized for the end of a long page and left a band of
+         * empty glass under the composer. The dock is its 3.75rem plus the
+         * gap it floats at, and 0.75rem more keeps the card off it; the
+         * negative margin hands back the padding so the page still does not
+         * scroll.
          */
-        'h-[calc(100dvh-max(0.75rem,env(safe-area-inset-top,0px))-3.5rem-1rem-8.5rem-env(safe-area-inset-bottom,0px))]',
+        'h-[calc(100dvh-max(0.75rem,env(safe-area-inset-top,0px))-3.5rem-1rem-max(0.75rem,env(safe-area-inset-bottom,0px))-4.5rem)]',
+        '-mb-[calc(8.5rem+env(safe-area-inset-bottom,0px))] md:mb-0',
         'md:h-[calc(100dvh-max(0.75rem,env(safe-area-inset-top,0px))-3.5rem-1rem-2rem)]',
       )}
     >

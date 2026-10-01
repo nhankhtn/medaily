@@ -656,16 +656,19 @@ beside the box; a message that is nothing but emoji is drawn large, the way
 every chat app has trained people to expect. Fifty messages load at a time and
 older ones arrive as you scroll up.
 
-Beside each message sit its controls — on a computer when you hover it, on a
-phone always, since there is no hover there:
+Beside each message sits one button, a **smiley** — on a computer when you
+hover the message, on a phone always, since there is no hover there. It opens
+a panel with everything you can do to that message:
 
-- the **smiley** opens the reactions. There is one reaction per person:
+- the six **reactions** along the top. There is one reaction per person:
   choosing another moves yours rather than adding a second. Tap a reaction
   under the words to take it back
-- the **arrow** replies. The message you are answering shows above the box
-  with **Cancel reply**, and the reply carries a quote of it. If the original
-  is later recalled, the quote says so too
-- the **bin**, on your own messages, recalls it
+- **Reply**. The message you are answering shows above the box with **Cancel
+  reply**, and the reply carries a quote of it. If the original is later
+  recalled, the quote says so too
+- **Recall**, on your own messages only
+
+A recalled message has no button at all.
 
 **Taking it back.** You can recall your own message, and only your own. The
 row stays with a line saying it was withdrawn — the conversation is never
