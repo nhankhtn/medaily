@@ -1683,12 +1683,8 @@
     "leave": "Rời phòng",
     "leaveConfirm": "Rời phòng này? Bạn sẽ không thấy nó nữa, còn những gì bạn viết thì vẫn ở lại.",
     "remove": "Mời ra",
-    "invite": "Mời",
     "inviteLink": "Chép link mời",
     "linkCopied": "Đã chép link. Dùng được một lần, trong hai ngày.",
-    "inviteByEmail": "Mời bằng địa chỉ email",
-    "emailQueued": "Đã mời",
-    "noEmailSent": "Không có email nào được gửi đi — bạn tự gửi link cho họ nhé.",
     "revoke": "Thu hồi",
     "pendingInvites": "Lời mời đã phát",
     "joinTitle": "Bạn được mời vào phòng",
@@ -1718,7 +1714,8 @@
     "photoUploading": "Đang tải ảnh lên…",
     "copy": "Chép",
     "copied": "Đã chép",
-    "copyFailed": "Không chép được"
+    "copyFailed": "Không chép được",
+    "copyBlocked": "Chép tay link này giúp — trình duyệt không cho trang ghi vào clipboard."
   },
   "activity": {
     "title": "Những gì đã đổi",

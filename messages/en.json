@@ -1683,12 +1683,8 @@
     "leave": "Leave room",
     "leaveConfirm": "Leave this room? You stop seeing it, and what you wrote stays.",
     "remove": "Remove",
-    "invite": "Invite",
     "inviteLink": "Copy invite link",
     "linkCopied": "Link copied. It works once, for two days.",
-    "inviteByEmail": "Invite by email address",
-    "emailQueued": "Invited",
-    "noEmailSent": "Nothing is emailed — send them the link yourself.",
     "revoke": "Revoke",
     "pendingInvites": "Invites out",
     "joinTitle": "You have been invited",
@@ -1718,7 +1714,8 @@
     "photoUploading": "Sending the picture…",
     "copy": "Copy",
     "copied": "Copied",
-    "copyFailed": "Could not copy that"
+    "copyFailed": "Could not copy that",
+    "copyBlocked": "Copy this link by hand — the browser would not let the page reach the clipboard."
   },
   "activity": {
     "title": "What changed",

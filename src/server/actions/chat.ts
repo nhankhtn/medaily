@@ -542,12 +542,7 @@ const INVITE_HOURS = 48
  * has an account at all.
  */
 export const createInvite = audited('chatRoom.invite', async (input: unknown) => {
-  const parsed = z
-    .object({
-      roomId: roomIdSchema,
-      email: z.string().trim().max(200).optional(),
-    })
-    .safeParse(input)
+  const parsed = z.object({ roomId: roomIdSchema }).safeParse(input)
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
   const store = pickChatStore()
@@ -561,18 +556,20 @@ export const createInvite = audited('chatRoom.invite', async (input: unknown) =>
     return { ok: false as const, error: 'rate_limited' as const }
   }
 
-  const email = parsed.data.email?.toLowerCase() || null
   const invite = await store.createInvite({
     code: newInviteCode(),
     roomId: parsed.data.roomId,
     createdBy: userId,
-    email,
+    // Nothing writes an address onto an invite any more. The field is kept
+    // because `acceptInvite` still honours one, which is what keeps the links
+    // issued before this change restricted until they expire.
+    email: null,
     expiresAt: new Date(Date.now() + INVITE_HOURS * 3_600_000).toISOString(),
     maxUses: 1,
   })
 
   revalidatePath(PATHS.chatRoom(parsed.data.roomId))
-  return { ok: true as const, code: invite.code, email }
+  return { ok: true as const, code: invite.code }
 })
 
 export async function revokeInvite(input: unknown) {
@@ -618,6 +615,11 @@ export const acceptInvite = audited('chatRoom.join', async (input: unknown) => {
   // An invite written for an address is for that address. A forwarded link
   // must not seat whoever opens it first and spend the one use. Same answer
   // as an unknown code, so the link does not say who it was meant for.
+  //
+  // Nothing writes an address any more — the field that did read as sending an
+  // invitation and sent nothing. This stays until the last invite carrying one
+  // has expired, which is at most two days after that change shipped, because
+  // dropping it would unlock every restricted link still in somebody's hands.
   if (invite.email) {
     const identities = await listIdentities({ userIds: [userId] })
     if (!identities.some((identity) => identity.email?.toLowerCase() === invite.email)) {
