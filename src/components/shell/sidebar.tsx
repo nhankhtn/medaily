@@ -97,7 +97,7 @@ export function Sidebar({ badges = {} }: { badges?: Record<string, number> }) {
                         title={collapsed ? t(item.key) : undefined}
                         aria-current={active ? 'page' : undefined}
                         className={cn(
-                          'flex h-10 items-center gap-3 rounded-[var(--radius)] px-2.5 text-sm transition-colors',
+                          'relative flex h-10 items-center gap-3 rounded-[var(--radius)] px-2.5 text-sm transition-colors',
                           active
                             ? 'bg-accent-soft text-accent font-medium'
                             : 'text-text-muted hover:bg-surface-2 hover:text-text',
@@ -108,7 +108,16 @@ export function Sidebar({ badges = {} }: { badges?: Record<string, number> }) {
                         {!collapsed ? <span className="flex-1 truncate">{t(item.key)}</span> : null}
                         {badges[item.key] ? (
                           <span
-                            className="bg-accent text-accent-text ml-auto flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 text-[11px] font-medium tabular-nums"
+                            className={cn(
+                              'bg-accent text-accent-text flex shrink-0 items-center justify-center rounded-full font-medium tabular-nums',
+                              collapsed
+                                ? // Folded, the row centres whatever is in it —
+                                  // so a badge sitting in the line pushed the
+                                  // icon off the middle. Lifted out of the flow
+                                  // it marks the icon instead of displacing it.
+                                  'absolute top-1 right-1 h-4 min-w-4 px-1 text-[10px]'
+                                : 'ml-auto h-5 min-w-5 px-1.5 text-[11px]',
+                            )}
                             aria-label={String(badges[item.key])}
                           >
                             {badges[item.key]! > 9 ? '9+' : badges[item.key]}
