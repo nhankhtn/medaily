@@ -385,24 +385,38 @@ export function RoomView({
         </p>
       ) : null}
       <form onSubmit={submit} className="flex items-end gap-1 sm:gap-2">
-        <EmojiPicker onPick={(emoji) => setDraft((was) => was + emoji)} />
         <StickerPicker onPick={(id) => void send('sticker', id)} />
-        <textarea
-          value={draft}
-          onChange={(event) => {
-            setDraft(event.target.value)
-            // Throttled inside the hook — every announcement is a write.
-            announce()
-          }}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' && !event.shiftKey) void submit(event)
-          }}
-          rows={1}
-          maxLength={4000}
-          placeholder={t('placeholder')}
-          aria-label={t('placeholder')}
-          className="glass border-border-base min-h-10 flex-1 resize-none rounded-[var(--radius)] px-3 py-2 text-base sm:min-h-11 sm:text-sm"
-        />
+        <div className="relative flex-1">
+          <textarea
+            value={draft}
+            onChange={(event) => {
+              setDraft(event.target.value)
+              // Throttled inside the hook — every announcement is a write.
+              announce()
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && !event.shiftKey) void submit(event)
+            }}
+            rows={1}
+            maxLength={4000}
+            placeholder={t('placeholder')}
+            aria-label={t('placeholder')}
+            // The right padding is what keeps the last word off the emoji
+            // button sitting over the box: 32px of button plus its inset.
+            className="glass border-border-base block min-h-10 w-full resize-none rounded-[var(--radius)] py-2 pr-11 pl-3 text-base sm:min-h-11 sm:pr-12 sm:text-sm"
+          />
+          {/*
+            * Inside the box rather than beside it, which is where every chat
+            * app people already use keeps it. `bottom-1` rather than centred
+            * so it stays put if the box ever grows a second line.
+            */}
+          <EmojiPicker
+            onPick={(emoji) => setDraft((was) => was + emoji)}
+            size="iconSm"
+            align="right"
+            className="absolute right-1 bottom-1"
+          />
+        </div>
         {/*
           * A square on a phone, where the word costs more room than it buys —
           * the arrow beside a box you have just typed into is not ambiguous.

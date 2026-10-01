@@ -17,12 +17,31 @@ import { StickerArt } from './sticker-art'
  */
 const QUICK = ['😀', '😂', '🥰', '😭', '😡', '👍', '🙏', '🎉', '🔥', '❤️', '😴', '🤔']
 
-export function EmojiPicker({ onPick }: { onPick: (emoji: string) => void }) {
+export function EmojiPicker({
+  onPick,
+  size,
+  align,
+  className,
+}: {
+  onPick: (emoji: string) => void
+  size?: 'icon' | 'iconSm'
+  align?: 'left' | 'right'
+  /** Positions the whole tray — the trigger and the panel that hangs off it. */
+  className?: string
+}) {
   const t = useTranslations('chat')
   const [open, setOpen] = useState(false)
 
   return (
-    <Tray open={open} onOpenChange={setOpen} label={t('emoji')} icon={<Smile className="size-5" />}>
+    <Tray
+      open={open}
+      onOpenChange={setOpen}
+      label={t('emoji')}
+      icon={<Smile className="size-5" />}
+      size={size}
+      align={align}
+      className={className}
+    >
       <div className="grid grid-cols-6 gap-1">
         {QUICK.map((emoji) => (
           <button
@@ -89,6 +108,7 @@ export function Tray({
   size = 'icon',
   align = 'left',
   triggerClassName,
+  className,
   children,
 }: {
   open: boolean
@@ -99,6 +119,12 @@ export function Tray({
   /** Which edge the panel hangs from, for a trigger near the right margin. */
   align?: 'left' | 'right'
   triggerClassName?: string
+  /**
+   * Placement for the tray as a whole. The panel hangs off this element, so a
+   * trigger that has to sit somewhere unusual — inside the composer's box, say
+   * — moves this rather than the button, or the panel stays behind.
+   */
+  className?: string
   children: React.ReactNode
 }) {
   const box = useRef<HTMLDivElement>(null)
@@ -131,7 +157,7 @@ export function Tray({
   }, [open, onOpenChange])
 
   return (
-    <div ref={box} className="relative">
+    <div ref={box} className={cn('relative', className)}>
       <Button
         type="button"
         variant="ghost"
