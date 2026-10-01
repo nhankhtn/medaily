@@ -215,12 +215,22 @@ async function networkFirst(request, cacheName) {
 self.addEventListener('push', (event) => {
   event.waitUntil(
     (async () => {
-      let data = {}
+      let payload = {}
       try {
-        data = event.data ? event.data.json() : {}
+        payload = event.data ? event.data.json() : {}
       } catch {
         /* Not ours, or not JSON. Something is still shown — see above. */
       }
+
+      /*
+       * FCM puts `message.data` inside an envelope of its own before the raw
+       * Push API sees it — `{ data: {...}, from, fcmMessageId }` — so reading
+       * the fields off the top level found nothing and every notification came
+       * out as the app's name over an empty line. Unwrapped when the envelope
+       * is there, read flat when it is not, so a push from anything else still
+       * works and so does a payload that was never wrapped.
+       */
+      const data = payload && typeof payload.data === 'object' && payload.data ? payload.data : payload
 
       const title = typeof data.title === 'string' && data.title ? data.title : 'medaily'
       const body = typeof data.body === 'string' ? data.body : ''
