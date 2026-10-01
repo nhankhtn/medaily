@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { notFound } from 'next/navigation'
 import { Card } from '@/components/ui/card'
@@ -28,8 +29,27 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
   const members = Object.keys(loaded.speakers).length
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-start justify-between gap-3">
+    /*
+     * The conversation is the page, so it ends where the window does. A fixed
+     * number of rows left the transcript floating in the middle of an empty
+     * screen on a desktop and scrolling twice on a phone — the page under it
+     * and the list inside it.
+     */
+    <div
+      className={cn(
+        'flex min-h-0 flex-col gap-4',
+        /*
+         * Everything the shell has already spent, so the column ends exactly
+         * at the window and the page itself never scrolls: the header's own
+         * top padding and its 3.5rem bar, then `main`'s `pt-4`, then what
+         * `main` leaves at the bottom — room for the dock on a phone, 2rem
+         * from `md` up.
+         */
+        'h-[calc(100dvh-max(0.75rem,env(safe-area-inset-top,0px))-3.5rem-1rem-8.5rem-env(safe-area-inset-bottom,0px))]',
+        'md:h-[calc(100dvh-max(0.75rem,env(safe-area-inset-top,0px))-3.5rem-1rem-2rem)]',
+      )}
+    >
+      <div className="flex shrink-0 items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-2">
           {/*
            * An arrow, and one a thumb can hit. The way back used to be the
@@ -54,10 +74,16 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
 
         {/* Beside the title, not under the transcript: it is about the room,
             and it is where the eye already is on arriving. */}
-        <RoomSettings roomId={loaded.room.id} owner={owner} />
+        <RoomSettings
+          roomId={loaded.room.id}
+          owner={owner}
+          title={loaded.room.title}
+          members={Object.values(loaded.speakers)}
+          me={userId}
+        />
       </div>
 
-      <Card className="p-4">
+      <Card className="flex min-h-0 flex-1 flex-col p-4">
         <RoomView
           room={loaded.room}
           me={userId}

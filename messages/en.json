@@ -1678,7 +1678,14 @@
     "joinChecking": "Looking at the invite…",
     "joinInvited": "You have been invited to <b>{room}</b>.",
     "joinOpen": "Open the room",
-    "backToRooms": "Back to the rooms"
+    "backToRooms": "Back to the rooms",
+    "addMember": "Add someone",
+    "renameRoom": "Rename the room",
+    "deleteRoom": "Delete the room",
+    "deleteConfirm": "Delete this room? Everyone loses the messages in it.",
+    "manageMembers": "Members",
+    "removeMember": "Remove from the room",
+    "removeConfirm": "Remove {name} from the room?"
   },
   "activity": {
     "title": "What changed",
@@ -1806,7 +1813,9 @@
         "join": "Joined a room",
         "leave": "Left a room",
         "invite": "Invite sent out",
-        "remove": "Someone removed from a room"
+        "remove": "Someone removed from a room",
+        "rename": "Renamed a room",
+        "delete": "Deleted a room"
       }
     }
   }

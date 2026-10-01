@@ -1678,7 +1678,14 @@
     "joinChecking": "Đang xem lời mời…",
     "joinInvited": "Bạn được mời vào <b>{room}</b>.",
     "joinOpen": "Mở phòng",
-    "backToRooms": "Về danh sách phòng"
+    "backToRooms": "Về danh sách phòng",
+    "addMember": "Thêm thành viên",
+    "renameRoom": "Đổi tên phòng",
+    "deleteRoom": "Xoá phòng",
+    "deleteConfirm": "Xoá phòng này? Mọi người sẽ mất hết tin nhắn trong đó.",
+    "manageMembers": "Thành viên",
+    "removeMember": "Gỡ khỏi phòng",
+    "removeConfirm": "Gỡ {name} khỏi phòng?"
   },
   "activity": {
     "title": "Những gì đã đổi",
@@ -1806,7 +1813,9 @@
         "join": "Vào phòng",
         "leave": "Rời phòng",
         "invite": "Phát lời mời",
-        "remove": "Mời một người ra khỏi phòng"
+        "remove": "Mời một người ra khỏi phòng",
+        "rename": "Đổi tên phòng",
+        "delete": "Xoá phòng"
       }
     }
   }

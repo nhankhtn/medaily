@@ -33,6 +33,16 @@ export type VirtualInfiniteListProps<T> = {
    * Heights = `estimateSize * count` (base = phone, `sm` = desktop).
    */
   maxVisibleRows?: { base: number; sm: number }
+  /**
+   * Take whatever height the parent gives instead of capping at
+   * `maxVisibleRows`. For the one list that is the page rather than a panel
+   * on it: a conversation should end where the window does, not a fixed
+   * number of rows up from wherever it happens to start.
+   *
+   * The parent has to be a flex column with a bounded height for this to mean
+   * anything — `h-full` against an unbounded parent is just `auto`.
+   */
+  fill?: boolean
   hasMore?: boolean
   loadingMore?: boolean
   onLoadMore?: () => void
@@ -70,6 +80,7 @@ export function VirtualInfiniteList<T>({
   phoneEstimateSize,
   overscan = DEFAULT_OVERSCAN,
   maxVisibleRows = { base: 5, sm: 10 },
+  fill = false,
   hasMore = false,
   loadingMore = false,
   onLoadMore,
@@ -128,7 +139,8 @@ export function VirtualInfiniteList<T>({
   } as CSSProperties
 
   const shellClass = cn(
-    'max-h-[var(--vil-h)] overflow-y-auto sm:max-h-[var(--vil-h-sm)]',
+    'overflow-y-auto',
+    fill ? 'h-full min-h-0' : 'max-h-[var(--vil-h)] sm:max-h-[var(--vil-h-sm)]',
     className,
   )
 

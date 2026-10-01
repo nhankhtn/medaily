@@ -1,58 +1,222 @@
 'use client'
 
-import { Settings } from 'lucide-react'
+import { LogOut, Pencil, Settings, Trash2, UserMinus, UserPlus } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { toast } from 'sonner'
+import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import type { Speaker } from '@/lib/chat/types'
+import { PATHS } from '@/lib/paths'
+import { deleteRoom, leaveRoom, removeMember, renameRoom } from '@/server/actions/chat'
 import { InvitePanel } from './invite-panel'
-import { LeaveRoom } from './leave-room'
+
+type Panel = 'none' | 'invite' | 'rename' | 'members'
 
 /**
  * What can be done to the room, rather than said in it — behind a gear beside
  * the title.
  *
- * Both of these used to sit in a card under the conversation, in the path of a
- * finger scrolling the transcript. Neither is done often and neither is
- * reversible in the same breath: an invite link, once copied, is out of your
- * hands, and a room is left once and never unleft. One deliberate tap away is
- * the right distance for both.
+ * Two layers, and the split is between choosing and doing. The popover is a
+ * short menu: nothing in it is a question, so nothing in it earns a dimmed
+ * page. The things that *are* questions — a name to type, an address to
+ * invite, a list to take someone off — open a dialog with room to ask.
  *
- * `drawer` because that is where this app reads and edits one record: a
- * centred box would read as a question being asked, and nothing here is being
- * asked.
+ * Leaving and deleting go straight from the menu through `confirm`, because
+ * the question they ask is the same one either way and has one word in it.
  */
-export function RoomSettings({ roomId, owner }: { roomId: string; owner: boolean }) {
+export function RoomSettings({
+  roomId,
+  owner,
+  title,
+  members,
+  me,
+}: {
+  roomId: string
+  owner: boolean
+  title: string | null
+  members: Speaker[]
+  me: string
+}) {
   const t = useTranslations('chat')
+  const tc = useTranslations('common')
+  const router = useRouter()
+  const [menu, setMenu] = useState(false)
+  const [panel, setPanel] = useState<Panel>('none')
+  const [name, setName] = useState(title ?? '')
+  const [busy, setBusy] = useState(false)
+
+  const open = (next: Panel) => {
+    setMenu(false)
+    setPanel(next)
+  }
+
+  const leave = async () => {
+    if (!window.confirm(t('leaveConfirm'))) return
+    if ((await leaveRoom(roomId)).ok) router.push(PATHS.chat)
+  }
+
+  const remove = async () => {
+    if (!window.confirm(t('deleteConfirm'))) return
+    const result = await deleteRoom(roomId)
+    if (result.ok) router.push(PATHS.chat)
+    else toast.error(tc('error'))
+  }
+
+  const rename = async () => {
+    if (name.trim() === '' || busy) return
+    setBusy(true)
+    const result = await renameRoom({ roomId, title: name.trim() })
+    setBusy(false)
+    if (!result.ok) {
+      toast.error(tc('error'))
+      return
+    }
+    setPanel('none')
+    router.refresh()
+  }
+
+  const kick = async (userId: string, who: string) => {
+    if (!window.confirm(t('removeConfirm', { name: who }))) return
+    const result = await removeMember({ roomId, userId })
+    if (result.ok) router.refresh()
+    else toast.error(tc('error'))
+  }
+
+  const item = 'w-full justify-start'
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="iconSm"
-          title={t('roomSettings')}
-          aria-label={t('roomSettings')}
-        >
-          <Settings className="size-4" />
-        </Button>
-      </DialogTrigger>
+    <>
+      <Popover open={menu} onOpenChange={setMenu}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="ghost"
+            size="iconSm"
+            title={t('roomSettings')}
+            aria-label={t('roomSettings')}
+          >
+            <Settings className="size-4" />
+          </Button>
+        </PopoverTrigger>
 
-      <DialogContent layout="drawer" title={t('roomSettings')}>
-        <div className="space-y-5">
-          {/* Only the owner can make a way in, so for everybody else this
-              panel is the one control below and no empty heading above it. */}
-          {owner ? (
-            <section className="space-y-2">
-              <h3 className="text-text-subtle text-xs font-medium">{t('invite')}</h3>
-              <InvitePanel roomId={roomId} />
-            </section>
-          ) : null}
+        <PopoverContent aria-label={t('roomSettings')} className="w-56 p-1.5">
+          <div className="flex flex-col">
+            {owner ? (
+              <>
+                <Button variant="ghost" size="sm" className={item} onClick={() => open('invite')}>
+                  <UserPlus className="size-4" />
+                  {t('addMember')}
+                </Button>
+                <Button variant="ghost" size="sm" className={item} onClick={() => open('rename')}>
+                  <Pencil className="size-4" />
+                  {t('renameRoom')}
+                </Button>
+                <Button variant="ghost" size="sm" className={item} onClick={() => open('members')}>
+                  <UserMinus className="size-4" />
+                  {t('manageMembers')}
+                </Button>
+              </>
+            ) : null}
 
-          <section className="border-border-base flex flex-col items-start border-t pt-4">
-            <LeaveRoom roomId={roomId} />
-          </section>
-        </div>
-      </DialogContent>
-    </Dialog>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={item}
+              onClick={() => {
+                setMenu(false)
+                void leave()
+              }}
+            >
+              <LogOut className="size-4" />
+              {t('leave')}
+            </Button>
+
+            {/* Last, and the only one that takes the room from everybody. */}
+            {owner ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`${item} text-bad hover:text-bad`}
+                onClick={() => {
+                  setMenu(false)
+                  void remove()
+                }}
+              >
+                <Trash2 className="size-4" />
+                {t('deleteRoom')}
+              </Button>
+            ) : null}
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      <Dialog open={panel === 'invite'} onOpenChange={(next) => setPanel(next ? 'invite' : 'none')}>
+        <DialogContent title={t('addMember')}>
+          <InvitePanel roomId={roomId} />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={panel === 'rename'} onOpenChange={(next) => setPanel(next ? 'rename' : 'none')}>
+        <DialogContent title={t('renameRoom')}>
+          <form
+            className="space-y-4"
+            onSubmit={(event) => {
+              event.preventDefault()
+              void rename()
+            }}
+          >
+            <label className="block space-y-1.5">
+              <span className="text-sm font-medium">{t('roomName')}</span>
+              <Input
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                maxLength={120}
+                autoFocus
+                required
+              />
+            </label>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="ghost" onClick={() => setPanel('none')}>
+                {tc('cancel')}
+              </Button>
+              <Button type="submit" disabled={busy || name.trim() === ''}>
+                {tc('save')}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={panel === 'members'}
+        onOpenChange={(next) => setPanel(next ? 'members' : 'none')}
+      >
+        <DialogContent title={t('manageMembers')}>
+          <ul className="divide-border-base divide-y">
+            {members.map((member) => (
+              <li key={member.id} className="flex items-center gap-3 py-2">
+                <Avatar name={member.name} src={member.imageUrl} className="size-7" />
+                <span className="min-w-0 flex-1 truncate text-sm">{member.name}</span>
+                {/* Not yourself: leaving is the door marked for that. */}
+                {member.id === me ? null : (
+                  <Button
+                    variant="ghost"
+                    size="iconSm"
+                    aria-label={t('removeMember')}
+                    onClick={() => void kick(member.id, member.name)}
+                  >
+                    <UserMinus className="size-4" />
+                  </Button>
+                )}
+              </li>
+            ))}
+          </ul>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }

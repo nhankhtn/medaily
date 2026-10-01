@@ -32,7 +32,7 @@ export const ACTIVITY_ACTIONS = {
    * changed, buries the entries anybody actually looks for. These are the
    * access-control moments, held to the same standard as signing in.
    */
-  chatRoom: ['create', 'join', 'leave', 'invite', 'remove'],
+  chatRoom: ['create', 'rename', 'delete', 'join', 'leave', 'invite', 'remove'],
 } as const
 
 export type ActivityEntity = keyof typeof ACTIVITY_ACTIONS
