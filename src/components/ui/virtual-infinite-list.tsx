@@ -239,11 +239,20 @@ export function VirtualInfiniteList<T>({
     return empty ? <>{empty}</> : null
   }
 
-  // Same empty shell on server and on the client's first paint.
+  /*
+   * Same empty shell on server and on the client's first paint.
+   *
+   * A filling list keeps filling here too. Pinning it to `--vil-h` meant the
+   * shell came out of the server a fixed nine rows tall whatever box it was
+   * in, so anything under it — the chat composer — rendered partway up the
+   * card and then dropped to the bottom when hydration swapped in `h-full`.
+   * One visible jump on every room opened, and no amount of loading state
+   * above it helps, because the jump happens after the data has arrived.
+   */
   if (!mounted) {
     return (
       <div
-        className={cn(shellClass, 'h-[var(--vil-h)] sm:h-[var(--vil-h-sm)]')}
+        className={cn(shellClass, !fill && 'h-[var(--vil-h)] sm:h-[var(--vil-h-sm)]')}
         style={shellStyle}
         aria-hidden
       />
