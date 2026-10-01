@@ -137,6 +137,10 @@ export function NoteEditor({
 
       <DialogContent
         layout={wide ? 'full' : 'drawer'}
+        // The editor fills the panel and scrolls inside itself; the panel
+        // scrolling too would give the page two scrollbars fighting over one
+        // gesture.
+        body="fill"
         title={viewing ? (note?.title ?? t('newNote')) : note ? t('edit') : t('newNote')}
         description={viewing ? undefined : t('wikiHint')}
         headerAction={

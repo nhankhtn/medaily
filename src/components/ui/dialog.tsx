@@ -22,11 +22,18 @@ export const DialogClose = DialogPrimitive.Close
  *
  * `layout="drawer"` is for long writing (notes, journal): nearly full height
  * on a phone, a wide side panel on desktop, so the body field has room to grow.
+ *
+ * `layout` is geometry and nothing else. Who does the scrolling is `body`,
+ * because the two are not the same question: a drawer holding a list wants the
+ * panel to scroll, and a drawer holding an editor wants the editor to. Deciding
+ * the second from the first is how a long list ended up clipped with no way to
+ * reach the bottom of it.
  */
 export function DialogContent({
   title,
   description,
   layout = 'dialog',
+  body = 'scroll',
   headerAction,
   className,
   children,
@@ -40,6 +47,16 @@ export function DialogContent({
    * for the one thing a side panel is bad at: writing something long.
    */
   layout?: 'dialog' | 'drawer' | 'full'
+  /**
+   * Who scrolls.
+   *
+   * `scroll` — the panel body does, which is what a list or a form wants and
+   * what every caller gets unless it says otherwise.
+   * `fill` — the child is handed the height and scrolls inside itself, for an
+   * editor that has to fill the panel. The child owns it from there: nothing
+   * here will scroll, so a child that overflows is simply cut off.
+   */
+  body?: 'scroll' | 'fill'
   /** Sits beside the close button — a control about the panel, not its contents. */
   headerAction?: React.ReactNode
 }) {
@@ -91,7 +108,9 @@ export function DialogContent({
         <div
           className={cn(
             'min-h-0 flex-1 px-4 pb-[max(1rem,env(safe-area-inset-bottom))]',
-            drawer ? 'flex flex-col overflow-hidden' : 'overflow-y-auto overscroll-contain',
+            body === 'fill'
+              ? 'flex flex-col overflow-hidden'
+              : 'overflow-y-auto overscroll-contain',
           )}
         >
           {children}
