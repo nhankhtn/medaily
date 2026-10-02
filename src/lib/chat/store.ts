@@ -90,6 +90,21 @@ export type ChatStore = {
    */
   findMessage: (roomId: string, messageId: string) => Promise<ChatMessage | null>
 
+  /**
+   * Who wrote the newest thing this person has not read, across every room.
+   *
+   * One question rather than one per room, and asked only when something is
+   * waiting — it exists so a browser tab can say a name instead of a number,
+   * and a name nobody is going to read is not worth a query.
+   *
+   * `null` when nothing is waiting, or when the writer has erased their
+   * account and the message outlived them.
+   */
+  latestUnreadSender: (
+    userId: string,
+    rooms: { roomId: string; after: string | null }[],
+  ) => Promise<string | null>
+
   /** Answers false when the message is not this person's to delete. */
   softDeleteMessage: (roomId: string, messageId: string, userId: string) => Promise<boolean>
   /**
@@ -167,6 +182,7 @@ export const NO_CHAT: ChatStore = {
   listBackward: async () => ({ items: [], cursor: null, more: false }),
   listForward: async () => ({ items: [], cursor: null, more: false }),
   countUnread: async () => ({}),
+  latestUnreadSender: async () => null,
   findMessage: async () => null,
   softDeleteMessage: async () => false,
   toggleReaction: async () => null,
@@ -349,6 +365,20 @@ export function inMemoryChatStore(): ChatStore {
         if (n > 0) out[roomId] = n
       }
       return out
+    },
+
+    latestUnreadSender: async (userId, rooms) => {
+      const waiting = messages.filter(
+        (m) =>
+          m.userId !== null &&
+          m.userId !== userId &&
+          m.deletedAt === null &&
+          rooms.some(({ roomId, after }) => m.roomId === roomId && (after ? m.id > after : true)),
+      )
+      if (waiting.length === 0) return null
+      // Ids sort the way the transcript does, which is the whole reason the
+      // store hands them out rather than letting anybody invent one.
+      return waiting.reduce((newest, m) => (m.id > newest.id ? m : newest)).userId
     },
 
     toggleReaction: async (roomId, messageId, userId, emoji) => {

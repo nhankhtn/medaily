@@ -1,3 +1,4 @@
+import { findUsersByIds } from '@/server/repositories/auth'
 import { pickChatStore } from '@/lib/chat/provider'
 import type { ChatStore } from '@/lib/chat/store'
 import type { ChatMember, ChatRoom } from '@/lib/chat/types'
@@ -196,9 +197,9 @@ export async function unreadRooms(userId: string, options: WithStore = {}): Prom
 export async function unreadForShell(
   userId: string,
   { store = pickChatStore() }: WithStore = {},
-): Promise<{ rooms: number; channels: string[] }> {
+): Promise<{ rooms: number; channels: string[]; from: string | null }> {
   const rooms = await store.listRoomsFor(userId)
-  if (rooms.length === 0) return { rooms: 0, channels: [] }
+  if (rooms.length === 0) return { rooms: 0, channels: [], from: null }
 
   const seats = await Promise.all(rooms.map((room) => store.findMember(room.id, userId)))
   const unread = await store.countUnread(
@@ -209,5 +210,34 @@ export async function unreadForShell(
     })),
   )
 
-  return { rooms: Object.keys(unread).length, channels: rooms.map((room) => room.doorbellKey) }
+  const waiting = Object.keys(unread)
+  const channels = rooms.map((room) => room.doorbellKey)
+
+  /*
+   * A name only when one room is waiting.
+   *
+   * It goes in a browser tab, where there is room for one fact. With two
+   * rooms waiting, naming whoever happened to write last would say a smaller
+   * thing than the number does and sound like the whole of it.
+   *
+   * Two more queries, and only on the page loads where something is actually
+   * waiting — which is the minority of them, and the ones where somebody is
+   * about to want this.
+   */
+  let from: string | null = null
+  if (waiting.length === 1) {
+    const senderId = await store.latestUnreadSender(
+      userId,
+      rooms.map((room, index) => ({
+        roomId: room.id,
+        after: seats[index]?.lastReadMessageId ?? null,
+      })),
+    )
+    if (senderId) {
+      const [sender] = await findUsersByIds([senderId])
+      from = sender?.displayName?.trim() || null
+    }
+  }
+
+  return { rooms: waiting.length, channels, from }
 }

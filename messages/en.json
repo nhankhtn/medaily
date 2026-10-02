@@ -1659,6 +1659,7 @@
     "create": "Create",
     "untitled": "Room",
     "unread": "{count} unread",
+    "tabMessaged": "{name} sent you a message",
     "open": "Open",
     "members": "{count} in the room",
     "placeholder": "Write something",

@@ -5,6 +5,7 @@ import { BottomNav } from '@/components/shell/bottom-nav'
 import { Header } from '@/components/shell/header'
 import { Sidebar } from '@/components/shell/sidebar'
 import { chatEnabled } from '@/lib/chat/provider'
+import { TabTitle } from '@/features/chat/tab-title'
 import { UnreadWatch } from '@/features/chat/unread-watch'
 import { unreadForShell } from '@/server/services/chat'
 import { CaptureBox } from '@/features/capture/capture-box'
@@ -41,8 +42,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // says nothing anybody can act on. Nothing is counted where chat is not
   // configured, and a count that fails is no count rather than no shell.
   const chat = chatEnabled()
-    ? await unreadForShell(settings.userId).catch(() => ({ rooms: 0, channels: [] }))
-    : { rooms: 0, channels: [] }
+    ? await unreadForShell(settings.userId).catch(() => ({ rooms: 0, channels: [], from: null }))
+    : { rooms: 0, channels: [], from: null }
 
   // The same counts either way: a phone reads them off the dock, a desktop off
   // the sidebar, and neither should be able to disagree with the other.
@@ -61,6 +62,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </div>
       <BottomNav badges={badges} />
       <UnreadWatch channels={chat.channels} />
+      <TabTitle count={chat.rooms} from={chat.from} />
       <CaptureBox enabled={aiServiceConfigured()} assistant={assistantEnabled()} />
       <PushRefresh />
       <NotifyOffer />

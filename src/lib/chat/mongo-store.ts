@@ -285,6 +285,27 @@ export function mongoChatStore(uri: string): ChatStore {
       return Object.fromEntries(counted.map((row) => [row._id, row.n]))
     },
 
+    latestUnreadSender: async (userId, rooms) => {
+      if (rooms.length === 0) return null
+
+      const clauses = rooms.map(({ roomId, after }) => ({
+        roomId,
+        ...(after && ObjectId.isValid(after) ? { _id: { $gt: new ObjectId(after) } } : {}),
+      }))
+
+      // Newest first and stop at one. `userId: { $ne: null }` as well as the
+      // sender's own id: a message whose author erased their account has no
+      // name to show, and the next-newest is the one worth naming.
+      const found = await (
+        await messagesIn(uri)
+      ).findOne(
+        { $or: clauses, userId: { $nin: [userId, null] }, deletedAt: null },
+        { sort: { _id: -1 }, projection: { userId: 1 } },
+      )
+
+      return found?.userId ?? null
+    },
+
     toggleReaction: async (roomId, messageId, userId, emoji) => {
       if (!ObjectId.isValid(messageId)) return null
       const messages = await messagesIn(uri)

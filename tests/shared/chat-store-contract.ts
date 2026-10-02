@@ -328,6 +328,71 @@ export function describeChatStore(name: string, makeStore: () => Promise<ChatSto
       expect(await store.countUnread('u1', [{ roomId: 'r1', after: null }])).toEqual({ r1: 1 })
     })
 
+    it('names who wrote the newest thing still waiting', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      await store.appendMessage(message('r1', 'u2', 'first', 'c1'))
+      const mine = await store.appendMessage(message('r1', 'u1', 'mine', 'c2'))
+      const last = await store.appendMessage(message('r1', 'u3', 'last', 'c3'))
+
+      // Newest, not first: a tab saying a name is saying who just wrote.
+      expect(await store.latestUnreadSender('u1', [{ roomId: 'r1', after: null }])).toBe('u3')
+      expect(last.userId).toBe('u3')
+      expect(mine.userId).toBe('u1')
+    })
+
+    it('never names the person asking', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      await store.appendMessage(message('r1', 'u2', 'theirs', 'c4'))
+      await store.appendMessage(message('r1', 'u1', 'mine, and newest', 'c5'))
+
+      expect(await store.latestUnreadSender('u1', [{ roomId: 'r1', after: null }])).toBe('u2')
+    })
+
+    it('looks past the mark, so what was read is not named again', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      const seen = await store.appendMessage(message('r1', 'u2', 'read', 'c6'))
+      await store.appendMessage(message('r1', 'u3', 'unread', 'c7'))
+
+      expect(await store.latestUnreadSender('u1', [{ roomId: 'r1', after: seen.id }])).toBe('u3')
+    })
+
+    it('answers across rooms, newest wherever it is', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      await store.createRoom(room('r2'))
+      await store.appendMessage(message('r1', 'u2', 'older', 'c8'))
+      await store.appendMessage(message('r2', 'u3', 'newer', 'c9'))
+
+      expect(
+        await store.latestUnreadSender('u1', [
+          { roomId: 'r1', after: null },
+          { roomId: 'r2', after: null },
+        ]),
+      ).toBe('u3')
+    })
+
+    it('leaves out a recalled message, which has nothing to say', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      await store.appendMessage(message('r1', 'u2', 'stays', 'c10'))
+      const gone = await store.appendMessage(message('r1', 'u3', 'recalled', 'c11'))
+      await store.softDeleteMessage('r1', gone.id, 'u3')
+
+      expect(await store.latestUnreadSender('u1', [{ roomId: 'r1', after: null }])).toBe('u2')
+    })
+
+    it('answers nothing when nothing is waiting', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      await store.appendMessage(message('r1', 'u1', 'mine', 'c12'))
+
+      expect(await store.latestUnreadSender('u1', [{ roomId: 'r1', after: null }])).toBeNull()
+      expect(await store.latestUnreadSender('u1', [])).toBeNull()
+    })
+
     it('answers for several rooms at once, each from its own place', async () => {
       const store = await makeStore()
       await store.createRoom(room('r1'))
