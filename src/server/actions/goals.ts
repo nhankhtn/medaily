@@ -12,6 +12,7 @@ import {
   reorderGoals,
   updateGoal,
   upsertMilestone,
+  upsertMilestones,
 } from '@/server/repositories/goals'
 import { canBindMetric } from '@/server/services/metrics'
 import { audited, type NoteChange } from '@/server/services/audited'
@@ -51,6 +52,11 @@ export async function toggleMilestone(input: unknown) {
   const { goalId, milestoneId } = z
     .object({ goalId: z.string().uuid(), milestoneId: z.string().uuid() })
     .parse(input)
+
+  // Milestones carry no owner of their own; the goal is what proves they are yours.
+  if (!(await findGoal(await getCurrentUserId(), goalId))) {
+    return { ok: false as const, error: 'not_found' as const }
+  }
 
   const milestones = await findMilestonesFor([goalId])
   const target = milestones.find((milestone) => milestone.id === milestoneId)
@@ -185,18 +191,20 @@ export const saveGoal = audited(
 
     if (values.progressMode === 'milestones' && milestoneTitles?.length) {
       const existing = await findMilestonesFor([goal.id])
-      for (const [index, title] of milestoneTitles.entries()) {
-        const current = existing[index]
-        await upsertMilestone({
-          id: current?.id,
-          goalId: goal.id,
-          title,
-          sortOrder: index,
-          weight: current?.weight ?? '1',
-          completedAt: current?.completedAt ?? null,
-          dueDate: current?.dueDate ?? null,
-        })
-      }
+      await upsertMilestones(
+        milestoneTitles.map((title, index) => {
+          const current = existing[index]
+          return {
+            id: current?.id,
+            goalId: goal.id,
+            title,
+            sortOrder: index,
+            weight: current?.weight ?? '1',
+            completedAt: current?.completedAt ?? null,
+            dueDate: current?.dueDate ?? null,
+          }
+        }),
+      )
     }
 
     revalidatePath(PATHS.goals)

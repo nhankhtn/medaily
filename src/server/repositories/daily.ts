@@ -1,8 +1,9 @@
-import { and, asc, between, desc, eq, gte, isNotNull, sql } from 'drizzle-orm'
+import { and, asc, between, desc, eq, gte, inArray, isNotNull, sql } from 'drizzle-orm'
 import { db, type DbOrTx } from '@/lib/db'
 import { dailyEffective, dailyLogs } from '@/lib/db/schema'
 import type { DailyLog } from '@/lib/db/schema'
 import type { DateRange, ISODate } from '@/lib/dates'
+import { workoutTypeLabel } from '@/lib/timer/activities'
 import type { EffectiveDailyLog } from '@/lib/types'
 
 /** Columns a user can write from the daily form. */
@@ -94,6 +95,25 @@ export async function findEffectiveRange(
     )
     .orderBy(asc(dailyEffective.logDate))
   return rows.map(toEffective)
+}
+
+/**
+ * Of these people, the ones who have a log for this day.
+ *
+ * One query for the whole list rather than one per person: the evening
+ * reminder asks it about everybody at once. A row exists only once something
+ * was saved, so its presence is the whole answer.
+ */
+export async function findUserIdsWithLogOn(
+  filter: { userIds: string[]; date: ISODate },
+  tx: DbOrTx = db,
+): Promise<string[]> {
+  if (filter.userIds.length === 0) return []
+  const rows = await tx
+    .selectDistinct({ userId: dailyLogs.userId })
+    .from(dailyLogs)
+    .where(and(inArray(dailyLogs.userId, filter.userIds), eq(dailyLogs.logDate, filter.date)))
+  return rows.map((row) => row.userId)
 }
 
 export async function findRecentLogDates(userId: string, limit = 30): Promise<ISODate[]> {
@@ -210,7 +230,13 @@ export async function findExerciseTypes(userId: string, limit = 8): Promise<stri
     .groupBy(dailyLogs.exerciseType)
     .orderBy(desc(sql`count(*)`))
     .limit(limit)
-  return rows.map((r) => r.type).filter((t): t is string => Boolean(t && t.trim()))
+  const named = rows
+    .map((r) => r.type)
+    .filter((t): t is string => Boolean(t && t.trim()))
+    .map(workoutTypeLabel)
+  // Deduped again after the label: a tree holding both `other` and `Other`
+  // would otherwise draw the same chip twice.
+  return [...new Set(named)]
 }
 
 export async function countLogsSince(userId: string, since: ISODate): Promise<number> {

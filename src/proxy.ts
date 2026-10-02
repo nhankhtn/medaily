@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
+import { BASIC_REALM, basicCredentialsMatch } from '@/lib/auth/basic'
 import { readAuthConfig, readGoogleConfig } from '@/lib/auth/config'
 import { PATHS, PUBLIC_PATHS, safeNextPath } from '@/lib/paths'
 import { REQUEST_ID_HEADER, requestIdFrom } from '@/lib/request-id'
@@ -46,6 +47,22 @@ export async function proxy(request: NextRequest) {
     )
     moved.headers.set(REQUEST_ID_HEADER, requestId)
     return moved
+  }
+
+  // A lock of its own, apart from the app's session: the browser asks once for
+  // the hard-coded account, whether or not anyone is signed in to the app.
+  if (pathname === PATHS.docs || pathname.startsWith(`${PATHS.docs}/`)) {
+    if (basicCredentialsMatch(request.headers.get('authorization'), readAuthConfig())) {
+      return forward()
+    }
+    return new NextResponse('Authentication required', {
+      status: 401,
+      headers: {
+        'WWW-Authenticate': `Basic realm="${BASIC_REALM}", charset="UTF-8"`,
+        'Cache-Control': 'no-store',
+        [REQUEST_ID_HEADER]: requestId,
+      },
+    })
   }
 
   const signingIn = pathname === PATHS.login
@@ -135,11 +152,13 @@ export const config = {
   // Static files under `public/` reach the proxy like any other path, so the
   // ones that are nobody's personal data are named here — otherwise every
   // brand mark costs a session check and can never be cached at the edge.
+  // `themes/` too: the sign-in page paints a theme's scenery before there is
+  // a session to check.
   //
   // `opengraph-image` is in that list for a second reason: the scraper that
   // fetches it to build a link preview has no session and never will, so
   // behind the gate it gets a redirect and the card comes out blank.
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|icon.svg|icon-maskable|apple-icon|opengraph-image|brands/).*)',
+    '/((?!_next/static|_next/image|favicon.ico|icon.svg|icon-maskable|apple-icon|opengraph-image|brands/|themes/).*)',
   ],
 }

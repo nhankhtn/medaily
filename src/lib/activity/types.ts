@@ -1,15 +1,10 @@
 /**
- * What the activity log records, and the only vocabulary it accepts.
+ * The only vocabulary the activity log accepts. Spelled out per object, not
+ * multiplied out of entities × verbs — that claimed `transaction.login`
+ * existed and made a typo look like any other member.
  *
- * Spelled out per object rather than multiplied out of an entity list and a
- * verb list. The cross product was shorter to write and wrong: it claimed
- * `session.restore` and `transaction.login` exist, so every one of them needed
- * a label nobody would ever read, and a typo in a real one looked like any
- * other member of the set.
- *
- * Adding a kind of record is a line here plus a label in `messages/*.json` —
- * which is the point. A log nobody can label is a log nobody reads, and
- * `tests/unit/activity.test.ts` refuses the one without the other.
+ * A new kind is a line here plus a label in `messages/*.json`;
+ * `tests/unit/activity.test.ts` refuses one without the other.
  */
 export const ACTIVITY_ACTIONS = {
   transaction: ['create', 'update', 'delete', 'restore'],
@@ -20,12 +15,13 @@ export const ACTIVITY_ACTIONS = {
   goal: ['create', 'update', 'delete'],
   note: ['create', 'update', 'delete'],
   daily: ['update'],
-  /**
-   * Not a record anybody edits — the two moments an account is used. They are
-   * here because a trail of what changed without who was present to change it
-   * answers half a question.
-   */
+  /** What changed, without who was present, answers half a question. */
   session: ['login', 'logout'],
+  /**
+   * Access-control moments only. The messages are deliberately absent: a log
+   * of every line said buries the entries anybody looks for.
+   */
+  chatRoom: ['create', 'rename', 'delete', 'join', 'leave', 'invite', 'remove'],
 } as const
 
 export type ActivityEntity = keyof typeof ACTIVITY_ACTIONS
@@ -41,13 +37,11 @@ export const EVERY_ACTIVITY_ACTION = Object.entries(ACTIVITY_ACTIONS).flatMap(([
 )
 
 /**
- * One row reduced to the handful of fields worth remembering, rendered the way
- * a person reads them. Building it is the domain's job — only the code that
- * knows a `categoryId` names "Ăn uống" can write that down.
+ * One row reduced to what is worth remembering, rendered as a person reads it
+ * — only the domain knows a `categoryId` names "Ăn uống".
  *
- * A field left out is a field the trail does not follow. That is the whole
- * privacy control: the body of a journal entry is not missing by accident, it
- * is missing because no snapshot ever puts it in.
+ * A field left out is a field the trail does not follow. That is the privacy
+ * control: a journal body is missing because no snapshot puts it in.
  */
 export type Snapshot = Record<string, string | null>
 
@@ -70,28 +64,20 @@ export type ActivityRecord = {
   /** Which row it was about, so a trail can be followed back to a record. */
   entityId?: string | null
   /**
-   * What a person would call it — "Ăn tối", "Đọc sách". Never an amount and
-   * never the contents of a journal entry: a log that quotes what it watched
-   * is a second copy of the thing it was supposed to be a record *about*.
+   * "Ăn tối", "Đọc sách". Never an amount or a journal body — a log that
+   * quotes what it watched is a second copy of it.
    */
   label?: string | null
   /** Ties a row to the server console lines and the alert for one request. */
   requestId?: string | null
 
-  /**
-   * The row as it stood before the action. A create has none — nothing stood
-   * there yet.
-   */
+  /** A create has none; nothing stood there. */
   current?: Snapshot | null
   /**
-   * What the action was asked to make it. A delete has none: it asks for the
-   * row to stop existing, not for it to hold something else.
+   * What it was asked to become. A delete has none.
    *
-   * The two are kept rather than the difference between them. A difference is
-   * a reading of the facts, and a reading can be improved — a field renamed, a
-   * number formatted differently, a mistake in how two values were compared.
-   * Keep only the reading and the facts are gone; keep the facts and every
-   * later reading is available, including ones this deploy has not thought of.
+   * Both are kept rather than the difference: a difference is a reading, and
+   * keeping only the reading throws away every later one.
    */
   request?: Snapshot | null
 }

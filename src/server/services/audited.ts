@@ -4,22 +4,12 @@ import { log } from '@/lib/log'
 import { recordActivity } from './activity'
 
 /**
- * What an action tells the trail about itself. Every field is optional: an
- * action that says nothing still gets a dated line saying it happened.
- */
-/**
- * Handed to the action itself, for what the wrapper cannot see from outside.
+ * Handed to the action, for what the wrapper cannot see: the handler already
+ * holds this person's lists and the row as it stood, so it says so rather than
+ * the wrapper running the same queries again.
  *
- * Turning `categoryId` into "Ăn uống" needs this person's categories, and the
- * row as it stood needs reading before the update writes over it. The handler
- * has both already — it loaded the lists to check ownership and it is about to
- * overwrite the old row — so it says so, rather than the wrapper running the
- * same three queries a second time.
- *
- * It is a parameter rather than anything request-scoped on purpose. `cache()`
- * from React only memoises inside a render, and a server action is not one:
- * there, each call builds a fresh value, so a slot written by the handler is
- * not the slot the wrapper reads, and every row lands with two nulls in it.
+ * A parameter, not request state: `cache()` memoises inside a render and a
+ * server action is not one, so the slot written would not be the slot read.
  */
 export type NoteChange = (snapshots: {
   current?: Snapshot | null
@@ -38,22 +28,13 @@ export type AuditDetails = {
 }
 
 /**
- * Wraps a server action so that succeeding at it is also recorded.
+ * Wraps a server action so succeeding at it is also recorded — structurally,
+ * rather than by a `recordActivity()` line in every action that can be
+ * forgotten or left firing on an error path.
  *
- * It exists because the alternative — a `recordActivity()` call inside every
- * action — is a line that can be forgotten, written with the wrong user, or
- * left firing on a path that returned an error. Here those are structural:
- *
- * - **The user is never wrong.** The wrapper reads the session itself rather
- *   than trusting an argument. `getCurrentUserId` is `cache()`d per request,
- *   so asking again costs nothing.
- * - **Only success is recorded.** An action returning `{ ok: false }` changed
- *   nothing, and a trail full of attempts is a trail nobody reads.
- * - **Recording never breaks the action.** A failure here is logged and
- *   swallowed; the caller gets the result it would have got anyway.
- * - **What is followed is configuration.** `registry.ts` decides which objects
- *   have a trail at all; `recordActivity` enforces it, so the hand-written
- *   callers obey the same switch.
+ * The user is read from the session, not an argument. Only success is
+ * recorded. A failure here is swallowed, so the caller gets what it would
+ * have got anyway.
  *
  * ```ts
  * export const removeTransaction = audited(
@@ -65,22 +46,15 @@ export type AuditDetails = {
  */
 export function audited<Input, Result>(
   /**
-   * A function where the action depends on what happened. Half the mutations
-   * here are `save*`: one call that creates when it is handed no id and edits
-   * when it is, and recording both as the same thing would make the trail
-   * claim a row was added every time it was touched.
+   * A function where the verb depends on what happened — `save*` creates or
+   * edits, and recording both the same way would claim a row was added every
+   * time it was touched.
    */
   action: ActivityAction | ((result: Result, input: Input) => ActivityAction),
   handler: (input: Input, note: NoteChange) => Promise<Result>,
   /**
-   * Pulls the id, the name and — where they follow from what came back — the
-   * two snapshots out of what happened. Declared at the wrap site rather than
-   * in the registry because only here is the result type known; a central
-   * table of these would be a table of `any`.
-   *
-   * An action that needs its own lists or the row as it stood says so from
-   * inside itself, through the `note` it is handed. Anything named in both
-   * places, this one wins.
+   * The id, the name and any snapshots, pulled from what came back. At the
+   * wrap site because only here is the result type known. Wins over `note`.
    */
   details?: (context: { result: Result; input: Input }) => AuditDetails,
 ): (input: Input) => Promise<Result> {
@@ -97,8 +71,7 @@ export function audited<Input, Result>(
 
     const result = await handler(input, note)
 
-    // Everything below is bookkeeping about an action that has already done its
-    // work, so nothing in it may change what the caller receives.
+    // Bookkeeping about work already done; nothing here may change the result.
     try {
       if (succeeded(result)) {
         const resolved = typeof action === 'function' ? action(result, input) : action
@@ -122,10 +95,8 @@ export function audited<Input, Result>(
 }
 
 /**
- * Actions here answer `{ ok: false, error }` on a refused input rather than
- * throwing, so a returned value is not by itself proof that anything changed.
- * Anything without an `ok` field did its work or threw, and a throw never
- * reaches this line.
+ * A refused input answers `{ ok: false }` rather than throwing, so a returned
+ * value is not proof of a change. No `ok` field means it did the work.
  */
 function succeeded(result: unknown): boolean {
   if (result && typeof result === 'object' && 'ok' in result) {

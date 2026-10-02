@@ -1,16 +1,9 @@
 /**
- * How often one key may do something.
+ * How often one key may do something. A token bucket, not a window counter —
+ * a counter lets twice its limit through across a boundary.
  *
- * A token bucket rather than a counter per window. A window counter lets
- * through twice its limit across a boundary — eight sign-in attempts in the
- * last second of one window and eight more in the first second of the next —
- * and then opens the gate all at once. A bucket refills continuously, so the
- * burst is what the bucket holds and the pace after that is the refill rate.
- *
- * Per process, and therefore imperfect on a platform that runs many: the real
- * allowance is this one multiplied by however many instances are warm, and a
- * cold start hands out a fresh bucket. That is the honest trade for an app
- * with no shared store. It stops casual hammering, not a determined attacker.
+ * Per process, so the real allowance is this times however many instances are
+ * warm. It stops casual hammering, not a determined attacker.
  */
 
 export type Allowance = {
@@ -24,19 +17,11 @@ export type Allowance = {
 export type Limit = {
   /** Spends one token. `now` is injectable so the rule can be tested on a clock. */
   take: (key: string, now?: number) => Allowance
-  /**
-   * Fills the bucket back up. For the case where the thing being limited has
-   * finally succeeded — a correct password says this caller was never the one
-   * the limit is for, and should not be walking on a near-empty bucket.
-   */
+  /** For a success: a correct password says this was never the caller meant. */
   refill: (key: string) => void
 }
 
-/**
- * Keys are IP addresses and user ids, so the map cannot grow with traffic from
- * one person — but it can with invented keys, and nothing here runs on a timer
- * to tidy up. It is swept when it gets big instead.
- */
+/** Invented keys can grow the map, and nothing runs on a timer; swept instead. */
 const MAX_KEYS = 10_000
 
 export function createLimit({
@@ -50,20 +35,14 @@ export function createLimit({
 }): Limit {
   const buckets = new Map<string, { tokens: number; at: number }>()
 
-  /*
-   * Written as a ratio rather than a tokens-per-millisecond constant. That
-   * constant is a reciprocal, and dividing by it put `Retry-After` a
-   * millisecond past the true wait — small, but it makes an exact rule
-   * inexact for no reason.
-   */
+  // A ratio, not a tokens-per-ms reciprocal: dividing by that put
+  // `Retry-After` a millisecond past the true wait.
   const gained = (ms: number) => (Math.max(0, ms) * capacity) / refillMs
   const waitFor = (tokens: number) => (tokens * refillMs) / capacity
 
   /**
-   * A bucket that has had time to refill completely answers exactly as one
-   * that was never there, so dropping it changes nothing. If that is not
-   * enough the oldest go, as the alert gate does with its own map. It weakens
-   * nothing: anyone who can invent keys already gets a fresh bucket per key.
+   * A fully refilled bucket answers as one that was never there, so dropping
+   * it changes nothing. Past that the oldest go.
    */
   const sweep = (now: number) => {
     for (const [key, bucket] of buckets) {
@@ -75,15 +54,14 @@ export function createLimit({
   return {
     take(key, now = Date.now()) {
       const bucket = buckets.get(key)
-      // `gained` clamps a negative gap, because a clock that steps backwards
-      // over NTP would otherwise take tokens from someone who had spent none.
+      // `gained` clamps a negative gap: a clock stepping back over NTP would
+      // otherwise take tokens from someone who spent none.
       const tokens = bucket ? Math.min(capacity, bucket.tokens + gained(now - bucket.at)) : capacity
 
       if (!bucket && buckets.size >= MAX_KEYS) sweep(now)
 
-      // Re-inserted rather than updated in place: a Map keeps insertion order
-      // and ignores it on an overwrite, so without this the sweep would drop
-      // whichever key was seen first rather than whichever was seen longest ago.
+      // Re-inserted, not updated: a Map ignores insertion order on overwrite,
+      // so the sweep would drop the first-seen key, not the longest-idle one.
       buckets.delete(key)
 
       if (tokens < 1) {

@@ -58,10 +58,15 @@ describe('recording an action', () => {
     expect((await store.list('u1', { limit: 10 })).items).toEqual([])
   })
 
+  /**
+   * Any audited action would do; this one is a transaction because the
+   * registry was later narrowed to money and sign-ins, and a test that
+   * happens to name a switched-off entity proves nothing about scoping.
+   */
   it('keeps one person out of another person page', async () => {
     const store = inMemoryActivityStore()
-    recordActivity({ userId: 'u1', action: 'habit.create', label: 'Chạy bộ' }, { store })
-    recordActivity({ userId: 'u2', action: 'habit.create', label: 'Đọc sách' }, { store })
+    recordActivity({ userId: 'u1', action: 'transaction.create', label: 'Chạy bộ' }, { store })
+    recordActivity({ userId: 'u2', action: 'transaction.create', label: 'Đọc sách' }, { store })
     await settle()
 
     expect((await store.list('u1', { limit: 10 })).items.map((row) => row.label)).toEqual([

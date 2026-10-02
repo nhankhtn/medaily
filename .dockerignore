@@ -9,3 +9,7 @@ coverage
 playwright-report
 test-results
 *.log
+**/node_modules
+docs/site/build
+docs/site/.docusaurus
+public/docs

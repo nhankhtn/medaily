@@ -14,6 +14,7 @@
     "journal": "Nhật ký",
     "calendar": "Lịch",
     "people": "Quan hệ",
+    "chat": "Nhắn tin",
     "career": "Sự nghiệp",
     "analytics": "Thống kê",
     "reviews": "Tổng kết",
@@ -60,6 +61,7 @@
     "themeLight": "Sáng",
     "themeDark": "Tối",
     "themePink": "Hồng",
+    "themeMeadow": "Đồng cỏ",
     "language": "Ngôn ngữ",
     "openMenu": "Mở menu",
     "pickDate": "Chọn ngày",
@@ -442,7 +444,8 @@
         "today": "Về hôm nay",
         "save": "Lưu ngày",
         "toggleTimer": "Bắt đầu hoặc dừng đồng hồ",
-        "shortcuts": "Mở bảng này"
+        "shortcuts": "Mở bảng này",
+        "sidebar": "Đóng/mở thanh bên"
       },
       "open": "Xem phím tắt",
       "press": "nhấn phím…",
@@ -495,6 +498,17 @@
       "iosIntro": "Safari không có nút cho việc này nên phải bấm hai bước.",
       "iosStepShare": "Bấm nút Chia sẻ ở thanh dưới của Safari",
       "iosStepAdd": "Chọn Thêm vào MH chính"
+    },
+    "notifications": {
+      "title": "Thông báo",
+      "help": "Nhận thông báo trên thiết bị này khi có người nhắn cho bạn, và lúc 8 giờ tối nếu hôm đó bạn chưa ghi gì. Mỗi thiết bị phải bật riêng.",
+      "turnOn": "Bật cho thiết bị này",
+      "turnOff": "Tắt cho thiết bị này",
+      "on": "Đã bật thông báo cho thiết bị này",
+      "off": "Thiết bị này sẽ không nhận thông báo",
+      "failed": "Không đăng ký được thiết bị này",
+      "blocked": "Trình duyệt đang chặn thông báo cho trang này. Cho phép trong cài đặt trình duyệt rồi quay lại.",
+      "iosNeedsInstall": "Trên iPhone và iPad, thông báo chỉ tới được app đã thêm vào màn hình chính — không tới tab Safari."
     }
   },
   "analytics": {
@@ -1000,7 +1014,7 @@
       "notKept": "Máy không còn chỗ để giữ lại. Có mạng rồi thử lưu lại nhé."
     },
     "search": "Tìm",
-    "searchPlaceholder": "Nơi chi, hoặc mã giao dịch",
+    "searchPlaceholder": "Nơi chi, người nhận, hoặc mã giao dịch",
     "transfer": {
       "title": "Chuyển tiền",
       "pick": "Chuyển cho ai?",
@@ -1033,7 +1047,8 @@
     "copyLastMonth": "Chép ngân sách tháng trước",
     "copiedBudgets": "Đã chép {count} dòng ngân sách",
     "previousMonth": "Tháng trước",
-    "nextMonth": "Tháng sau"
+    "nextMonth": "Tháng sau",
+    "filterOwing": "Chưa chuyển tiền"
   },
   "journal": {
     "title": "Nhật ký",
@@ -1349,6 +1364,12 @@
       "gotIt": "Đã hiểu",
       "later": "Để sau"
     },
+    "notifyOffer": {
+      "title": "Có người nhắn thì báo cho bạn nhé",
+      "body": "Chỉ riêng trình duyệt này. Điện thoại và máy tính phải bật riêng.",
+      "turnOn": "Bật",
+      "no": "Thôi"
+    },
     "tour": {
       "daily": {
         "title": "Mọi thứ bắt đầu từ đây",
@@ -1632,6 +1653,95 @@
     "tooMany": "Gửi hơi dồn rồi. Một tiếng nữa viết tiếp nhé.",
     "unavailable": "Chưa gửi được. Lát nữa thử lại."
   },
+  "chat": {
+    "title": "Nhắn tin",
+    "empty": "Chưa có phòng nào. Tạo một phòng rồi gửi link cho người bạn muốn rủ vào.",
+    "newRoom": "Phòng mới",
+    "roomName": "Phòng này để nói về gì?",
+    "encryptRoom": "Mã hoá tin nhắn",
+    "encryptRoomHelp": "Tin nhắn được mã hoá trước khi lưu. Tìm kiếm sẽ chậm hơn, mỗi lượt chỉ dò 1.000 tin. App vẫn đọc được, đây không phải mã hoá đầu-cuối. Không đổi được sau khi tạo.",
+    "encryptRoomUnavailable": "Chưa dùng được ở đây: chưa cài khoá mã hoá.",
+    "roomLocked": "Tin nhắn được mã hoá",
+    "roomPlain": "Tin nhắn không mã hoá",
+    "searchLockedNote": "Phòng này có mã hoá nên tìm chậm hơn, mỗi lượt dò 1.000 tin.",
+    "create": "Tạo",
+    "untitled": "Phòng",
+    "unread": "{count} tin chưa đọc",
+    "tabMessaged": "{name} đã nhắn tin cho bạn",
+    "seenBy": "Đã xem",
+    "nudge": "Chọc",
+    "nudged": "Đã chọc",
+    "nudgeTooSoon": "Để người ta thở đã.",
+    "nudgePush": "{name} chọc bạn",
+    "someone": "Ai đó",
+    "edit": "Sửa",
+    "editing": "Đang sửa",
+    "cancelEdit": "Thôi sửa",
+    "edited": "đã sửa",
+    "search": "Tìm",
+    "searchPlaceholder": "Một chữ trong tin nhắn",
+    "searchEmpty": "Không có tin nào chứa chữ đó.",
+    "searchMore": "Tìm ngược lên nữa",
+    "backToLatest": "Về tin mới nhất",
+    "jumpGone": "Tin đó không còn nữa.",
+    "open": "Mở",
+    "members": "{count} người trong phòng",
+    "placeholder": "Viết gì đó",
+    "typing": "{name} đang nhập…",
+    "typingMany": "{count} người đang nhập…",
+    "send": "Gửi",
+    "emoji": "Biểu tượng",
+    "sticker": "Nhãn dán",
+    "reactWith": "Thả {emoji}",
+    "react": "Thả cảm xúc",
+    "loadOlder": "Đang lấy tin cũ hơn…",
+    "emptyRoom": "Chưa ai nói gì.",
+    "recalled": "Tin đã thu hồi",
+    "recall": "Thu hồi",
+    "reply": "Trả lời",
+    "cancelReply": "Bỏ trả lời",
+    "stickerQuote": "Nhãn dán",
+    "formerMember": "Người đã rời",
+    "sendFailed": "Chưa gửi được. Thử lại nhé.",
+    "tooFast": "Chậm lại một chút rồi gửi tiếp.",
+    "roomSettings": "Cài đặt phòng",
+    "leave": "Rời phòng",
+    "leaveConfirm": "Rời phòng này? Bạn sẽ không thấy nó nữa, còn những gì bạn viết thì vẫn ở lại.",
+    "remove": "Mời ra",
+    "inviteLink": "Chép link mời",
+    "linkCopied": "Đã chép link. Dùng được một lần, trong hai ngày.",
+    "revoke": "Thu hồi",
+    "pendingInvites": "Lời mời đã phát",
+    "joinTitle": "Bạn được mời vào phòng",
+    "joinAccept": "Vào phòng",
+    "joinDecline": "Để sau",
+    "joinGone": "Lời mời này không dùng được nữa. Xin một lời mời mới nhé.",
+    "joinAlready": "Bạn đã ở trong <b>{room}</b> rồi.",
+    "joinChecking": "Đang xem lời mời…",
+    "joinInvited": "Bạn được mời vào <b>{room}</b>.",
+    "joinOpen": "Mở phòng",
+    "backToRooms": "Về danh sách phòng",
+    "addMember": "Thêm thành viên",
+    "renameRoom": "Đổi tên phòng",
+    "deleteRoom": "Xoá phòng",
+    "deleteConfirm": "Xoá phòng này? Mọi người sẽ mất hết tin nhắn trong đó.",
+    "manageMembers": "Thành viên",
+    "removeMember": "Gỡ khỏi phòng",
+    "removeConfirm": "Gỡ {name} khỏi phòng?",
+    "roomPhoto": "Ảnh nhóm",
+    "changePhoto": "Đổi ảnh",
+    "removePhoto": "Gỡ ảnh",
+    "photoUpdated": "Đã đổi ảnh",
+    "photoRemoved": "Đã gỡ ảnh",
+    "photoInvalid": "Chọn một file ảnh nhé",
+    "photoTooLarge": "Ảnh này nặng hơn 5 MB, chọn ảnh nhẹ hơn nhé",
+    "photoDisabled": "App chưa bật phần ảnh",
+    "photoUploading": "Đang tải ảnh lên…",
+    "copy": "Chép",
+    "copied": "Đã chép",
+    "copyFailed": "Không chép được",
+    "copyBlocked": "Chép tay link này giúp — trình duyệt không cho trang ghi vào clipboard."
+  },
   "activity": {
     "title": "Những gì đã đổi",
     "body": "Bạn đã thêm, sửa hay xoá gì gần đây. Chỉ giữ lại {days} ngày gần nhất.",
@@ -1752,7 +1862,20 @@
       "session": {
         "login": "Đăng nhập",
         "logout": "Đăng xuất"
+      },
+      "chatRoom": {
+        "create": "Tạo phòng",
+        "join": "Vào phòng",
+        "leave": "Rời phòng",
+        "invite": "Phát lời mời",
+        "remove": "Mời một người ra khỏi phòng",
+        "rename": "Đổi tên phòng",
+        "delete": "Xoá phòng"
       }
     }
+  },
+  "logReminder": {
+    "title": "Hôm nay chưa ghi gì",
+    "body": "Bạn chưa ghi nhật ký hay khoản thu chi nào. Ghi nhanh một phút trước khi quên nhé."
   }
 }

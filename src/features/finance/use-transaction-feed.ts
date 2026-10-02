@@ -30,6 +30,8 @@ export type LedgerFilters = {
   from: string
   to: string
   search: string
+  /** Only what was handed to a person and not yet marked sent. */
+  pendingTransfer: boolean
 }
 
 const NO_FILTERS: LedgerFilters = {
@@ -38,6 +40,7 @@ const NO_FILTERS: LedgerFilters = {
   from: '',
   to: '',
   search: '',
+  pendingTransfer: false,
 }
 
 /** Long enough that a word typed at speed asks the server once. */
@@ -80,13 +83,15 @@ export function useTransactionFeed({
    */
   const clearFilters = useCallback(() => setFilters(NO_FILTERS), [])
 
-  const { accountId, categoryId, from, to } = filters
+  const { accountId, categoryId, from, to, pendingTransfer } = filters
   const search = useDebounced(filters.search.trim(), SEARCH_DELAY)
 
-  const filtering = Boolean(accountId || categoryId || from || to || search)
+  const filtering = Boolean(accountId || categoryId || from || to || search || pendingTransfer)
   // Search is never hidden behind anything, so it is not one that needs counting.
-  const activeFilters = [accountId, categoryId, from, to].filter(Boolean).length
-  const queryKey = [accountId, categoryId, from, to, search].filter(Boolean).join('|')
+  const activeFilters = [accountId, categoryId, from, to, pendingTransfer].filter(Boolean).length
+  const queryKey = [accountId, categoryId, from, to, search, pendingTransfer ? 'owing' : '']
+    .filter(Boolean)
+    .join('|')
 
   const filterInput = useCallback(
     () => ({
@@ -95,8 +100,9 @@ export function useTransactionFeed({
       ...(from ? { from } : {}),
       ...(to ? { to } : {}),
       ...(search ? { search } : {}),
+      ...(pendingTransfer ? { pendingTransfer: true } : {}),
     }),
-    [accountId, categoryId, from, to, search],
+    [accountId, categoryId, from, to, search, pendingTransfer],
   )
 
   const fetchPage = useCallback(

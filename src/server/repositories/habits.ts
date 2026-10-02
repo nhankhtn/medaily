@@ -1,4 +1,4 @@
-import { and, asc, between, eq, isNull, or, sql } from 'drizzle-orm'
+import { and, asc, between, eq, inArray, isNull, or, sql } from 'drizzle-orm'
 import { db, type DbOrTx } from '@/lib/db'
 import { habitLogs, habits } from '@/lib/db/schema'
 import type { Habit, HabitInsert, HabitLog } from '@/lib/db/schema'
@@ -61,34 +61,70 @@ export async function findHabitLogsInRange(
     .orderBy(asc(habitLogs.logDate))
 }
 
-export async function upsertHabitLog(
-  values: {
-    userId: string
-    habitId: string
-    logDate: ISODate
-    count: number
-    completed: boolean
-    source: 'manual' | 'derived' | 'import' | 'catch_up'
-    note?: string | null
-  },
+export type HabitLogValues = {
+  userId: string
+  habitId: string
+  logDate: ISODate
+  count: number
+  completed: boolean
+  source: 'manual' | 'derived' | 'import' | 'catch_up'
+  note?: string | null
+}
+
+/**
+ * One statement whatever the length. Derivation settles every linked habit for
+ * a date at once, and a round trip each would be the slowest thing a save does.
+ */
+export async function upsertHabitLogs(
+  values: HabitLogValues[],
   tx: DbOrTx = db,
-): Promise<HabitLog> {
-  const rows = await tx
+): Promise<HabitLog[]> {
+  if (values.length === 0) return []
+
+  return tx
     .insert(habitLogs)
     .values(values)
     .onConflictDoUpdate({
       target: [habitLogs.habitId, habitLogs.logDate],
+      // `excluded` is the row this statement tried to insert, so every row in
+      // the batch updates from its own values rather than from the first.
       set: {
-        count: values.count,
-        completed: values.completed,
-        source: values.source,
+        count: sql`excluded.count`,
+        completed: sql`excluded.completed`,
+        source: sql`excluded.source`,
         updatedAt: new Date(),
       },
     })
     .returning()
-  const row = rows[0]
+}
+
+export async function upsertHabitLog(
+  values: HabitLogValues,
+  tx: DbOrTx = db,
+): Promise<HabitLog> {
+  const row = (await upsertHabitLogs([values], tx))[0]
   if (!row) throw new Error('failed to upsert habit log')
   return row
+}
+
+/** One statement for a whole date's worth of habits that no longer qualify. */
+export async function deleteHabitLogs(
+  habitIds: string[],
+  date: ISODate,
+  userId: string,
+  tx: DbOrTx = db,
+): Promise<void> {
+  if (habitIds.length === 0) return
+
+  await tx
+    .delete(habitLogs)
+    .where(
+      and(
+        eq(habitLogs.userId, userId),
+        inArray(habitLogs.habitId, habitIds),
+        eq(habitLogs.logDate, date),
+      ),
+    )
 }
 
 export async function deleteHabitLog(
@@ -97,15 +133,7 @@ export async function deleteHabitLog(
   userId: string,
   tx: DbOrTx = db,
 ): Promise<void> {
-  await tx
-    .delete(habitLogs)
-    .where(
-      and(
-        eq(habitLogs.userId, userId),
-        eq(habitLogs.habitId, habitId),
-        eq(habitLogs.logDate, date),
-      ),
-    )
+  await deleteHabitLogs([habitId], date, userId, tx)
 }
 
 export async function insertHabit(values: HabitInsert): Promise<Habit> {

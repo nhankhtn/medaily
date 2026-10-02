@@ -1,20 +1,10 @@
 /**
- * The Google accounts that have signed in on this device, so coming back is
- * one tap instead of Google's account chooser.
+ * Accounts that have signed in on this device, so coming back is one tap.
  *
- * It outlives sign-out on purpose. The moment a remembered account is worth
- * anything is the moment right after somebody signs out — clearing it then
- * would leave the feature with no occasion to exist. That is the opposite of
- * the daily drafts and the offline queues, which *are* cleared then, and the
- * difference is what each one holds: those hold what a person wrote, this
- * holds only which door they came in by. On a shared device it still shows the
- * previous person's address, which is why every entry is removable in one tap.
- *
- * No token is kept here, and nothing here grants access. Tapping an entry only
- * pre-fills the account for Google, which still asks Google's own questions.
- *
- * The rules are pure and the browser sits behind `AccountStore`, so the parts
- * worth getting right are testable without one.
+ * Outlives sign-out on purpose — that is the moment it is worth anything,
+ * unlike the drafts and queues cleared then. No token is kept and nothing here
+ * grants access, but a shared device still shows the last address, so every
+ * entry is removable in one tap.
  */
 
 export type RememberedAccount = {
@@ -25,10 +15,7 @@ export type RememberedAccount = {
   lastUsedAt: number
 }
 
-/**
- * Enough for a phone that two people share and a laptop with a work address.
- * Past that the row stops being a shortcut and starts being a list to read.
- */
+/** Past this the row stops being a shortcut and becomes a list to read. */
 export const MAX_REMEMBERED = 4
 
 /** Addresses are case-insensitive for the purpose of "is this the same one". */
@@ -37,12 +24,8 @@ function keyOf(email: string): string {
 }
 
 /**
- * Newest first, one entry per address, capped.
- *
- * The tiebreaker on email is not decoration: two sign-ins inside the same
- * millisecond would otherwise leave the order to sort stability, and a row of
- * chips that swaps places between two loads for no visible reason is the kind
- * of bug nobody can reproduce.
+ * Newest first, one per address, capped. The email tiebreaker stops two
+ * sign-ins in the same millisecond reordering between loads.
  */
 export function remember(
   list: RememberedAccount[],
@@ -63,12 +46,8 @@ export function forget(list: RememberedAccount[], email: string): RememberedAcco
 }
 
 /**
- * Whatever came out of storage, narrowed to entries this app can render.
- *
- * Storage is shared with every other script on the origin and survives across
- * versions of this app, so what comes back is untrusted input rather than the
- * value that was written. An entry without an address cannot be signed in with
- * and is dropped rather than shown as a blank chip.
+ * Storage survives app versions and is shared with every script on the origin,
+ * so this is untrusted input. An entry with no address is dropped.
  */
 export function parseAccounts(value: unknown): RememberedAccount[] {
   if (!Array.isArray(value)) return []
@@ -83,18 +62,13 @@ export function parseAccounts(value: unknown): RememberedAccount[] {
       email: row.email,
       name: typeof row.name === 'string' ? row.name : null,
       photoUrl: typeof row.photoUrl === 'string' ? row.photoUrl : null,
-      lastUsedAt: typeof row.lastUsedAt === 'number' && Number.isFinite(row.lastUsedAt)
-        ? row.lastUsedAt
-        : 0,
+      lastUsedAt:
+        typeof row.lastUsedAt === 'number' && Number.isFinite(row.lastUsedAt) ? row.lastUsedAt : 0,
     })
   }
 
-  // Re-applies the shape rules to a list written by an older version, or by
-  // hand: one per address, newest first, capped.
-  return parsed.reduce<RememberedAccount[]>(
-    (list, entry) => remember(list, entry),
-    [],
-  )
+  // Re-applies the shape rules to a list written by an older version.
+  return parsed.reduce<RememberedAccount[]>((list, entry) => remember(list, entry), [])
 }
 
 /** Where the row of chips is read from and written to. */
@@ -105,14 +79,7 @@ export interface AccountStore {
 
 export const ACCOUNTS_KEY = 'medaily.accounts.v1'
 
-/**
- * The real store.
- *
- * Every access is guarded: `localStorage` throws rather than returns null in a
- * private window and where site data is blocked, and a sign-in page that
- * cannot render because remembering failed would be a poor trade for a
- * shortcut.
- */
+/** Guarded throughout: `localStorage` throws where site data is blocked. */
 export function localAccountStore(): AccountStore {
   return {
     read() {

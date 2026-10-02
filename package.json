@@ -7,6 +7,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "docs:build": "bun install --cwd docs/site --frozen-lockfile && bun run --cwd docs/site build && tsx scripts/docs-stamp.ts",
+    "docs:dev": "bun run --cwd docs/site start",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
@@ -23,6 +25,7 @@
     "smoke": "tsx scripts/smoke.ts",
     "capture:check": "tsx scripts/capture-check.ts",
     "db:baseline": "tsx scripts/baseline.ts",
+    "firestore:rules": "npx -y firebase-tools deploy --only firestore:rules",
     "clean": "rm -rf .next node_modules",
     "clean:cache": "rm -rf .next"
   },

@@ -379,7 +379,18 @@ export function TransactionList({
         onTransferred={async () => {
           if (!transfer) return
           const result = await markTransactionTransferred({ id: transfer.id })
-          if (!result.ok) toast.error(tc('error'))
+          if (!result.ok) {
+            toast.error(tc('error'))
+            return
+          }
+          /*
+           * Told to the page the same way an edit is. The action revalidates
+           * the server's own cache, but this list is handed its rows by a
+           * parent holding them in client state — so without this the row
+           * went on asking to be transferred until something reloaded it.
+           */
+          const row = transactions.find((candidate) => candidate.id === transfer.id)
+          if (row) onUpdated?.({ ...row, transferredAt: new Date(result.at) })
         }}
       />
     </div>

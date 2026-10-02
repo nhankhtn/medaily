@@ -14,6 +14,7 @@
     "journal": "Journal",
     "calendar": "Calendar",
     "people": "People",
+    "chat": "Chat",
     "career": "Career",
     "analytics": "Analytics",
     "reviews": "Reviews",
@@ -60,6 +61,7 @@
     "themeLight": "Light",
     "themeDark": "Dark",
     "themePink": "Pink",
+    "themeMeadow": "Meadow",
     "language": "Language",
     "openMenu": "Open menu",
     "pickDate": "Pick a date",
@@ -442,7 +444,8 @@
         "today": "Back to today",
         "save": "Save the day",
         "toggleTimer": "Start or stop the running timer",
-        "shortcuts": "Show this list"
+        "shortcuts": "Show this list",
+        "sidebar": "Show or hide the sidebar"
       },
       "open": "Show shortcuts",
       "press": "press a key…",
@@ -495,6 +498,17 @@
       "iosIntro": "Safari has no button for this, so it takes two taps.",
       "iosStepShare": "Tap Share at the bottom of Safari",
       "iosStepAdd": "Choose Add to Home Screen"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "help": "Get a notification on this device when somebody sends you a message, and at 8 in the evening if the day has nothing logged yet. Each device is asked separately.",
+      "turnOn": "Turn on for this device",
+      "turnOff": "Turn off for this device",
+      "on": "Notifications are on for this device",
+      "off": "This device will not be notified",
+      "failed": "This device could not be registered",
+      "blocked": "Notifications are blocked for this site. Allow them in your browser settings, then come back.",
+      "iosNeedsInstall": "On iPhone and iPad, notifications only reach an app added to the Home Screen — not a Safari tab."
     }
   },
   "analytics": {
@@ -1000,7 +1014,7 @@
       "notKept": "This phone had no room to keep it. Try again when you have a connection."
     },
     "search": "Search",
-    "searchPlaceholder": "Where it went, or a code",
+    "searchPlaceholder": "Where it went, who to, or a code",
     "transfer": {
       "title": "Send money",
       "pick": "Who are you sending it to?",
@@ -1033,7 +1047,8 @@
     "copyLastMonth": "Copy last month",
     "copiedBudgets": "Copied {count} budgets",
     "previousMonth": "Previous month",
-    "nextMonth": "Next month"
+    "nextMonth": "Next month",
+    "filterOwing": "Still to transfer"
   },
   "journal": {
     "title": "Journal",
@@ -1349,6 +1364,12 @@
       "gotIt": "Got it",
       "later": "Not now"
     },
+    "notifyOffer": {
+      "title": "Get told when someone messages you",
+      "body": "This browser only — a phone and a laptop are asked separately.",
+      "turnOn": "Turn on",
+      "no": "No thanks"
+    },
     "tour": {
       "daily": {
         "title": "Everything starts here",
@@ -1632,6 +1653,95 @@
     "tooMany": "That is a few in a row. Give it an hour and write again.",
     "unavailable": "That did not send. Try again in a moment."
   },
+  "chat": {
+    "title": "Chat",
+    "empty": "No rooms yet. Make one, then send the link to whoever should be in it.",
+    "newRoom": "New room",
+    "roomName": "What is this room about?",
+    "encryptRoom": "Encrypt messages",
+    "encryptRoomHelp": "Messages are locked before they are stored. Search is slower and looks back 1,000 messages at a time. The app can still read them — this is not end-to-end. You cannot change this later.",
+    "encryptRoomUnavailable": "Not available here: no encryption key is set up.",
+    "roomLocked": "Messages are encrypted",
+    "roomPlain": "Messages are not encrypted",
+    "searchLockedNote": "This room is encrypted, so search is slower and looks back 1,000 messages at a time.",
+    "create": "Create",
+    "untitled": "Room",
+    "unread": "{count} unread",
+    "tabMessaged": "{name} sent you a message",
+    "seenBy": "Seen by",
+    "nudge": "Nudge",
+    "nudged": "Nudged",
+    "nudgeTooSoon": "Give them a moment first.",
+    "nudgePush": "{name} nudged you",
+    "someone": "Someone",
+    "edit": "Edit",
+    "editing": "Editing",
+    "cancelEdit": "Stop editing",
+    "edited": "edited",
+    "search": "Search",
+    "searchPlaceholder": "A word from the message",
+    "searchEmpty": "Nothing with that in it.",
+    "searchMore": "Look further back",
+    "backToLatest": "Back to the latest",
+    "jumpGone": "That message is not there any more.",
+    "open": "Open",
+    "members": "{count} in the room",
+    "placeholder": "Write something",
+    "typing": "{name} is typing…",
+    "typingMany": "{count} people are typing…",
+    "send": "Send",
+    "emoji": "Emoji",
+    "sticker": "Sticker",
+    "reactWith": "React with {emoji}",
+    "react": "React",
+    "loadOlder": "Loading older messages…",
+    "emptyRoom": "Nothing said yet.",
+    "recalled": "Message recalled",
+    "recall": "Recall",
+    "reply": "Reply",
+    "cancelReply": "Cancel reply",
+    "stickerQuote": "Sticker",
+    "formerMember": "Someone who left",
+    "sendFailed": "Not sent. Try again.",
+    "tooFast": "Slow down a moment, then send it again.",
+    "roomSettings": "Room settings",
+    "leave": "Leave room",
+    "leaveConfirm": "Leave this room? You stop seeing it, and what you wrote stays.",
+    "remove": "Remove",
+    "inviteLink": "Copy invite link",
+    "linkCopied": "Link copied. It works once, for two days.",
+    "revoke": "Revoke",
+    "pendingInvites": "Invites out",
+    "joinTitle": "You have been invited",
+    "joinAccept": "Join the room",
+    "joinDecline": "Not now",
+    "joinGone": "This invite no longer works. Ask for a new one.",
+    "joinAlready": "You are already in <b>{room}</b>.",
+    "joinChecking": "Looking at the invite…",
+    "joinInvited": "You have been invited to <b>{room}</b>.",
+    "joinOpen": "Open the room",
+    "backToRooms": "Back to the rooms",
+    "addMember": "Add someone",
+    "renameRoom": "Rename the room",
+    "deleteRoom": "Delete the room",
+    "deleteConfirm": "Delete this room? Everyone loses the messages in it.",
+    "manageMembers": "Members",
+    "removeMember": "Remove from the room",
+    "removeConfirm": "Remove {name} from the room?",
+    "roomPhoto": "Group picture",
+    "changePhoto": "Change the picture",
+    "removePhoto": "Remove the picture",
+    "photoUpdated": "Picture changed",
+    "photoRemoved": "Picture removed",
+    "photoInvalid": "Pick an image file",
+    "photoTooLarge": "That picture is over 5 MB. Pick a smaller one",
+    "photoDisabled": "Pictures are not set up on this app",
+    "photoUploading": "Sending the picture…",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyFailed": "Could not copy that",
+    "copyBlocked": "Copy this link by hand — the browser would not let the page reach the clipboard."
+  },
   "activity": {
     "title": "What changed",
     "body": "What you added, changed or deleted here lately. Only the last {days} days are kept.",
@@ -1752,7 +1862,20 @@
       "session": {
         "login": "Signed in",
         "logout": "Signed out"
+      },
+      "chatRoom": {
+        "create": "Room made",
+        "join": "Joined a room",
+        "leave": "Left a room",
+        "invite": "Invite sent out",
+        "remove": "Someone removed from a room",
+        "rename": "Renamed a room",
+        "delete": "Deleted a room"
       }
     }
+  },
+  "logReminder": {
+    "title": "Nothing logged today",
+    "body": "No daily log and no money in or out yet. A minute now, before the day slips away."
   }
 }

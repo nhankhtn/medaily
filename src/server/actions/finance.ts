@@ -300,7 +300,6 @@ const restoreSchema = z
     currency: z.string().min(1).max(10),
     fxRate: z.string().max(30).nullable().default(null),
     transferredAt: z.coerce.date().nullable().default(null),
-    tags: z.array(z.string().max(100)).max(50).nullable().default(null),
     ...transactionFields,
   })
   .refine(transferRule, transferMessage)
@@ -394,15 +393,19 @@ export async function markTransactionTransferred(input: unknown) {
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
   const userId = await getCurrentUserId()
+  const at = new Date()
   try {
-    await updateTransaction(userId, parsed.data.id, { transferredAt: new Date() })
+    await updateTransaction(userId, parsed.data.id, { transferredAt: at })
   } catch {
     // Someone else's row, or one deleted between the list rendering and the tap.
     return { ok: false as const, error: 'not_found' as const }
   }
 
   revalidateFinance()
-  return { ok: true as const }
+  // Handed back so the list can show what was written rather than its own
+  // guess at it — the page holds its rows in client state and would otherwise
+  // go on asking for a transfer that has already happened.
+  return { ok: true as const, at: at.toISOString() }
 }
 
 export const saveTransaction = audited(
@@ -612,9 +615,9 @@ export const removeTransaction = audited(
 /**
  * Puts a deleted row back, id and all. Every field is re-checked the way a new
  * transaction is — the caller is a browser, and a row it hands back is a
- * request, not a record. `currency`, `fxRate`, `transferredAt` and `tags` ride
- * along because unlike a create this is meant to restore, not to re-enter:
- * dropping them would return a different transaction than the one deleted.
+ * request, not a record. `currency`, `fxRate` and `transferredAt` ride along
+ * because unlike a create this is meant to restore, not to re-enter: dropping
+ * them would return a different transaction than the one deleted.
  */
 export const restoreTransaction = audited(
   'transaction.restore',
@@ -653,7 +656,6 @@ export const restoreTransaction = audited(
       payeePersonId: ownedBy(parsed.data.payeePersonId, people),
       transferredAt: parsed.data.transferredAt,
       merchant: parsed.data.merchant ?? null,
-      tags: parsed.data.tags,
     })
 
     revalidateFinance()
@@ -669,6 +671,7 @@ const listTransactionsSchema = z.object({
   from: isoDateSchema.optional(),
   to: isoDateSchema.optional(),
   search: z.string().max(100).optional(),
+  pendingTransfer: z.boolean().optional(),
 })
 
 /** Cursor page for the ledger; filters run in SQL, not on a client-side dump. */
@@ -697,6 +700,7 @@ export async function listTransactions(input: unknown) {
       from: parsed.data.from,
       to: parsed.data.to,
       search: parsed.data.search?.trim() || undefined,
+      pendingTransfer: parsed.data.pendingTransfer,
     },
   })
 
@@ -709,9 +713,13 @@ export async function saveBudget(input: unknown) {
     .safeParse(input)
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
+  const userId = await getCurrentUserId()
+  const categoryId = ownedBy(parsed.data.categoryId, await findCategories(userId))
+  if (!categoryId) return { ok: false as const, error: 'not_found' as const }
+
   await upsertBudget({
-    userId: await getCurrentUserId(),
-    categoryId: parsed.data.categoryId,
+    userId,
+    categoryId,
     periodStart: parsed.data.periodStart,
     amount: String(parsed.data.amount),
   })

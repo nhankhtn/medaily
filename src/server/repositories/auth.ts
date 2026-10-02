@@ -1,4 +1,4 @@
-import { and, eq, sql } from 'drizzle-orm'
+import { and, eq, inArray, sql } from 'drizzle-orm'
 import { db, type DbOrTx } from '@/lib/db'
 import { authIdentities, users } from '@/lib/db/schema'
 import type { AuthIdentity, AuthIdentityInsert, User } from '@/lib/db/schema'
@@ -15,6 +15,39 @@ export async function findIdentity(
     .where(and(eq(authIdentities.provider, provider), eq(authIdentities.providerUid, providerUid)))
     .limit(1)
   return rows[0] ?? null
+}
+
+/** Filter for {@link listIdentities}; every field optional so one method serves each caller. */
+export type IdentityFilter = {
+  userIds?: string[]
+  provider?: 'password' | 'google'
+}
+
+/**
+ * Identities matching a filter.
+ *
+ * The chat typing indicator wants the Firebase uid behind each member, so that
+ * Firestore can vouch for who is typing instead of the payload claiming it.
+ * A filter rather than a `findGoogleUidsByUserIds`: the next caller wants a
+ * different pair of these columns, not a fourth near-identical function.
+ */
+export async function listIdentities(
+  filter: IdentityFilter = {},
+  tx: DbOrTx = db,
+): Promise<AuthIdentity[]> {
+  const where = [
+    filter.userIds ? inArray(authIdentities.userId, filter.userIds) : undefined,
+    filter.provider ? eq(authIdentities.provider, filter.provider) : undefined,
+  ].filter((clause) => clause !== undefined)
+
+  if (filter.userIds?.length === 0) return []
+
+  return tx
+    .select()
+    .from(authIdentities)
+    .where(where.length > 0 ? and(...where) : undefined)
+    // Total by the primary key, so two runs of the same filter agree.
+    .orderBy(authIdentities.id)
 }
 
 export async function insertIdentity(
@@ -46,6 +79,16 @@ export async function findUserByEmail(email: string, tx: DbOrTx = db): Promise<U
     .where(sql`lower(${users.email}) = ${email.trim().toLowerCase()}`)
     .limit(1)
   return rows[0] ?? null
+}
+
+/**
+ * Several users at once, for a chat room's roster. Read per room rather than
+ * per page of messages: everyone who ever spoke in a room is on it, so one
+ * query covers every page that follows.
+ */
+export async function findUsersByIds(ids: string[], tx: DbOrTx = db): Promise<User[]> {
+  if (ids.length === 0) return []
+  return tx.select().from(users).where(inArray(users.id, ids))
 }
 
 export async function findUserById(userId: string, tx: DbOrTx = db): Promise<User | null> {

@@ -40,3 +40,44 @@ export const authIdentitiesRelations = relations(authIdentities, ({ one }) => ({
 
 export type AuthIdentity = typeof authIdentities.$inferSelect
 export type AuthIdentityInsert = typeof authIdentities.$inferInsert
+
+/**
+ * Where a person's notifications can reach them.
+ *
+ * One row per browser that asked for them — a phone and a laptop are two, and
+ * the same phone reinstalling the app is a third until the old token is
+ * refused and swept. The token is the address, so it is the key: FCM hands the
+ * same string back to whoever registers the same browser, and a unique index
+ * on it is what stops two rows claiming one device after a sign-out and a
+ * sign-in by somebody else.
+ *
+ * Here rather than beside the chat it serves, because this is where accounts
+ * live: the cascade means deleting a person takes their devices with them,
+ * which is one fewer thing for the account-removal path to remember.
+ */
+export const pushDevices = pgTable(
+  'push_devices',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    /** The FCM registration token. Long, opaque, and rotated by the browser. */
+    token: text('token').notNull(),
+    /** Only to tell one row from another in settings; never trusted for anything. */
+    userAgent: text('user_agent'),
+    /** Moved forward every time the browser confirms the token still works. */
+    lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique('push_devices_token_uniq').on(t.token),
+    index('idx_push_devices_user').on(t.userId),
+  ],
+)
+
+export const pushDevicesRelations = relations(pushDevices, ({ one }) => ({
+  user: one(users, { fields: [pushDevices.userId], references: [users.id] }),
+}))
+
+export type PushDevice = typeof pushDevices.$inferSelect

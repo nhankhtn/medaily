@@ -60,31 +60,43 @@ export function DailyForm({
   const [pending, startTransition] = useTransition()
   const [custom, setCustom] = useState<CustomValues>(initialCustom)
   const [savedAt, setSavedAt] = useState<number | null>(null)
-  const { restored, save: saveDraft, clear: clearDraft } = useDraft(date, initialValues)
+  const {
+    restored,
+    save: saveDraft,
+    clear: clearDraft,
+  } = useDraft(date, initialValues, initialCustom)
 
   // The parent remounts this form per date (`key={date}`), so `initialValues`
   // is genuinely initial — no effect is needed to resynchronise it.
   useEffect(() => {
     if (!restored) return
     // eslint-disable-next-line react-hooks/set-state-in-effect -- restoring a device-local draft
-    setValues(restored)
+    setValues(restored.values)
+    setCustom(restored.custom)
     toast.info(t('unsavedDraft'))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restored])
 
   const dirty = useMemo(
-    () => JSON.stringify(values) !== JSON.stringify(initialValues),
-    [values, initialValues],
+    () =>
+      JSON.stringify(values) !== JSON.stringify(initialValues) ||
+      JSON.stringify(custom) !== JSON.stringify(initialCustom),
+    [values, initialValues, custom, initialCustom],
   )
   useUnsavedGuard(dirty, t('unsavedWarning'))
 
+  // One writer for both halves. Saving from inside each handler meant every
+  // handler needed the *other* half as well, and read it from a closure that
+  // was one keystroke out of date — so a custom field and a built-in field
+  // took turns overwriting each other in storage.
+  useEffect(() => {
+    if (!dirty) return
+    saveDraft(values, custom)
+  }, [dirty, values, custom, saveDraft])
+
   const set = useCallback(
     <K extends keyof DailyFormValues>(key: K, value: DailyFormValues[K]) => {
-      setValues((prev) => {
-        const next = { ...prev, [key]: value }
-        saveDraft(next)
-        return next
-      })
+      setValues((prev) => ({ ...prev, [key]: value }))
       setCopied((prev) => {
         if (!prev.has(key)) return prev
         const next = new Set(prev)
@@ -92,7 +104,7 @@ export function DailyForm({
         return next
       })
     },
-    [saveDraft],
+    [],
   )
 
   const submit = useCallback(() => {
@@ -192,7 +204,7 @@ export function DailyForm({
           Object.assign(next, { [field]: value })
           if (value !== null) filled.add(field)
         }
-        saveDraft(next)
+        saveDraft(next, custom)
         return next
       })
       setCopied(filled)
@@ -522,7 +534,7 @@ export function DailyForm({
       ) : null}
 
       {/* Sticky on mobile so Save is always in thumb reach (spec 22.3) */}
-      <div className="glass-chip fixed right-3 left-3 z-20 rounded-[1.5rem] p-3 bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] md:static md:inset-auto md:z-auto md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none">
+      <div className="glass-chip fixed right-3 bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] left-3 z-20 rounded-[1.5rem] p-3 md:static md:inset-auto md:z-auto md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none">
         <Button size="lg" className="w-full md:w-auto" onClick={submit} disabled={pending}>
           {pending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
           {pending ? tc('saving') : t('saveDay')}

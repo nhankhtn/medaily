@@ -6,9 +6,10 @@ import { evaluateLink, isScheduledOn } from '@/lib/habits/schedule'
 import type { ISODate } from '@/lib/dates'
 import { customSnapshotFor } from '@/server/repositories/custom-metrics'
 import {
-  deleteHabitLog,
+  deleteHabitLogs,
   findHabitsActiveOn,
-  upsertHabitLog,
+  upsertHabitLogs,
+  type HabitLogValues,
 } from '@/server/repositories/habits'
 
 /**
@@ -72,7 +73,11 @@ export async function recomputeDerivedHabitLogs(
     (habit): habit is Habit & { linkedMetric: string } => habit.linkedMetric !== null,
   )
 
-  let updated = 0
+  // Decided for every habit first, written in two statements after. A round
+  // trip each would be the slowest part of a save, and derivation runs on
+  // every daily log, focus session, workout and study entry.
+  const met: HabitLogValues[] = []
+  const unmet: string[] = []
 
   for (const habit of linked) {
     const scheduled = isScheduledOn(
@@ -88,29 +93,29 @@ export async function recomputeDerivedHabitLogs(
     )
 
     const value = snapshot?.[habit.linkedMetric] ?? null
-    const met =
+    const qualifies =
       scheduled &&
       habit.linkedOperator !== null &&
       habit.linkedThreshold !== null &&
       evaluateLink(habit.linkedOperator, Number(habit.linkedThreshold), value)
 
-    if (met) {
-      await upsertHabitLog(
-        {
-          userId,
-          habitId: habit.id,
-          logDate: date,
-          count: habit.targetCount,
-          completed: true,
-          source: 'derived',
-        },
-        tx,
-      )
+    if (qualifies) {
+      met.push({
+        userId,
+        habitId: habit.id,
+        logDate: date,
+        count: habit.targetCount,
+        completed: true,
+        source: 'derived',
+      })
     } else {
-      await deleteHabitLog(habit.id, date, userId, tx)
+      unmet.push(habit.id)
     }
-    updated += 1
   }
+
+  await upsertHabitLogs(met, tx)
+  await deleteHabitLogs(unmet, date, userId, tx)
+  const updated = linked.length
 
   // `weekStart` is accepted for symmetry with weekly habits, whose period
   // completion is evaluated at read time from the same derived day rows.

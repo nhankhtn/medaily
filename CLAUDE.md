@@ -42,6 +42,66 @@ wrong base happens. If the state looks wrong, or a `pull` would merge someone
 else's work into yours, say what you see and ask. A history you rewrote is a
 history they cannot get back, even when the files come out identical.
 
+# Queries
+
+**A query inside a loop is the bug.** One round trip per row is the slowest
+thing this app can do, and it looks fine until somebody has thirty of
+something.
+
+```ts
+✗ for (const habit of habits) await upsertHabitLog({ habitId: habit.id, … })
+✓ await upsertHabitLogs(habits.map((habit) => ({ habitId: habit.id, … })))
+```
+
+So repositories take **lists**: `findMilestonesFor(goalIds)`, not
+`findMilestones(goalId)` called in a loop. A caller that wants one passes an
+array of one. Writes go the same way — one multi-row `insert … on conflict`,
+one `delete … where id = ANY(…)`.
+
+A loop is allowed where each turn has to be its own statement and that is the
+point:
+
+- spending something atomically, one at a time (`useInvite`)
+- needing to know **which** row failed (the import reports per row)
+- a nightly job walking accounts, where the work is per account anyway
+
+Write the reason down when you do it, because the next reader will assume it
+is an oversight.
+
+Two habits that keep this honest:
+
+- When you add a repository method, give it the plural signature first. The
+  singular is a wrapper over it if anything still wants one.
+- When you add a `for` over rows, ask what is inside it. If the answer is
+  `await` and a table name, it is N+1.
+
+# Comments
+
+The code says what it does. A comment says **why**, in as few words as the
+reason needs.
+
+**Default to none.** A comment earns its place by holding something the code
+cannot: a constraint from outside (a platform bug, an API that misbehaves), a
+decision with a live alternative, or a trap that reads as a mistake. Everything
+else is noise that has to be kept true.
+
+**One to three lines.** A reason needing a paragraph is a reason that belongs
+in `docs/`, with a pointer here. Prose about the design, the history, or what
+was tried and rejected goes there too.
+
+Do not write:
+
+- a line that restates the code under it — `// loop over users`
+- a doc comment on every export. Name the ones that would surprise a reader
+- the story of how the code got this way
+- a defence of the obvious choice
+
+> ✗ `/** Returns the user's id. Reads it from the session cookie, which is signed with HMAC so it cannot be forged, and falls back to throwing when absent because a page that renders for nobody is worse than an error. */`
+> ✓ `/** Throws when there is no session — callers are all inside the auth gate. */`
+
+The test: delete the comment and ask what a reader loses. If the answer is
+"nothing", it was never a comment.
+
 # How big a control is
 
 Phone first, and on a phone everything is one size smaller. A phone screen is

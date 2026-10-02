@@ -7,6 +7,7 @@ import { audited, type NoteChange } from '@/server/services/audited'
 import { personSnapshot } from '@/server/services/activity-snapshots'
 import { isSupportedBank } from '@/lib/finance/banks'
 import { PATHS } from '@/lib/paths'
+import { ownedOrNull } from '@/server/services/ownership'
 import { isoDateSchema } from '@/lib/validation/daily'
 import {
   completeReminder,
@@ -151,8 +152,13 @@ export async function logInteraction(input: unknown) {
     .safeParse(input)
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
+  const userId = await getCurrentUserId()
+  if (!(await findPerson(userId, parsed.data.personId))) {
+    return { ok: false as const, error: 'not_found' as const }
+  }
+
   await insertInteraction({
-    userId: await getCurrentUserId(),
+    userId,
     personId: parsed.data.personId,
     occurredOn: parsed.data.occurredOn,
     channel: parsed.data.channel,
@@ -173,11 +179,12 @@ export async function createReminder(input: unknown) {
     .safeParse(input)
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
+  const userId = await getCurrentUserId()
   await insertReminder({
-    userId: await getCurrentUserId(),
+    userId,
     title: parsed.data.title,
     dueOn: parsed.data.dueOn,
-    personId: parsed.data.personId ?? null,
+    personId: await ownedOrNull(userId, parsed.data.personId ?? null, findPerson),
   })
 
   revalidatePeople()

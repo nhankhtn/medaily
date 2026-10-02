@@ -71,11 +71,23 @@ const nextConfig: NextConfig = {
     ]
   },
   async rewrites() {
+    /**
+     * The Docusaurus build in `public/docs/` (bun run docs:build) writes one
+     * `.html` file per page; a page's address has no extension. Assets keep
+     * theirs and are served as they are. The session check in src/proxy.ts
+     * runs on the address asked for, before this rewrite.
+     */
+    const docs = [
+      { source: '/docs', destination: '/docs/index.html' },
+      { source: '/docs/:path((?!.*\\.).+)', destination: '/docs/:path.html' },
+    ]
+
     const project =
       process.env.FIREBASE_PROJECT_ID ?? process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? ''
-    if (!project) return []
+    if (!project) return docs
 
     return [
+      ...docs,
       {
         source: '/__/auth/:path*',
         destination: `https://${project}.firebaseapp.com/__/auth/:path*`,

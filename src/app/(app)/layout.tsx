@@ -4,7 +4,13 @@ import { Suspense } from 'react'
 import { BottomNav } from '@/components/shell/bottom-nav'
 import { Header } from '@/components/shell/header'
 import { Sidebar } from '@/components/shell/sidebar'
+import { chatEnabled } from '@/lib/chat/provider'
+import { TabTitle } from '@/features/chat/tab-title'
+import { UnreadWatch } from '@/features/chat/unread-watch'
+import { unreadForShell } from '@/server/services/chat'
 import { CaptureBox } from '@/features/capture/capture-box'
+import { NotifyOffer } from '@/features/settings/notify-offer'
+import { PushRefresh } from '@/features/settings/push-refresh'
 import { PendingSaves } from '@/features/daily/pending-saves'
 import { PendingTransactions } from '@/features/finance/pending-transactions'
 import { PendingTimerStops } from '@/features/timer/pending-stops'
@@ -32,10 +38,21 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   ])
   const logicalToday = today(dayContextOf(settings))
 
+  // Rooms waiting, not messages: a number in the hundreds beside a menu item
+  // says nothing anybody can act on. Nothing is counted where chat is not
+  // configured, and a count that fails is no count rather than no shell.
+  const chat = chatEnabled()
+    ? await unreadForShell(settings.userId).catch(() => ({ rooms: 0, channels: [], from: null }))
+    : { rooms: 0, channels: [], from: null }
+
+  // The same counts either way: a phone reads them off the dock, a desktop off
+  // the sidebar, and neither should be able to disagree with the other.
+  const badges: Record<string, number> = chat.rooms > 0 ? { chat: chat.rooms } : {}
+
   return (
     <ShortcutProvider bindings={settings.shortcuts}>
       <div className="flex min-h-dvh">
-        <Sidebar />
+        <Sidebar badges={badges} />
         <div className="flex min-w-0 flex-1 flex-col">
           <Header today={logicalToday} theme={theme} />
           <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-4 pb-[calc(8.5rem+env(safe-area-inset-bottom,0px))] md:pb-8">
@@ -43,8 +60,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </main>
         </div>
       </div>
-      <BottomNav />
+      <BottomNav badges={badges} />
+      <UnreadWatch channels={chat.channels} />
+      <TabTitle count={chat.rooms} from={chat.from} />
       <CaptureBox enabled={aiServiceConfigured()} assistant={assistantEnabled()} />
+      <PushRefresh />
+      <NotifyOffer />
       <PendingSaves />
       <PendingTransactions />
       <PendingTimerStops />

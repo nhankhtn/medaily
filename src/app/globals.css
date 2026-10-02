@@ -219,6 +219,76 @@
   --radius: 0.9rem;
 }
 
+/*
+ * Meadow. The only theme whose atmosphere is a picture rather than blooms: a
+ * summer hillside over the sea. A scene has darker patches than a bloom does,
+ * so surfaces carry more fill than the other light themes, and --bg is the
+ * mid sky-blue the blur averages to rather than the palest pixel — the
+ * contrast test measures against it, so it has to be the honest backdrop.
+ */
+[data-theme='meadow'] {
+  --bg: oklch(84% 0.05 225);
+  --surface: oklch(100% 0.006 210 / 0.46);
+  --surface-2: oklch(100% 0.01 210 / 0.3);
+  --surface-solid: oklch(99% 0.008 210 / 0.86);
+  --inset: oklch(100% 0.006 210 / 0.5);
+  --inset-hover: oklch(100% 0.006 210 / 0.68);
+  --border: oklch(100% 0 0 / 0.5);
+  --border-strong: oklch(48% 0.05 220 / 0.55);
+  --text: oklch(24% 0.04 225);
+  --text-muted: oklch(40% 0.05 220);
+  --text-subtle: oklch(48% 0.05 215);
+  --accent: oklch(50% 0.13 238);
+  --accent-hover: oklch(44% 0.13 238);
+  --accent-soft: oklch(94% 0.035 225 / 0.72);
+  --accent-text: oklch(100% 0 0);
+  --good: oklch(50% 0.13 145);
+  --good-soft: oklch(94% 0.05 140 / 0.72);
+  --warn: oklch(62% 0.13 70);
+  --warn-soft: oklch(95% 0.05 85 / 0.72);
+  --bad: oklch(52% 0.19 28);
+  --bad-soft: oklch(95% 0.04 28 / 0.72);
+  --shadow-card:
+    0 1px 0 oklch(100% 0 0 / 0.8) inset, 0 -1px 0 oklch(40% 0.06 220 / 0.08) inset,
+    0 10px 34px oklch(35% 0.08 230 / 0.18), 0 2px 6px oklch(30% 0.05 230 / 0.08);
+  --shadow-inset: 0 1px 0 oklch(100% 0 0 / 0.65) inset;
+  --glass-blur: 40px;
+  --glass-saturate: 1.6;
+  --glass-chip: oklch(100% 0 0 / 0.24);
+  --glass-chip-border: oklch(100% 0 0 / 0.5);
+  --glass-chip-blur: 24px;
+  --glass-chip-shadow:
+    0 1px 0 oklch(100% 0 0 / 0.85) inset, 0 -1px 0 oklch(35% 0.06 220 / 0.12) inset,
+    0 10px 30px oklch(30% 0.08 230 / 0.2);
+  --overlay: oklch(25% 0.05 230 / 0.38);
+  --atmosphere: 0.7;
+  --bg-atmosphere:
+    linear-gradient(
+      oklch(100% 0 0 / calc((1 - var(--atmosphere)) * 0.6)),
+      oklch(100% 0 0 / calc((1 - var(--atmosphere)) * 0.6))
+    ),
+    url('/themes/meadow.webp') center bottom / cover no-repeat,
+    linear-gradient(180deg, oklch(66% 0.12 245), oklch(62% 0.13 140));
+  --radius: 0.9rem;
+}
+
+/*
+ * A phone held upright would show the middle third of the landscape and miss
+ * the windmill. The portrait file is that third cut around it instead, at the
+ * source's own resolution — and a quarter of the download.
+ */
+@media (orientation: portrait) {
+  [data-theme='meadow'] {
+    --bg-atmosphere:
+      linear-gradient(
+        oklch(100% 0 0 / calc((1 - var(--atmosphere)) * 0.6)),
+        oklch(100% 0 0 / calc((1 - var(--atmosphere)) * 0.6))
+      ),
+      url('/themes/meadow-portrait.webp') center bottom / cover no-repeat,
+      linear-gradient(180deg, oklch(66% 0.12 245), oklch(62% 0.13 140));
+  }
+}
+
 @theme inline {
   --color-bg: var(--bg);
   --color-surface: var(--surface);
@@ -911,4 +981,88 @@ input[type='number'] {
   .md-handle {
     display: none;
   }
+}
+
+/*
+ * The surface a conversation is read on.
+ *
+ * Bubbles need something to be bubbles *against*. On a plain card the
+ * incoming ones — `--surface-2`, a translucent wash — sit at almost the same
+ * value as what is behind them, and the whole transcript flattens into a
+ * column of text. The wallpaper is what every chat app uses to push them
+ * forward, and it is the reason Telegram's bubbles read as objects.
+ *
+ * Built from gradients rather than an image: no request, no asset to ship, and
+ * it re-tints with the accent instead of needing a second file per theme. Two
+ * soft pools plus a faint diagonal weave, all well under the text contrast
+ * floor — this has to stay scenery, or it becomes something to read.
+ */
+.chat-wallpaper {
+  background-image:
+    radial-gradient(60% 50% at 12% 8%, color-mix(in oklch, var(--accent) 12%, transparent), transparent 70%),
+    radial-gradient(55% 45% at 88% 92%, color-mix(in oklch, var(--accent) 10%, transparent), transparent 72%),
+    repeating-linear-gradient(
+      45deg,
+      color-mix(in oklch, var(--text) 3%, transparent) 0 1px,
+      transparent 1px 11px
+    );
+  background-attachment: local, local, local;
+}
+
+/* The weave is cheap contrast on a bright screen and visual noise on a dark
+   one, where the same lines read as banding. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .chat-wallpaper {
+    background-image:
+      radial-gradient(60% 50% at 12% 8%, color-mix(in oklch, var(--accent) 16%, transparent), transparent 70%),
+      radial-gradient(55% 45% at 88% 92%, color-mix(in oklch, var(--accent) 12%, transparent), transparent 72%);
+  }
+}
+
+:root[data-theme='dark'] .chat-wallpaper {
+  background-image:
+    radial-gradient(60% 50% at 12% 8%, color-mix(in oklch, var(--accent) 16%, transparent), transparent 70%),
+    radial-gradient(55% 45% at 88% 92%, color-mix(in oklch, var(--accent) 12%, transparent), transparent 72%);
+}
+
+/*
+ * A reaction leaving the button it was sent from.
+ *
+ * Decorative only — the reaction itself has already been sent and drawn on the
+ * message, so under `prefers-reduced-motion` the global rule above collapses
+ * this to nothing and the feature is unaffected.
+ */
+@keyframes chat-burst {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.6);
+  }
+  to {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--burst-x, 0px)), calc(-50% - 72px)) scale(1.25);
+  }
+}
+
+.chat-burst {
+  animation: chat-burst 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
+}
+
+/* The hand that answers a nudge. Decorative; reduced motion collapses it. */
+@keyframes chat-wave {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-18deg);
+  }
+  75% {
+    transform: rotate(18deg);
+  }
+}
+
+.chat-wave {
+  animation: chat-wave 0.35s ease-in-out 2;
+  transform-origin: 70% 80%;
 }

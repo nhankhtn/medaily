@@ -28,7 +28,7 @@ export function readCloudinaryConfig(): CloudinaryConfig {
   }
 }
 
-export const MEDIA_KINDS = ['people', 'avatars', 'notes'] as const
+export const MEDIA_KINDS = ['people', 'avatars', 'notes', 'rooms'] as const
 export type MediaKind = (typeof MEDIA_KINDS)[number]
 
 /** One predictable path per owner, so a second kind of asset needs no rethink. */

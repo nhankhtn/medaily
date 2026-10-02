@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import { db, type DbOrTx } from '@/lib/db'
 import { userSettings } from '@/lib/db/schema'
 import type { UserSettingsRow } from '@/lib/db/schema'
@@ -27,6 +27,28 @@ export async function findSettings(
 async function selectSettings(userId: string, tx: DbOrTx): Promise<UserSettingsRow | null> {
   const rows = await tx.select().from(userSettings).where(eq(userSettings.userId, userId)).limit(1)
   return rows[0] ?? null
+}
+
+/**
+ * Settings rows for many people at once, for a job that has no session.
+ *
+ * Straight from the table, never the cache: a scheduled run walks accounts
+ * nobody has opened in the last ten seconds, so the cache would only be a
+ * second copy to keep honest.
+ */
+export async function listSettings(
+  filter: { userIds: string[] },
+  tx: DbOrTx = db,
+): Promise<UserSettingsRow[]> {
+  if (filter.userIds.length === 0) return []
+  return (
+    tx
+      .select()
+      .from(userSettings)
+      .where(inArray(userSettings.userId, filter.userIds))
+      // The primary key, so two runs over the same people agree.
+      .orderBy(userSettings.userId)
+  )
 }
 
 /**

@@ -9,9 +9,12 @@ import { getCurrentUserId } from '@/lib/auth/current-user'
 import { logicalDateOf } from '@/lib/dates'
 import { PATHS } from '@/lib/paths'
 import { elapsedSeconds, minutesOf, pausedRun, resumedRun, tooShort, wasCapped } from '@/lib/timer'
-import { activityOf, isActivityId, type ActivityId } from '@/lib/timer/activities'
+import { activityOf, isActivityId, type ActivityId, UNTYPED_WORKOUT } from '@/lib/timer/activities'
 import { saveWorkout } from '@/server/actions/health'
 import { findCustomMetric } from '@/server/repositories/custom-metrics'
+import { findTopic } from '@/server/repositories/learning'
+import { findProject } from '@/server/repositories/projects'
+import { ownedOrNull } from '@/server/services/ownership'
 import {
   clearTimer,
   findTimer,
@@ -21,6 +24,21 @@ import {
 import { addCustomMinutes, addDailyMinutes } from '@/server/services/daily-minutes'
 import { saveSessionAndDerive } from '@/server/services/focus'
 import { dayContextOf, getSettings } from '@/server/services/settings'
+
+/** The topic and project a focus run points at, minus any that are not this person's. */
+async function ownFocusLinks(
+  userId: string,
+  isFocus: boolean,
+  topicId: string | null | undefined,
+  projectId: string | null | undefined,
+): Promise<{ topicId: string | null; projectId: string | null }> {
+  if (!isFocus) return { topicId: null, projectId: null }
+  const [topic, project] = await Promise.all([
+    ownedOrNull(userId, topicId ?? null, findTopic),
+    ownedOrNull(userId, projectId ?? null, findProject),
+  ])
+  return { topicId: topic, projectId: project }
+}
 
 const optionalId = z.string().uuid().nullable().optional()
 const optionalText = z
@@ -125,6 +143,7 @@ export async function startTimer(input: unknown) {
    * counted. File it instead. This happens after the checks above, so a start
    * that is going to be refused cannot take the previous run down with it.
    */
+  const links = await ownFocusLinks(userId, isFocus, topicId, projectId)
   const previous = await fileHeldRun(settings)
   const filed = typeof previous === 'string' ? null : previous
 
@@ -142,8 +161,7 @@ export async function startTimer(input: unknown) {
     kind: isFocus ? activity.kind : 'learning',
     target: activity.sink === 'workout' ? 'workout' : 'focus',
     workoutType: activity.sink === 'workout' ? workoutType?.trim() || null : null,
-    topicId: isFocus ? (topicId ?? null) : null,
-    projectId: isFocus ? (projectId ?? null) : null,
+    ...links,
     note: note ?? null,
   })
 
@@ -360,8 +378,7 @@ export async function syncTimerState(input: unknown) {
     kind: isFocus ? activity.kind : 'learning',
     target: activity.sink === 'workout' ? 'workout' : 'focus',
     workoutType: activity.sink === 'workout' ? data.workoutType?.trim() || null : null,
-    topicId: isFocus ? (data.topicId ?? null) : null,
-    projectId: isFocus ? (data.projectId ?? null) : null,
+    ...(await ownFocusLinks(userId, isFocus, data.topicId, data.projectId)),
     note: data.note ?? null,
   })
 
@@ -388,7 +405,7 @@ async function fileToSink(values: {
   if (activity.sink === 'workout') {
     await saveWorkout({
       performedOn: values.date,
-      type: values.workoutType?.trim() || 'other',
+      type: values.workoutType?.trim() || UNTYPED_WORKOUT,
       durationMinutes: values.minutes,
       rpe: values.rpe,
       note: values.note,

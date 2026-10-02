@@ -21,6 +21,7 @@ import { PATHS } from '@/lib/paths'
 import { getDayContext } from '@/server/services/settings'
 import { audited, type NoteChange } from '@/server/services/audited'
 import { noteSnapshot } from '@/server/services/activity-snapshots'
+import { ownedOrNull } from '@/server/services/ownership'
 
 const optionalText = z
   .string()
@@ -41,22 +42,6 @@ const noteSchema = z.object({
   tags: z.array(z.string().min(1).max(60)).max(20).optional(),
 })
 
-/**
- * A topic or resource id arrives from a `<select>`, which means it arrives
- * from the client and cannot be trusted. Zod proves it is a uuid; only the
- * database proves it is *yours*. An id belonging to someone else is dropped
- * rather than refused — telling a stranger which ids exist is a free
- * directory, and the note itself is still worth saving.
- */
-async function ownedOrNull(
-  userId: string,
-  id: string | null | undefined,
-  owns: (userId: string, id: string) => Promise<unknown | null>,
-): Promise<string | null> {
-  if (!id) return null
-  return (await owns(userId, id)) ? id : null
-}
-
 export const saveNote = audited(
   (_result, input: unknown) => ((input as { id?: string }).id ? 'note.update' : 'note.create'),
   async (input: unknown, audit: NoteChange) => {
@@ -74,8 +59,8 @@ export const saveNote = audited(
         : (values.learnedOn ?? null)
 
     const [topicId, resourceId, before] = await Promise.all([
-      ownedOrNull(userId, values.topicId, findTopic),
-      ownedOrNull(userId, values.resourceId, findResource),
+      ownedOrNull(userId, values.topicId ?? null, findTopic),
+      ownedOrNull(userId, values.resourceId ?? null, findResource),
       // Beside them rather than after: the row as it stands is needed before
       // the upsert overwrites it, and it answers to nothing the other two ask.
       values.id ? findNote(userId, values.id) : null,

@@ -23,7 +23,7 @@ export type LegalDocument = 'terms' | 'privacy'
 export const LEGAL_DOCUMENTS: readonly LegalDocument[] = ['terms', 'privacy'] as const
 
 /** Shown beside the title so a reader knows which version they are reading. */
-export const LEGAL_UPDATED_ON = '2026-09-27'
+export const LEGAL_UPDATED_ON = '2026-10-01'
 
 type Document = { title: string; body: string }
 
@@ -31,8 +31,14 @@ const PRIVACY_EN = `
 ## What this is
 
 Personal OS keeps a journal, a health log, a ledger and a contact book for one
-person: you. Everything below is about the account you sign in to, and nothing
-in it is shown to other people who use the app.
+person: you. Everything below is about the account you sign in to, and with one
+exception nothing in it is shown to other people who use the app.
+
+The exception is chat. A room you join is shared on purpose: the people in it
+see your name, your picture and everything you write there. Nothing else
+crosses over — your journal, your ledger, your health log and your contacts
+stay yours, and being in a room with somebody gives them no way to see any of
+it.
 
 ## What is collected
 
@@ -47,6 +53,22 @@ about the people in it, which can include phone numbers, email addresses,
 birthdays and bank account details.
 
 **Pictures you upload**, if you add any.
+
+**What you write in a chat room**, if you use one. The message itself, when it
+was sent, and which room it was in. It is kept in the **MongoDB** database —
+the same one as the record below, not the main one — and unlike that record it
+does **not** expire: a conversation that quietly deleted itself would be a bug,
+not a policy.
+
+Everyone in the room can read it for as long as the room exists. Taking
+somebody out of a room does not unsend what they already read. You can recall
+one of your own messages, which removes the text for everyone; that the message
+was there stays visible.
+
+**Nothing you write is sent to Google.** Rooms update by themselves through a
+Firebase service, but what travels there is a counter and a clock, addressed by
+a key that is not the room's name — enough to say "this room changed", and
+nothing more. That key is replaced whenever somebody is removed from a room.
 
 **A record of what changed**, if this deployment keeps one: the moment, what
 kind of change it was — a transaction deleted, a person added — which row it
@@ -105,6 +127,15 @@ third-party script reading what you write.
 - Sign-in is handled by **Google Firebase**, which verifies who you are. Your
   password, if you have one with Google, is never seen by this app.
 
+**What you write in a chat room is locked before it reaches that database.**
+It is encrypted with a key the app holds, so a copy of the database on its own
+— a backup, an export, or whoever runs the machines it sits on — reads as
+nothing.
+
+Because the app holds the key, this is **not** end-to-end encryption: whoever
+runs this app can read what you write in a room. If that matters for something
+you were about to say, do not say it here.
+
 Data therefore leaves Vietnam and is processed in the United States.
 
 ## The AI features
@@ -124,13 +155,22 @@ Until you delete it. There is no automatic expiry and no archive: a deleted
 transaction is gone from the database, and a deleted account takes everything
 with it.
 
+**Chat is the one exception, and it is worth reading twice.** What you wrote in
+a room stays in that room after you delete your account, because it is part of
+somebody else's conversation and taking it out would leave holes in a record
+that was never only yours. Your name comes off it — nothing points back at you
+any more, and it can no longer be found by looking for you — but the words
+remain. If that is not what you want, recall those messages before you delete
+the account; recalling removes the text for everyone.
+
 ## What you can do
 
 - **Take it with you.** Settings → Data exports everything as JSON or CSV, at
   any time, without asking anyone.
 - **Delete it.** Settings → Delete this account removes the account and every
-  record under it, including the pictures held by Cloudinary. It is immediate
-  and it cannot be undone.
+  record under it, including the pictures held by Cloudinary, and takes your
+  name off anything you wrote in a chat room. It is immediate and it cannot be
+  undone. See above for what chat keeps.
 - **Correct it.** Every record in the app can be edited in the app.
 
 ## Getting in touch
@@ -145,8 +185,13 @@ const PRIVACY_VI = `
 ## Đây là gì
 
 Personal OS giữ nhật ký, theo dõi sức khoẻ, sổ chi tiêu và danh bạ cho một
-người: bạn. Mọi thứ dưới đây nói về tài khoản bạn đăng nhập, và không có gì
-trong đó hiện ra cho người khác đang dùng app.
+người: bạn. Mọi thứ dưới đây nói về tài khoản bạn đăng nhập, và trừ đúng một
+chỗ thì không có gì trong đó hiện ra cho người khác đang dùng app.
+
+Chỗ đó là phần nhắn tin. Phòng bạn tham gia là để chia sẻ: những người trong đó
+thấy tên bạn, ảnh bạn và mọi thứ bạn viết ở đấy. Ngoài ra không gì khác đi qua —
+nhật ký, sổ chi tiêu, chỉ số sức khoẻ và danh bạ vẫn là của riêng bạn, và ở
+chung phòng với ai đó không cho họ đường nào nhìn vào những thứ ấy.
 
 ## Những gì được thu thập
 
@@ -159,6 +204,22 @@ dịch và ngân sách. Nếu bạn dùng danh bạ thì gồm cả những gì 
 trong đó, có thể có số điện thoại, email, ngày sinh và số tài khoản ngân hàng.
 
 **Ảnh bạn tải lên**, nếu có.
+
+**Những gì bạn viết trong phòng chat**, nếu bạn dùng. Nội dung tin nhắn, lúc
+gửi, và nó thuộc phòng nào. Chỗ lưu là cơ sở dữ liệu **MongoDB** — cùng chỗ với
+bản ghi bên dưới, không phải cơ sở dữ liệu chính — và khác với bản ghi đó, nó
+**không** tự hết hạn: một cuộc trò chuyện tự lặng lẽ xoá mình đi thì là lỗi,
+không phải chính sách.
+
+Mọi người trong phòng đọc được, chừng nào phòng còn. Mời ai đó ra khỏi phòng
+không lấy lại được những gì họ đã đọc. Bạn thu hồi được tin của chính mình,
+lúc đó nội dung mất với tất cả mọi người; còn dấu vết là đã từng có một tin ở
+đó thì vẫn còn.
+
+**Không chữ nào bạn viết đi tới Google.** Phòng tự cập nhật qua một dịch vụ của
+Firebase, nhưng thứ đi qua đó chỉ là một bộ đếm và một mốc giờ, gửi dưới một
+khoá không phải tên phòng — đủ để nói "phòng này có thay đổi", không hơn. Khoá
+đó được thay mới mỗi khi có người bị mời ra khỏi phòng.
 
 **Bản ghi những gì đã đổi**, nếu bản cài này có giữ: thời điểm, việc đã làm là
 gì — xoá một giao dịch, thêm một người — dòng nào, và với những trường được
@@ -217,6 +278,15 @@ thứ ba nào đọc những gì bạn viết.
 - Đăng nhập do **Google Firebase** xử lý để xác minh bạn là ai. Mật khẩu
   Google của bạn không bao giờ đi qua app này.
 
+**Những gì bạn viết trong phòng chat được khoá lại trước khi xuống cơ sở dữ
+liệu đó.** Nó được mã hoá bằng một chiếc khoá do app giữ, nên ai cầm được bản
+sao của cơ sở dữ liệu — bản backup, bản export, hay người vận hành máy chủ
+chứa nó — cũng chỉ thấy một mớ không đọc được.
+
+Nhưng vì khoá nằm ở app, đây **không phải** mã hoá đầu cuối: người vận hành
+app này đọc được những gì bạn viết trong phòng. Nếu điều đó có ảnh hưởng tới
+chuyện bạn định nói, thì đừng nói ở đây.
+
 Nghĩa là dữ liệu ra khỏi Việt Nam và được xử lý tại Mỹ.
 
 ## Phần AI
@@ -234,13 +304,22 @@ vẫn dùng tay được như thường.
 Đến khi bạn xoá. Không có hạn tự hết và không có kho lưu: một giao dịch đã xoá
 là mất khỏi cơ sở dữ liệu, và xoá tài khoản thì mang theo tất cả.
 
+**Phần nhắn tin là ngoại lệ duy nhất, và nên đọc kỹ.** Những gì bạn viết trong
+một phòng sẽ ở lại đó sau khi bạn xoá tài khoản, vì nó là một phần cuộc trò
+chuyện của người khác, lấy đi sẽ để lại lỗ hổng trong một bản ghi vốn không chỉ
+của riêng bạn. Tên bạn được gỡ khỏi nó — không còn gì trỏ ngược về bạn, và cũng
+không tìm ra được bằng cách tìm theo bạn — nhưng chữ thì còn. Nếu không muốn
+vậy, hãy thu hồi những tin đó trước khi xoá tài khoản; thu hồi thì nội dung mất
+với tất cả mọi người.
+
 ## Bạn làm được gì
 
 - **Mang dữ liệu đi.** Cài đặt → Dữ liệu cho tải toàn bộ dưới dạng JSON hoặc
   CSV, bất cứ lúc nào, không phải xin ai.
 - **Xoá đi.** Cài đặt → Xoá tài khoản này xoá tài khoản và mọi bản ghi thuộc
-  về nó, gồm cả ảnh đang giữ ở Cloudinary. Có hiệu lực ngay và không hoàn tác
-  được.
+  về nó, gồm cả ảnh đang giữ ở Cloudinary, và gỡ tên bạn khỏi những gì bạn đã
+  viết trong phòng chat. Có hiệu lực ngay và không hoàn tác được. Phần nhắn tin
+  giữ lại gì thì xem ở trên.
 - **Sửa lại.** Mọi bản ghi trong app đều sửa được ngay trong app.
 
 ## Liên hệ

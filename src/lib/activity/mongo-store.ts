@@ -1,13 +1,8 @@
-import { MongoClient, ObjectId, type Collection } from 'mongodb'
+import { ObjectId, type Collection } from 'mongodb'
 import { env } from '@/lib/env'
-import { log } from '@/lib/log'
+import { readyCollection } from '@/lib/mongo/client'
 import type { ActivityStore } from './store'
 import { isActivityAction, type ActivityPage, type ActivityRecord, type Snapshot } from './types'
-
-declare global {
-  var __medailyMongo: MongoClient | undefined
-  var __medailyMongoIndexed: Promise<void> | undefined
-}
 
 const COLLECTION = 'activity'
 
@@ -16,9 +11,9 @@ const COLLECTION = 'activity'
  * TTL index, `ObjectId`, and the cursor's encoding. A service that swaps this
  * for a Postgres one changes a line in `provider.ts` and nothing else.
  *
- * The client is cached on `globalThis` for the same reason the Postgres one
- * is: a serverless instance is reused between invocations, and a driver that
- * reconnects per call spends longer on handshakes than on writes.
+ * The connection and the index bootstrap are shared — see `lib/mongo/client`.
+ * This file owns only what is true of the trail: its two indexes, including
+ * the TTL that no other collection here wants.
  */
 export function mongoActivityStore(uri: string): ActivityStore {
   return {
@@ -115,46 +110,17 @@ function decodeCursor(raw: string | null | undefined): ObjectId | null {
   }
 }
 
-function client(uri: string): MongoClient {
-  const existing = globalThis.__medailyMongo
-  if (existing) return existing
-
-  const created = new MongoClient(uri, {
-    // A log write must never be the slow part of a request. `after()` already
-    // moves it off the response; these caps stop a stalled connection from
-    // holding a serverless instance open behind it.
-    serverSelectionTimeoutMS: 3_000,
-    connectTimeoutMS: 3_000,
-    maxPoolSize: 5,
-  })
-
-  globalThis.__medailyMongo = created
-  return created
-}
-
 /**
- * The collection with its indexes in place. `createIndexes` is idempotent and
- * runs once per process — awaited rather than fired and forgotten, so the
- * first write of a cold instance cannot land before the rule that expires it.
+ * The collection with its indexes in place. The TTL lives here and nowhere
+ * else: it is right for a trail that must not grow forever, and wrong for
+ * everything else this database holds.
  */
 async function ready(uri: string): Promise<Collection<ActivityRecord>> {
-  const collection = client(uri).db().collection<ActivityRecord>(COLLECTION)
-
-  globalThis.__medailyMongoIndexed ??= collection
-    .createIndexes([
-      // The only read there is: one person's trail, newest first.
-      { key: { userId: 1, _id: -1 }, name: 'user_id_desc' },
-      // A log that grows forever is a liability rather than an asset, so the
-      // database expires it rather than trusting anyone to remember.
-      { key: { at: 1 }, name: 'ttl', expireAfterSeconds: env.ACTIVITY_LOG_DAYS * 86_400 },
-    ])
-    .then(() => undefined)
-    .catch(async (error) => {
-      // A missing index makes the trail slow, not wrong. Retry next call.
-      globalThis.__medailyMongoIndexed = undefined
-      await log.error('activity', 'could not create indexes', error)
-    })
-
-  await globalThis.__medailyMongoIndexed
-  return collection
+  return readyCollection<ActivityRecord>(uri, COLLECTION, [
+    // The only read there is: one person's trail, newest first.
+    { key: { userId: 1, _id: -1 }, name: 'user_id_desc' },
+    // A log that grows forever is a liability rather than an asset, so the
+    // database expires it rather than trusting anyone to remember.
+    { key: { at: 1 }, name: 'ttl', expireAfterSeconds: env.ACTIVITY_LOG_DAYS * 86_400 },
+  ])
 }

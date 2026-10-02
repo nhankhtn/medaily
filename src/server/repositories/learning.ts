@@ -113,10 +113,7 @@ export async function findSessionDate(userId: string, sessionId: string): Promis
 
 export type TopicTotal = { topicId: string | null; name: string | null; minutes: number }
 
-export async function sumMinutesByTopic(
-  userId: string,
-  range: DateRange,
-): Promise<TopicTotal[]> {
+export async function sumMinutesByTopic(userId: string, range: DateRange): Promise<TopicTotal[]> {
   const rows = await db
     .select({
       topicId: focusSessions.topicId,
@@ -124,7 +121,9 @@ export async function sumMinutesByTopic(
       minutes: sql<number>`COALESCE(SUM(${focusSessions.minutes}), 0)::int`,
     })
     .from(focusSessions)
-    .leftJoin(topics, eq(topics.id, focusSessions.topicId))
+    // Owner on the join too: a session filed under someone else's topic id
+    // must not bring that topic's name with it.
+    .leftJoin(topics, and(eq(topics.id, focusSessions.topicId), eq(topics.userId, userId)))
     .where(
       and(
         eq(focusSessions.userId, userId),
@@ -132,7 +131,7 @@ export async function sumMinutesByTopic(
       ),
     )
     .groupBy(focusSessions.topicId, topics.name)
-    .orderBy(desc(sql`SUM(${focusSessions.minutes})`))
+    .orderBy(desc(sql`SUM(${focusSessions.minutes})`), asc(focusSessions.topicId))
 
   return rows
 }

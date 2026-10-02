@@ -64,6 +64,13 @@ export const PATHS = {
     return search ? `/calendar?${search}` : '/calendar'
   },
 
+  chat: '/chat',
+  chatRoom: (id: string) => `/chat/${id}`,
+  /** Where an invite link lands. Joining is a POST from here, never the GET. */
+  chatJoin: (code: string) => `/chat/join/${code}`,
+  /** The room list with an invite waiting to be answered on top of it. */
+  chatWithInvite: (code: string) => `/chat?join=${encodeURIComponent(code)}`,
+
   people: '/people',
   career: '/career',
 
@@ -90,6 +97,11 @@ export const PATHS = {
   /** What a stranger meets at `/`, before there is an account to sign in to. */
   welcome: '/welcome',
   /**
+   * The Docusaurus build in `public/docs/`. Only the configured password
+   * account may read it — see `src/proxy.ts`.
+   */
+  docs: '/docs',
+  /**
    * The offline worker. Public, and it has to be: a browser refuses to
    * register a worker whose script was redirected, so leaving it behind the
    * sign-in gate turns offline support off without saying so. Nothing in it
@@ -102,6 +114,7 @@ export const PATHS = {
   api: {
     health: '/api/health',
     cronNightly: '/api/cron/nightly',
+    cronReminders: '/api/cron/reminders',
     googleAuth: '/api/auth/google',
     calendarIcs: '/api/calendar.ics',
     exportJson: '/api/export?format=json',
@@ -129,6 +142,7 @@ export const STATIC_PAGE_PATHS = [
   PATHS.financeTab('report'),
   PATHS.journal,
   PATHS.calendar(),
+  PATHS.chat,
   PATHS.people,
   PATHS.career,
   PATHS.analytics,
@@ -149,6 +163,21 @@ export function safeNextPath(value: string | null | undefined): string {
   return value.split(/[?#]/)[0] === PATHS.login ? PATHS.home : value
 }
 
+/**
+ * Whether this is one room's conversation, as opposed to the list of rooms.
+ *
+ * Used to stand things down that own the bottom of the screen elsewhere: the
+ * capture box floats there on every other route, and here the message composer
+ * already does. Two boxes to type into, one over the other, is the kind of
+ * thing nobody reports as a bug and everybody works around.
+ */
+export function isChatRoomPath(pathname: string): boolean {
+  if (!pathname.startsWith(`${PATHS.chat}/`)) return false
+  // `/chat/join/<code>` is an invitation, not a conversation — no composer
+  // there, so nothing to stand down for.
+  return !pathname.startsWith(`${PATHS.chat}/join`)
+}
+
 /** Reachable without a session; the proxy lets these through untouched. */
 export const PUBLIC_PATHS = [
   PATHS.login,
@@ -156,6 +185,8 @@ export const PUBLIC_PATHS = [
   // Not public in the ordinary sense: it carries no session because the
   // scheduler has none, and checks a shared secret of its own instead.
   PATHS.api.cronNightly,
+  // Same reason as the nightly run, and the same secret.
+  PATHS.api.cronReminders,
   PATHS.api.googleAuth,
   PATHS.manifest,
   PATHS.robots,

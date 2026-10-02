@@ -125,7 +125,6 @@ export const transactions = pgTable(
     transferredAt: timestamp('transferred_at', { withTimezone: true }),
     /** The one line the ledger shows, and the only one the search box reads. */
     merchant: text('merchant'),
-    tags: text('tags').array(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

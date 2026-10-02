@@ -6,11 +6,30 @@ import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { BOTTOM_NAV_ITEMS, MORE_NAV_ITEMS } from '@/lib/nav'
+import { isChatRoomPath } from '@/lib/paths'
 import { cn } from '@/lib/utils'
 import { SignOutButton } from './sign-out-button'
 
+/**
+ * A count on the corner of an icon.
+ *
+ * Over the icon rather than beside it: the dock gives each destination a fifth
+ * of the width and nothing to spare, and a badge in the line would push the
+ * icon off the middle of its own tile.
+ */
+function NavBadge({ count, label }: { count: number; label: string }) {
+  return (
+    <span
+      aria-label={label}
+      className="bg-accent text-accent-text absolute -top-1.5 -right-2.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-medium tabular-nums"
+    >
+      {count > 9 ? '9+' : count}
+    </span>
+  )
+}
+
 /** Five destinations, thumb-reachable, everything else under More (spec 22.3). */
-export function BottomNav() {
+export function BottomNav({ badges = {} }: { badges?: Record<string, number> }) {
   const pathname = usePathname()
   const t = useTranslations('nav')
   /*
@@ -38,6 +57,22 @@ export function BottomNav() {
   }, [moreOpen])
 
   const moreActive = MORE_NAV_ITEMS.some((item) => pathname.startsWith(item.href))
+  /*
+   * Chat is not one of the four on the bar, so without this a room waiting on
+   * a phone has nowhere to say so — the dock looked the same either way and
+   * the only way to find out was to open More and look.
+   */
+  const moreWaiting = MORE_NAV_ITEMS.reduce((sum, item) => sum + (badges[item.key] ?? 0), 0)
+
+  /*
+   * Stands down inside a conversation, the way the capture box already does.
+   * A phone screen is mostly chrome, and a transcript is the one page where
+   * the composer is already holding the bottom edge — a dock above it spends
+   * a sixth of the screen on a way out of a page with a back arrow at the top
+   * of it. The hooks above still run, so this is a render decision and not a
+   * conditional hook.
+   */
+  if (isChatRoomPath(pathname)) return null
 
   return (
     <>
@@ -54,7 +89,7 @@ export function BottomNav() {
             className="pointer-events-none absolute inset-0 opacity-80"
             style={{ background: 'var(--bg-atmosphere)' }}
           />
-          <div className="relative flex items-center justify-between pr-[max(1.25rem,env(safe-area-inset-right,0px))] pl-[max(1.25rem,env(safe-area-inset-left,0px))] pt-[env(safe-area-inset-top,0px)]">
+          <div className="relative flex items-center justify-between pt-[env(safe-area-inset-top,0px)] pr-[max(1.25rem,env(safe-area-inset-right,0px))] pl-[max(1.25rem,env(safe-area-inset-left,0px))]">
             <span className="flex h-14 items-center text-lg font-semibold">{t('more')}</span>
             <button
               type="button"
@@ -65,17 +100,22 @@ export function BottomNav() {
               <X className="size-5" />
             </button>
           </div>
-          <div className="relative h-[calc(100dvh-3.5rem-env(safe-area-inset-top,0px))] overflow-y-auto overscroll-contain pt-2 pb-[calc(7.5rem+env(safe-area-inset-bottom,0px))] pl-[max(1.25rem,env(safe-area-inset-left,0px))] pr-[max(1.25rem,env(safe-area-inset-right,0px))]">
+          <div className="relative h-[calc(100dvh-3.5rem-env(safe-area-inset-top,0px))] overflow-y-auto overscroll-contain pt-2 pr-[max(1.25rem,env(safe-area-inset-right,0px))] pb-[calc(7.5rem+env(safe-area-inset-bottom,0px))] pl-[max(1.25rem,env(safe-area-inset-left,0px))]">
             <div className="grid grid-cols-3 gap-3">
               {MORE_NAV_ITEMS.map((item) => (
                 <Link
                   key={item.key}
                   href={item.href}
                   onClick={() => setOpenedOn(null)}
-                  className="glass-chip flex aspect-square flex-col items-center justify-center gap-2 rounded-[1.35rem] p-2 text-center"
+                  className="glass-chip relative flex aspect-square flex-col items-center justify-center gap-2 rounded-[1.35rem] p-2 text-center"
                 >
-                  <item.icon className="size-6 text-accent" />
-                  <span className="text-xs leading-tight text-text-muted">{t(item.key)}</span>
+                  <span className="relative">
+                    <item.icon className="text-accent size-6" />
+                    {badges[item.key] ? (
+                      <NavBadge count={badges[item.key]!} label={String(badges[item.key])} />
+                    ) : null}
+                  </span>
+                  <span className="text-text-muted text-xs leading-tight">{t(item.key)}</span>
                 </Link>
               ))}
               {/* Language and theme live on the settings page, one tile away. */}
@@ -137,7 +177,12 @@ export function BottomNav() {
                 moreOpen || moreActive ? 'text-accent' : 'text-text-subtle',
               )}
             >
-              <MoreHorizontal className="size-5" />
+              <span className="relative">
+                <MoreHorizontal className="size-5" />
+                {moreWaiting > 0 ? (
+                  <NavBadge count={moreWaiting} label={String(moreWaiting)} />
+                ) : null}
+              </span>
               <span className="text-[10px] leading-none">{t('more')}</span>
             </button>
           </li>

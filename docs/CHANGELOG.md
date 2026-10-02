@@ -1,3 +1,9 @@
+---
+title: Changelog
+description: What changed in these documents, and when. Newest first.
+sidebar_position: 99
+---
+
 # Documentation changelog
 
 What changed in `docs/`, and when. Newest first.
@@ -5,6 +11,202 @@ What changed in `docs/`, and when. Newest first.
 Dates are the day the document was written, not the day the code shipped. A
 line here is the cheapest way to know whether what you are reading is older
 than the code.
+
+## 2026-10-02
+
+**Changed**
+
+- Chat: whether a group is encrypted is now chosen once, with **Encrypt
+  messages** when it is created (off by default), and can never be changed.
+  A room that is not encrypted is searched by the database, all the way back;
+  an encrypted one is still opened a page at a time. Written up in
+  [Chat privacy](features/chat/privacy.md), [Rooms and invites](features/chat/rooms-and-invites.md),
+  [Messages](features/chat/messages.md) and [Data model: chat](reference/data-model/chat.md)
+  (`encryption` on rooms, `bodyFold` on plain messages).
+
+- [Documentation site](operations/docs-site.md): `/docs` now has a login of its
+  own — the browser's Basic Auth prompt for `AUTH_USERNAME` and
+  `AUTH_PASSWORD` — instead of riding on the app's session. Being signed in to
+  the app no longer opens it, and opening it no longer needs an app account.
+
+**Restructured**
+
+The three long documents became one page per feature, in four sections —
+**Get started**, **Features**, **Operations** and **Reference** — and every page
+now ends with **Related** links to the features it affects. Feature pages lead
+with the **Rules** a business analyst needs, then the steps, then how it works.
+The separate `medaily-ai` service is documented for the first time, from its
+`origin/main` at `1bc432d`.
+
+| Was | Is now |
+| --- | --- |
+| `features.md` | [Get started](get-started/sign-in.md), [Features](features/daily-log.md) — one page each, with Finance and Chat split into sub-pages — and [Operations](operations/configuration.md) |
+| `database.md` | [Data model](reference/data-model/overview.md) — one page per domain, plus the Mongo collections |
+| `realtime.md` | [Live updates](reference/realtime/overview.md) — doorbell, typing, setup, housekeeping, push |
+| — | [AI service](reference/ai-service/overview.md) |
+
+Corrected on the way, against the code: chat invites are link-only (the email
+field is gone); message actions moved into a press-and-hold / right-click menu
+with **Copy** and **Edit**; push also needs `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+and `NEXT_PUBLIC_FIREBASE_APP_ID`; the timezone control in Settings is hidden;
+milestone weight is honoured by progress but the form always writes `1`.
+
+Entries below this one name the old file names as they were then.
+
+## 2026-10-02 (earlier)
+
+**Added**
+
+- `features.md`: the **evening reminder**. A second cron at
+  20:00 Vietnam time notifies everybody with notifications on whose day has
+  neither a daily log nor a transaction dated on it, in their own language,
+  with one tag so a later reminder replaces the earlier one.
+
+## 2026-10-01
+
+**Audited against the code**
+
+All three documents were read line by line against the code as it stands
+today, and every claim below was checked in the source before it was written.
+
+- `features.md`, corrected. `/knowledge` is a redirect to
+  `/learning?tab=notes`. Your own activities live under **Daily log → Set
+  up**, not Settings, and Settings has no density control. Finance has four
+  tabs, not two. Budgets are copied by a nightly check plus **Copy last
+  month**, not on "the first night". The payment sheet works on a desktop too;
+  only the bank-app link is phone-only. Sub-tasks and weighted milestones were
+  described but have no UI. The timer has seven activities, not two. Offline
+  also covers adding a transaction and stopping the timer. `S`, `[`, `]`, `T`
+  work on the daily log only. Quick capture depends on `AI_SERVICE_*`, not a
+  Gemini key. Without `MONGODB_URI` Chat still shows in the nav and 404s. Chat
+  invites send no email. The "What changed" trail also records goals, habits,
+  notes and people. `⌘B` does not fire while typing.
+- `features.md`, added. The welcome and legal pages, the first
+  few days (tour, checklist, add to home screen), the dashboard, **Journal**,
+  **Career**, the editor, the assistant, Get in touch, the overnight job, the
+  shell and phone dock, People in full, chat replies, one reaction per person,
+  message runs and group pictures, the offline timer, remembered accounts and
+  One Tap, the owner-only `/docs`, and the missing rows in the optional
+  services table. Health, Projects, Goals, Habits, Reviews, Analytics,
+  Calendar, the palette and shortcuts were deepened.
+- `database.md`. 47 tables plus two views, not 46.
+  `timer_filings` and the Career tables (`skills`, `achievements`,
+  `portfolio_items`) were missing, as was every column from migrations 0015
+  to 0024. `updated_at` **is** kept by a trigger that `drizzle/views.sql`
+  installs, and the owner row is seeded there too, not by a migration. Habit
+  frequency is `specific_days`, not `weekdays`. `timer_state.activity`
+  replaced `target`. The budgets unique key does not include `amount`. The
+  activity trail stores `current` and `request`, not `before`, and covers far
+  more than money and sign-in. Foreign keys that do not exist, ON DELETE
+  rules, unique and CHECK constraints, chat replies and avatars, and every
+  Mongo index are now written down.
+- `realtime.md`. Password sign-ins **do** get live updates and
+  typing when `FIREBASE_SERVICE_ACCOUNT` is set (custom token), so the table,
+  the typing section and the troubleshooting advice were wrong. `stop()` runs
+  before `sendMessage`, not after. `catchUp` also refreshes recalls and
+  reactions. Typing refusals are logged; only the doorbell stays silent.
+  Added: the unread badge as a second doorbell listener with its own 60 s
+  floor, reactions and recalls ringing the doorbell, clock skew, the
+  `authStateReady()` wait, the 55-minute token, and the plain statement that
+  leaving a room does not rotate its key.
+
+**Added**
+
+- `features.md` finally has a **Chat** section, closing the gap
+  the 2026-09-30 entry below admits to. Rooms of two kinds, invites that are
+  spent on first use, optimistic send, recall, reactions and stickers, who
+  sits on which side, and who may do what — including that the ranks live on
+  the member's seat rather than on the room's `createdBy`, so a room older
+  than that column still knows its owner.
+- `database.md` gained a second half: the **MongoDB collections**.
+  Until now the document described 46 Postgres tables and said nothing about
+  where the activity trail or any chat message actually lives. Four chat
+  collections and `activity`, their indexes, and why there are no transactions
+  in any of it.
+- **Locked messages.** `CHAT_MESSAGE_KEY` and `CHAT_MESSAGE_KEY_SPARE`, written
+  up in both documents, because this is the one feature where getting it wrong
+  destroys data rather than breaking a screen. Each message is encrypted under
+  a key of its own; that key is wrapped once per environment key, which is how
+  a spare opens everything the main one can. Both documents say plainly that
+  the server holds the key and this is **not** end-to-end, and that a key added
+  after the first message opens nothing written before it.
+- Unread counts: the badge on the nav, the per-room number, why your own
+  messages never count, and why the mark follows the newest message that has
+  landed rather than the newest one drawn.
+- Budgets: the monthly total, moving back through past months, setting a
+  budget on a month already gone, and the copy into each new month on the
+  first night of it.
+- Opening your bank's own app from a transfer, with the phone-only and
+  both-banks-known conditions that decide whether the button is there at all.
+- `⌘B` folds the sidebar — the one shortcut that still fires while typing, and
+  why it is held off in the markdown editor.
+- The markdown editor's `/` menu and its `?` panel.
+- **What changed** narrowed to money and the door, in both
+  `features.md` and `database.md`.
+- [README.md](README.md) now tells you to update the Mongo half of
+  `database.md` when a collection's shape moves. Those collections have no
+  migration file to force the issue.
+
+## 2026-10-04
+
+**Added**
+
+- Push notifications for chat, and a section in `realtime.md` for
+  the two things about them that are not obvious: messages are sent data-only
+  so `sw.js` draws them and stays free of the Firebase SDK, and iOS delivers
+  web push only to an app added to the Home Screen — so the settings card
+  checks for an installed app before it checks the permission.
+- `push_devices` (migration `0025_push_devices`): one row per browser, keyed by
+  the token rather than by (user, token), because FCM hands the same string
+  back to whoever registers the same browser and the row has to change owner
+  after a sign-out rather than be joined by a second one. Cascades with the
+  user, which is one fewer thing for account removal to remember.
+- `NEXT_PUBLIC_FIREBASE_VAPID_KEY`, and `FIREBASE_SERVICE_ACCOUNT` now wants
+  `roles/firebasemessaging.admin` as well. Unset, the card never appears.
+
+**Changed**
+
+- The service-account credential and its token exchange moved out of
+  `firestore-rest.ts` into `google-auth.ts`, shared with the sender. A token is
+  minted per scope rather than once with both, so a bug in one cannot act as
+  the other.
+
+## 2026-09-30
+
+**Added**
+
+- `realtime.md` — a fourth document. How a message reaches
+  another screen, why the doorbell carries no payload, and why the typing
+  indicator is the one exception. It exists because the reasoning behind
+  `firestore.rules` lived only in code comments, and rules that deny fail
+  silently: there is no error anywhere, updates simply never arrive.
+- A typing indicator in a chat room. `Speaker` now carries `firebaseUid`
+  (`auth_identities.provider_uid` where the provider is `google`) so that
+  Firestore can vouch for who is typing instead of the payload claiming it —
+  the rules tie a write to `request.auth.uid`. Anybody signed in with the
+  password has no uid and never appears as typing, which matches their having
+  no live updates at all.
+- `firestore.rules` gained `channels/{channel}/typing/{uid}`, with `delete`
+  separated from `create, update` because `request.resource` is null on a
+  delete. No migration: the uid was already stored.
+- A nightly sweep of orphaned doorbell documents, last in `/api/cron/nightly`.
+  It had to be server-side: after `rotateDoorbell` nobody holds the old key,
+  and the rules require it, so no browser can reach that document even to
+  delete it. Typing claims go after an hour, channels after thirty days, and
+  claims under a dying channel go with it — sub-collections outlive the
+  document above them, so order matters.
+- `FIREBASE_SERVICE_ACCOUNT`, and `realtime.md` says plainly what
+  it costs: it is the only Firebase credential here with real power, where
+  everything else runs on public keys and rules. Contained to one file that
+  speaks the REST API rather than pulling in the Admin SDK, reachable only from
+  the nightly job, and refused outright when its `project_id` does not match
+  the project the browser signs in to.
+
+**Known gap** *(closed 2026-10-01)*
+
+- `features.md` still has no chat section at all — it predates this change and
+  was not filled in here. Rooms, invites, recall and now the typing indicator
+  are undocumented as features.
 
 ## 2026-09-21
 

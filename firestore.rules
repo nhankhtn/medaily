@@ -1,0 +1,79 @@
+rules_version = '2';
+
+// Deployed by hand — this repo has no CI for it. Check after every change:
+//   pnpm firestore:rules          (or paste this file into the Firebase console)
+//
+// That script shells out to firebase-tools through npx, so nothing is
+// installed; the first run asks you to `npx firebase-tools login`. The project
+// and the path to this file come from .firebaserc and firebase.json.
+//
+// Getting this wrong is quiet. The onSnapshot error callback in
+// src/lib/realtime/firestore.ts swallows a rules rejection on purpose — chat
+// must not break when Firestore is unreachable — so rules that deny will show
+// up as "live updates never arrive", with nothing in the console.
+//
+// Firestore is a doorbell here, not a database. One document per channel,
+// holding a counter and a time, and never a word anybody typed. Read the
+// reasoning in src/lib/realtime/firestore.ts before loosening anything.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /channels/{channel} {
+      // Being signed in to this Firebase project is barely a control: the
+      // project's sign-in is not gated by the app's own allowlists, so this
+      // means "any Google account". The protection is that a channel key is
+      // 122 bits of random and is rotated when somebody is removed from a room.
+      allow get: if request.auth != null;
+
+      // Never listable. Otherwise one query hands over every room that exists
+      // and when each was last busy — which is the whole of what is knowable
+      // here, given away in bulk.
+      allow list: if false;
+
+      // Exactly two numeric fields, and a time that has to be about now. A
+      // payload cannot be used to say anything, and a far-future timestamp
+      // cannot be parked here.
+      allow write: if request.auth != null
+        && request.resource.data.keys().hasOnly(['seq', 'at'])
+        && request.resource.data.seq is number
+        && request.resource.data.at is number
+        && request.resource.data.at > request.time.toMillis() - 60000
+        && request.resource.data.at < request.time.toMillis() + 60000;
+    }
+
+    // "Somebody is typing" — the one payload here that a client reads and the
+    // UI draws, so these rules are what make drawing it safe.
+    //
+    // The document is named by the writer's own Firebase uid and the write is
+    // tied to it, so a claim can only be made in your own name. Knowing a
+    // channel key therefore buys the ability to say "I am typing" as yourself,
+    // which every member of the room can do anyway, and nothing more. The
+    // reader matches the uid against the room's members and draws nothing for
+    // a uid it does not recognise.
+    //
+    // This is also the only thing Firestore knows about a person: that a uid
+    // was active in a room at a time. No word anybody typed reaches it.
+    match /channels/{channel}/typing/{uid} {
+      // Listable, unlike the channels above — the whole question is "who".
+      // Still gated by the 122 bits of the channel key, which is what a
+      // removed member loses when the key is rotated.
+      allow get, list: if request.auth != null;
+
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['at'])
+        && request.resource.data.at is number
+        && request.resource.data.at > request.time.toMillis() - 60000
+        && request.resource.data.at < request.time.toMillis() + 60000;
+
+      // Separate from the two above because on a delete `request.resource` is
+      // null: a single `write` rule inspecting the written fields would refuse
+      // the retraction that a sent message depends on.
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -13,6 +13,7 @@ import { alertsEnabled } from '@/server/services/alerts'
 import { activityLogEnabled, findActivity } from '@/server/services/activity'
 import { env } from '@/lib/env'
 import { InstallApp } from '@/features/settings/install-app'
+import { NotificationsPanel } from '@/features/settings/notifications-panel'
 import { ReplayOnboardingButton } from '@/features/onboarding/replay-button'
 import { SettingsForm } from '@/features/settings/settings-form'
 import { ShortcutsDialog } from '@/features/settings/shortcuts-panel'
@@ -61,6 +62,9 @@ export default async function SettingsPage() {
       {/* Renders nothing once the app is on the home screen, or where the
           browser has no way to put it there. */}
       <InstallApp />
+      {/* After Install, because on an iPhone the answer to "why no
+          notifications" is "install it first" — and that card is the answer. */}
+      <NotificationsPanel />
 
       <SettingsForm settings={settings} />
       <section className="glass hidden rounded-[var(--radius)] p-4 sm:block">

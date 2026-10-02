@@ -1,6 +1,6 @@
 'use client'
 
-import { Heart, Moon, Sun, type LucideIcon } from 'lucide-react'
+import { Heart, Moon, Mountain, Sun, type LucideIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useTransition } from 'react'
 import { cn } from '@/lib/utils'
@@ -16,6 +16,7 @@ const ICONS: Record<ThemePreference, LucideIcon> = {
   light: Sun,
   dark: Moon,
   pink: Heart,
+  meadow: Mountain,
 }
 
 export function ThemeToggle({

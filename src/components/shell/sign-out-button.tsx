@@ -9,6 +9,8 @@ import { clearPendingStops } from '@/features/timer/pending-stops'
 import { clearDailyDrafts } from '@/features/daily/use-draft'
 import { clearOfflineCaches } from '@/features/daily/register-sw'
 import { signOutFirebase } from '@/lib/auth/firebase-client'
+import { forgetPushDevice } from '@/server/actions/push'
+import { refreshPushToken, setPushEnabledHere } from '@/lib/push/client'
 import { logout } from '@/server/actions/auth'
 
 /** `card` matches the route tiles in the mobile More sheet. */
@@ -21,6 +23,11 @@ export function SignOutButton({ variant = 'icon' }: { variant?: 'icon' | 'card' 
       clearPendingTransactions(),
       clearPendingStops(),
       Promise.resolve().then(clearDailyDrafts),
+      // This browser stops being reachable for this account. The permission
+      // stays — a page cannot take one back — but without this the previous
+      // person keeps buzzing the device until somebody signs in and the row
+      // changes owner.
+      forgetThisDevice(),
     ])
 
     await logout()
@@ -76,4 +83,15 @@ function SignOutTrigger({ variant }: { variant: 'icon' | 'card' }) {
       {pending ? <Loader2 className="size-4 animate-spin" /> : <LogOut className="size-4" />}
     </button>
   )
+}
+
+/** Best effort, like every other clear in the sign-out batch. */
+async function forgetThisDevice(): Promise<void> {
+  try {
+    const token = await refreshPushToken()
+    if (token) await forgetPushDevice({ token })
+    setPushEnabledHere(false)
+  } catch {
+    /* signing out must not depend on a notification token */
+  }
 }
