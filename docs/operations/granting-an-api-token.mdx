@@ -4,6 +4,8 @@ description: One token, one person, one thing they may do — how to mint it, wh
 sidebar_position: 4
 ---
 
+import ApiTry from '@site/src/components/ApiTry'
+
 # Letting someone file an expense
 
 Somebody buys you breakfast. You want a 15,000₫ expense in your ledger,
@@ -55,12 +57,28 @@ tsx scripts/grant-token.ts --inspect "$GRANT_TOKEN"
 
 ## Calling it
 
-```bash
-curl -X POST https://your-app/api/external/grant/transaction \
-  -H "Authorization: Bearer $GRANT_TOKEN" \
-  -H "content-type: application/json" \
-  -d '{"amount":15000,"category":"Ăn sáng","merchant":"bánh mì","clientId":"'"$(uuidgen)"'"}'
-```
+<ApiTry
+  method="POST"
+  path="/api/external/grant/transaction"
+  bearer
+  warning="This files a real expense in the live ledger."
+  body={{
+    amount: 15000,
+    category: 'Ăn sáng',
+    merchant: 'bánh mì',
+    clientId: '',
+  }}
+/>
+
+The token is kept for this browser tab only and never written to disk. These
+pages are served from the app's own origin behind the same lock, so the call
+above goes to the real endpoint with no proxy in between — which also means
+there is no sandbox. Open the curl panel if you would rather paste it into a
+terminal.
+
+"reset, new clientId" matters more than it looks: the id is the row's primary
+key, so calling twice with the same one answers `ok` and writes nothing. Press
+it between two real filings or the second will look like it worked.
 
 | Field | |
 | --- | --- |

@@ -1,0 +1,111 @@
+/* Reads as a control panel rather than a code block, so nobody mistakes the
+   button for an example. */
+.box {
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1.5rem 0;
+  background: var(--ifm-background-surface-color);
+}
+
+.endpoint {
+  margin: 0 0 0.75rem;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.85rem;
+  word-break: break-all;
+}
+
+.method {
+  display: inline-block;
+  margin-right: 0.5rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  background: var(--ifm-color-primary);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.field {
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+.field > span {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 6px;
+  background: var(--ifm-background-color);
+  color: var(--ifm-font-color-base);
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.8rem;
+}
+
+.small {
+  padding: 0.1rem 0.4rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ifm-font-color-base);
+  font-size: 0.7rem;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.curl {
+  margin-bottom: 0.75rem;
+  font-size: 0.8rem;
+}
+
+.curl pre {
+  margin: 0.5rem 0;
+  font-size: 0.75rem;
+}
+
+.warning {
+  margin: 0 0 0.5rem;
+  color: var(--ifm-color-danger);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.call {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  background: var(--ifm-color-primary);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.call:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.ok,
+.bad {
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+}
+
+.ok {
+  border-left: 3px solid var(--ifm-color-success);
+}
+
+.bad {
+  border-left: 3px solid var(--ifm-color-danger);
+}

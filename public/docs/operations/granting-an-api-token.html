@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
-<title data-rh="true">Letting someone file an expense | Medaily Docs</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="robots" content="noindex, nofollow"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="http://localhost/docs/operations/granting-an-api-token"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Letting someone file an expense | Medaily Docs"><meta data-rh="true" name="description" content="One token, one person, one thing they may do — how to mint it, what it allows, and how to take it back."><meta data-rh="true" property="og:description" content="One token, one person, one thing they may do — how to mint it, what it allows, and how to take it back."><link data-rh="true" rel="canonical" href="http://localhost/docs/operations/granting-an-api-token"><link data-rh="true" rel="alternate" href="http://localhost/docs/operations/granting-an-api-token" hreflang="en"><link data-rh="true" rel="alternate" href="http://localhost/docs/operations/granting-an-api-token" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Letting someone file an expense","item":"http://localhost/docs/operations/granting-an-api-token"}]}</script><link rel="stylesheet" href="/docs/assets/css/styles.55dbd2d6.css">
-<script src="/docs/assets/js/runtime~main.8bc23e9c.js" defer="defer"></script>
-<script src="/docs/assets/js/main.6a34247c.js" defer="defer"></script>
+<title data-rh="true">Letting someone file an expense | Medaily Docs</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="robots" content="noindex, nofollow"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="http://localhost/docs/operations/granting-an-api-token"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Letting someone file an expense | Medaily Docs"><meta data-rh="true" name="description" content="One token, one person, one thing they may do — how to mint it, what it allows, and how to take it back."><meta data-rh="true" property="og:description" content="One token, one person, one thing they may do — how to mint it, what it allows, and how to take it back."><link data-rh="true" rel="canonical" href="http://localhost/docs/operations/granting-an-api-token"><link data-rh="true" rel="alternate" href="http://localhost/docs/operations/granting-an-api-token" hreflang="en"><link data-rh="true" rel="alternate" href="http://localhost/docs/operations/granting-an-api-token" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Letting someone file an expense","item":"http://localhost/docs/operations/granting-an-api-token"}]}</script><link rel="stylesheet" href="/docs/assets/css/styles.e8e55e21.css">
+<script src="/docs/assets/js/runtime~main.6a5af194.js" defer="defer"></script>
+<script src="/docs/assets/js/main.7b2747e1.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -38,36 +38,15 @@ before it prints the token, so you can read it back.</p>
 <p>To read an existing one:</p>
 <div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">tsx scripts/grant-token.ts </span><span class="token parameter variable" style="color:#36acaa">--inspect</span><span class="token plain"> </span><span class="token string" style="color:#e3116c">&quot;</span><span class="token string variable" style="color:#36acaa">$GRANT_TOKEN</span><span class="token string" style="color:#e3116c">&quot;</span><br></div></code></pre></div></div>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="calling-it">Calling it<a href="#calling-it" class="hash-link" aria-label="Direct link to Calling it" title="Direct link to Calling it" translate="no">​</a></h2>
-<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token function" style="color:#d73a49">curl</span><span class="token plain"> </span><span class="token parameter variable" style="color:#36acaa">-X</span><span class="token plain"> POST https://your-app/api/external/grant/transaction </span><span class="token punctuation" style="color:#393A34">\</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token parameter variable" style="color:#36acaa">-H</span><span class="token plain"> </span><span class="token string" style="color:#e3116c">&quot;Authorization: Bearer </span><span class="token string variable" style="color:#36acaa">$GRANT_TOKEN</span><span class="token string" style="color:#e3116c">&quot;</span><span class="token plain"> </span><span class="token punctuation" style="color:#393A34">\</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token parameter variable" style="color:#36acaa">-H</span><span class="token plain"> </span><span class="token string" style="color:#e3116c">&quot;content-type: application/json&quot;</span><span class="token plain"> </span><span class="token punctuation" style="color:#393A34">\</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token parameter variable" style="color:#36acaa">-d</span><span class="token plain"> </span><span class="token string" style="color:#e3116c">&#x27;{&quot;amount&quot;:15000,&quot;category&quot;:&quot;Ăn sáng&quot;,&quot;merchant&quot;:&quot;bánh mì&quot;,&quot;clientId&quot;:&quot;&#x27;</span><span class="token plain">&quot;</span><span class="token variable" style="color:#36acaa">$(</span><span class="token variable" style="color:#36acaa">uuidgen</span><span class="token variable" style="color:#36acaa">)</span><span class="token string" style="color:#e3116c">&quot;&#x27;&quot;</span><span class="token punctuation" style="color:#393A34">}</span><span class="token plain">&#x27;</span><br></div></code></pre></div></div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+<!-- -->
+<p>The token is kept for this browser tab only and never written to disk. These
+pages are served from the app&#x27;s own origin behind the same lock, so the call
+above goes to the real endpoint with no proxy in between — which also means
+there is no sandbox. Open the curl panel if you would rather paste it into a
+terminal.</p>
+<p>&quot;reset, new clientId&quot; matters more than it looks: the id is the row&#x27;s primary
+key, so calling twice with the same one answers <code>ok</code> and writes nothing. Press
+it between two real filings or the second will look like it worked.</p>
 <table><thead><tr><th>Field</th><th></th></tr></thead><tbody><tr><td><code>amount</code></td><td>Required. Refused above the token&#x27;s limit</td></tr><tr><td><code>clientId</code></td><td>Required, a uuid. It becomes the row&#x27;s id, so sending the same one twice files once</td></tr><tr><td><code>category</code></td><td>Optional. Matched by name against your categories; the token&#x27;s default when absent</td></tr><tr><td><code>merchant</code></td><td>Optional. The one line the ledger shows</td></tr><tr><td><code>occurredOn</code></td><td>Optional. Your own logical day by default, so a purchase at 1am lands where your rollover puts it</td></tr></tbody></table>
 <p>Nothing names a user, an account or a person — those are in the token, which is
 what stops a caller writing into a different ledger or attributing a purchase
@@ -84,31 +63,6 @@ start of a transaction id. So you land on that row rather than on the month.</p>
 Wednesday&#x27;s lunch covered by the same person is Wednesday&#x27;s lunch, whether you
 typed it in the app first or the caller is sending it twice under new ids. The
 second attempt answers <strong>409 <code>already_recorded</code></strong> and writes nothing.</p>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 <table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td>Same day, same category, same payer</td><td>refused</td></tr><tr><td>Same day, different category</td><td>filed</td></tr><tr><td>Same day, same category, but you paid for it yourself</td><td>filed — an expense nobody covered is not the same row</td></tr><tr><td>Same <code>clientId</code> sent twice</td><td>filed once, answered <code>ok</code> both times</td></tr></tbody></table>
 <p>That last one is why the check skips the row it is about to write: a retry over
 a bad connection would otherwise find its own first attempt and refuse it.</p>
