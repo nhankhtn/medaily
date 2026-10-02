@@ -18,6 +18,27 @@ const SETTLE_MS = 800
 const FLOOR_MS = 60_000
 
 /**
+ * The same floor for a tab nobody is looking at, stretched.
+ *
+ * This used to be "never": the floor checked for a visible tab and did nothing
+ * otherwise, which is the right instinct — a forgotten tab polling every
+ * minute for the rest of the day is a cost nobody agreed to. But the tab title
+ * exists precisely for the window somebody is *not* looking at, so skipping it
+ * there left the one feature that needs it with no fallback at all, depending
+ * entirely on the doorbell.
+ *
+ * Three minutes is the compromise: a tab left open overnight asks twenty times
+ * an hour instead of sixty, and somebody who looks across at it after a few
+ * minutes away sees the right thing even where Firestore never reached them.
+ */
+const HIDDEN_FLOOR_MS = 180_000
+
+/** Whether enough has passed to ask again, given where the tab is. */
+export function floorDue({ hidden, since }: { hidden: boolean; since: number }): boolean {
+  return since >= (hidden ? HIDDEN_FLOOR_MS : FLOOR_MS)
+}
+
+/**
  * Keeps the unread badge current without anybody reloading.
  *
  * It listens to the doorbell of every room this person is in, rather than to a
@@ -44,9 +65,18 @@ export function UnreadWatch({ channels }: { channels: string[] }) {
     let stopped = false
     const stops: (() => void)[] = []
 
+    // Every path that asks goes through here, so the floor measures time since
+    // the last answer rather than since the last tick — a doorbell that just
+    // rang should not be followed by a poll a second later.
+    let asked = Date.now()
+    const refresh = () => {
+      asked = Date.now()
+      router.refresh()
+    }
+
     const ask = () => {
       if (settle.current) clearTimeout(settle.current)
-      settle.current = setTimeout(() => router.refresh(), SETTLE_MS)
+      settle.current = setTimeout(refresh, SETTLE_MS)
     }
 
     void pickRealtimeSignal().then((signal) => {
@@ -55,12 +85,13 @@ export function UnreadWatch({ channels }: { channels: string[] }) {
     })
 
     const floor = setInterval(() => {
-      if (document.visibilityState === 'visible') router.refresh()
+      const hidden = document.visibilityState !== 'visible'
+      if (floorDue({ hidden, since: Date.now() - asked })) refresh()
     }, FLOOR_MS)
 
     // Coming back to the tab is the most common way to have missed something.
     const onVisible = () => {
-      if (document.visibilityState === 'visible') router.refresh()
+      if (document.visibilityState === 'visible') refresh()
     }
     document.addEventListener('visibilitychange', onVisible)
 
