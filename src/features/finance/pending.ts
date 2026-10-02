@@ -15,4 +15,6 @@ export type PendingTransaction = {
   categoryId: string | null
   personId: string | null
   merchant: string | null
+  /** Held on the device for want of a network, rather than in flight. */
+  queued?: boolean
 }

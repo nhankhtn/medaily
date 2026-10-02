@@ -1,9 +1,9 @@
 'use client'
 
-import { AlertTriangle, Copy, Info, Loader2, Save, Trash2 } from 'lucide-react'
+import { Check, Copy, Info, Loader2, Moon, Save, Trash2 } from 'lucide-react'
 import { MarkdownField } from './markdown-field'
 import { useTranslations } from 'next-intl'
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,12 +11,20 @@ import { MinuteInput } from '@/components/ui/minute-input'
 import { ScaleInput } from '@/components/ui/scale-input'
 import { Stepper } from '@/components/ui/stepper'
 import type { ISODate } from '@/lib/dates'
+import type { LoggingStreak } from '@/lib/daily/trail'
 import type { CustomMetric } from '@/lib/db/schema'
 import type { EffectiveDailyLog } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { copyPreviousDay, deleteDay, saveDay, undoSaveDay } from '@/server/actions/daily'
 import type { MetricMedians } from '@/server/repositories/daily'
+import type { RunningTimer } from '@/server/services/timer'
 import { useShortcut } from '@/features/shortcuts/provider'
+import { useEffectiveTimer } from '@/features/timer/use-effective-timer'
+import { confettiFrom, haptic, isMilestone, rippleFrom } from './celebrate'
+import { DayBudget } from './day-budget'
+import { announceDayLogged, peekDayDirection, setDayDirection } from './day-events'
+import { DayProgress } from './day-progress'
+import { LiveTimer, liveFieldOf } from './live-timer'
 import { CustomFields, type CustomValues } from './custom-fields'
 import { Field, FormSection } from './section'
 import { queuePendingSave } from './pending-saves'
@@ -28,9 +36,21 @@ import {
   ESSENTIAL_FIELDS,
   REFLECTION_FIELDS,
   toPatch,
-  trackedHours,
   type DailyFormValues,
 } from './types'
+
+/** How long Undo stays on the toast (spec 6.3). */
+const UNDO_MS = 5000
+
+/** Sections rise in on the first visit only; changing day slides instead. */
+let entered = false
+
+/** Every field in the order it is drawn, so a copy fills them top to bottom. */
+const FIELD_ORDER: readonly (keyof DailyFormValues)[] = [
+  ...ESSENTIAL_FIELDS,
+  ...ACTIVITY_FIELDS,
+  ...REFLECTION_FIELDS,
+]
 
 export function DailyForm({
   date,
@@ -42,6 +62,9 @@ export function DailyForm({
   customMetrics,
   initialCustom,
   hiddenFields,
+  today,
+  streak,
+  timer,
 }: {
   date: ISODate
   initialValues: DailyFormValues
@@ -52,6 +75,9 @@ export function DailyForm({
   customMetrics: CustomMetric[]
   initialCustom: CustomValues
   hiddenFields: readonly string[]
+  today: ISODate
+  streak: LoggingStreak
+  timer: RunningTimer | null
 }) {
   const t = useTranslations('daily')
   const tc = useTranslations('common')
@@ -60,6 +86,32 @@ export function DailyForm({
   const [pending, startTransition] = useTransition()
   const [custom, setCustom] = useState<CustomValues>(initialCustom)
   const [savedAt, setSavedAt] = useState<number | null>(null)
+  const [justSaved, setJustSaved] = useState(0)
+  const saveButton = useRef<HTMLButtonElement>(null)
+  // Whether this day exists on the server right now, as far as this form knows.
+  const logged = useRef(existed)
+
+  const [entrance] = useState(() => {
+    const direction = peekDayDirection()
+    if (direction !== 0) return direction > 0 ? 'daily-slide-next' : 'daily-slide-prev'
+    return entered ? null : 'first'
+  })
+  useEffect(() => {
+    entered = true
+    setDayDirection(0)
+  }, [])
+
+  // Always the real run: passing null here would clear a mirror that is still going.
+  const run = useEffectiveTimer(timer)
+  const liveField = date === today ? liveFieldOf(run) : null
+  const live = (field: keyof DailyFormValues) =>
+    run && liveField === field ? <LiveTimer timer={run} /> : undefined
+
+  useEffect(() => {
+    if (!justSaved) return
+    const id = window.setTimeout(() => setJustSaved(0), 1600)
+    return () => window.clearTimeout(id)
+  }, [justSaved])
   const {
     restored,
     save: saveDraft,
@@ -107,6 +159,26 @@ export function DailyForm({
     [],
   )
 
+  const markLogged = useCallback(
+    (next: boolean) => {
+      logged.current = next
+      announceDayLogged(date, next)
+    },
+    [date],
+  )
+
+  /** The save landed: button settles, ripple, and confetti on a streak milestone. */
+  const celebrate = useCallback(() => {
+    const firstOfToday = date === today && !logged.current && streak.pendingToday
+    markLogged(true)
+    setJustSaved((n) => n + 1)
+    haptic()
+    const button = saveButton.current
+    if (!button) return
+    if (firstOfToday && isMilestone(streak.current + 1)) confettiFrom(button)
+    else rippleFrom(button)
+  }, [date, today, streak, markLogged])
+
   const submit = useCallback(() => {
     startTransition(async () => {
       const patch = toPatch(values)
@@ -132,6 +204,8 @@ export function DailyForm({
 
         clearDraft()
         setSavedAt(Date.now())
+        setJustSaved((n) => n + 1)
+        haptic()
         toast.success(t('offline.queued'))
         return
       }
@@ -143,8 +217,18 @@ export function DailyForm({
 
       clearDraft()
       setSavedAt(Date.now())
+      celebrate()
 
       toast.success(t('savedToast'), {
+        duration: UNDO_MS,
+        description: (
+          <span aria-hidden className="bg-surface-2 mt-1 block h-0.5 overflow-hidden rounded-full">
+            <span
+              className="daily-countdown bg-current block h-full opacity-60"
+              style={{ '--duration': `${UNDO_MS}ms` } as React.CSSProperties}
+            />
+          </span>
+        ),
         action: {
           label: tc('undo'),
           onClick: () => {
@@ -154,6 +238,7 @@ export function DailyForm({
                   ? ({ ...values, ...result.previous } as DailyFormValues)
                   : initialValues,
               )
+              if (!result.previous) markLogged(false)
             })
           },
         },
@@ -167,7 +252,7 @@ export function DailyForm({
     // closed over on the first render and every save posted `custom: {}`,
     // however many of your own activities you had filled in.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [date, values, custom, initialValues, clearDraft])
+  }, [date, values, custom, initialValues, clearDraft, celebrate, markLogged])
 
   useShortcut('save', submit)
 
@@ -208,6 +293,7 @@ export function DailyForm({
         return next
       })
       setCopied(filled)
+      haptic(8)
       toast.success(t('copiedFromYesterday', { date: previous.date }))
     })
   }
@@ -217,12 +303,13 @@ export function DailyForm({
       await deleteDay(date)
       setValues({ ...initialValues })
       clearDraft()
+      markLogged(false)
       toast.success(t('deletedToast'))
     })
   }
 
-  const hours = trackedHours(values)
-  const overBudget = hours > 20
+  const copyOrder = FIELD_ORDER.filter((field) => copied.has(field))
+  const copyIndex = (field: keyof DailyFormValues) => Math.max(0, copyOrder.indexOf(field))
   // Per kind: a deep-work session must not make the study field claim sessions.
   const studyFromSessions = (effective?.learningSessionCount ?? 0) > 0
   const deepWorkFromSessions = (effective?.executionSessionCount ?? 0) > 0
@@ -242,9 +329,18 @@ export function DailyForm({
   const activityFilled = countFilled(values, activity)
   const reflectionFilled = countFilled(values, reflection)
 
+  const rise = (i: number) =>
+    entrance === 'first'
+      ? { className: 'daily-rise', style: { '--i': i } as React.CSSProperties }
+      : {}
+
   return (
-    <div className="space-y-4 pb-28 md:pb-4">
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="pb-36 md:pb-4">
+      <div
+        data-daily-swipe
+        className={cn('space-y-4', entrance && entrance !== 'first' && entrance)}
+      >
+      <div className="flex flex-wrap items-center gap-2" {...rise(0)}>
         <Button variant="outline" size="sm" onClick={fillFromPrevious} disabled={pending}>
           <Copy className="size-4" />
           {t('copyYesterday')}
@@ -256,13 +352,15 @@ export function DailyForm({
           </Button>
         ) : null}
         {savedAt && !dirty ? (
-          <span className="text-good text-xs">{tc('saved')}</span>
+          <span key={savedAt} className="daily-pop text-good inline-block text-xs">
+            {tc('saved')}
+          </span>
         ) : dirty ? (
           <span className="text-text-subtle text-xs">•</span>
         ) : null}
       </div>
 
-      <div data-tour="daily-essentials">
+      <div data-tour="daily-essentials" {...rise(1)}>
         <FormSection
           title={t('sections.essentials')}
           filled={essentialsFilled}
@@ -272,6 +370,7 @@ export function DailyForm({
             label={t('fields.energy')}
             help={t('fields.energyHelp')}
             copied={copied.has('energy')}
+            copyIndex={copyIndex('energy')}
             off={off('energy')}
           >
             <ScaleInput
@@ -286,6 +385,7 @@ export function DailyForm({
             hint={medians.sleepHours ? t('medianHint', { value: medians.sleepHours }) : undefined}
             help={t('fields.sleepHelp')}
             copied={copied.has('sleepHours')}
+            copyIndex={copyIndex('sleepHours')}
             off={off('sleepHours')}
           >
             <Stepper
@@ -293,6 +393,7 @@ export function DailyForm({
               value={values.sleepHours}
               onChange={(value) => set('sleepHours', value)}
               suffix={tc('hoursShort')}
+              adornment={<SleepMoon hours={values.sleepHours} />}
             />
           </Field>
 
@@ -310,6 +411,8 @@ export function DailyForm({
             }
             help={t('fields.technicalStudyHelp')}
             copied={copied.has('technicalStudyMinutes')}
+            copyIndex={copyIndex('technicalStudyMinutes')}
+            badge={live('technicalStudyMinutes')}
             off={off('technicalStudyMinutes')}
           >
             <MinuteInput
@@ -335,6 +438,8 @@ export function DailyForm({
             }
             help={t('fields.deepWorkHelp')}
             copied={copied.has('deepWorkMinutes')}
+            copyIndex={copyIndex('deepWorkMinutes')}
+            badge={live('deepWorkMinutes')}
             off={off('deepWorkMinutes')}
           >
             <MinuteInput
@@ -357,6 +462,7 @@ export function DailyForm({
         </FormSection>
       </div>
 
+      <div {...rise(2)}>
       <FormSection
         title={t('sections.activity')}
         filled={activityFilled}
@@ -366,6 +472,8 @@ export function DailyForm({
         <Field
           label={t('fields.exercise')}
           copied={copied.has('exerciseMinutes')}
+            copyIndex={copyIndex('exerciseMinutes')}
+            badge={live('exerciseMinutes')}
           off={off('exerciseMinutes')}
         >
           <div className="space-y-2">
@@ -376,8 +484,11 @@ export function DailyForm({
               medianHint={medians.exerciseMinutes}
               onChange={(value) => set('exerciseMinutes', value)}
             />
-            {(values.exerciseMinutes ?? 0) > 0 ? (
-              <div className="space-y-2">
+            <div className="daily-drawer" data-open={(values.exerciseMinutes ?? 0) > 0}>
+              <div
+                className="space-y-2"
+                inert={(values.exerciseMinutes ?? 0) === 0}
+              >
                 <Input
                   value={values.exerciseType ?? ''}
                   placeholder={t('fields.exerciseTypePlaceholder')}
@@ -404,13 +515,15 @@ export function DailyForm({
                   </div>
                 ) : null}
               </div>
-            ) : null}
+            </div>
           </div>
         </Field>
 
         <Field
           label={t('fields.reading')}
           copied={copied.has('readingMinutes')}
+            copyIndex={copyIndex('readingMinutes')}
+            badge={live('readingMinutes')}
           off={off('readingMinutes')}
         >
           <div className="space-y-2">
@@ -443,6 +556,8 @@ export function DailyForm({
           label={t('fields.entertainment')}
           help={t('fields.entertainmentHelp')}
           copied={copied.has('entertainmentMinutes')}
+            copyIndex={copyIndex('entertainmentMinutes')}
+            badge={live('entertainmentMinutes')}
           off={off('entertainmentMinutes')}
         >
           <MinuteInput
@@ -456,6 +571,8 @@ export function DailyForm({
         <Field
           label={t('fields.english')}
           copied={copied.has('englishMinutes')}
+            copyIndex={copyIndex('englishMinutes')}
+            badge={live('englishMinutes')}
           off={off('englishMinutes')}
         >
           <MinuteInput
@@ -467,7 +584,8 @@ export function DailyForm({
           />
         </Field>
 
-        <Field label={t('fields.mood')} copied={copied.has('mood')} off={off('mood')}>
+        <Field label={t('fields.mood')} copied={copied.has('mood')}
+            copyIndex={copyIndex('mood')} off={off('mood')}>
           <ScaleInput
             name={t('fields.mood')}
             tone="good"
@@ -476,6 +594,7 @@ export function DailyForm({
           />
         </Field>
       </FormSection>
+      </div>
 
       <CustomFields
         metrics={customMetrics}
@@ -483,6 +602,7 @@ export function DailyForm({
         onChange={(id, value) => setCustom((prev) => ({ ...prev, [id]: value }))}
       />
 
+      <div {...rise(3)}>
       <FormSection
         title={t('sections.reflection')}
         filled={reflectionFilled}
@@ -492,6 +612,7 @@ export function DailyForm({
         <MarkdownField
           label={t('fields.dailyWin')}
           copied={copied.has('dailyWin')}
+            copyIndex={copyIndex('dailyWin')}
           off={off('dailyWin')}
           className="min-h-16"
           value={values.dailyWin}
@@ -501,6 +622,7 @@ export function DailyForm({
         <MarkdownField
           label={t('fields.dailyProblem')}
           copied={copied.has('dailyProblem')}
+            copyIndex={copyIndex('dailyProblem')}
           off={off('dailyProblem')}
           className="min-h-16"
           value={values.dailyProblem}
@@ -510,6 +632,7 @@ export function DailyForm({
         <MarkdownField
           label={t('fields.tomorrowPriority')}
           copied={copied.has('tomorrowPriority')}
+            copyIndex={copyIndex('tomorrowPriority')}
           off={off('tomorrowPriority')}
           className="min-h-16"
           value={values.tomorrowPriority}
@@ -519,27 +642,65 @@ export function DailyForm({
         <MarkdownField
           label={t('fields.note')}
           copied={copied.has('note')}
+            copyIndex={copyIndex('note')}
           off={off('note')}
           value={values.note}
           placeholder={t('fields.notePlaceholder')}
           onChange={(value) => set('note', value)}
         />
       </FormSection>
+      </div>
 
-      {overBudget ? (
-        <p className="bg-warn-soft text-warn flex items-start gap-2 rounded-[var(--radius)] p-3 text-sm">
-          <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-          {t('sanityWarning')}
-        </p>
-      ) : null}
+      <DayBudget values={values} />
+      </div>
 
-      {/* Sticky on mobile so Save is always in thumb reach (spec 22.3) */}
-      <div className="glass-chip fixed right-3 bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] left-3 z-20 rounded-[1.5rem] p-3 md:static md:inset-auto md:z-auto md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none">
-        <Button size="lg" className="w-full md:w-auto" onClick={submit} disabled={pending}>
-          {pending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-          {pending ? tc('saving') : t('saveDay')}
+      {/* Outside the animated wrapper: a transform there would carry this fixed footer with it. */}
+      <div className="glass-chip fixed right-3 bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] left-3 z-20 space-y-2.5 rounded-[1.5rem] p-3 md:static md:inset-auto md:z-auto md:mt-4 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none">
+        <DayProgress
+          filled={essentialsFilled + activityFilled + reflectionFilled}
+          total={essentials.length + activity.length + reflection.length}
+          essentialsDone={essentials.length > 0 && essentialsFilled === essentials.length}
+        />
+        <Button
+          ref={saveButton}
+          size="lg"
+          className={cn('w-full md:w-auto', justSaved > 0 && 'bg-good hover:bg-good')}
+          onClick={submit}
+          disabled={pending}
+        >
+          {/* Keyed on the inside, so the replayed animation never costs the button its focus. */}
+          <span
+            key={justSaved}
+            className={cn('inline-flex items-center gap-2', justSaved > 0 && 'daily-save-done')}
+          >
+            {pending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : justSaved ? (
+              <Check className="daily-pop size-4" />
+            ) : (
+              <Save className="size-4" />
+            )}
+            {pending ? tc('saving') : justSaved ? tc('saved') : t('saveDay')}
+          </span>
         </Button>
       </div>
     </div>
+  )
+}
+
+/** Droops under six hours, glows from seven to nine. */
+function SleepMoon({ hours }: { hours: number | null }) {
+  const rested = hours !== null && hours >= 7 && hours <= 9
+  const short = hours !== null && hours < 6
+  return (
+    <Moon
+      aria-hidden
+      className={cn(
+        'size-4 transition-[transform,color,opacity] duration-500',
+        rested && 'text-accent fill-accent/30 drop-shadow-[0_0_6px_var(--accent)]',
+        short && 'text-text-subtle translate-y-0.5 rotate-[-35deg] opacity-60',
+        !rested && !short && 'text-text-subtle',
+      )}
+    />
   )
 }

@@ -42,6 +42,8 @@ export const FORMATS = {
     weekdayDay: { weekday: 'short', day: 'numeric' },
     /** Sun — a column head. */
     weekday: { weekday: 'short' },
+    /** Sunday — a greeting that is about today. */
+    weekdayLong: { weekday: 'long' },
     /** S — a mini calendar. */
     weekdayNarrow: { weekday: 'narrow' },
     /** 09:30. */

@@ -10,6 +10,7 @@ import { Input, Textarea } from '@/components/ui/input'
 import { MoneyInput } from '@/components/ui/money-input'
 import { Select } from '@/components/ui/select'
 import { AccountIcon } from '@/features/finance/account-icon'
+import { HoldButton } from '@/features/finance/hold-button'
 import { Field } from '@/features/projects/project-dialog'
 import type { FinanceCategory } from '@/lib/db/schema'
 import type { ISODate } from '@/lib/dates'
@@ -232,16 +233,19 @@ export function AccountEditDialog({
             />
           </Field>
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <Button
-              type="button"
+            {/* Held rather than tapped: nothing undoes this. */}
+            <HoldButton
               variant="danger"
               className="mr-auto"
               disabled={removing || pending}
-              onClick={remove}
+              onConfirm={remove}
+              confirmText={t('hold.confirmAccount', { name: account.name })}
+              hint={t('hold.hint')}
+              holding={t('hold.holding')}
             >
               <Trash2 className="size-4" />
               {t('removeAccount')}
-            </Button>
+            </HoldButton>
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
               {tc('cancel')}
             </Button>
@@ -339,16 +343,18 @@ export function CategoryDialog({ category }: { category?: FinanceCategory }) {
           </Field>
           <div className="flex flex-wrap items-center justify-end gap-2">
             {editing ? (
-              <Button
-                type="button"
+              <HoldButton
                 variant="danger"
                 className="mr-auto"
                 disabled={pending || removing}
-                onClick={remove}
+                onConfirm={remove}
+                confirmText={t('hold.confirmCategory', { name: category?.name ?? '' })}
+                hint={t('hold.hint')}
+                holding={t('hold.holding')}
               >
                 <Trash2 className="size-4" />
                 {t('removeCategory')}
-              </Button>
+              </HoldButton>
             ) : null}
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
               {tc('cancel')}

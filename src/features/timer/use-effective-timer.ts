@@ -62,7 +62,15 @@ export function useEffectiveTimer(serverTimer: RunningTimer | null): RunningTime
     }
 
     void refresh()
-    return subscribeLocalRun(() => void refresh())
+    const stop = subscribeLocalRun(() => void refresh())
+
+    // `cancelled` was read in both branches above and never set, so a refresh
+    // still in flight when this effect was torn down went on to write state
+    // for a timer nobody is showing.
+    return () => {
+      cancelled = true
+      stop()
+    }
   }, [serverTimer])
 
   if (!ready) return serverTimer

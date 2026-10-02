@@ -37,6 +37,13 @@ export const PATHS = {
   health: '/health',
   finance: '/finance',
   /**
+   * The ledger with the search box already filled in. The six characters are
+   * the same reference a transfer note carries, which the ledger search
+   * already matches against the start of an id — so one convention, whether it
+   * came back from a bank statement or from a notification.
+   */
+  financeSearch: (query: string) => `/finance?q=${encodeURIComponent(query)}`,
+  /**
    * The finance page on one of its tabs; `overview` is the plain address. The
    * report carries the stretch it is reporting on — `2026-09` or `2026` — so
    * a period can be linked to and the back button returns to the last one.
@@ -116,6 +123,9 @@ export const PATHS = {
     cronNightly: '/api/cron/nightly',
     cronReminders: '/api/cron/reminders',
     googleAuth: '/api/auth/google',
+    // Under `external` because the caller is not this app's own browser: it
+    // carries a capability token rather than a session cookie.
+    externalGrantTransaction: '/api/external/grant/transaction',
     calendarIcs: '/api/calendar.ics',
     exportJson: '/api/export?format=json',
     exportCsv: (table: string) => `/api/export?format=csv&table=${table}`,
@@ -188,6 +198,8 @@ export const PUBLIC_PATHS = [
   // Same reason as the nightly run, and the same secret.
   PATHS.api.cronReminders,
   PATHS.api.googleAuth,
+  // Carries its own token; a browser session is not what calls it.
+  PATHS.api.externalGrantTransaction,
   PATHS.manifest,
   PATHS.robots,
   PATHS.legalRoot,

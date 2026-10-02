@@ -1,0 +1,150 @@
+---
+title: Letting someone file an expense
+description: One token, one person, one thing they may do — how to mint it, what it allows, and how to take it back.
+sidebar_position: 4
+---
+
+import ApiTry from '@site/src/components/ApiTry'
+
+# Letting someone file an expense
+
+Somebody buys you breakfast. You want a 15,000₫ expense in your ledger,
+categorised, with them recorded as the person who covered it — without giving
+them an account, a password, or sight of anything you have written.
+
+`POST /api/external/grant/transaction` does that and nothing else.
+
+`external` in the path is the honest label: everything else under `/api/` is
+this app's own browser talking to its own server with a session cookie, and
+this is somebody else's curl carrying a token.
+
+## What it writes
+
+An **expense** with `payee_person_id` set to that contact and `transferred_at`
+left null. That is the column the "pay back whoever covered the bill" screen
+reads, so the amount shows up as still owed and settles when you say it has.
+
+It is deliberately **not** `person_id`. That column is a debt — money leaving is
+you *lending* — and debts are excluded from spending totals. Filing breakfast
+there would keep the ledger balanced and quietly drop 15,000₫ out of the
+month's report.
+
+## Minting a token
+
+```bash
+tsx scripts/grant-token.ts \
+  --email you@example.com \
+  --person "A" \
+  --account "Ví tiền mặt" \
+  --category "Ăn sáng" \
+  --max 200000 \
+  --days 365
+```
+
+Names, not ids — and they are resolved against your database as the token is
+minted. A contact who is not in your contacts, an account spelled two ways, a
+category nobody has: all of them fail here, in front of you, rather than at the
+moment the other person tries to use it. The script prints what it resolved
+before it prints the token, so you can read it back.
+
+Put the result in `GRANT_TOKEN` and redeploy.
+
+To read an existing one:
+
+```bash
+tsx scripts/grant-token.ts --inspect "$GRANT_TOKEN"
+```
+
+## Calling it
+
+<ApiTry
+  method="POST"
+  path="/api/external/grant/transaction"
+  bearer
+  warning="This files a real expense in the live ledger."
+  body={{
+    amount: 15000,
+    category: 'Ăn sáng',
+    merchant: 'bánh mì',
+    clientId: '',
+  }}
+/>
+
+The token is kept for this browser tab only and never written to disk. These
+pages are served from the app's own origin behind the same lock, so the call
+above goes to the real endpoint with no proxy in between — which also means
+there is no sandbox. Open the curl panel if you would rather paste it into a
+terminal.
+
+"reset, new clientId" matters more than it looks: the id is the row's primary
+key, so calling twice with the same one answers `ok` and writes nothing. Press
+it between two real filings or the second will look like it worked.
+
+| Field | |
+| --- | --- |
+| `amount` | Required. Refused above the token's limit |
+| `clientId` | Required, a uuid. It becomes the row's id, so sending the same one twice files once |
+| `category` | Optional. Matched by name against your categories; the token's default when absent |
+| `merchant` | Optional. The one line the ledger shows |
+| `occurredOn` | Optional. Your own logical day by default, so a purchase at 1am lands where your rollover puts it |
+
+Nothing names a user, an account or a person — those are in the token, which is
+what stops a caller writing into a different ledger or attributing a purchase
+to somebody else.
+
+A named category that does not exist is **refused**, not created. An endpoint
+that invents categories fills the ledger with near-duplicates nobody chose, and
+you are not there to notice.
+
+You get a notification when something is filed. Tapping it opens the ledger
+with the search already filled in — `/finance?q=<six characters>`, the same
+reference a transfer note carries, which the ledger search matches against the
+start of a transaction id. So you land on that row rather than on the month.
+
+## One meal, filed once
+
+`(date, category, payer)` is what this endpoint treats as the same expense.
+Wednesday's lunch covered by the same person is Wednesday's lunch, whether you
+typed it in the app first or the caller is sending it twice under new ids. The
+second attempt answers **409 `already_recorded`** and writes nothing.
+
+| | |
+| --- | --- |
+| Same day, same category, same payer | refused |
+| Same day, different category | filed |
+| Same day, same category, but you paid for it yourself | filed — an expense nobody covered is not the same row |
+| Same `clientId` sent twice | filed once, answered `ok` both times |
+
+That last one is why the check skips the row it is about to write: a retry over
+a bad connection would otherwise find its own first attempt and refuse it.
+
+**Not a unique index.** The rule is not true of the ledger generally — two
+coffees from the same person on one afternoon are two rows, and you have to be
+able to enter both. It is a rule about this one endpoint, enforced where this
+endpoint writes. A caller racing itself with two simultaneous requests could
+still slip two through; one person with curl is not that, and a constraint that
+stopped it would stop you as well.
+
+## Taking it back
+
+Change `GRANT_TOKEN` and redeploy. There is no second place to look.
+
+**Rotating `AUTH_SECRET` also invalidates it**, because the key that opens the
+token is derived from it. That is the right behaviour — rotating the app's
+secret should end every capability issued under it — but it is worth knowing
+before it happens, because the endpoint simply starts answering 401.
+
+## What the token holds
+
+Encrypted, not merely signed: the claims are a user id, an account id and a
+person id — plumbing the holder has no reason to carry, and a signed token
+hands them to anyone who pastes it into a decoder.
+
+It also carries a `jti` that nothing reads today. It is there so a revocation
+list can be added later without changing the token format.
+
+## What this is not
+
+One token, in one environment variable. Two people means either sharing one
+token — which makes "who filed this" unanswerable — or a table, a UI and real
+revocation. That is a different piece of work, and `jti` is the hook for it.

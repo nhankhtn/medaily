@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers'
 import { getLocale, getTranslations } from 'next-intl/server'
-import { EmptyState, PageHeader, StatRow, TabNav } from '@/components/ui/page'
+import { EmptyState, PageHeader, TabNav } from '@/components/ui/page'
 import { BalanceHistory } from '@/features/finance/balance-history'
 import {
   AccountsBoard,
@@ -11,6 +11,7 @@ import {
 } from '@/features/finance/boards'
 import { BudgetPanel } from '@/features/finance/budget-panel'
 import { AccountDialog } from '@/features/finance/finance-dialogs'
+import { FinanceStats } from '@/features/finance/finance-stats'
 import { getBalanceHistory } from '@/server/services/balance-history'
 import { getBudgetMonth } from '@/server/services/budgets'
 import { LedgerView } from '@/features/finance/ledger-view'
@@ -30,7 +31,7 @@ function tabFrom(value: string | undefined): FinanceTab {
 export default async function FinancePage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; period?: string }>
+  searchParams: Promise<{ tab?: string; period?: string; q?: string }>
 }) {
   const [params, t] = await Promise.all([searchParams, getTranslations('finance')])
   const tab = tabFrom(params.tab)
@@ -111,7 +112,7 @@ export default async function FinancePage({
     <div className="space-y-4">
       {header}
       {nav}
-      <StatRow
+      <FinanceStats
         items={[
           { label: t('netWorth'), value: money(data.totals.netWorth) },
           { label: t('cash'), value: money(data.totals.cash) },
@@ -134,7 +135,11 @@ export default async function FinancePage({
         />
       ) : (
         // What the last visit measured; a first visit may correct itself once.
-        <LedgerView data={data} initialDesktop={isDesktopCookie(jar.get(VIEWPORT_COOKIE)?.value)} />
+        <LedgerView
+          data={data}
+          initialDesktop={isDesktopCookie(jar.get(VIEWPORT_COOKIE)?.value)}
+          initialSearch={params.q}
+        />
       )}
     </div>
   )

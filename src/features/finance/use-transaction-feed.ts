@@ -57,9 +57,12 @@ const SEARCH_DELAY = 300
 export function useTransactionFeed({
   initialPage,
   categories,
+  initialSearch,
 }: {
   initialPage: TransactionPage
   categories: FinanceCategory[]
+  /** Seeds the search box — `/finance?q=…`, which a notification links to. */
+  initialSearch?: string
 }) {
   const [pending, addPending] = useOptimistic<PendingTransaction[], PendingTransaction>(
     [],
@@ -67,7 +70,9 @@ export function useTransactionFeed({
   )
   const queued = useQueuedTransactions()
 
-  const [filters, setFilters] = useState<LedgerFilters>(NO_FILTERS)
+  const [filters, setFilters] = useState<LedgerFilters>(
+    initialSearch ? { ...NO_FILTERS, search: initialSearch } : NO_FILTERS,
+  )
 
   /** One setter for five fields, so a new filter is a key rather than a pair of hooks. */
   const setFilter = useCallback(
@@ -188,6 +193,7 @@ export function useTransactionFeed({
     categoryId: entry.categoryId,
     personId: entry.personId,
     merchant: entry.merchant,
+    queued: true,
   }))
 
   const queuedKeys = new Set(queuedRows.map((row) => row.key))

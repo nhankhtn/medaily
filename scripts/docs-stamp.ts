@@ -18,8 +18,10 @@ import { join, relative } from 'node:path'
 const SOURCE_DIR = 'docs'
 const STAMP = 'public/docs/.sources.json'
 
-// `_category_.json` sets sidebar labels, so it is a source too. `site/` is the renderer.
-const isSource = (name: string) => name.endsWith('.md') || name === '_category_.json'
+// `_category_.json` sets sidebar labels, so it is a source too, and `.mdx` is
+// a page that embeds a component. `site/` is the renderer.
+const isSource = (name: string) =>
+  name.endsWith('.md') || name.endsWith('.mdx') || name === '_category_.json'
 const SKIPPED_DIRS = new Set(['site', 'node_modules'])
 
 export function stampOf(dir = SOURCE_DIR): Record<string, string> {

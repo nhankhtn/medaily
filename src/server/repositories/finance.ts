@@ -1,4 +1,4 @@
-import { and, asc, between, desc, eq, gte, inArray, isNotNull, isNull, lt, lte, or, sql } from 'drizzle-orm'
+import { and, asc, between, desc, eq, gte, inArray, isNotNull, isNull, lt, lte, ne, or, sql } from 'drizzle-orm'
 import { db, type DbOrTx } from '@/lib/db'
 import { escapeLike } from '@/lib/text'
 import {
@@ -486,6 +486,52 @@ export async function findTransactionsPage(
  * Returns null when the row already existed, so a caller can tell "saved" from
  * "was already saved" rather than guessing.
  */
+/**
+ * The expense already standing for that day, category and payer.
+ *
+ * Those three are what the granted endpoint treats as one meal: a second
+ * filing of Wednesday's lunch covered by the same person is the same lunch,
+ * whether the owner typed it or the grant did.
+ *
+ * Not a unique index, because it is not true of the ledger generally — two
+ * coffees from the same person on one afternoon are two rows, and the owner
+ * must be able to enter both. It is a rule about one endpoint, enforced where
+ * that endpoint writes.
+ *
+ * `exceptId` is the row the caller is about to write: without it a retry that
+ * carries the same id would find its own first attempt and report a clash with
+ * itself.
+ */
+export async function findExpenseOn(
+  userId: string,
+  occurredOn: ISODate,
+  categoryId: string | null,
+  payeePersonId: string | null,
+  exceptId?: string,
+): Promise<Transaction | null> {
+  const rows = await db
+    .select()
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.userId, userId),
+        eq(transactions.occurredOn, occurredOn),
+        eq(transactions.kind, 'expense'),
+        categoryId === null
+          ? isNull(transactions.categoryId)
+          : eq(transactions.categoryId, categoryId),
+        payeePersonId === null
+          ? isNull(transactions.payeePersonId)
+          : eq(transactions.payeePersonId, payeePersonId),
+        exceptId ? ne(transactions.id, exceptId) : undefined,
+      ),
+    )
+    // Total by the primary key, so two runs agree on which one it reports.
+    .orderBy(asc(transactions.createdAt), asc(transactions.id))
+    .limit(1)
+  return rows[0] ?? null
+}
+
 export async function insertTransaction(
   values: typeof transactions.$inferInsert,
 ): Promise<Transaction | null> {

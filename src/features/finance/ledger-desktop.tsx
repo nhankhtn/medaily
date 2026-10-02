@@ -1,13 +1,13 @@
 'use client'
 
-import { FilterX } from 'lucide-react'
+import { FilterX, Plus } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Card, CardBody, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import type { FinanceData } from '@/server/services/finance'
-import { TransactionForm } from './transaction-form'
+import { focusAmount, TransactionForm } from './transaction-form'
 import { TransactionList } from './transaction-list'
 import { useTransactionFeed } from './use-transaction-feed'
 
@@ -20,12 +20,19 @@ import { useTransactionFeed } from './use-transaction-feed'
  * width, and one file per layout is one file to read. What they must not
  * disagree about is behaviour, which is why both drive `useTransactionFeed`.
  */
-export function LedgerDesktop({ data }: { data: FinanceData }) {
+export function LedgerDesktop({
+  data,
+  initialSearch,
+}: {
+  data: FinanceData
+  initialSearch?: string
+}) {
   const t = useTranslations('finance')
   const tc = useTranslations('common')
   const { filters, setFilter, clearFilters, filtering, rows, addPending } = useTransactionFeed({
     initialPage: data.transactionsPage,
     categories: data.categories,
+    initialSearch,
   })
   // `type` travels with the name: the transfer sheet opens the app behind
   // the account the money leaves, and that is the only thing that says which.
@@ -155,7 +162,21 @@ export function LedgerDesktop({ data }: { data: FinanceData }) {
               accounts={names}
               people={data.people}
               currency={data.currency}
-              emptyLabel={filtering ? t('noMatchingTransactions') : t('noTransactions')}
+              emptyLabel={filtering ? t('emptyFiltered') : t('emptyLedger')}
+              emptyAction={
+                filtering ? (
+                  <Button type="button" variant="outline" onClick={clearFilters}>
+                    <FilterX className="size-4" />
+                    {t('clearFilters')}
+                  </Button>
+                ) : (
+                  <Button type="button" onClick={focusAmount}>
+                    <Plus className="size-4" />
+                    {t('emptyLedgerAction')}
+                  </Button>
+                )
+              }
+              today={data.today}
               loadingMore={rows.loadingMore}
               hasMore={rows.hasMore}
               onLoadMore={rows.loadMore}

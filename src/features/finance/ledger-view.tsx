@@ -21,9 +21,12 @@ import { LedgerMobile } from './ledger-mobile'
 export function LedgerView({
   data,
   initialDesktop,
+  initialSearch,
 }: {
   data: FinanceData
   initialDesktop: boolean
+  /** `/finance?q=…` — a notification linking at one row rather than the month. */
+  initialSearch?: string
 }) {
   const desktop = useMediaQuery(DESKTOP_QUERY, initialDesktop)
 
@@ -32,5 +35,9 @@ export function LedgerView({
     document.cookie = `${VIEWPORT_COOKIE}=${viewportCookieValue(desktop)}; path=/; max-age=31536000; samesite=lax`
   }, [desktop])
 
-  return desktop ? <LedgerDesktop data={data} /> : <LedgerMobile data={data} />
+  return desktop ? (
+    <LedgerDesktop data={data} initialSearch={initialSearch} />
+  ) : (
+    <LedgerMobile data={data} initialSearch={initialSearch} />
+  )
 }

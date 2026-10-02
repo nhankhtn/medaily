@@ -1,7 +1,8 @@
 'use client'
 
+import { Check, Cloud } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { drainPending, queuePending } from '@/lib/offline/drain'
 import { DAILY_STORE, indexedDbStore } from '@/lib/offline/indexeddb-store'
@@ -14,6 +15,10 @@ import { saveDay } from '@/server/actions/daily'
  * it is writing to. Swapping IndexedDB for something else is this line.
  */
 let store: PendingStore<PendingSave> | null = null
+
+/** Days held on this device, for the chip; told whenever the queue changes. */
+const listeners = new Set<() => void>()
+const changed = () => listeners.forEach((listener) => listener())
 
 /** The daily queue is addressed by the day it holds. */
 const byDate = (entry: PendingSave) => entry.date
@@ -29,8 +34,9 @@ function pendingStore(): PendingStore<PendingSave> {
  * Rejects when the device will not hold it — the caller has to say so rather
  * than let the toast promise something that did not happen.
  */
-export function queuePendingSave(entry: Omit<PendingSave, 'queuedAt'>): Promise<void> {
-  return queuePending(pendingStore(), entry)
+export async function queuePendingSave(entry: Omit<PendingSave, 'queuedAt'>): Promise<void> {
+  await queuePending(pendingStore(), entry)
+  changed()
 }
 
 /** Sign-out: an unsent day belongs to the session that wrote it, not the next one. */
@@ -76,6 +82,7 @@ export function PendingSaves() {
       )
 
       if (sent > 0) toast.success(t('offline.synced', { count: sent }))
+      changed()
     } catch (error) {
       // The store itself is unreadable — private mode, a locked-down browser.
       // Nothing to tell the user here: their save already reported itself.
@@ -93,5 +100,62 @@ export function PendingSaves() {
     return () => window.removeEventListener('online', onOnline)
   }, [drain])
 
-  return null
+  return <OfflineChip />
+}
+
+type ChipState = { kind: 'idle' } | { kind: 'waiting'; count: number } | { kind: 'synced' }
+
+/** A cloud while days wait on the device; a tick, briefly, once they are up. */
+function OfflineChip() {
+  const t = useTranslations('daily.offline')
+  const [state, setState] = useState<ChipState>({ kind: 'idle' })
+
+  useEffect(() => {
+    let hide: number | undefined
+    const refresh = async () => {
+      let count = 0
+      try {
+        count = (await pendingStore().list()).length
+      } catch {
+        return
+      }
+      setState((prev) => {
+        if (count > 0) return { kind: 'waiting', count }
+        if (prev.kind !== 'waiting') return prev
+        window.clearTimeout(hide)
+        hide = window.setTimeout(() => setState({ kind: 'idle' }), 1800)
+        return { kind: 'synced' }
+      })
+    }
+    listeners.add(refresh)
+    void refresh()
+    return () => {
+      listeners.delete(refresh)
+      window.clearTimeout(hide)
+    }
+  }, [])
+
+  if (state.kind === 'idle') return null
+
+  return (
+    <div
+      role="status"
+      className="glass-chip daily-pop fixed top-[calc(env(safe-area-inset-top,0px)+4.25rem)] left-1/2 z-30 flex h-8 -translate-x-1/2 items-center gap-1.5 rounded-full px-3 text-xs font-medium"
+    >
+      {state.kind === 'waiting' ? (
+        <>
+          <span className="relative">
+            <Cloud className="text-text-muted size-4" />
+            <span className="bg-warn daily-live absolute -top-0.5 -right-0.5 size-1.5 rounded-full" />
+          </span>
+          {t('waiting', { count: state.count })}
+        </>
+      ) : (
+        <>
+          <Check className="daily-pop text-good size-4" />
+          {t('upToDate')}
+        </>
+      )}
+    </div>
+  )
 }

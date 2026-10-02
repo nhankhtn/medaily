@@ -2,12 +2,13 @@
 
 import { Languages } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
-import { useTransition } from 'react'
+import { useState, useTransition } from 'react'
+import { SegmentedSwitch } from '@/components/ui/segmented-switch'
 import { LOCALES, type Locale } from '@/i18n/config'
 import { setLocale } from '@/server/actions/settings'
 import { cn } from '@/lib/utils'
 
-/** Instant switch, no reload, no lost form state (spec 21). */
+/** Instant switch, no reload, no lost form state (spec 21). Tap or drag the thumb. */
 export function LocaleSwitcher({
   compact = false,
   className,
@@ -18,35 +19,24 @@ export function LocaleSwitcher({
   const active = useLocale() as Locale
   const t = useTranslations('common')
   const [pending, startTransition] = useTransition()
+  // The locale only changes once the action revalidates; the thumb follows the choice now.
+  const [picked, setPicked] = useState(active)
 
   return (
-    <div
-      className={cn(
-        'glass flex items-center gap-1 rounded-full p-0.5',
-        className,
-      )}
-      role="group"
-      aria-label={t('language')}
-    >
-      {compact ? <Languages className="ml-1.5 size-3.5 text-text-subtle" aria-hidden /> : null}
-      {LOCALES.map((locale) => (
-        <button
-          key={locale}
-          type="button"
-          disabled={pending}
-          aria-pressed={active === locale}
-          onClick={() => startTransition(() => setLocale(locale))}
-          className={cn(
-            'rounded-full px-2.5 py-1 text-xs font-semibold uppercase transition-colors',
-            active === locale
-              ? 'bg-surface text-text shadow-[var(--shadow-card)]'
-              : 'text-text-subtle hover:text-text',
-            pending && 'opacity-60',
-          )}
-        >
-          {locale}
-        </button>
-      ))}
-    </div>
+    <SegmentedSwitch
+      options={LOCALES.map((locale) => ({ value: locale, label: locale }))}
+      value={pending ? picked : active}
+      onChange={(locale) => {
+        setPicked(locale)
+        startTransition(() => setLocale(locale))
+      }}
+      ariaLabel={t('language')}
+      disabled={pending}
+      leading={
+        compact ? <Languages className="text-text-subtle ml-1.5 size-3.5" aria-hidden /> : null
+      }
+      className={cn(pending && 'opacity-80', className)}
+      itemClassName="px-2.5 py-1 text-xs font-semibold uppercase"
+    />
   )
 }

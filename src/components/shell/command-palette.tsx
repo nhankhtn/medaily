@@ -18,7 +18,15 @@ import {
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from 'react'
 import { toast } from 'sonner'
 import { isISODate, type ISODate } from '@/lib/dates'
 import { formatDate } from '@/lib/format/dates'
@@ -124,6 +132,12 @@ export function CommandPalette({ today }: { today: ISODate }) {
   const [pending, startTransition] = useTransition()
   const inputRef = useRef<HTMLInputElement>(null)
   const activeRef = useRef<HTMLButtonElement>(null)
+  const listRef = useRef<HTMLUListElement>(null)
+  const highlightRef = useRef<HTMLLIElement>(null)
+  // Stays true for the length of the exit animation after `open` goes false.
+  const [shown, setShown] = useState(open)
+  if (open && !shown) setShown(true)
+  const leaving = shown && !open
   // On a phone the list would otherwise run on underneath the keyboard.
   const keyboard = useKeyboardInset()
 
@@ -256,6 +270,38 @@ export function CommandPalette({ today }: { today: ISODate }) {
     activeRef.current?.scrollIntoView({ block: 'nearest' })
   }, [active])
 
+  useEffect(() => {
+    if (!leaving) return
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const timer = window.setTimeout(() => setShown(false), reduced ? 0 : 150)
+    return () => window.clearTimeout(timer)
+  }, [leaving])
+
+  // One highlight that slides to the active row, instead of each row painting its own.
+  useLayoutEffect(() => {
+    const highlight = highlightRef.current
+    if (!highlight) return
+    const row = activeRef.current
+    if (!row) {
+      highlight.style.opacity = '0'
+      return
+    }
+    // Layout offsets, not rects: a row still rising in would hand back its animated position.
+    let top = 0
+    for (let node: HTMLElement | null = row; node && node !== listRef.current; ) {
+      top += node.offsetTop
+      node = node.offsetParent as HTMLElement | null
+    }
+    highlight.style.opacity = '1'
+    highlight.style.transform = `translateY(${top}px) scaleY(${row.offsetHeight / 40})`
+    // The first placement jumps; only later moves slide.
+    if (!highlight.dataset.ready) {
+      requestAnimationFrame(() => {
+        highlight.dataset.ready = 'true'
+      })
+    }
+  }, [active, items, shown])
+
   const trigger = (
     <button
       type="button"
@@ -271,7 +317,7 @@ export function CommandPalette({ today }: { today: ISODate }) {
     </button>
   )
 
-  if (!open) return trigger
+  if (!shown) return trigger
 
   /**
    * The header is `sticky` with a backdrop filter, which makes it a stacking
@@ -284,12 +330,27 @@ export function CommandPalette({ today }: { today: ISODate }) {
       {trigger}
       {createPortal(
         <div
-          className="fixed inset-0 z-[60] flex items-start justify-center bg-overlay/80 p-4 pt-[max(7dvh,calc(env(safe-area-inset-top,0px)+1rem))] pr-[max(1rem,env(safe-area-inset-right,0px))] pl-[max(1rem,env(safe-area-inset-left,0px))]"
+          className={cn(
+            'fixed inset-0 z-[60] flex items-start justify-center p-4 pt-[max(7dvh,calc(env(safe-area-inset-top,0px)+1rem))] pr-[max(1rem,env(safe-area-inset-right,0px))] pl-[max(1rem,env(safe-area-inset-left,0px))]',
+            leaving && 'pointer-events-none',
+          )}
           onClick={() => setOpen(false)}
           role="presentation"
+          inert={leaving}
         >
+          {/* The dim fades on a sibling: opacity on the panel's parent would stop its blur reaching the page. */}
           <div
-            className="glass-strong flex max-h-[calc(80dvh-var(--keyboard-inset))] w-full max-w-lg flex-col overflow-hidden rounded-[var(--radius)]"
+            aria-hidden
+            className={cn(
+              'bg-overlay/80 absolute inset-0',
+              leaving ? 'ui-fade-out' : 'ui-fade-in',
+            )}
+          />
+          <div
+            className={cn(
+              'glass-strong relative flex max-h-[calc(80dvh-var(--keyboard-inset))] w-full max-w-lg flex-col overflow-hidden rounded-[var(--radius)]',
+              leaving ? 'ui-palette-out' : 'ui-palette-in',
+            )}
             style={{ '--keyboard-inset': `${keyboard}px` } as React.CSSProperties}
             onClick={(event) => event.stopPropagation()}
             role="dialog"
@@ -327,16 +388,26 @@ export function CommandPalette({ today }: { today: ISODate }) {
             </div>
 
             <ul
-              className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-1"
+              ref={listRef}
+              className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain py-1"
               aria-busy={searching}
             >
+              <li
+                ref={highlightRef}
+                aria-hidden
+                className="ui-palette-highlight bg-accent-soft pointer-events-none absolute inset-x-0 top-0 h-10 origin-top opacity-0"
+              />
               {items.map((command, index) => {
                 const Icon = command.icon
                 // One heading, above the first row that came out of the database.
                 const opensGroup = command.type === 'hit' && items[index - 1]?.type !== 'hit'
 
                 return (
-                  <li key={command.id}>
+                  <li
+                    key={command.id}
+                    className="ui-rise"
+                    style={{ '--i': Math.min(index, 8) } as React.CSSProperties}
+                  >
                     {opensGroup ? (
                       <p className="text-text-subtle px-4 pt-3 pb-1 text-[11px] font-medium tracking-wide uppercase">
                         {t('inYourData')}
@@ -349,8 +420,8 @@ export function CommandPalette({ today }: { today: ISODate }) {
                       onMouseEnter={() => setActive(index)}
                       onClick={() => run(command)}
                       className={cn(
-                        'flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm',
-                        index === active ? 'bg-accent-soft text-text' : 'text-text-muted',
+                        'relative flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors',
+                        index === active ? 'text-text' : 'text-text-muted',
                       )}
                     >
                       <Icon
@@ -389,7 +460,15 @@ export function CommandPalette({ today }: { today: ISODate }) {
                   {t('nothingInData', { query: query.trim() })}
                 </li>
               ) : !searching && items.length === 0 ? (
-                <li className="text-text-subtle px-4 py-3 text-sm">{t('noResults')}</li>
+                <li className="ui-rise px-4 py-8 text-center">
+                  <span aria-hidden className="ui-float inline-block text-3xl leading-none">
+                    🔭
+                  </span>
+                  <p className="text-text mt-3 text-sm font-medium">{t('noResults')}</p>
+                  <p className="text-text-subtle mx-auto mt-1 max-w-xs text-xs">
+                    {t('noResultsHint')}
+                  </p>
+                </li>
               ) : null}
             </ul>
           </div>

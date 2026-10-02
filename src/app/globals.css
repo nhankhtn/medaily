@@ -1066,3 +1066,744 @@ input[type='number'] {
   animation: chat-wave 0.35s ease-in-out 2;
   transform-origin: 70% 80%;
 }
+
+/*
+ * Daily log motion — decorative only, so reduced motion loses nothing. Fills are
+ * `backwards`, never `both`: a leftover transform would capture fixed children.
+ */
+:root {
+  --ease-out-soft: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* First visit: sections rise in one after another. */
+@keyframes daily-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+.daily-rise {
+  animation: daily-rise 0.4s var(--ease-out-soft) backwards;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+
+/* Changing day: the new one slides in from the side it came from. */
+@keyframes daily-slide-next {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+@keyframes daily-slide-prev {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+
+.daily-slide-next {
+  animation: daily-slide-next 0.28s var(--ease-out-soft) backwards;
+}
+
+.daily-slide-prev {
+  animation: daily-slide-prev 0.28s var(--ease-out-soft) backwards;
+}
+
+/* A section opening. */
+@keyframes daily-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.daily-reveal {
+  animation: daily-reveal 0.22s var(--ease-out-soft) backwards;
+}
+
+/* Something that just changed answers once. */
+@keyframes daily-pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.daily-pop {
+  animation: daily-pop 0.32s var(--ease-spring) backwards;
+}
+
+@keyframes daily-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-4px) scale(1.06);
+  }
+}
+
+.daily-bounce {
+  animation: daily-bounce 0.45s var(--ease-spring);
+}
+
+/* Odometer digits. */
+.rolling-digit {
+  transition: transform 0.45s var(--ease-out-soft);
+}
+
+/* "+15" leaving the button that added it. */
+@keyframes daily-float {
+  from {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(0.9);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -28px) scale(1.1);
+  }
+}
+
+.daily-float {
+  animation: daily-float 0.7s var(--ease-out-soft) forwards;
+}
+
+/* The ghost median breathing while the field waits for a number. */
+@keyframes daily-ghost {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.daily-ghost:focus::placeholder {
+  animation: daily-ghost 1.6s ease-in-out infinite;
+}
+
+/* A ghost accepted: the number sets. */
+@keyframes daily-solidify {
+  from {
+    opacity: 0.4;
+    transform: scale(0.95);
+  }
+}
+
+.daily-solidify {
+  animation: daily-solidify 0.3s var(--ease-spring);
+}
+
+/* Copied from yesterday: fields take their value one after another. */
+@keyframes daily-copy-in {
+  from {
+    opacity: 0.3;
+    transform: translateX(-6px);
+  }
+}
+
+.daily-copy-in {
+  animation: daily-copy-in 0.3s var(--ease-out-soft) backwards;
+  animation-delay: calc(var(--i, 0) * 30ms);
+}
+
+/* Section complete: the ring closes, then the tick draws itself. */
+.daily-ring {
+  transition: stroke-dashoffset 0.5s var(--ease-out-soft);
+}
+
+@keyframes daily-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.daily-tick {
+  stroke-dasharray: 1;
+  animation: daily-draw 0.35s var(--ease-out-soft) 0.15s backwards;
+}
+
+/* Grid-rows drawer: height without measuring, and without animating height. */
+.daily-drawer {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s var(--ease-out-soft);
+}
+
+.daily-drawer[data-open='true'] {
+  grid-template-rows: 1fr;
+}
+
+.daily-drawer > * {
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Save: the button settles, a ripple crosses the glass. */
+@keyframes daily-save-done {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(0.94);
+  }
+  70% {
+    transform: scale(1.03);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.daily-save-done {
+  animation: daily-save-done 0.45s var(--ease-spring);
+}
+
+@keyframes daily-ripple {
+  from {
+    opacity: 0.55;
+    transform: translate(-50%, -50%) scale(0);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.daily-ripple {
+  position: fixed;
+  z-index: 15;
+  width: 240vmax;
+  height: 240vmax;
+  border-radius: 9999px;
+  pointer-events: none;
+  background: radial-gradient(
+    closest-side,
+    transparent 55%,
+    color-mix(in oklch, var(--accent) 28%, transparent) 70%,
+    transparent 78%
+  );
+  animation: daily-ripple 0.9s var(--ease-out-soft) forwards;
+}
+
+@keyframes daily-confetti {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--rot));
+  }
+}
+
+.daily-confetti {
+  position: fixed;
+  z-index: 60;
+  width: 7px;
+  height: 11px;
+  border-radius: 2px;
+  pointer-events: none;
+  animation: daily-confetti 1.1s cubic-bezier(0.15, 0.6, 0.35, 1) forwards;
+}
+
+/* Undo: the time left, draining. Sonner pauses on hover; so does this. */
+@keyframes daily-countdown {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+.daily-countdown {
+  transform-origin: left;
+  animation: daily-countdown var(--duration, 5s) linear forwards;
+}
+
+[data-sonner-toaster]:hover .daily-countdown {
+  animation-play-state: paused;
+}
+
+/* The streak flame when the day just counted. */
+@keyframes daily-flame {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+  30% {
+    transform: scale(1.35) rotate(-8deg);
+  }
+  60% {
+    transform: scale(0.95) rotate(6deg);
+  }
+}
+
+.daily-flame {
+  animation: daily-flame 0.6s var(--ease-spring);
+  transform-origin: 50% 90%;
+}
+
+/* Missing days asking to be filled in. Twice, then still. */
+@keyframes daily-nudge {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-6deg);
+  }
+  75% {
+    transform: rotate(6deg);
+  }
+}
+
+.daily-nudge {
+  animation: daily-nudge 0.4s ease-in-out 2;
+  animation-delay: calc(0.6s + var(--i, 0) * 80ms);
+}
+
+/* A timer feeding this field right now. */
+@keyframes daily-live {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.daily-live {
+  animation: daily-live 1.2s ease-in-out infinite;
+}
+
+/* Yesterday's energy as a translucent bloom over the atmosphere — never opaque, or the glass dies. */
+.daily-mood {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: var(--mood-strength, 0);
+  background:
+    radial-gradient(45% 40% at 15% 10%, color-mix(in oklch, var(--mood-tint) 30%, transparent), transparent 70%),
+    radial-gradient(40% 35% at 90% 85%, color-mix(in oklch, var(--mood-tint) 22%, transparent), transparent 72%);
+  transition: opacity 1.2s ease;
+}
+
+.daily-mood[data-mood='warm'] {
+  --mood-tint: var(--warn);
+}
+
+.daily-mood[data-mood='cool'] {
+  --mood-tint: var(--accent);
+}
+
+/*
+ * Finance motion — decorative, so reduced motion loses nothing. Fills are
+ * `backwards` or `forwards`, never `both`, and no class here sets `display`.
+ */
+
+/* A saved row arriving where its pending copy sat. */
+@keyframes fin-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+.fin-arrive {
+  animation: fin-arrive 0.35s var(--ease-out-soft) backwards;
+}
+
+/* The tint fades on a pseudo-element, so only opacity animates. Needs `relative isolate` at the call site. */
+@keyframes fin-flash {
+  from {
+    opacity: 1;
+  }
+}
+
+.fin-flash::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  pointer-events: none;
+  opacity: 0;
+  animation: fin-flash 1.6s var(--ease-out-soft) 0.2s backwards;
+}
+
+/* A deleted row folding shut; `grid` goes on at the call site. */
+@keyframes fin-collapse {
+  from {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+}
+
+.fin-collapse {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  animation: fin-collapse 0.24s var(--ease-out-soft) backwards;
+}
+
+.fin-collapse > * {
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* The pinned day header changing to the next day. */
+@keyframes fin-day-swap {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.fin-day-swap {
+  animation: fin-day-swap 0.2s var(--ease-out-soft) backwards;
+}
+
+/* Hold to confirm: the pill fills from the left while it is held. */
+@keyframes fin-hold {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.fin-hold-fill {
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0.22;
+  pointer-events: none;
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+[data-holding='true'] > .fin-hold-fill {
+  animation: fin-hold var(--hold-ms, 1200ms) linear forwards;
+}
+
+/*
+ * Chat motion (more) — decorative only, so reduced motion loses nothing. Fills
+ * are `backwards`/`forwards`, never `both`, and no `display` in here: the call
+ * site says `inline-block` where it needs one.
+ */
+@keyframes chat-fly {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.94);
+  }
+}
+
+/* My message leaving the composer for its place at the bottom. */
+.chat-fly {
+  animation: chat-fly 0.32s var(--ease-out-soft) backwards;
+  transform-origin: bottom right;
+}
+
+@keyframes chat-settle {
+  from {
+    opacity: 0.6;
+  }
+}
+
+/* The server said yes: dimmed to solid, rather than a snap. */
+.chat-settle {
+  animation: chat-settle 0.3s var(--ease-out-soft) backwards;
+}
+
+@keyframes chat-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.chat-rise {
+  animation: chat-rise 0.22s var(--ease-out-soft) backwards;
+}
+
+@keyframes chat-seen-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+/* A read mark arriving from the line above. */
+.chat-seen-in {
+  animation: chat-seen-in 0.35s var(--ease-spring) backwards;
+}
+
+@keyframes chat-typing-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.4;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+.chat-typing-dot {
+  animation: chat-typing-dot 1s ease-in-out infinite;
+}
+
+@keyframes chat-balloon {
+  from {
+    opacity: 0;
+    transform: translate(0, 0) rotate(-6deg);
+  }
+  10% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.9;
+    transform: translate(var(--sway, 0px), -115vh) rotate(6deg);
+  }
+}
+
+.chat-balloon {
+  position: fixed;
+  bottom: -64px;
+  z-index: 60;
+  font-size: 2.25rem;
+  line-height: 1;
+  pointer-events: none;
+  animation: chat-balloon 3.6s cubic-bezier(0.3, 0.1, 0.5, 1) forwards;
+}
+
+/*
+ * Shell motion — decorative, transform/opacity only. Fills are `backwards` or
+ * `forwards`, never `both`, and nothing here sets `display`: an unlayered rule
+ * would beat the Tailwind utility at the call site.
+ */
+@keyframes ui-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.ui-rise {
+  animation: ui-rise 0.36s var(--ease-out-soft) backwards;
+  animation-delay: calc(var(--i, 0) * 30ms);
+}
+
+@keyframes ui-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-5px) rotate(-3deg);
+  }
+}
+
+.ui-float {
+  animation: ui-float 3.6s ease-in-out infinite;
+}
+
+@keyframes ui-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes ui-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+.ui-fade-in {
+  animation: ui-fade-in 0.18s ease-out backwards;
+}
+
+.ui-fade-out {
+  animation: ui-fade-out 0.15s ease-in forwards;
+}
+
+/* Command palette: the panel grows from just above where it settles. */
+@keyframes ui-palette-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+}
+
+@keyframes ui-palette-out {
+  to {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+
+.ui-palette-in {
+  animation: ui-palette-in 0.22s var(--ease-out-soft) backwards;
+}
+
+.ui-palette-out {
+  animation: ui-palette-out 0.15s ease-in forwards;
+}
+
+.ui-palette-highlight[data-ready] {
+  transition:
+    transform 0.2s var(--ease-out-soft),
+    opacity 0.15s ease;
+}
+
+/* Loading placeholders: a diagonal band of light sweeping across the fill. */
+@keyframes ui-shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.ui-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 25%,
+    var(--inset-hover) 50%,
+    transparent 75%
+  );
+  transform: translateX(-100%);
+  animation: ui-shimmer 1.6s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * 90ms);
+}
+
+/* Stat tiles: a soft light under the mouse. Touch never hovers, so it never shows there. */
+.ui-glow::before {
+  content: '';
+  position: absolute;
+  top: -6rem;
+  left: -6rem;
+  z-index: -1;
+  width: 12rem;
+  height: 12rem;
+  border-radius: 9999px;
+  pointer-events: none;
+  background: radial-gradient(closest-side, var(--inset-hover), transparent);
+  opacity: 0;
+  transform: translate(var(--glow-x, -100vw), var(--glow-y, 0));
+  transition: opacity 0.3s ease;
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .ui-glow:hover::before {
+    opacity: 1;
+  }
+}
+
+/*
+ * The global reduced-motion rule shortens durations, which turns an infinite
+ * loop into a flicker. Loops stop outright instead.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .ui-float,
+  .ui-shimmer::after {
+    animation: none;
+  }
+
+  .ui-shimmer::after {
+    opacity: 0;
+  }
+}
+
+/* Theme switch: the new palette grows out of the toggle (theme-toggle.tsx sets the vars). */
+html.ui-theme-reveal::view-transition-old(root),
+html.ui-theme-reveal::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* The circle itself is animated from theme-toggle.tsx. */
+
+/*
+ * Toasts as glass. Sonner injects its stylesheet at runtime, so these carry
+ * one extra `:root` of specificity rather than depending on source order.
+ */
+:root [data-sonner-toaster][data-sonner-theme] {
+  --border-radius: var(--radius);
+  --normal-bg: var(--surface-solid);
+  --normal-bg-hover: var(--inset-hover);
+  --normal-border: var(--border-strong);
+  --normal-border-hover: var(--border-strong);
+  --normal-text: var(--text);
+  --success-bg: color-mix(in oklch, var(--good) 14%, var(--surface-solid));
+  --success-border: color-mix(in oklch, var(--good) 40%, var(--border));
+  --success-text: color-mix(in oklch, var(--good) 55%, var(--text));
+  --info-bg: color-mix(in oklch, var(--accent) 12%, var(--surface-solid));
+  --info-border: color-mix(in oklch, var(--accent) 40%, var(--border));
+  --info-text: color-mix(in oklch, var(--accent) 55%, var(--text));
+  --warning-bg: color-mix(in oklch, var(--warn) 16%, var(--surface-solid));
+  --warning-border: color-mix(in oklch, var(--warn) 45%, var(--border));
+  --warning-text: color-mix(in oklch, var(--warn) 55%, var(--text));
+  --error-bg: color-mix(in oklch, var(--bad) 14%, var(--surface-solid));
+  --error-border: color-mix(in oklch, var(--bad) 40%, var(--border));
+  --error-text: color-mix(in oklch, var(--bad) 55%, var(--text));
+}
+
+@keyframes ui-toast-in {
+  from {
+    scale: 0.92;
+  }
+}
+
+:root [data-sonner-toast][data-styled='true'] {
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  box-shadow: var(--shadow-card);
+}
+
+/* `scale`, not `transform`: Sonner drives `transform` itself, and owns `animation` once swiped. */
+:root [data-sonner-toast][data-styled='true'][data-swipe-out='false'] {
+  animation: ui-toast-in 0.45s var(--ease-spring);
+}
+
+/* Sonner hardcodes a dark grey here, which disappears on the dark palette. */
+:root [data-sonner-toast][data-styled='true'] [data-description] {
+  color: var(--text-muted);
+}
+
+:root [data-sonner-toast][data-styled='true']:focus-visible {
+  box-shadow:
+    var(--shadow-card),
+    0 0 0 2px var(--accent);
+}
+
+/* RollingNumber `rollIn`: up from 0 on first paint, left digits first. */
+@keyframes rolling-in {
+  from {
+    transform: translateY(0);
+  }
+}
+
+.rolling-in {
+  animation: rolling-in 0.9s var(--ease-out-soft) backwards;
+  animation-delay: calc(var(--slot, 0) * 50ms);
+}
