@@ -2,6 +2,8 @@
 
 import {
   Image as ImageIcon,
+  Lock,
+  LockOpen,
   LogOut,
   Pencil,
   Settings,
@@ -23,6 +25,7 @@ import { PATHS } from '@/lib/paths'
 import { deleteRoom, leaveRoom, removeMember, renameRoom } from '@/server/actions/chat'
 import { InvitePanel } from './invite-panel'
 import { RoomAvatarPicker } from './room-avatar'
+import type { RoomEncryption } from '@/lib/chat/types'
 
 type Panel = 'none' | 'invite' | 'rename' | 'members' | 'photo'
 
@@ -40,6 +43,7 @@ type Panel = 'none' | 'invite' | 'rename' | 'members' | 'photo'
  */
 export function RoomSettings({
   roomId,
+  encryption,
   owner,
   title,
   avatarUrl,
@@ -47,6 +51,7 @@ export function RoomSettings({
   me,
 }: {
   roomId: string
+  encryption: RoomEncryption
   owner: boolean
   title: string | null
   avatarUrl: string | null
@@ -116,6 +121,17 @@ export function RoomSettings({
 
         <PopoverContent aria-label={t('roomSettings')} className="w-56 p-1.5">
           <div className="flex flex-col">
+            {/* A fact, not a control: it was settled when the room was made. */}
+            {encryption === 'legacy' ? null : (
+              <p className="text-text-subtle border-border-base mb-1 flex items-center gap-2 border-b px-2.5 pt-1 pb-2 text-xs">
+                {encryption === 'locked' ? (
+                  <Lock className="size-3.5" />
+                ) : (
+                  <LockOpen className="size-3.5" />
+                )}
+                {t(encryption === 'locked' ? 'roomLocked' : 'roomPlain')}
+              </p>
+            )}
             {owner ? (
               <>
                 <Button variant="ghost" size="sm" className={item} onClick={() => open('invite')}>

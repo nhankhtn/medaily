@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { getCurrentUserId } from '@/lib/auth/current-user'
 import { clientKey } from '@/lib/client-ip'
 import { headers } from 'next/headers'
+import { canSeal } from '@/lib/chat/message-crypto'
 import { pickChatStore } from '@/lib/chat/provider'
 import { getTranslations } from 'next-intl/server'
 import { notifyRoom } from '@/server/services/chat-notify'
@@ -13,8 +14,7 @@ import { notify } from '@/server/services/push'
 import { directKeyOf, MESSAGE_PAGE } from '@/lib/chat/types'
 import { PATHS } from '@/lib/paths'
 import { createLimit } from '@/lib/rate-limit'
-import type { Speaker,
-  ChatMember,} from '@/lib/chat/types'
+import type { Speaker, ChatMember } from '@/lib/chat/types'
 import { listIdentities, findUsersByIds } from '@/server/repositories/auth'
 import {
   assertCanInvite,
@@ -378,8 +378,13 @@ export async function markRoomRead(input: unknown) {
 }
 
 export const createRoom = audited('chatRoom.create', async (input: unknown) => {
-  const parsed = z.object({ title: z.string().trim().min(1).max(120) }).safeParse(input)
+  const parsed = z
+    .object({ title: z.string().trim().min(1).max(120), encrypted: z.boolean().default(false) })
+    .safeParse(input)
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+  if (parsed.data.encrypted && !canSeal()) {
+    return { ok: false as const, error: 'encryption_unavailable' as const }
+  }
 
   const store = pickChatStore()
   const userId = await getCurrentUserId()
@@ -392,6 +397,7 @@ export const createRoom = audited('chatRoom.create', async (input: unknown) => {
     createdBy: userId,
     doorbellKey: randomUUID(),
     directKey: null,
+    encryption: parsed.data.encrypted ? 'locked' : 'plain',
   })
   await store.addMember({ roomId, userId, role: 'owner', joinedAt: new Date().toISOString() })
 
@@ -429,6 +435,8 @@ export async function openDirectRoom(input: unknown) {
       createdBy: userId,
       doorbellKey: randomUUID(),
       directKey,
+      // No screen asks, so it keeps what a deploy with a key always did.
+      encryption: canSeal() ? 'locked' : 'plain',
     })
   } catch {
     const won = await store.findRoomByDirectKey(directKey)
@@ -860,7 +868,8 @@ export async function nudgeRoom(input: unknown) {
 
   const store = pickChatStore()
   const userId = await getCurrentUserId()
-  if (!(await allowed(parsed.data, userId))) return { ok: false as const, error: 'not_found' as const }
+  if (!(await allowed(parsed.data, userId)))
+    return { ok: false as const, error: 'not_found' as const }
 
   // Per room, not per person: being quiet in one conversation should not be
   // the price of having been playful in another.
@@ -907,9 +916,7 @@ const AROUND = 25
  * showing the end.
  */
 export async function loadAround(input: unknown) {
-  const parsed = z
-    .object({ roomId: roomIdSchema, messageId: messageIdSchema })
-    .safeParse(input)
+  const parsed = z.object({ roomId: roomIdSchema, messageId: messageIdSchema }).safeParse(input)
   if (!parsed.success) return { ok: false as const }
 
   const store = pickChatStore()

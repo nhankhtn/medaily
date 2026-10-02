@@ -16,6 +16,14 @@ than the code.
 
 **Changed**
 
+- Chat: whether a group is encrypted is now chosen once, with **Encrypt
+  messages** when it is created (off by default), and can never be changed.
+  A room that is not encrypted is searched by the database, all the way back;
+  an encrypted one is still opened a page at a time. Written up in
+  [Chat privacy](features/chat/privacy.md), [Rooms and invites](features/chat/rooms-and-invites.md),
+  [Messages](features/chat/messages.md) and [Data model: chat](reference/data-model/chat.md)
+  (`encryption` on rooms, `bodyFold` on plain messages).
+
 - [Documentation site](operations/docs-site.md): `/docs` now has a login of its
   own — the browser's Basic Auth prompt for `AUTH_USERNAME` and
   `AUTH_PASSWORD` — instead of riding on the app's session. Being signed in to

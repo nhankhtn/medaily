@@ -26,12 +26,14 @@ is in it, what it is called and what picture it shows.
 - Leaving a room stops you seeing it; what you wrote stays.
 - Deleting a room deletes its messages for everyone. There is no copy.
 - A group picture must be an image under 5 MB.
+- Whether a group is encrypted is chosen when it is created, off by default, and can never be changed — see [Chat privacy](./privacy.md).
 
 ## Create a group room
 
 1. Open **Chat** and press **New room**.
 2. Answer **What is this room about?** with the room's name.
-3. Press **Create**. You are the room's owner.
+3. Optionally tick **Encrypt messages**. This cannot be changed later, and makes search slower — see [Chat privacy](./privacy.md).
+4. Press **Create**. You are the room's owner.
 
 ## Invite someone
 

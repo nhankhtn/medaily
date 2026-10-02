@@ -2,6 +2,7 @@ import { ObjectId } from 'mongodb'
 import { readyCollection } from '@/lib/mongo/client'
 import type { ChatStore } from './store'
 import { bodyAad, openBody, sealBody, type SealedBody } from './message-crypto'
+import { normalise } from './search'
 import type {
   ChatInvite,
   ChatMember,
@@ -9,6 +10,7 @@ import type {
   ChatRoom,
   MemberRole,
   MessageKind,
+  RoomEncryption,
   RoomKind,
 } from './types'
 import { previewOf } from './types'
@@ -29,6 +31,8 @@ type RoomDoc = {
   doorbellKey: string
   directKey?: string
   avatarUrl?: string | null
+  /** Absent on a room made before the choice existed: that is `legacy`. */
+  encryption?: Exclude<RoomEncryption, 'legacy'>
   lastMessageAt?: Date | null
   createdAt: Date
 }
@@ -54,6 +58,8 @@ type MessageDoc = {
    */
   body?: string
   bodyEnc?: SealedBody
+  /** `body` folded for search, in a `plain` room only. Never beside `bodyEnc`. */
+  bodyFold?: string
   createdAt: Date
   clientId: string
   deletedAt?: Date | null
@@ -103,6 +109,7 @@ export function mongoChatStore(uri: string): ChatStore {
         // Omitted rather than null for a group room: the partial index that
         // makes direct rooms unique keys on the field being *there*.
         ...(room.directKey ? { directKey: room.directKey } : {}),
+        encryption: room.encryption,
         lastMessageAt: null,
         createdAt: new Date(),
       }
@@ -208,13 +215,13 @@ export function mongoChatStore(uri: string): ChatStore {
       // The id is made here rather than by Mongo, because the body is locked
       // against it and there is nothing to lock against until it exists.
       const id = new ObjectId()
-      const sealed = sealBody(message.body, bodyAad(id.toHexString(), message.roomId))
+      const mode = await encryptionOf(uri, message.roomId)
       const doc: MessageDoc = {
         _id: id,
         roomId: message.roomId,
         userId: message.userId,
         kind: message.kind,
-        ...(sealed ? { bodyEnc: sealed } : { body: message.body }),
+        ...bodyFields(mode, message.body, bodyAad(id.toHexString(), message.roomId)),
         createdAt: new Date(),
         clientId: message.clientId,
         deletedAt: null,
@@ -262,6 +269,32 @@ export function mongoChatStore(uri: string): ChatStore {
       // `asMessage` and no further: the second query `pageOf` makes to fill in
       // quotes, and the decryption of everything it fetches, is the whole
       // difference this method exists for.
+      const items = rows.slice(0, limit).map((doc) => asMessage(doc)!)
+      return { items, cursor: items.at(-1)?.id ?? null, more: rows.length > limit }
+    },
+
+    searchText: async (roomId, { query, before, limit }) => {
+      const needle = normalise(query)
+      if (needle === '' || (before && !isObjectIdHex(before))) {
+        return { items: [], cursor: null, more: false }
+      }
+      const rows = await (
+        await messagesIn(uri)
+      )
+        .find({
+          roomId,
+          kind: 'text',
+          deletedAt: null,
+          bodyFold: { $regex: escapeRegExp(needle) },
+          ...(before ? { _id: { $lt: new ObjectId(before) } } : {}),
+        })
+        .sort({ _id: -1 })
+        .limit(limit + 1)
+        // Walks the room on `room_seq` and matches inside the database; the
+        // ceiling is for a room so large that walking it is the problem.
+        .maxTimeMS(SEARCH_TIME_MS)
+        .toArray()
+
       const items = rows.slice(0, limit).map((doc) => asMessage(doc)!)
       return { items, cursor: items.at(-1)?.id ?? null, more: rows.length > limit }
     },
@@ -395,12 +428,13 @@ export function mongoChatStore(uri: string): ChatStore {
       // Sealed again against the same id and room it was sealed against the
       // first time, and the other shape unset — a row carrying both would be
       // one `asMessage` has to choose between, and the choice would be silent.
-      const sealed = sealBody(body, bodyAad(messageId, roomId))
+      const fields = bodyFields(await encryptionOf(uri, roomId), body, bodyAad(messageId, roomId))
+      const stale = BODY_FIELDS.filter((key) => !(key in fields))
       const updated = await messages.findOneAndUpdate(
         { _id: new ObjectId(messageId), roomId, userId, deletedAt: null, kind: 'text' },
         {
-          $set: { ...(sealed ? { bodyEnc: sealed } : { body }), editedAt: new Date() },
-          $unset: sealed ? { body: '' } : { bodyEnc: '' },
+          $set: { ...fields, editedAt: new Date() },
+          $unset: Object.fromEntries(stale.map((key) => [key, ''])),
         },
         { returnDocument: 'after' },
       )
@@ -414,7 +448,7 @@ export function mongoChatStore(uri: string): ChatStore {
         await messagesIn(uri)
       ).updateOne(
         { _id: new ObjectId(messageId), roomId, userId, deletedAt: null },
-        { $set: { deletedAt: new Date() }, $unset: { body: '', bodyEnc: '' } },
+        { $set: { deletedAt: new Date() }, $unset: { body: '', bodyEnc: '', bodyFold: '' } },
       )
       return updated.matchedCount > 0
     },
@@ -549,6 +583,34 @@ async function withQuotes(uri: string, docs: MessageDoc[]): Promise<ChatMessage[
   })
 }
 
+const SEARCH_TIME_MS = 5_000
+const BODY_FIELDS = ['body', 'bodyEnc', 'bodyFold'] as const
+
+async function encryptionOf(uri: string, roomId: string): Promise<RoomEncryption> {
+  const room = await (
+    await roomsIn(uri)
+  ).findOne({ _id: roomId }, { projection: { encryption: 1 } })
+  return room?.encryption ?? 'legacy'
+}
+
+/**
+ * What a body is stored as, decided by the room. A locked room with no key
+ * refuses rather than writing the words in the clear it promised not to.
+ */
+function bodyFields(
+  mode: RoomEncryption,
+  body: string,
+  aad: string,
+): Pick<MessageDoc, 'body' | 'bodyEnc' | 'bodyFold'> {
+  if (mode === 'plain') return { body, bodyFold: normalise(body) }
+  const sealed = sealBody(body, aad)
+  if (sealed) return { bodyEnc: sealed }
+  if (mode === 'locked') throw new Error('this room is locked and CHAT_MESSAGE_KEY is not set')
+  return { body }
+}
+
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
 function asRoom(doc: RoomDoc | null): ChatRoom | null {
   if (!doc) return null
   return {
@@ -559,6 +621,7 @@ function asRoom(doc: RoomDoc | null): ChatRoom | null {
     doorbellKey: doc.doorbellKey,
     directKey: doc.directKey ?? null,
     avatarUrl: doc.avatarUrl ?? null,
+    encryption: doc.encryption ?? 'legacy',
     lastMessageAt: doc.lastMessageAt?.toISOString() ?? null,
     createdAt: doc.createdAt.toISOString(),
   }

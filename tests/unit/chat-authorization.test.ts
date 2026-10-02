@@ -18,6 +18,7 @@ async function room(id: string, members: [string, 'owner' | 'member'][]) {
     createdBy: members[0]?.[0] ?? null,
     doorbellKey: `door-${id}`,
     directKey: null,
+    encryption: 'plain' as const,
   })
   for (const [userId, role] of members) {
     await store.addMember({ roomId: id, userId, role, joinedAt: new Date().toISOString() })
@@ -112,6 +113,7 @@ describe('who may invite', () => {
       createdBy: null,
       doorbellKey: 'door-r2',
       directKey: null,
+      encryption: 'plain' as const,
     })
     await store.addMember({
       roomId: 'r2',

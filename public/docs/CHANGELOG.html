@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Changelog | Medaily Docs</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="robots" content="noindex, nofollow"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="http://localhost/docs/CHANGELOG"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Changelog | Medaily Docs"><meta data-rh="true" name="description" content="What changed in these documents, and when. Newest first."><meta data-rh="true" property="og:description" content="What changed in these documents, and when. Newest first."><link data-rh="true" rel="canonical" href="http://localhost/docs/CHANGELOG"><link data-rh="true" rel="alternate" href="http://localhost/docs/CHANGELOG" hreflang="en"><link data-rh="true" rel="alternate" href="http://localhost/docs/CHANGELOG" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Changelog","item":"http://localhost/docs/CHANGELOG"}]}</script><link rel="stylesheet" href="/docs/assets/css/styles.55dbd2d6.css">
-<script src="/docs/assets/js/runtime~main.2dd34edd.js" defer="defer"></script>
+<script src="/docs/assets/js/runtime~main.3280812c.js" defer="defer"></script>
 <script src="/docs/assets/js/main.f68d91db.js" defer="defer"></script>
 </head>
 <body>
@@ -19,10 +19,21 @@ than the code.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="2026-10-02">2026-10-02<a href="#2026-10-02" class="hash-link" aria-label="Direct link to 2026-10-02" title="Direct link to 2026-10-02" translate="no">​</a></h2>
 <p><strong>Changed</strong></p>
 <ul>
-<li class=""><a class="" href="/docs/operations/docs-site">Documentation site</a>: <code>/docs</code> now has a login of its
+<li class="">
+<p>Chat: whether a group is encrypted is now chosen once, with <strong>Encrypt
+messages</strong> when it is created (off by default), and can never be changed.
+A room that is not encrypted is searched by the database, all the way back;
+an encrypted one is still opened a page at a time. Written up in
+<a class="" href="/docs/features/chat/privacy">Chat privacy</a>, <a class="" href="/docs/features/chat/rooms-and-invites">Rooms and invites</a>,
+<a class="" href="/docs/features/chat/messages">Messages</a> and <a class="" href="/docs/reference/data-model/chat">Data model: chat</a>
+(<code>encryption</code> on rooms, <code>bodyFold</code> on plain messages).</p>
+</li>
+<li class="">
+<p><a class="" href="/docs/operations/docs-site">Documentation site</a>: <code>/docs</code> now has a login of its
 own — the browser&#x27;s Basic Auth prompt for <code>AUTH_USERNAME</code> and
 <code>AUTH_PASSWORD</code> — instead of riding on the app&#x27;s session. Being signed in to
-the app no longer opens it, and opening it no longer needs an app account.</li>
+the app no longer opens it, and opening it no longer needs an app account.</p>
+</li>
 </ul>
 <p><strong>Restructured</strong></p>
 <p>The three long documents became one page per feature, in four sections —

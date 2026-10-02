@@ -13,6 +13,7 @@ async function room(id: string, members: string[]) {
     createdBy: members[0] ?? null,
     doorbellKey: `door-${id}`,
     directKey: null,
+    encryption: 'plain' as const,
   })
   for (const userId of members) {
     await store.addMember({

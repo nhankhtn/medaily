@@ -10,6 +10,7 @@ import { askToJump } from './jump'
 import { normalise } from '@/lib/chat/search'
 import type { ChatMessage, Speaker } from '@/lib/chat/types'
 import { searchMessages } from '@/server/actions/chat'
+import type { RoomEncryption } from '@/lib/chat/types'
 
 /** Long enough that typing a word is one request, not six. */
 const SETTLE_MS = 350
@@ -28,7 +29,7 @@ const SHORTEST = 2
  * move the transcript yet: the list is cursor-paged and windowed, so landing
  * on a message in the middle of a year of them is its own piece of work.
  */
-export function RoomSearch({ roomId }: { roomId: string }) {
+export function RoomSearch({ roomId, encryption }: { roomId: string; encryption: RoomEncryption }) {
   const t = useTranslations('chat')
   const format = useFormatter()
   const [open, setOpen] = useState(false)
@@ -109,11 +110,11 @@ export function RoomSearch({ roomId }: { roomId: string }) {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent title={t('search')}>
           {/*
-            * The spinner sits in the box rather than over the results, so the
-            * answer to "did that register" is where the typing is. State, not
-            * a sentence — there is nothing to tell somebody here that waiting
-            * a moment will not.
-            */}
+           * The spinner sits in the box rather than over the results, so the
+           * answer to "did that register" is where the typing is. State, not
+           * a sentence — there is nothing to tell somebody here that waiting
+           * a moment will not.
+           */}
           <div className="relative">
             <Input
               autoFocus
@@ -130,6 +131,10 @@ export function RoomSearch({ roomId }: { roomId: string }) {
               />
             ) : null}
           </div>
+
+          {encryption === 'plain' ? null : (
+            <p className="text-text-subtle mt-2 text-xs">{t('searchLockedNote')}</p>
+          )}
 
           <div className="mt-3 max-h-[50vh] space-y-2 overflow-y-auto">
             {showing?.map((message) => (

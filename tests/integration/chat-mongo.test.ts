@@ -1,5 +1,6 @@
 import { MongoClient } from 'mongodb'
-import { afterAll, beforeEach, describe, it } from 'vitest'
+import { randomBytes } from 'node:crypto'
+import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { mongoChatStore } from '@/lib/chat/mongo-store'
 import { describeChatStore } from '../shared/chat-store-contract'
 
@@ -45,4 +46,90 @@ if (!uri) {
   })
 
   describeChatStore('mongodb', async () => mongoChatStore(uri))
+
+  describe('mongodb: what a room stores', () => {
+    const saved = process.env.CHAT_MESSAGE_KEY
+    afterEach(() => {
+      if (saved === undefined) delete process.env.CHAT_MESSAGE_KEY
+      else process.env.CHAT_MESSAGE_KEY = saved
+    })
+
+    const room = (id: string, encryption: 'locked' | 'plain') => ({
+      id,
+      kind: 'group' as const,
+      title: 'Phòng',
+      createdBy: 'u1',
+      doorbellKey: `door-${id}`,
+      directKey: null,
+      encryption,
+    })
+    const say = (roomId: string, body: string) => ({
+      roomId,
+      userId: 'u1',
+      body,
+      clientId: `c-${roomId}-${body}`,
+      kind: 'text' as const,
+    })
+    const raw = (roomId: string) => client.db().collection('chat_messages').findOne({ roomId })
+
+    it('writes a plain room in the clear with its folded copy, even with a key set', async () => {
+      process.env.CHAT_MESSAGE_KEY = randomBytes(32).toString('base64')
+      const store = mongoChatStore(uri)
+      await store.createRoom(room('p1', 'plain'))
+      await store.appendMessage(say('p1', 'Đi họp'))
+
+      const doc = await raw('p1')
+      expect(doc).toMatchObject({ body: 'Đi họp', bodyFold: 'di hop' })
+      expect(doc).not.toHaveProperty('bodyEnc')
+    })
+
+    it('locks a locked room, and keeps no folded copy', async () => {
+      process.env.CHAT_MESSAGE_KEY = randomBytes(32).toString('base64')
+      const store = mongoChatStore(uri)
+      await store.createRoom(room('l1', 'locked'))
+      const sent = await store.appendMessage(say('l1', 'bí mật'))
+
+      const doc = await raw('l1')
+      expect(doc).toHaveProperty('bodyEnc')
+      expect(doc).not.toHaveProperty('body')
+      expect(doc).not.toHaveProperty('bodyFold')
+      expect(sent.body).toBe('bí mật')
+    })
+
+    it('refuses to write a locked room in the clear when the key is gone', async () => {
+      delete process.env.CHAT_MESSAGE_KEY
+      const store = mongoChatStore(uri)
+      await store.createRoom(room('l2', 'locked'))
+
+      await expect(store.appendMessage(say('l2', 'lộ'))).rejects.toThrow(/CHAT_MESSAGE_KEY/)
+      expect(await raw('l2')).toBeNull()
+    })
+
+    it('reads a room from before the choice as legacy', async () => {
+      await client
+        .db()
+        .collection('chat_rooms')
+        .insertOne({
+          _id: 'old' as never,
+          kind: 'group',
+          title: 'Cũ',
+          createdBy: 'u1',
+          doorbellKey: 'door-old',
+          lastMessageAt: null,
+          createdAt: new Date(),
+        })
+      expect((await mongoChatStore(uri).findRoom('old'))?.encryption).toBe('legacy')
+    })
+
+    it('clears the folded copy when a message is recalled', async () => {
+      const store = mongoChatStore(uri)
+      await store.createRoom(room('p2', 'plain'))
+      const sent = await store.appendMessage(say('p2', 'họp'))
+      await store.softDeleteMessage('p2', sent.id, 'u1')
+
+      const doc = await raw('p2')
+      expect(doc).not.toHaveProperty('body')
+      expect(doc).not.toHaveProperty('bodyFold')
+    })
+  })
 }

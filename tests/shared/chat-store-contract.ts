@@ -825,6 +825,80 @@ export function describeChatStore(name: string, makeStore: () => Promise<ChatSto
       expect(await store.findInvite('theirs')).toBeTruthy()
     })
   })
+
+  describe(`${name}: encryption and plain search`, () => {
+    it('keeps the encryption a room was made with', async () => {
+      const store = await makeStore()
+      await store.createRoom({ ...room('r1'), encryption: 'locked' })
+      await store.createRoom(room('r2'))
+
+      expect((await store.findRoom('r1'))?.encryption).toBe('locked')
+      expect((await store.findRoom('r2'))?.encryption).toBe('plain')
+    })
+
+    it('finds text typed without its marks, newest first', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      await store.appendMessage(message('r1', 'u1', 'mai họp 9h', 'c1'))
+      await store.appendMessage(message('r1', 'u1', 'chiều đi ăn', 'c2'))
+      await store.appendMessage(message('r1', 'u2', 'Họp xong chưa', 'c3'))
+
+      const found = await store.searchText('r1', { query: 'hop', limit: 10 })
+      expect(found.items.map((m) => m.body)).toEqual(['Họp xong chưa', 'mai họp 9h'])
+      expect(found.more).toBe(false)
+      expect(await store.searchText('r1', { query: 'di an', limit: 10 })).toMatchObject({
+        items: [{ body: 'chiều đi ăn' }],
+      })
+    })
+
+    it('leaves out recalled messages and stickers, and other rooms', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      await store.createRoom(room('r2'))
+      const gone = await store.appendMessage(message('r1', 'u1', 'họp bí mật', 'c1'))
+      await store.softDeleteMessage('r1', gone.id, 'u1')
+      await store.appendMessage({ ...message('r1', 'u1', 'hop', 'c2'), kind: 'sticker' })
+      await store.appendMessage(message('r2', 'u1', 'họp phòng khác', 'c3'))
+
+      expect((await store.searchText('r1', { query: 'hop', limit: 10 })).items).toEqual([])
+    })
+
+    it('pages back through matches with the cursor it hands out', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      for (let i = 1; i <= 3; i++) {
+        await store.appendMessage(message('r1', 'u1', `họp lần ${i}`, `c${i}`))
+      }
+
+      const one = await store.searchText('r1', { query: 'hop', limit: 2 })
+      expect(one.items.map((m) => m.body)).toEqual(['họp lần 3', 'họp lần 2'])
+      expect(one.more).toBe(true)
+
+      const two = await store.searchText('r1', { query: 'hop', before: one.cursor, limit: 2 })
+      expect(two.items.map((m) => m.body)).toEqual(['họp lần 1'])
+      expect(two.more).toBe(false)
+    })
+
+    it('follows an edit: the new words are found and the old ones are not', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      const sent = await store.appendMessage(message('r1', 'u1', 'đi họp', 'c1'))
+      await store.editMessage('r1', sent.id, 'u1', 'đi ăn trưa')
+
+      expect((await store.searchText('r1', { query: 'hop', limit: 10 })).items).toEqual([])
+      expect((await store.searchText('r1', { query: 'an trua', limit: 10 })).items).toHaveLength(1)
+    })
+
+    it('takes a query with regex characters literally', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      await store.appendMessage(message('r1', 'u1', 'giá 1+1 rẻ', 'c1'))
+      await store.appendMessage(message('r1', 'u1', 'axb', 'c2'))
+
+      expect((await store.searchText('r1', { query: '1+1', limit: 10 })).items).toHaveLength(1)
+      expect((await store.searchText('r1', { query: 'a.b', limit: 10 })).items).toEqual([])
+    })
+  })
 }
 
 function room(id: string) {
@@ -835,6 +909,7 @@ function room(id: string) {
     createdBy: 'u1',
     doorbellKey: `door-${id}`,
     directKey: null,
+    encryption: 'plain' as const,
   }
 }
 

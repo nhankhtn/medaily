@@ -20,9 +20,15 @@ async function room(id: string, members: string[]) {
     createdBy: members[0] ?? null,
     doorbellKey: `door-${id}`,
     directKey: null,
+    encryption: 'locked' as const,
   })
   for (const userId of members) {
-    await store.addMember({ roomId: id, userId, role: 'member', joinedAt: new Date().toISOString() })
+    await store.addMember({
+      roomId: id,
+      userId,
+      role: 'member',
+      joinedAt: new Date().toISOString(),
+    })
   }
 }
 
@@ -32,6 +38,32 @@ async function say(roomId: string, userId: string, body: string, clientId: strin
 
 beforeEach(() => {
   store = inMemoryChatStore()
+})
+
+describe('searchRoom in a plain room', () => {
+  it('asks the database, so a match older than one scan is found in one call', async () => {
+    await store.createRoom({
+      id: 'p1',
+      kind: 'group',
+      title: 'Phòng',
+      createdBy: 'u1',
+      doorbellKey: 'door-p1',
+      directKey: null,
+      encryption: 'plain',
+    })
+    await store.addMember({
+      roomId: 'p1',
+      userId: 'u1',
+      role: 'member',
+      joinedAt: new Date().toISOString(),
+    })
+    await say('p1', 'u1', 'họp từ đầu năm', 'first')
+    for (let i = 0; i < 1_200; i++) await say('p1', 'u1', `tin ${i}`, `c${i}`)
+
+    const found = await searchRoom({ roomId: 'p1', userId: 'u1', query: 'hop' }, { store })
+    expect(found.items.map((m) => m.body)).toEqual(['họp từ đầu năm'])
+    expect(found.more).toBe(false)
+  })
 })
 
 describe('searchRoom', () => {
@@ -58,9 +90,9 @@ describe('searchRoom', () => {
     const gone = await say('r1', 'u1', 'họp bí mật', 'c1')
     await store.softDeleteMessage('r1', gone.id, 'u1')
 
-    expect((await searchRoom({ roomId: 'r1', userId: 'u1', query: 'hop' }, { store })).items).toEqual(
-      [],
-    )
+    expect(
+      (await searchRoom({ roomId: 'r1', userId: 'u1', query: 'hop' }, { store })).items,
+    ).toEqual([])
   })
 
   it('leaves out a sticker, whose body is an id nobody typed', async () => {
@@ -118,8 +150,8 @@ describe('searchRoom', () => {
 
     // The same guard every other read has. A search that answered first and
     // checked afterwards would be a way to read a room by guessing at it.
-    await expect(searchRoom({ roomId: 'r1', userId: 'u2', query: 'hop' }, { store })).rejects.toThrow(
-      NotAMemberError,
-    )
+    await expect(
+      searchRoom({ roomId: 'r1', userId: 'u2', query: 'hop' }, { store }),
+    ).rejects.toThrow(NotAMemberError)
   })
 })

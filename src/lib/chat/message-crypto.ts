@@ -84,6 +84,15 @@ export function bodyAad(messageId: string, roomId: string): string {
   return `${messageId}:${roomId}`
 }
 
+/** Whether a room can be made locked here. A malformed key counts as none. */
+export function canSeal(): boolean {
+  try {
+    return keyring().primary !== null
+  } catch {
+    return false
+  }
+}
+
 /**
  * Locks a body, or returns null when there is no key to lock it with.
  *

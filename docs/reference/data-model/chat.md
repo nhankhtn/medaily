@@ -12,9 +12,9 @@ Chat lives in four MongoDB collections: rooms, seats, messages and invites. This
 
 | Collection | `_id` | Fields worth knowing |
 | --- | --- | --- |
-| `chat_rooms` | uuid | `kind` (`direct` \| `group`), `title`, `createdBy`, `doorbellKey`, `directKey`, `avatarUrl`, `lastMessageAt`, `createdAt` |
+| `chat_rooms` | uuid | `kind` (`direct` \| `group`), `title`, `createdBy`, `doorbellKey`, `directKey`, `avatarUrl`, `encryption` (`locked` \| `plain`, absent on older rooms), `lastMessageAt`, `createdAt` |
 | `chat_members` | `roomId:userId` | `role` (`owner` \| `member`), `joinedAt`, `leftAt`, `lastReadMessageId` |
-| `chat_messages` | ObjectId | `roomId`, `userId`, `kind` (`text` \| `sticker`), `body` **or** `bodyEnc`, `clientId`, `createdAt`, `deletedAt`, `reactions`, `replyToId` |
+| `chat_messages` | ObjectId | `roomId`, `userId`, `kind` (`text` \| `sticker`), `body` (+ `bodyFold` in a plain room) **or** `bodyEnc`, `clientId`, `createdAt`, `deletedAt`, `reactions`, `replyToId` |
 | `chat_invites` | the code | `roomId`, `createdBy`, `email`, `expiresAt`, `maxUses`, `usedCount`, `revokedAt`, `createdAt` |
 
 `kind` is fixed when the room is made, never derived from how many people are in it. `src/lib/chat/types.ts` also declares a third kind, `challenge`, but nothing creates or reads one yet.
@@ -50,13 +50,21 @@ No TTL on any chat collection. A conversation that deletes itself after a while 
 
 ## `body` and `bodyEnc`
 
-A message's words are in one of two places, and both kinds of row live together permanently. **Exactly one field is ever present** — a document is not a row with a fixed set of columns, so the unused one is simply not written rather than written empty.
+A message's words are in one of two places. **Exactly one is ever present** — a document is not a row with a fixed set of columns, so the unused one is simply not written rather than written empty.
 
-| State | `body` | `bodyEnc` |
-| --- | --- | --- |
-| No `CHAT_MESSAGE_KEY` set | the words | — |
-| Locked | — | `{ v, iv, ct, wraps }` |
-| Recalled | — | — |
+Which one is decided by the room's `encryption`, set when the room is made and never changed:
+
+| Room `encryption` | `body` | `bodyFold` | `bodyEnc` |
+| --- | --- | --- | --- |
+| `plain` | the words | the words folded for search: lower case, no marks, `đ` → `d`, single spaces | — |
+| `locked` | — | — | `{ v, iv, ct, wraps }`. With no `CHAT_MESSAGE_KEY` the write is **refused**, never stored in the clear |
+| absent (`legacy`, a room made before the choice) | the words when no key is set | — | locked when a key is set |
+| any, once recalled | — | — | — |
+
+`bodyFold` exists so a plain room can be searched by the database: a `$regex`
+on it, walked along `room_seq`. It is no more revealing than `body` beside it,
+and it is never written next to `bodyEnc`. Editing a message rewrites it;
+recalling one removes it.
 
 A recalled message is therefore known by `deletedAt` alone, which was already the only thing that marked it. Nothing has to tell an empty message from a withdrawn one, because an empty message cannot be sent.
 
@@ -64,7 +72,7 @@ A recalled message is therefore known by `deletedAt` alone, which was already th
 
 Everything is AES-256-GCM, with `messageId:roomId` as additional authenticated data. Without that, anyone who could write to this database could lift a locked body out of one message and drop it into another and it would still open; with it, a body that has been moved no longer opens at all.
 
-> **Important:** The key never leaves the server, so **this is not end-to-end encryption.** It defends a dump, a backup and the cluster's operator. It does not defend against someone holding the application server. Switching it on migrates nothing. Switching it off strands everything written while it was on.
+> **Important:** The key never leaves the server, so **this is not end-to-end encryption.** It defends a dump, a backup and the cluster's operator. It does not defend against someone holding the application server. Within a `locked` room, removing the key stops new messages being sent rather than letting them through in the clear. In a `legacy` room, setting a key migrates nothing and removing it strands everything written while it was set.
 
 ## Related
 

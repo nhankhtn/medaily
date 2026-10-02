@@ -90,15 +90,16 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
         {/* Beside the title, not under the transcript: it is about the room,
             and it is where the eye already is on arriving. */}
         <div className="flex shrink-0 items-center gap-1">
-          <RoomSearch roomId={loaded.room.id} />
+          <RoomSearch roomId={loaded.room.id} encryption={loaded.room.encryption} />
           <Nudge roomId={loaded.room.id} />
           <RoomSettings
-          roomId={loaded.room.id}
-          owner={owner}
-          avatarUrl={loaded.room.avatarUrl}
-          title={loaded.room.title}
-          members={Object.values(loaded.speakers)}
-          me={userId}
+            roomId={loaded.room.id}
+            encryption={loaded.room.encryption}
+            owner={owner}
+            avatarUrl={loaded.room.avatarUrl}
+            title={loaded.room.title}
+            members={Object.values(loaded.speakers)}
+            me={userId}
           />
         </div>
       </div>

@@ -283,6 +283,13 @@ export async function searchRoom(
   await assertMember(roomId, userId, { store })
   if (normalise(query) === '') return { items: [], cursor: null, more: false }
 
+  // A plain room is searched by the database; only a locked or legacy one has
+  // to be opened a page at a time.
+  const room = await store.findRoom(roomId)
+  if (room?.encryption === 'plain') {
+    return store.searchText(roomId, { query, before, limit: SEARCH_LIMIT })
+  }
+
   const found: ChatMessage[] = []
   let cursor = before
   let scanned = 0

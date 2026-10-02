@@ -5,10 +5,15 @@ import {
   type ChatMessage,
   type ChatRoom,
   type MessagePage,
+  type RoomEncryption,
 } from './types'
+import { matches } from './search'
 
 /** A room is always made faceless; the picture is set afterwards, if at all. */
-export type NewRoom = Omit<ChatRoom, 'lastMessageAt' | 'createdAt' | 'avatarUrl'>
+export type NewRoom = Omit<ChatRoom, 'lastMessageAt' | 'createdAt' | 'avatarUrl' | 'encryption'> & {
+  /** Fixed for the room's life: no method on this port changes it. */
+  encryption: Exclude<RoomEncryption, 'legacy'>
+}
 export type NewMessage = Omit<
   ChatMessage,
   'id' | 'createdAt' | 'deletedAt' | 'reactions' | 'replyTo' | 'editedAt'
@@ -106,6 +111,16 @@ export type ChatStore = {
   scanBackward: (
     roomId: string,
     page: { before?: string | null; limit: number },
+  ) => Promise<MessagePage>
+
+  /**
+   * Text messages matching a query, newest first, found by the database.
+   * Only for a `plain` room — a locked body cannot be matched without opening
+   * it, which is what `scanBackward` is for. `replyTo` is always null.
+   */
+  searchText: (
+    roomId: string,
+    page: { query: string; before?: string | null; limit: number },
   ) => Promise<MessagePage>
 
   /**
@@ -208,6 +223,7 @@ export const NO_CHAT: ChatStore = {
   listBackward: async () => ({ items: [], cursor: null, more: false }),
   listForward: async () => ({ items: [], cursor: null, more: false }),
   scanBackward: async () => ({ items: [], cursor: null, more: false }),
+  searchText: async () => ({ items: [], cursor: null, more: false }),
   countUnread: async () => ({}),
   latestUnreadSender: async () => null,
   findMessage: async () => null,
@@ -371,6 +387,15 @@ export function inMemoryChatStore(): ChatStore {
       // The fake has no quotes to resolve and no cost to save; it answers the
       // same shape so the contract can hold both stores to the same promise.
       const rows = live(roomId)
+        .filter((m) => (before ? m.id < before : true))
+        .sort((a, b) => b.id.localeCompare(a.id))
+        .slice(0, limit + 1)
+      const answered = page(rows, limit)
+      return { ...answered, items: answered.items.map((m) => ({ ...m, replyTo: null })) }
+    },
+    searchText: async (roomId, { query, before, limit }) => {
+      const rows = live(roomId)
+        .filter((m) => m.kind === 'text' && m.deletedAt === null && matches(m.body, query))
         .filter((m) => (before ? m.id < before : true))
         .sort((a, b) => b.id.localeCompare(a.id))
         .slice(0, limit + 1)

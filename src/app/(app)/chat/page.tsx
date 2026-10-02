@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card'
 import { InviteDialog } from '@/features/chat/invite-dialog'
 import { NewRoom } from '@/features/chat/new-room'
 import { getCurrentUserId } from '@/lib/auth/current-user'
+import { canSeal } from '@/lib/chat/message-crypto'
 import { chatEnabled } from '@/lib/chat/provider'
 import { PATHS } from '@/lib/paths'
 import { cn } from '@/lib/utils'
@@ -31,7 +32,7 @@ export default async function ChatPage({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">{t('title')}</h1>
-        <NewRoom />
+        <NewRoom encryptionAvailable={canSeal()} />
       </div>
 
       {/* An invite arrives as a question over the list, not as a page. */}

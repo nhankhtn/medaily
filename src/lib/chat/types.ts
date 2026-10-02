@@ -1,6 +1,13 @@
 export const ROOM_KINDS = ['direct', 'group', 'challenge'] as const
 export type RoomKind = (typeof ROOM_KINDS)[number]
 
+/**
+ * Chosen when the room is made and never changed. `legacy` is a room from
+ * before the choice existed: it follows the deploy's key, as all rooms did.
+ */
+export const ROOM_ENCRYPTIONS = ['locked', 'plain', 'legacy'] as const
+export type RoomEncryption = (typeof ROOM_ENCRYPTIONS)[number]
+
 export const MEMBER_ROLES = ['owner', 'member'] as const
 export type MemberRole = (typeof MEMBER_ROLES)[number]
 
@@ -30,6 +37,7 @@ export type ChatRoom = {
    * of the person you are talking to.
    */
   avatarUrl: string | null
+  encryption: RoomEncryption
   lastMessageAt: string | null
   createdAt: string
 }

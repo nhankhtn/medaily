@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Chat | Medaily Docs</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="robots" content="noindex, nofollow"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="http://localhost/docs/reference/data-model/chat"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Chat | Medaily Docs"><meta data-rh="true" name="description" content="The four MongoDB chat collections, their indexes, and how a message body is stored in the clear or locked under CHAT_MESSAGE_KEY."><meta data-rh="true" property="og:description" content="The four MongoDB chat collections, their indexes, and how a message body is stored in the clear or locked under CHAT_MESSAGE_KEY."><link data-rh="true" rel="canonical" href="http://localhost/docs/reference/data-model/chat"><link data-rh="true" rel="alternate" href="http://localhost/docs/reference/data-model/chat" hreflang="en"><link data-rh="true" rel="alternate" href="http://localhost/docs/reference/data-model/chat" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Data model","item":"http://localhost/docs/reference/data-model/overview"},{"@type":"ListItem","position":2,"name":"Chat","item":"http://localhost/docs/reference/data-model/chat"}]}</script><link rel="stylesheet" href="/docs/assets/css/styles.55dbd2d6.css">
-<script src="/docs/assets/js/runtime~main.2dd34edd.js" defer="defer"></script>
+<script src="/docs/assets/js/runtime~main.3280812c.js" defer="defer"></script>
 <script src="/docs/assets/js/main.f68d91db.js" defer="defer"></script>
 </head>
 <body>
@@ -44,7 +44,7 @@
 
 
 
-<table><thead><tr><th>Collection</th><th><code>_id</code></th><th>Fields worth knowing</th></tr></thead><tbody><tr><td><code>chat_rooms</code></td><td>uuid</td><td><code>kind</code> (<code>direct</code> | <code>group</code>), <code>title</code>, <code>createdBy</code>, <code>doorbellKey</code>, <code>directKey</code>, <code>avatarUrl</code>, <code>lastMessageAt</code>, <code>createdAt</code></td></tr><tr><td><code>chat_members</code></td><td><code>roomId:userId</code></td><td><code>role</code> (<code>owner</code> | <code>member</code>), <code>joinedAt</code>, <code>leftAt</code>, <code>lastReadMessageId</code></td></tr><tr><td><code>chat_messages</code></td><td>ObjectId</td><td><code>roomId</code>, <code>userId</code>, <code>kind</code> (<code>text</code> | <code>sticker</code>), <code>body</code> <strong>or</strong> <code>bodyEnc</code>, <code>clientId</code>, <code>createdAt</code>, <code>deletedAt</code>, <code>reactions</code>, <code>replyToId</code></td></tr><tr><td><code>chat_invites</code></td><td>the code</td><td><code>roomId</code>, <code>createdBy</code>, <code>email</code>, <code>expiresAt</code>, <code>maxUses</code>, <code>usedCount</code>, <code>revokedAt</code>, <code>createdAt</code></td></tr></tbody></table>
+<table><thead><tr><th>Collection</th><th><code>_id</code></th><th>Fields worth knowing</th></tr></thead><tbody><tr><td><code>chat_rooms</code></td><td>uuid</td><td><code>kind</code> (<code>direct</code> | <code>group</code>), <code>title</code>, <code>createdBy</code>, <code>doorbellKey</code>, <code>directKey</code>, <code>avatarUrl</code>, <code>encryption</code> (<code>locked</code> | <code>plain</code>, absent on older rooms), <code>lastMessageAt</code>, <code>createdAt</code></td></tr><tr><td><code>chat_members</code></td><td><code>roomId:userId</code></td><td><code>role</code> (<code>owner</code> | <code>member</code>), <code>joinedAt</code>, <code>leftAt</code>, <code>lastReadMessageId</code></td></tr><tr><td><code>chat_messages</code></td><td>ObjectId</td><td><code>roomId</code>, <code>userId</code>, <code>kind</code> (<code>text</code> | <code>sticker</code>), <code>body</code> (+ <code>bodyFold</code> in a plain room) <strong>or</strong> <code>bodyEnc</code>, <code>clientId</code>, <code>createdAt</code>, <code>deletedAt</code>, <code>reactions</code>, <code>replyToId</code></td></tr><tr><td><code>chat_invites</code></td><td>the code</td><td><code>roomId</code>, <code>createdBy</code>, <code>email</code>, <code>expiresAt</code>, <code>maxUses</code>, <code>usedCount</code>, <code>revokedAt</code>, <code>createdAt</code></td></tr></tbody></table>
 <p><code>kind</code> is fixed when the room is made, never derived from how many people are in it. <code>src/lib/chat/types.ts</code> also declares a third kind, <code>challenge</code>, but nothing creates or reads one yet.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="fields-that-are-not-obvious">Fields that are not obvious<a href="#fields-that-are-not-obvious" class="hash-link" aria-label="Direct link to Fields that are not obvious" title="Direct link to Fields that are not obvious" translate="no">​</a></h2>
 <ul>
@@ -113,7 +113,8 @@
 <table><thead><tr><th>Collection</th><th>Index</th><th>Purpose</th></tr></thead><tbody><tr><td><code>chat_rooms</code></td><td><code>direct_uniq</code> — <code>directKey</code>, unique, partial on the field existing</td><td>One direct room per pair; group rooms omit the field so they are not all &quot;the same&quot; room</td></tr><tr><td><code>chat_rooms</code></td><td><code>doorbell</code> — <code>doorbellKey</code>, unique</td><td></td></tr><tr><td><code>chat_members</code></td><td><code>user_rooms</code> — <code>{ userId, leftAt }</code></td><td>A person&#x27;s open rooms</td></tr><tr><td><code>chat_members</code></td><td><code>room</code> — <code>roomId</code></td><td></td></tr><tr><td><code>chat_messages</code></td><td><code>room_seq</code> — <code>{ roomId, _id }</code></td><td>Paging, in both directions</td></tr><tr><td><code>chat_messages</code></td><td><code>room_client</code> — <code>{ roomId, clientId }</code>, unique</td><td>What makes a resend harmless</td></tr><tr><td><code>chat_messages</code></td><td><code>user</code> — <code>userId</code></td><td>Erasing an account</td></tr><tr><td><code>chat_invites</code></td><td><code>email</code> — sparse; <code>room</code> — <code>roomId</code></td><td></td></tr></tbody></table>
 <p>No TTL on any chat collection. A conversation that deletes itself after a while is a bug.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="body-and-bodyenc"><code>body</code> and <code>bodyEnc</code><a href="#body-and-bodyenc" class="hash-link" aria-label="Direct link to body-and-bodyenc" title="Direct link to body-and-bodyenc" translate="no">​</a></h2>
-<p>A message&#x27;s words are in one of two places, and both kinds of row live together permanently. <strong>Exactly one field is ever present</strong> — a document is not a row with a fixed set of columns, so the unused one is simply not written rather than written empty.</p>
+<p>A message&#x27;s words are in one of two places. <strong>Exactly one is ever present</strong> — a document is not a row with a fixed set of columns, so the unused one is simply not written rather than written empty.</p>
+<p>Which one is decided by the room&#x27;s <code>encryption</code>, set when the room is made and never changed:</p>
 
 
 
@@ -139,12 +140,26 @@
 
 
 
-<table><thead><tr><th>State</th><th><code>body</code></th><th><code>bodyEnc</code></th></tr></thead><tbody><tr><td>No <code>CHAT_MESSAGE_KEY</code> set</td><td>the words</td><td>—</td></tr><tr><td>Locked</td><td>—</td><td><code>{ v, iv, ct, wraps }</code></td></tr><tr><td>Recalled</td><td>—</td><td>—</td></tr></tbody></table>
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Room <code>encryption</code></th><th><code>body</code></th><th><code>bodyFold</code></th><th><code>bodyEnc</code></th></tr></thead><tbody><tr><td><code>plain</code></td><td>the words</td><td>the words folded for search: lower case, no marks, <code>đ</code> → <code>d</code>, single spaces</td><td>—</td></tr><tr><td><code>locked</code></td><td>—</td><td>—</td><td><code>{ v, iv, ct, wraps }</code>. With no <code>CHAT_MESSAGE_KEY</code> the write is <strong>refused</strong>, never stored in the clear</td></tr><tr><td>absent (<code>legacy</code>, a room made before the choice)</td><td>the words when no key is set</td><td>—</td><td>locked when a key is set</td></tr><tr><td>any, once recalled</td><td>—</td><td>—</td><td>—</td></tr></tbody></table>
+<p><code>bodyFold</code> exists so a plain room can be searched by the database: a <code>$regex</code>
+on it, walked along <code>room_seq</code>. It is no more revealing than <code>body</code> beside it,
+and it is never written next to <code>bodyEnc</code>. Editing a message rewrites it;
+recalling one removes it.</p>
 <p>A recalled message is therefore known by <code>deletedAt</code> alone, which was already the only thing that marked it. Nothing has to tell an empty message from a withdrawn one, because an empty message cannot be sent.</p>
 <p><code>ct</code> is the message encrypted under a key made for that message alone, which is never stored. <code>wraps</code> maps a key id — the first 8 hex of the key&#x27;s SHA-256, which says <em>which</em> key without saying anything about it — to that message key wrapped under it. Two entries, one per environment key, is what lets the spare open everything the main one can.</p>
 <p>Everything is AES-256-GCM, with <code>messageId:roomId</code> as additional authenticated data. Without that, anyone who could write to this database could lift a locked body out of one message and drop it into another and it would still open; with it, a body that has been moved no longer opens at all.</p>
 <blockquote>
-<p><strong>Important:</strong> The key never leaves the server, so <strong>this is not end-to-end encryption.</strong> It defends a dump, a backup and the cluster&#x27;s operator. It does not defend against someone holding the application server. Switching it on migrates nothing. Switching it off strands everything written while it was on.</p>
+<p><strong>Important:</strong> The key never leaves the server, so <strong>this is not end-to-end encryption.</strong> It defends a dump, a backup and the cluster&#x27;s operator. It does not defend against someone holding the application server. Within a <code>locked</code> room, removing the key stops new messages being sent rather than letting them through in the clear. In a <code>legacy</code> room, setting a key migrates nothing and removing it strands everything written while it was set.</p>
 </blockquote>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="related">Related<a href="#related" class="hash-link" aria-label="Direct link to Related" title="Direct link to Related" translate="no">​</a></h2>
 <ul>
