@@ -4,7 +4,7 @@ import { previewOf, type ChatInvite, type ChatMember, type ChatMessage, type Cha
 export type NewRoom = Omit<ChatRoom, 'lastMessageAt' | 'createdAt' | 'avatarUrl'>
 export type NewMessage = Omit<
   ChatMessage,
-  'id' | 'createdAt' | 'deletedAt' | 'reactions' | 'replyTo'
+  'id' | 'createdAt' | 'deletedAt' | 'reactions' | 'replyTo' | 'editedAt'
 > & {
   /** Supplied by the browser so a retried send returns the first message, not a second one. */
   clientId: string
@@ -105,6 +105,22 @@ export type ChatStore = {
     rooms: { roomId: string; after: string | null }[],
   ) => Promise<string | null>
 
+  /**
+   * Rewrites the words, and says so on the message.
+   *
+   * Only the author, only text, and only while it is still there: a sticker's
+   * body is an id and editing it means nothing, and a recalled message has no
+   * words left to change. `null` when any of those is not true, which is the
+   * same answer as "not yours" on purpose — the screen should not learn which
+   * of them it was.
+   */
+  editMessage: (
+    roomId: string,
+    messageId: string,
+    userId: string,
+    body: string,
+  ) => Promise<ChatMessage | null>
+
   /** Answers false when the message is not this person's to delete. */
   softDeleteMessage: (roomId: string, messageId: string, userId: string) => Promise<boolean>
   /**
@@ -184,6 +200,7 @@ export const NO_CHAT: ChatStore = {
   countUnread: async () => ({}),
   latestUnreadSender: async () => null,
   findMessage: async () => null,
+  editMessage: async () => null,
   softDeleteMessage: async () => false,
   toggleReaction: async () => null,
   createInvite: async () => {
@@ -327,6 +344,7 @@ export function inMemoryChatStore(): ChatStore {
         id: nextId(),
         createdAt: new Date().toISOString(),
         deletedAt: null,
+        editedAt: null,
         reactions: {} as Record<string, string[]>,
         replyToId: message.replyToId ?? null,
         replyTo: null,
@@ -399,6 +417,21 @@ export function inMemoryChatStore(): ChatStore {
       if (had) return 'removed'
       found.reactions[emoji] = [...(found.reactions[emoji] ?? []), userId]
       return 'added'
+    },
+
+    editMessage: async (roomId, messageId, userId, body) => {
+      const found = messages.find(
+        (m) =>
+          m.id === messageId &&
+          m.roomId === roomId &&
+          m.userId === userId &&
+          m.deletedAt === null &&
+          m.kind === 'text',
+      )
+      if (!found) return null
+      found.body = body
+      found.editedAt = new Date().toISOString()
+      return structuredClone(found)
     },
 
     softDeleteMessage: async (roomId, messageId, userId) => {

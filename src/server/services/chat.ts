@@ -1,7 +1,8 @@
 import { findUsersByIds } from '@/server/repositories/auth'
 import { pickChatStore } from '@/lib/chat/provider'
 import type { ChatStore } from '@/lib/chat/store'
-import type { ChatMember, ChatRoom } from '@/lib/chat/types'
+import { matches, normalise } from '@/lib/chat/search'
+import type { ChatMember, ChatMessage, ChatRoom, MessagePage } from '@/lib/chat/types'
 
 /**
  * Every function here takes its store as an argument, defaulting to whichever
@@ -240,4 +241,83 @@ export async function unreadForShell(
   }
 
   return { rooms: waiting.length, channels, from }
+}
+
+/** How many messages one turn of the scan opens and decrypts. */
+const SCAN_PAGE = 200
+
+/** How far back one request goes before handing the cursor back. */
+const SCAN_CAP = 1_000
+
+/** Matches handed over at once. More than a screen is a list nobody reads. */
+const SEARCH_LIMIT = 20
+
+/**
+ * Finding a message by what it says.
+ *
+ * Scanned rather than queried, because the bodies are sealed at rest: there is
+ * no index over words nobody can read without the key, and building one would
+ * mean keeping the words somewhere in the clear — which is the thing the seal
+ * is for. So this opens a page at a time, newest first, and compares in
+ * memory.
+ *
+ * That costs what it costs, which is why it is bounded twice: it stops at a
+ * screenful of matches, and it stops after `SCAN_CAP` messages whether or not
+ * it found any. A room with ten thousand messages hands back a cursor instead
+ * of holding a request open while it reads them all, and the screen asks for
+ * more if somebody wants more.
+ *
+ * Recalled messages and stickers are skipped. A recall has no words left, and
+ * a sticker's body is an id — matching "coffee" against it would be matching
+ * against a name the sender never typed.
+ */
+export async function searchRoom(
+  {
+    roomId,
+    userId,
+    query,
+    before = null,
+  }: { roomId: string; userId: string; query: string; before?: string | null },
+  { store = pickChatStore() }: WithStore = {},
+): Promise<MessagePage> {
+  await assertMember(roomId, userId, { store })
+  if (normalise(query) === '') return { items: [], cursor: null, more: false }
+
+  const found: ChatMessage[] = []
+  let cursor = before
+  let scanned = 0
+  let more = true
+  /*
+   * The last message looked at, which is not the same as the end of the page.
+   * Stopping mid-page at a full screen and then continuing from the page's end
+   * would step over everything between them — the matches somebody would have
+   * scrolled to next, gone with no sign that they were ever there.
+   */
+  let examined: string | null = null
+  let full = false
+
+  while (!full && found.length < SEARCH_LIMIT && scanned < SCAN_CAP) {
+    const page = await store.listBackward(roomId, { before: cursor, limit: SCAN_PAGE })
+    scanned += page.items.length
+
+    for (const message of page.items) {
+      examined = message.id
+      if (message.deletedAt !== null || message.kind !== 'text') continue
+      if (!matches(message.body, query)) continue
+      found.push(message)
+      if (found.length >= SEARCH_LIMIT) {
+        full = true
+        break
+      }
+    }
+
+    if (full) break
+    cursor = page.cursor
+    if (!page.more) {
+      more = false
+      break
+    }
+  }
+
+  return { items: found, cursor: full ? examined : cursor, more: full ? true : more }
 }

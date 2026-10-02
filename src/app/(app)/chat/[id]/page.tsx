@@ -7,6 +7,7 @@ import { notFound } from 'next/navigation'
 import { Avatar } from '@/components/ui/avatar'
 import { Card } from '@/components/ui/card'
 import { Nudge } from '@/features/chat/nudge'
+import { RoomSearch } from '@/features/chat/room-search'
 import { RoomSettings } from '@/features/chat/room-settings'
 import { RoomView } from '@/features/chat/room-view'
 import { getCurrentUserId } from '@/lib/auth/current-user'
@@ -89,6 +90,7 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
         {/* Beside the title, not under the transcript: it is about the room,
             and it is where the eye already is on arriving. */}
         <div className="flex shrink-0 items-center gap-1">
+          <RoomSearch roomId={loaded.room.id} />
           <Nudge roomId={loaded.room.id} />
           <RoomSettings
           roomId={loaded.room.id}

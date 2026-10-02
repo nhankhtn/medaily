@@ -286,6 +286,76 @@ export function describeChatStore(name: string, makeStore: () => Promise<ChatSto
       expect(await store.softDeleteMessage('r1', sent.id, 'u2')).toBe(false)
       expect((await store.listBackward('r1', { limit: 50 })).items[0]?.body).toBe('mine')
     })
+
+    it('rewrites the words and says it was rewritten', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      const sent = await store.appendMessage(message('r1', 'u1', 'mai hop 9h', 'c1'))
+      expect(sent.editedAt).toBeNull()
+
+      const after = await store.editMessage('r1', sent.id, 'u1', 'mai hop 10h')
+      expect(after?.body).toBe('mai hop 10h')
+      expect(after?.editedAt).not.toBeNull()
+    })
+
+    it('leaves the new words where everybody reads them', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      const sent = await store.appendMessage(message('r1', 'u1', 'truoc', 'c1'))
+      await store.editMessage('r1', sent.id, 'u1', 'sau')
+
+      // Read back through the page, not the return value: the words have to
+      // have moved where they are stored, not only in what came back.
+      const page = await store.listBackward('r1', { limit: 50 })
+      expect(page.items[0]?.body).toBe('sau')
+      expect(page.items[0]?.editedAt).not.toBeNull()
+    })
+
+    it('keeps the id, so an answer still points at it', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      const sent = await store.appendMessage(message('r1', 'u1', 'truoc', 'c1'))
+
+      expect((await store.editMessage('r1', sent.id, 'u1', 'sau'))?.id).toBe(sent.id)
+    })
+
+    it('refuses to rewrite somebody elses message', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      const sent = await store.appendMessage(message('r1', 'u1', 'mine', 'c1'))
+
+      expect(await store.editMessage('r1', sent.id, 'u2', 'theirs now')).toBeNull()
+      expect((await store.listBackward('r1', { limit: 50 })).items[0]?.body).toBe('mine')
+    })
+
+    it('refuses a message that was recalled, which has no words left', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      const sent = await store.appendMessage(message('r1', 'u1', 'oops', 'c1'))
+      await store.softDeleteMessage('r1', sent.id, 'u1')
+
+      expect(await store.editMessage('r1', sent.id, 'u1', 'back again')).toBeNull()
+    })
+
+    it('refuses a sticker, whose body is an id rather than words', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      const sent = await store.appendMessage({
+        ...message('r1', 'u1', 'coffee', 'c1'),
+        kind: 'sticker',
+      })
+
+      expect(await store.editMessage('r1', sent.id, 'u1', 'tea')).toBeNull()
+    })
+
+    it('does not find a message through the wrong room', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      await store.createRoom(room('r2'))
+      const sent = await store.appendMessage(message('r1', 'u1', 'mine', 'c1'))
+
+      expect(await store.editMessage('r2', sent.id, 'u1', 'moved')).toBeNull()
+    })
   })
 
   describe(`${name}: unread`, () => {

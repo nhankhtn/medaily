@@ -64,6 +64,14 @@ export type ChatMessage = {
   createdAt: string
   deletedAt: string | null
   /**
+   * When the words last changed, or null if they never did.
+   *
+   * Shown rather than hidden: a sentence that quietly became a different
+   * sentence is worse than one that says it was rewritten, and the person
+   * being answered deserves to know which one they are answering.
+   */
+  editedAt: string | null
+  /**
    * Who reacted with what, emoji to user ids.
    *
    * Kept on the message rather than beside it: a reaction is never read apart

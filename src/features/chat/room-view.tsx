@@ -1,6 +1,6 @@
 'use client'
 
-import { Copy, CornerUpLeft, Send, SmilePlus, Trash2, X } from 'lucide-react'
+import { Copy, CornerUpLeft, Pencil, Send, SmilePlus, Trash2, X } from 'lucide-react'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -29,6 +29,7 @@ import { cn } from '@/lib/utils'
 import {
   deleteMessage,
   loadNewMessages,
+  editMessage,
   loadRecentMessages,
   toggleReaction,
   loadOlderMessages,
@@ -177,6 +178,8 @@ export function RoomView({
    */
   /** The message the box is currently answering, or nothing. */
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null)
+  /** The message the box is rewriting, rather than the one it is answering. */
+  const [editing, setEditing] = useState<ChatMessage | null>(null)
 
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
@@ -215,7 +218,44 @@ export function RoomView({
    */
   const submit = async (event: React.FormEvent) => {
     event.preventDefault()
+    if (editing) return rewrite(draft.trim())
     await send('text', draft.trim())
+  }
+
+  /**
+   * Sends the new words for a message that is already on screen.
+   *
+   * Optimistic like sending is, and for the same reason — but it puts the old
+   * words back if the server says no, because unlike a failed send there is
+   * something still on screen that would otherwise be a lie.
+   */
+  const rewrite = async (body: string) => {
+    const target = editing
+    if (!target || body === '' || sending || body === target.body) {
+      setEditing(null)
+      setDraft('')
+      return
+    }
+
+    setEditing(null)
+    setDraft('')
+    setSending(true)
+    // The words go up now; the "edited" mark waits for the answer. Inventing a
+    // time here would be this screen claiming to know when the server wrote,
+    // which is the same reason a recall takes its moment from the reply.
+    setMessages((shown) => shown.map((m) => (m.id === target.id ? { ...m, body } : m)))
+
+    const result = await editMessage({ roomId: room.id, messageId: target.id, body })
+    setSending(false)
+
+    if (result.ok) {
+      setMessages((shown) => shown.map((m) => (m.id === target.id ? result.message : m)))
+      void ringRoom(room.doorbellKey)
+      return
+    }
+
+    setMessages((shown) => shown.map((m) => (m.id === target.id ? target : m)))
+    toast.error(t(result.error === 'rate_limited' ? 'tooFast' : 'sendFailed'))
   }
 
   const send = async (kind: MessageKind, body: string) => {
@@ -237,6 +277,7 @@ export function RoomView({
       // server's to say, and the row is not showing a clock until it has.
       createdAt: '',
       deletedAt: null,
+      editedAt: null,
       pending: true,
     }
 
@@ -488,6 +529,7 @@ export function RoomView({
                       />
                       {message.pending ? null : (
                         <span className="text-text-subtle px-1 text-[10px] tabular-nums">
+                          {message.editedAt && !message.deletedAt ? `${t('edited')} · ` : ''}
                           {format.dateTime(new Date(message.createdAt), 'clock')}
                         </span>
                       )}
@@ -561,6 +603,7 @@ export function RoomView({
                             mine ? 'text-accent-text/70' : 'text-text-subtle',
                           )}
                         >
+                          {message.editedAt && !message.deletedAt ? `${t('edited')} · ` : ''}
                           {format.dateTime(new Date(message.createdAt), 'clock')}
                         </span>
                       )}
@@ -604,6 +647,21 @@ export function RoomView({
                   setMenu(null)
                 }
           }
+          onEdit={
+            // Only your own words, and only while they are still words: a
+            // sticker's body is an id and a recall leaves nothing to rewrite.
+            menu.message.userId === me &&
+            menu.message.kind === 'text' &&
+            !menu.message.deletedAt &&
+            !menu.message.pending
+              ? () => {
+                  setEditing(menu.message)
+                  setReplyingTo(null)
+                  setDraft(menu.message.body)
+                  setMenu(null)
+                }
+              : undefined
+          }
           onRecall={
             menu.message.userId === me
               ? () => {
@@ -624,6 +682,23 @@ export function RoomView({
             ? t('typing', { name: typingNames[0]! })
             : t('typingMany', { count: typingNames.length })}
         </p>
+      ) : null}
+      {editing ? (
+        <div className="glass flex items-center gap-2 rounded-[var(--radius)] px-2 py-1.5">
+          <Pencil className="text-accent size-3.5 shrink-0" />
+          <p className="text-text-muted min-w-0 flex-1 truncate text-xs">{t('editing')}</p>
+          <button
+            type="button"
+            onClick={() => {
+              setEditing(null)
+              setDraft('')
+            }}
+            aria-label={t('cancelEdit')}
+            className="text-text-subtle hover:text-text flex size-7 shrink-0 items-center justify-center rounded-full"
+          >
+            <X className="size-3.5" />
+          </button>
+        </div>
       ) : null}
       {replyingTo ? (
         <div className="glass flex items-center gap-2 rounded-[var(--radius)] px-2 py-1.5">
@@ -1083,6 +1158,7 @@ function MessageMenu({
   onClose,
   onReply,
   onCopy,
+  onEdit,
   onRecall,
 }: {
   at: Anchor
@@ -1090,6 +1166,8 @@ function MessageMenu({
   onReply: () => void
   /** Absent when there are no words to take — a sticker is an id, not text. */
   onCopy?: () => void
+  /** Absent when there are no words of yours to rewrite. */
+  onEdit?: () => void
   /** Absent when the message is not yours to take back. */
   onRecall?: () => void
 }) {
@@ -1108,6 +1186,12 @@ function MessageMenu({
           <button type="button" onClick={onCopy} className={item}>
             <Copy className="size-4" />
             {t('copy')}
+          </button>
+        ) : null}
+        {onEdit ? (
+          <button type="button" onClick={onEdit} className={item}>
+            <Pencil className="size-4" />
+            {t('edit')}
           </button>
         ) : null}
         {onRecall ? (

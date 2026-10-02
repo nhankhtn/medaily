@@ -57,6 +57,7 @@ type MessageDoc = {
   createdAt: Date
   clientId: string
   deletedAt?: Date | null
+  editedAt?: Date | null
   reactions?: Record<string, string[]>
   /** Hex id of the message this one answers. The quote itself is never stored. */
   replyToId?: string
@@ -371,6 +372,26 @@ export function mongoChatStore(uri: string): ChatStore {
       return doc ? (await withQuotes(uri, [doc]))[0]! : null
     },
 
+    editMessage: async (roomId, messageId, userId, body) => {
+      if (!ObjectId.isValid(messageId)) return null
+      const messages = await messagesIn(uri)
+
+      // Sealed again against the same id and room it was sealed against the
+      // first time, and the other shape unset — a row carrying both would be
+      // one `asMessage` has to choose between, and the choice would be silent.
+      const sealed = sealBody(body, bodyAad(messageId, roomId))
+      const updated = await messages.findOneAndUpdate(
+        { _id: new ObjectId(messageId), roomId, userId, deletedAt: null, kind: 'text' },
+        {
+          $set: { ...(sealed ? { bodyEnc: sealed } : { body }), editedAt: new Date() },
+          $unset: sealed ? { body: '' } : { bodyEnc: '' },
+        },
+        { returnDocument: 'after' },
+      )
+
+      return updated ? (await withQuotes(uri, [updated]))[0]! : null
+    },
+
     softDeleteMessage: async (roomId, messageId, userId) => {
       if (!ObjectId.isValid(messageId)) return false
       const updated = await (
@@ -562,6 +583,7 @@ function asMessage(doc: MessageDoc | null): ChatMessage | null {
       : (doc.body ?? ''),
     createdAt: doc.createdAt.toISOString(),
     deletedAt: doc.deletedAt?.toISOString() ?? null,
+    editedAt: doc.editedAt?.toISOString() ?? null,
     reactions: readReactions(doc.reactions),
     // Filled by `withQuotes`, the only thing holding a collection to look the
     // quoted message up in. A message mapped on its own has no quote drawn.

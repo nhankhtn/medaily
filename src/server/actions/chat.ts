@@ -21,6 +21,7 @@ import {
   assertMember,
   NotAMemberError,
   sweepIfEmpty,
+  searchRoom,
 } from '@/server/services/chat'
 import { newInviteCode } from '@/lib/chat/invite-code'
 import { isReaction, isSticker } from '@/lib/chat/stickers'
@@ -39,6 +40,21 @@ const inviteWrites = createLimit({ capacity: 10, refillMs: 60 * 60_000 })
  * playful twice over, not enough to be used on somebody.
  */
 const nudges = createLimit({ capacity: 3, refillMs: 5 * 60_000 })
+
+/**
+ * How long a message may be, said once.
+ *
+ * Sending and rewriting have to agree: a limit that applied only on the way in
+ * would be one an edit could walk straight past.
+ */
+const messageBodySchema = z.string().trim().min(1).max(4000)
+
+/*
+ * Searching opens and decrypts up to a thousand messages, which is the most
+ * expensive read in the app by a distance. Twenty a minute is more than
+ * anybody types and far less than a loop.
+ */
+const searches = createLimit({ capacity: 20, refillMs: 60_000 })
 
 /** Bounded, and the caller loops. See `MessagePage.more`. */
 const CATCH_UP_PAGE = 100
@@ -180,7 +196,7 @@ export async function sendMessage(input: unknown) {
       // rather than trusted: without this the field is a way to store a string
       // that the room then renders as a picture.
       kind: z.enum(['text', 'sticker']).default('text'),
-      body: z.string().trim().min(1).max(4000),
+      body: messageBodySchema,
       clientId: z.string().min(1).max(64),
       replyToId: messageIdSchema.optional(),
     })
@@ -264,6 +280,44 @@ export async function deleteMessage(input: unknown) {
   // The moment comes back so the screen can mark the row recalled without
   // inventing a time of its own.
   return removed ? { ok: true as const, at: new Date().toISOString() } : { ok: false as const }
+}
+
+/**
+ * Rewrites a message that is already there.
+ *
+ * The same shape as sending, because it is the same act done late: the words
+ * are checked the same way, and the room is told the same way. What it is not
+ * is a second message — the id does not change, so an answer that quotes this
+ * one goes on quoting it, and nothing that was read moves.
+ */
+export async function editMessage(input: unknown) {
+  const parsed = z
+    .object({ roomId: roomIdSchema, messageId: messageIdSchema, body: messageBodySchema })
+    .safeParse(input)
+  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+
+  const store = pickChatStore()
+  const userId = await getCurrentUserId()
+  try {
+    await assertMember(parsed.data.roomId, userId, { store })
+  } catch {
+    return { ok: false as const, error: 'not_found' as const }
+  }
+
+  if (!sends.take(userId).allowed) return { ok: false as const, error: 'rate_limited' as const }
+
+  const message = await store.editMessage(
+    parsed.data.roomId,
+    parsed.data.messageId,
+    userId,
+    parsed.data.body,
+  )
+  // The same answer for "not yours", "already recalled" and "a sticker": the
+  // screen has no business learning which, and the menu only offered this on
+  // a message where all three are already false.
+  if (!message) return { ok: false as const, error: 'not_found' as const }
+
+  return { ok: true as const, message }
 }
 
 /**
@@ -835,4 +889,59 @@ export async function nudgeRoom(input: unknown) {
   })
 
   return { ok: true as const }
+}
+
+/**
+ * Finding a message in this room by what it says.
+ *
+ * Paged like everything else here, but the cursor means something different:
+ * it is how far the scan got, not where the last match was. The screen hands
+ * it straight back to ask for the next stretch of the room.
+ *
+ * The roster comes along because a result is drawn with a name on it and the
+ * screen may be showing a message from somebody who joined before it opened.
+ */
+export async function searchMessages(input: unknown) {
+  const parsed = z
+    .object({
+      roomId: roomIdSchema,
+      query: z.string().trim().min(1).max(200),
+      before: messageIdSchema.nullable().optional(),
+    })
+    .safeParse(input)
+  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+
+  const store = pickChatStore()
+  const userId = await getCurrentUserId()
+  /*
+   * Checked here as well as inside `searchRoom`, on purpose and not by
+   * accident: the service guards every caller, and this line is what a person
+   * reading this file sees. One extra member lookup in front of a scan that
+   * opens up to a thousand messages is not a cost worth trading a visible
+   * check for — `chat-actions-guarded.test.ts` exists because this check went
+   * missing once already.
+   */
+  if (!(await allowed(parsed.data.roomId, userId))) {
+    return { ok: false as const, error: 'not_found' as const }
+  }
+  if (!searches.take(userId).allowed) return { ok: false as const, error: 'rate_limited' as const }
+
+  try {
+    const page = await searchRoom(
+      {
+        roomId: parsed.data.roomId,
+        userId,
+        query: parsed.data.query,
+        before: parsed.data.before ?? null,
+      },
+      { store },
+    )
+    return {
+      ok: true as const,
+      ...page,
+      speakers: await speakersOf(page.items.map((m) => m.userId ?? '')),
+    }
+  } catch {
+    return { ok: false as const, error: 'not_found' as const }
+  }
 }
