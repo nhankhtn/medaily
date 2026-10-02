@@ -52,11 +52,22 @@ export function ThemeToggle({
       const x = rect.left + rect.width / 2
       const y = rect.top + rect.height / 2
       const radius = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y))
-      root.style.setProperty('--ui-reveal-x', `${x}px`)
-      root.style.setProperty('--ui-reveal-y', `${y}px`)
-      root.style.setProperty('--ui-reveal-r', `${radius}px`)
       root.classList.add('ui-theme-reveal')
       const transition = document.startViewTransition(paint)
+      // Driven from JS, not keyframes: Safari does not hand custom properties to the
+      // ::view-transition pseudo-elements, so a var()-positioned circle never grew there.
+      void transition.ready.then(() => {
+        root.animate(
+          {
+            clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`],
+          },
+          {
+            duration: 550,
+            easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+            pseudoElement: '::view-transition-new(root)',
+          },
+        )
+      })
       void transition.finished.finally(() => root.classList.remove('ui-theme-reveal'))
     }
 

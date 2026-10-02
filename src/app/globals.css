@@ -1735,24 +1735,13 @@ input[type='number'] {
 }
 
 /* Theme switch: the new palette grows out of the toggle (theme-toggle.tsx sets the vars). */
-@keyframes ui-theme-reveal {
-  from {
-    clip-path: circle(0 at var(--ui-reveal-x, 50%) var(--ui-reveal-y, 0));
-  }
-  to {
-    clip-path: circle(var(--ui-reveal-r, 150vmax) at var(--ui-reveal-x, 50%) var(--ui-reveal-y, 0));
-  }
-}
-
 html.ui-theme-reveal::view-transition-old(root),
 html.ui-theme-reveal::view-transition-new(root) {
   animation: none;
   mix-blend-mode: normal;
 }
 
-html.ui-theme-reveal::view-transition-new(root) {
-  animation: ui-theme-reveal 0.55s var(--ease-out-soft);
-}
+/* The circle itself is animated from theme-toggle.tsx. */
 
 /*
  * Toasts as glass. Sonner injects its stylesheet at runtime, so these carry
