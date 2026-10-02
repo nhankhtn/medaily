@@ -954,3 +954,45 @@ input[type='number'] {
     radial-gradient(60% 50% at 12% 8%, color-mix(in oklch, var(--accent) 16%, transparent), transparent 70%),
     radial-gradient(55% 45% at 88% 92%, color-mix(in oklch, var(--accent) 12%, transparent), transparent 72%);
 }
+
+/*
+ * A reaction leaving the button it was sent from.
+ *
+ * Decorative only — the reaction itself has already been sent and drawn on the
+ * message, so under `prefers-reduced-motion` the global rule above collapses
+ * this to nothing and the feature is unaffected.
+ */
+@keyframes chat-burst {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.6);
+  }
+  to {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--burst-x, 0px)), calc(-50% - 72px)) scale(1.25);
+  }
+}
+
+.chat-burst {
+  animation: chat-burst 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
+}
+
+/* The hand that answers a nudge. Decorative; reduced motion collapses it. */
+@keyframes chat-wave {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-18deg);
+  }
+  75% {
+    transform: rotate(18deg);
+  }
+}
+
+.chat-wave {
+  animation: chat-wave 0.35s ease-in-out 2;
+  transform-origin: 70% 80%;
+}

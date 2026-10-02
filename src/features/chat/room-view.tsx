@@ -58,11 +58,14 @@ export function RoomView({
   me,
   initialPage,
   initialSpeakers,
+  initialReads,
 }: {
   room: ChatRoom
   me: string
   initialPage: MessagePage
   initialSpeakers: Record<string, Speaker>
+  /** Who has read up to which message — a face goes under the one they stopped at. */
+  initialReads: Record<string, string>
 }) {
   const t = useTranslations('chat')
   const router = useRouter()
@@ -70,6 +73,7 @@ export function RoomView({
 
   const [messages, setMessages] = useState<Shown[]>(initialPage.items)
   const [speakers, setSpeakers] = useState(initialSpeakers)
+  const [reads, setReads] = useState(initialReads)
   const [older, setOlder] = useState<string | null>(
     initialPage.more ? (initialPage.items[0]?.id ?? null) : null,
   )
@@ -117,6 +121,9 @@ export function RoomView({
       if (recent.ok) {
         const changed = new Map(recent.items.map((m) => [m.id, m]))
         setMessages((shown) => shown.map((m) => changed.get(m.id) ?? m))
+        // Somebody else reading is a change with nothing of its own to carry
+        // it: no new message arrives, so this is the only moment it lands.
+        setReads(recent.reads)
       }
     } finally {
       catchingUp.current = false
@@ -570,6 +577,12 @@ export function RoomView({
                   )}
                 </div>
               </div>
+
+              <Seen
+                readers={readersOf(reads, speakers, message.id, me)}
+                mine={mine}
+                label={t('seenBy')}
+              />
             </div>
           )
         }}
@@ -811,6 +824,7 @@ function MessageActions({
   const t = useTranslations('chat')
   const trigger = useRef<HTMLButtonElement>(null)
   const [at, setAt] = useState<Anchor | null>(null)
+  const [burst, setBurst] = useState<{ emoji: string; from: { x: number; y: number } } | null>(null)
 
   const open = () => {
     const box = trigger.current?.getBoundingClientRect()
@@ -851,23 +865,154 @@ function MessageActions({
         <FloatingPanel at={at} onClose={() => setAt(null)}>
           <div className="flex items-center gap-0.5">
             {REACTIONS.map((emoji) => (
-              <button
+              <HoldReaction
                 key={emoji}
-                type="button"
-                aria-label={t('reactWith', { emoji })}
-                onClick={() => {
+                emoji={emoji}
+                label={t('reactWith', { emoji })}
+                onSend={(from) => {
+                  setBurst({ emoji, from })
                   onReact(emoji)
                   setAt(null)
                 }}
-                className="hover:bg-surface-2 flex size-9 items-center justify-center rounded-full text-lg"
-              >
-                {emoji}
-              </button>
+              />
             ))}
           </div>
         </FloatingPanel>
       ) : null}
+
+      {burst ? (
+        <Burst emoji={burst.emoji} from={burst.from} onDone={() => setBurst(null)} />
+      ) : null}
     </>
+  )
+}
+
+/** Long enough to feel like a decision, short enough not to be a wait. */
+const GROW_MS = 450
+
+/**
+ * An emoji that grows while held and is sent when let go.
+ *
+ * The press is what sends, not a click: a click would fire again after the
+ * pointer sequence and send twice. Keyboard keeps its own way in, because a
+ * control that only answers a thumb is a control some people do not have.
+ *
+ * Leaving the button cancels. Growing something under a thumb and then firing
+ * it when the thumb slides off is how people send things they did not mean to.
+ */
+function HoldReaction({
+  emoji,
+  label,
+  onSend,
+}: {
+  emoji: string
+  label: string
+  onSend: (from: { x: number; y: number }) => void
+}) {
+  const [grown, setGrown] = useState(0)
+  const started = useRef(0)
+  const frame = useRef(0)
+  const box = useRef<HTMLButtonElement>(null)
+
+  const centre = () => {
+    const rect = box.current?.getBoundingClientRect()
+    return rect
+      ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+      : { x: 0, y: 0 }
+  }
+
+  const stop = () => {
+    cancelAnimationFrame(frame.current)
+    setGrown(0)
+  }
+
+  const grow = () => {
+    started.current = performance.now()
+    // A single tick, not a CSS transition: the scale has to be readable at the
+    // moment of release, and a transition would still be catching up.
+    const tick = () => {
+      setGrown(Math.min(1, (performance.now() - started.current) / GROW_MS))
+      frame.current = requestAnimationFrame(tick)
+    }
+    frame.current = requestAnimationFrame(tick)
+    // Silent on anything that cannot buzz, which is most desktops.
+    navigator.vibrate?.(8)
+  }
+
+  return (
+    <button
+      ref={box}
+      type="button"
+      aria-label={label}
+      onPointerDown={(event) => {
+        event.currentTarget.setPointerCapture(event.pointerId)
+        grow()
+      }}
+      onPointerUp={() => {
+        stop()
+        onSend(centre())
+      }}
+      onPointerLeave={stop}
+      onPointerCancel={stop}
+      onKeyDown={(event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return
+        event.preventDefault()
+        onSend(centre())
+      }}
+      style={{ transform: `scale(${1 + grown * 0.8})` }}
+      className="hover:bg-surface-2 flex size-9 items-center justify-center rounded-full text-lg select-none"
+    >
+      {emoji}
+    </button>
+  )
+}
+
+/** How many copies rise. More reads as confetti, fewer as a glitch. */
+const BURST = 6
+const BURST_MS = 900
+
+/**
+ * The emoji leaving the button on its way to the message.
+ *
+ * Drawn through a portal and `fixed`, because the panel it was sent from
+ * closes in the same breath and anything inside it would go with it. Purely
+ * decorative, so it is `aria-hidden` and takes no pointer: a screen reader has
+ * already been told what was sent.
+ */
+function Burst({
+  emoji,
+  from,
+  onDone,
+}: {
+  emoji: string
+  from: { x: number; y: number }
+  onDone: () => void
+}) {
+  useEffect(() => {
+    const timer = setTimeout(onDone, BURST_MS)
+    return () => clearTimeout(timer)
+  }, [onDone])
+
+  return createPortal(
+    <div aria-hidden className="pointer-events-none fixed inset-0 z-[60]">
+      {Array.from({ length: BURST }, (_, i) => (
+        <span
+          key={i}
+          className="chat-burst absolute text-xl"
+          style={{
+            left: from.x,
+            top: from.y,
+            // Spread so they do not travel as one object, and stagger so they
+            // read as a handful rather than a row.
+            ['--burst-x' as string]: `${(i - (BURST - 1) / 2) * 14}px`,
+            animationDelay: `${i * 40}ms`,
+          }}
+        >
+          {emoji}
+        </span>
+      ))}
+    </div>,
+    document.body,
   )
 }
 
@@ -1017,5 +1162,57 @@ function ReactionPills({
         </button>
       ))}
     </span>
+  )
+}
+
+/**
+ * Who stopped at this message.
+ *
+ * A mark pointing at a message nobody has loaded draws nothing, which is the
+ * right answer rather than a missing one: the face belongs under the line they
+ * stopped at, and scrolling far enough up will find it.
+ */
+function readersOf(
+  reads: Record<string, string>,
+  speakers: Record<string, Speaker>,
+  messageId: string,
+  me: string,
+): Speaker[] {
+  const here: Speaker[] = []
+  for (const [userId, mark] of Object.entries(reads)) {
+    if (mark !== messageId || userId === me) continue
+    const who = speakers[userId]
+    if (who) here.push(who)
+  }
+  return here
+}
+
+/** Nothing said out loud: the faces are the sentence. */
+const SEEN_SHOWN = 5
+
+function Seen({ readers, mine, label }: { readers: Speaker[]; mine: boolean; label: string }) {
+  if (readers.length === 0) return null
+
+  return (
+    <div
+      className={cn('mt-0.5 flex gap-0.5 px-1', mine ? 'justify-end' : 'justify-start')}
+      aria-label={`${label}: ${readers.map((r) => r.name).join(', ')}`}
+    >
+      {readers.slice(0, SEEN_SHOWN).map((who) => (
+        <Avatar
+          key={who.id}
+          name={who.name}
+          src={who.imageUrl}
+          className="size-4 text-[8px]"
+          /* Title rather than a tooltip of our own: it is a detail somebody
+             goes looking for, and the browser already draws one. */
+        />
+      ))}
+      {readers.length > SEEN_SHOWN ? (
+        <span className="text-text-subtle self-center text-[10px] tabular-nums">
+          +{readers.length - SEEN_SHOWN}
+        </span>
+      ) : null}
+    </div>
   )
 }

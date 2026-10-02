@@ -7,11 +7,14 @@ import { getCurrentUserId } from '@/lib/auth/current-user'
 import { clientKey } from '@/lib/client-ip'
 import { headers } from 'next/headers'
 import { pickChatStore } from '@/lib/chat/provider'
+import { getTranslations } from 'next-intl/server'
 import { notifyRoom } from '@/server/services/chat-notify'
+import { notify } from '@/server/services/push'
 import { directKeyOf, MESSAGE_PAGE } from '@/lib/chat/types'
 import { PATHS } from '@/lib/paths'
 import { createLimit } from '@/lib/rate-limit'
-import type { Speaker } from '@/lib/chat/types'
+import type { Speaker,
+  ChatMember,} from '@/lib/chat/types'
 import { listIdentities, findUsersByIds } from '@/server/repositories/auth'
 import {
   assertCanInvite,
@@ -30,6 +33,12 @@ import { deliveryUrl, publicIdFromDeliveryUrl } from '@/lib/media/image-url'
 const sends = createLimit({ capacity: 30, refillMs: 60_000 })
 /** A link is a credential; handing them out is not something to do in bulk. */
 const inviteWrites = createLimit({ capacity: 10, refillMs: 60 * 60_000 })
+/*
+ * A nudge is a buzz in somebody's pocket with no words in it, so the only
+ * thing stopping it being a weapon is this. Three, then a wait: enough to be
+ * playful twice over, not enough to be used on somebody.
+ */
+const nudges = createLimit({ capacity: 3, refillMs: 5 * 60_000 })
 
 /** Bounded, and the caller loops. See `MessagePage.more`. */
 const CATCH_UP_PAGE = 100
@@ -44,6 +53,23 @@ const messageIdSchema = z.string().min(1).max(64)
  * costs no extra query. A sender the roster cannot name is someone who erased
  * their account; the screen renders that, it does not fail on it.
  */
+/**
+ * How far each other person in the room has read.
+ *
+ * Keyed by the message they stopped at, which is what a row of faces under a
+ * bubble is drawn from. The asker is left out — your own mark is the bottom of
+ * the screen and drawing yourself there says nothing — and so is anybody who
+ * has left, or who has read nothing yet.
+ */
+function readsOf(members: ChatMember[], userId: string): Record<string, string> {
+  const marks: Record<string, string> = {}
+  for (const member of members) {
+    if (member.userId === userId || member.leftAt !== null) continue
+    if (member.lastReadMessageId) marks[member.userId] = member.lastReadMessageId
+  }
+  return marks
+}
+
 export async function loadRoom(input: unknown) {
   const parsed = roomIdSchema.safeParse(input)
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
@@ -69,6 +95,7 @@ export async function loadRoom(input: unknown) {
     // asks a different question than the server hides what it would allow.
     owner: members.find((m) => m.userId === userId)?.role === 'owner',
     speakers: await speakersOf(members.map((m) => m.userId)),
+    reads: readsOf(members, userId),
     // Oldest first for the screen; the store reads newest first because that
     // is the page you want, not the order you read it in.
     page: { ...page, items: [...page.items].reverse() },
@@ -115,8 +142,15 @@ export async function loadRecentMessages(input: unknown) {
   const userId = await getCurrentUserId()
   if (!(await allowed(parsed.data, userId))) return { ok: false as const }
 
-  const page = await pickChatStore().listBackward(parsed.data, { limit: MESSAGE_PAGE })
-  return { ok: true as const, items: [...page.items].reverse() }
+  const store = pickChatStore()
+  // The marks come back with the page, because this is the call a room makes
+  // when something changed — and somebody else reading is a change, with
+  // nothing else to carry it.
+  const [page, members] = await Promise.all([
+    store.listBackward(parsed.data, { limit: MESSAGE_PAGE }),
+    store.listMembers(parsed.data),
+  ])
+  return { ok: true as const, items: [...page.items].reverse(), reads: readsOf(members, userId) }
 }
 
 export async function loadNewMessages(input: unknown) {
@@ -752,4 +786,53 @@ async function dropAvatarAsset(
   } catch (error) {
     console.error('[chat] could not delete the room picture it replaced:', error)
   }
+}
+
+/**
+ * A buzz in somebody's pocket, with nothing in it.
+ *
+ * Every other notification this app sends is about something that happened:
+ * words arrived, and the notification carries them. This one is the thing
+ * itself — the whole message is that somebody wanted your attention — so it
+ * needs no body, and the limit above is what keeps it from being an argument.
+ *
+ * Silent where nobody has turned notifications on. There is nothing to show in
+ * the room either: a nudge that left a line behind would be a message, and a
+ * message is what the composer is for.
+ */
+export async function nudgeRoom(input: unknown) {
+  const parsed = roomIdSchema.safeParse(input)
+  if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
+
+  const store = pickChatStore()
+  const userId = await getCurrentUserId()
+  if (!(await allowed(parsed.data, userId))) return { ok: false as const, error: 'not_found' as const }
+
+  // Per room, not per person: being quiet in one conversation should not be
+  // the price of having been playful in another.
+  if (!nudges.take(`${userId}:${parsed.data}`).allowed) {
+    return { ok: false as const, error: 'rate_limited' as const }
+  }
+
+  const [members, [sender], t] = await Promise.all([
+    store.listMembers(parsed.data),
+    findUsersByIds([userId]),
+    getTranslations('chat'),
+  ])
+  const audience = members
+    .filter((member) => member.leftAt === null && member.userId !== userId)
+    .map((member) => member.userId)
+  if (audience.length === 0) return { ok: true as const }
+
+  await notify(audience, {
+    title: t('nudgePush', { name: sender?.displayName?.trim() || t('someone') }),
+    body: '',
+    url: PATHS.chatRoom(parsed.data),
+    // Its own tag: a nudge replacing the message somebody has not read yet
+    // would lose the thing that was actually said.
+    tag: `nudge:${parsed.data}`,
+    ...(sender?.imageUrl?.startsWith('https://') ? { icon: sender.imageUrl } : {}),
+  })
+
+  return { ok: true as const }
 }
