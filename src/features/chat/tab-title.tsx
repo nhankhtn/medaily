@@ -4,13 +4,7 @@ import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useEffect, useRef } from 'react'
 
-/**
- * What the tab should say.
- *
- * Pure, and takes the sentence already translated, so the decision can be
- * asserted without a locale: a name when one person is waiting, a count when
- * several are, and the page's own title when nobody is.
- */
+/** Pure, and already translated, so the decision can be asserted. */
 export function tabTitle({
   base,
   count,
@@ -27,23 +21,15 @@ export function tabTitle({
 }
 
 /**
- * Says who is waiting, in the one place a person looks while doing something
- * else.
+ * Says who is waiting, where a person looks while doing something else.
  *
- * The page's own title has to be remembered rather than parsed back out,
- * because this replaces it outright rather than decorating it — once the tab
- * says "Nhân đã nhắn tin cho bạn" there is nothing left in it to recover
- * "Personal OS" from. So the last thing written here is kept, and anything
- * else appearing in the title is taken to be Next writing a new page's name.
+ * This replaces the title rather than decorating it, so the page's own is
+ * remembered — anything else appearing is Next naming a new page.
  *
- * Watched rather than set once: the title belongs to Next, which rewrites it
- * on every navigation and again when a page's metadata resolves — both after
- * this effect has run. The watch is on `head` rather than the title element,
- * because Next swaps that element rather than editing its text, and an
- * observer pointed at the node goes on watching something that has left the
- * document. The write waits for the next frame so it lands after React has
- * finished with `head` instead of in the middle of it — writing during that
- * left a navigation with no title at all.
+ * Three things learned the hard way: the title belongs to Next, which rewrites
+ * it after this effect runs; the observer watches `head`, because Next swaps
+ * the title element rather than editing it; and the write waits a frame, or it
+ * lands mid-render and leaves a navigation with no title at all.
  */
 export function TabTitle({ count, from }: { count: number; from: string | null }) {
   const t = useTranslations('chat')

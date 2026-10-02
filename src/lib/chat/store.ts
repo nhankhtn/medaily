@@ -1,4 +1,11 @@
-import { previewOf, type ChatInvite, type ChatMember, type ChatMessage, type ChatRoom, type MessagePage } from './types'
+import {
+  previewOf,
+  type ChatInvite,
+  type ChatMember,
+  type ChatMessage,
+  type ChatRoom,
+  type MessagePage,
+} from './types'
 
 /** A room is always made faceless; the picture is set afterwards, if at all. */
 export type NewRoom = Omit<ChatRoom, 'lastMessageAt' | 'createdAt' | 'avatarUrl'>
@@ -81,12 +88,8 @@ export type ChatStore = {
   ) => Promise<Record<string, number>>
 
   /**
-   * One message, scoped to the room that owns it.
-   *
-   * The room id is not decoration: it is what stops an id from another
-   * conversation resolving. A reply quotes what it answers, and a quote of
-   * something from a room you are not in would be a way to read that room one
-   * line at a time.
+   * Scoped to its room, which is what stops a quote being used to read a
+   * conversation you are not in, one line at a time.
    */
   findMessage: (roomId: string, messageId: string) => Promise<ChatMessage | null>
 
@@ -139,17 +142,9 @@ export type ChatStore = {
   /** Answers false when the message is not this person's to delete. */
   softDeleteMessage: (roomId: string, messageId: string, userId: string) => Promise<boolean>
   /**
-   * Sets one person's reaction to a message, and says what it did.
-   *
-   * **One per person.** Choosing a second emoji replaces the first rather than
-   * adding to it — a reaction is a response to a message, and somebody who
-   * answers with four of them is using the row as a sentence. That rule lives
-   * here rather than in the screen, because two tabs open at once would walk
-   * straight past a rule enforced on the way in.
-   *
-   * One call rather than two, because the screen has one control: tapping an
-   * emoji you already chose takes it back. Answering `null` means there was no
-   * such message to react to.
+   * **One per person**, enforced here rather than in the screen — two tabs
+   * would walk past a rule enforced on the way in. Tapping the emoji already
+   * chosen takes it back; `null` means no such message.
    */
   toggleReaction: (
     roomId: string,
@@ -258,14 +253,7 @@ export function inMemoryChatStore(): ChatStore {
     members.find((m) => m.roomId === roomId && m.userId === userId)
   const live = (roomId: string) => messages.filter((m) => m.roomId === roomId)
 
-  /**
-   * Quotes resolved where every page passes through.
-   *
-   * Looked up rather than copied in at write time, so a quote of a message
-   * that was later recalled says so instead of still showing the words.
-   * A quote whose message is gone resolves to null — the answer survives what
-   * it answered.
-   */
+  /** Looked up, not copied at write time, so a quote follows a recall. */
   const withQuotes = (rows: (ChatMessage & { replyToId: string | null })[]): ChatMessage[] =>
     rows.map((row) => {
       const quoted = row.replyToId ? messages.find((m) => m.id === row.replyToId) : undefined

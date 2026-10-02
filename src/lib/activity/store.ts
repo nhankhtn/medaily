@@ -1,18 +1,9 @@
 import type { ActivityPage, ActivityRecord } from './types'
 
 /**
- * Everything the activity log needs from a database, and nothing more.
- *
- * Three methods, because three things happen to a trail: it is appended to, it
- * is read back, and it dies with the account it belongs to. Anything a
- * particular database is good at beyond that — aggregation pipelines, window
- * functions, a TTL index — stays inside its own adapter and never reaches a
- * caller.
- *
- * Nothing outside `provider.ts` names an adapter. Swapping Mongo for Postgres
- * is a second file implementing this and one line there; no service moves, and
- * no call site knows which one it got. The analytics seam next door is the
- * same shape and has already survived one such swap.
+ * Everything the activity log needs from a database: appended to, read back,
+ * and dead with its account. Anything an adapter is good at beyond that stays
+ * inside it. Only `provider.ts` names one.
  */
 export type ActivityStore = {
   /** Short name, for logs and for saying which one is in use. */
@@ -25,27 +16,16 @@ export type ActivityStore = {
   append: (record: ActivityRecord) => Promise<void>
 
   /**
-   * One page of a person's trail, newest first, scoped in the query rather
-   * than filtered after.
-   *
-   * Keyset rather than skip/limit, like the ledger next door: a trail is
-   * appended to constantly, and an offset re-reads rows that shifted under it
-   * — page two arrives holding entries page one already showed.
+   * Newest first, scoped in the query. Keyset, not offset: a trail is appended
+   * to constantly, and page two would repeat what page one showed.
    */
   list: (userId: string, page: { cursor?: string | null; limit: number }) => Promise<ActivityPage>
 
-  /**
-   * Erases a person's trail. Required of every adapter rather than optional,
-   * because the app promises deletion takes everything — a trail that outlives
-   * the account it describes turns that promise into a lie.
-   */
+  /** Required, not optional: a trail outliving its account breaks the promise. */
   deleteAllFor: (userId: string) => Promise<void>
 }
 
-/**
- * Used where no database is configured, so no caller needs a null check and
- * every screen behaves as if the feature were never built.
- */
+/** No database configured: every screen behaves as if it were never built. */
 export const NO_ACTIVITY: ActivityStore = {
   id: 'none',
   append: async () => {},
@@ -53,11 +33,7 @@ export const NO_ACTIVITY: ActivityStore = {
   deleteAllFor: async () => {},
 }
 
-/**
- * An in-memory store, for tests. It lives beside the port rather than in the
- * test folder on purpose: it is the executable statement of what an adapter
- * must do, and a new adapter can be checked against the same suite.
- */
+/** For tests, beside the port: the executable statement of what an adapter does. */
 export function inMemoryActivityStore(): ActivityStore & { all: () => ActivityRecord[] } {
   let rows: ActivityRecord[] = []
 

@@ -11,23 +11,12 @@ export const DialogTrigger = DialogPrimitive.Trigger
 export const DialogClose = DialogPrimitive.Close
 
 /**
- * A sheet on phones; from `sm` up either a centred dialog or a side drawer.
+ * A sheet on phones; from `sm` up a centred dialog or a side drawer. The title
+ * stays put while the body scrolls under it, and the sheet lifts clear of the
+ * on-screen keyboard — without that the save button sits under it.
  *
- * The scrolling area is a child of the content, so the title and the close
- * button stay put while a long form scrolls under them.
- *
- * The sheet is also lifted clear of the on-screen keyboard. Without that it
- * keeps its full height below the keyboard, and the fields at the bottom —
- * including the save button — cannot be reached at all.
- *
- * `layout="drawer"` is for long writing (notes, journal): nearly full height
- * on a phone, a wide side panel on desktop, so the body field has room to grow.
- *
- * `layout` is geometry and nothing else. Who does the scrolling is `body`,
- * because the two are not the same question: a drawer holding a list wants the
- * panel to scroll, and a drawer holding an editor wants the editor to. Deciding
- * the second from the first is how a long list ended up clipped with no way to
- * reach the bottom of it.
+ * `layout` is geometry only. Who scrolls is `body`: a drawer holding a list
+ * wants the panel to scroll, one holding an editor wants the editor to.
  */
 export function DialogContent({
   title,
@@ -48,13 +37,8 @@ export function DialogContent({
    */
   layout?: 'dialog' | 'drawer' | 'full'
   /**
-   * Who scrolls.
-   *
-   * `scroll` — the panel body does, which is what a list or a form wants and
-   * what every caller gets unless it says otherwise.
-   * `fill` — the child is handed the height and scrolls inside itself, for an
-   * editor that has to fill the panel. The child owns it from there: nothing
-   * here will scroll, so a child that overflows is simply cut off.
+   * `scroll` — the panel body does, the default. `fill` — the child is handed
+   * the height and owns it, so a child that overflows is simply cut off.
    */
   body?: 'scroll' | 'fill'
   /** Sits beside the close button — a control about the panel, not its contents. */
@@ -69,12 +53,8 @@ export function DialogContent({
       <DialogPrimitive.Content
         className={cn(
           'glass-strong fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-2xl',
-          /*
-           * On a phone all three are the same sheet: it already stands at
-           * 96dvh, so there is nothing left for `full` to give. The difference
-           * only exists from `sm:` up, which is also the only place a side
-           * panel is narrow enough to be worth escaping.
-           */
+          // On a phone all three are the same 96dvh sheet; they differ only
+          // from `sm:` up.
           layout === 'full'
             ? 'bottom-[var(--keyboard-inset)] max-h-[calc(96dvh-var(--keyboard-inset))] sm:inset-4 sm:bottom-4 sm:h-auto sm:max-h-none sm:w-auto sm:max-w-none sm:translate-x-0 sm:translate-y-0 sm:rounded-2xl'
             : drawer

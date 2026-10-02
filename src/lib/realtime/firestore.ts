@@ -20,18 +20,9 @@ const CHANNELS = 'channels'
 const TYPING = 'typing'
 
 /**
- * Firestore as a doorbell.
- *
- * It is the only thing already in this stack that a browser can hold a cheap,
- * authenticated, persistent connection to — which is the entire reason it is
- * here. It is not storing anything: one document per channel holding a counter
- * and a time, and no word anybody typed ever reaches it.
- *
- * That is what makes the security rules small enough to be obviously right.
- * Being signed in to Firebase means very little here — the project's sign-in
- * is not gated by this app's allowlists — so the protection is that a channel
- * key is 122 bits of random and rotates when somebody is removed. The worst a
- * key buys is knowing that a room exists and when it was busy.
+ * Firestore as a doorbell: one document per channel holding a counter and a
+ * time, and no word anybody typed. The protection is the 122-bit channel key,
+ * not the Firebase session — see docs/reference/realtime/doorbell.md.
  */
 export function firestoreSignal(): RealtimeSignal {
   return {
@@ -48,10 +39,8 @@ export function firestoreSignal(): RealtimeSignal {
     listen: (channel, onRing) =>
       onSnapshot(
         doc(getFirestore(firebaseApp()), CHANNELS, channel),
-        // Edge-triggered: any change at all means "ask the server". The
-        // contents are never read, so nothing written here can suppress a
-        // later ring — a counter comparison could be poisoned once and stay
-        // poisoned.
+        // Edge-triggered. Nothing here reads the contents, so a poisoned
+        // counter cannot deafen anyone.
         (snapshot) => {
           if (snapshot.metadata.hasPendingWrites) return
           onRing()
@@ -67,21 +56,10 @@ export function firestoreSignal(): RealtimeSignal {
 }
 
 /**
- * "Somebody is typing", carried by the same connection as the doorbell.
- *
- * This is the one thing in this file with a payload, and the rules are what
- * make it safe to render. A document is named by a Firebase uid and
- * `request.auth.uid == uid` is enforced on write, so a claim can only ever be
- * made in the claimant's own name — knowing a channel key buys the ability to
- * say "I am typing" as yourself, which is what everyone in the room can do
- * anyway, and nothing else.
- *
- * One document per person, not one field per person on the channel document:
- * Firestore sustains about a write a second per document, and three people
- * typing into one would start dropping each other's.
- *
- * It does mean Firestore now knows something it did not before — that a uid
- * was active in a room at a time. No word anybody typed still reaches it.
+ * "Somebody is typing", on the same connection. Safe to render because the
+ * rules tie a write to `request.auth.uid`, so a claim is only ever made in the
+ * claimant's own name. One document per person — Firestore sustains about a
+ * write a second per document.
  */
 export function firestoreTyping(): TypingChannel {
   const typing = (channel: string) =>
@@ -91,9 +69,9 @@ export function firestoreTyping(): TypingChannel {
     id: 'firestore',
 
     announce: async (channel) => {
+      // No Firebase session means the password path, which has no live
+      // updates either.
       const uid = getAuth(firebaseApp()).currentUser?.uid
-      // No Firebase session — signed in with the password. They have no live
-      // updates either, so there is nobody to be consistent with but themselves.
       if (!uid) return
 
       await setDoc(doc(typing(channel), uid), { at: Date.now() }).catch(complain('typing announce'))
@@ -102,9 +80,8 @@ export function firestoreTyping(): TypingChannel {
     retract: async (channel) => {
       const uid = getAuth(firebaseApp()).currentUser?.uid
       if (!uid) return
-      // The only delete in this file, and the reason the rules separate
-      // `delete` from `create, update`: on a delete `request.resource` is
-      // null, so a rule that inspects the written fields would refuse it.
+      // The rules separate `delete` from `create, update` because
+      // `request.resource` is null here.
       await deleteDoc(doc(typing(channel), uid)).catch(complain('typing retract'))
     },
 
@@ -114,10 +91,9 @@ export function firestoreTyping(): TypingChannel {
         (snapshot) => {
           const entries: TypingEntry[] = []
           for (const document of snapshot.docs) {
+            // Client-written, so this only checks it is a number;
+            // `activeTypists` decides what it means.
             const at = document.get('at')
-            // Written by a client, so the shape is a claim rather than a fact.
-            // `activeTypists` decides what to do with the number; this only
-            // decides it is a number.
             if (typeof at === 'number') entries.push({ uid: document.id, at })
           }
           onChange(entries)

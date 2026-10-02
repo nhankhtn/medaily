@@ -6,15 +6,8 @@ import { findUsersByIds } from '@/server/repositories/auth'
 import { notify } from './push'
 
 /**
- * Telling a room that somebody said something.
- *
- * Separate from the action so the action reads as "save, then tell": who is in
- * the room, who sent it, and what a sticker is called are all questions about
- * notifying, not about sending.
- *
- * Nothing here throws. It is called without being awaited, from the path that
- * has already saved the message, and an unhandled rejection there would be a
- * crash for something nobody is waiting on.
+ * Never throws: called without being awaited from the path that already saved
+ * the message.
  */
 export async function notifyRoom({
   roomId,
@@ -61,13 +54,7 @@ export async function notifyRoom({
 /** One line. Long enough to answer "do I need to look", short enough to read. */
 const PREVIEW_CHARS = 140
 
-/**
- * The words that land on a lock screen.
- *
- * Pure and exported so it can be asserted: it is read by somebody who has not
- * opened the app and cannot ask what it meant, and one branch of it would
- * otherwise show a sticker's internal id as though it were a sentence.
- */
+/** Pure and exported so it can be asserted — read by somebody who cannot ask. */
 export function notificationFor({
   kind,
   body,
@@ -80,22 +67,17 @@ export function notificationFor({
   title: string | null
   who: string | null
 }): { title: string; body: string } {
-  // A sticker's body is an id. Showing it would put `coffee` on a lock screen
-  // as though it were what was said.
+  // A sticker's body is an id; `coffee` is not what anybody said.
   const said = kind === 'sticker' ? '🙂' : body.replace(/\s+/g, ' ').trim()
   const line = said.length > PREVIEW_CHARS ? `${said.slice(0, PREVIEW_CHARS - 1)}…` : said
 
   return {
-    // The room's name when it has one, the sender's when it does not — a
-    // direct conversation has no title, and the app's name over somebody's
-    // words says nothing the icon did not.
+    // A direct conversation has no title of its own, so the sender becomes it —
+    // and is then not named twice.
     title: title ?? (who || 'medaily'),
-    // Named only in a room with its own title; in a direct conversation the
-    // title is already the person.
     body: title && who ? `${who}: ${line}` : line,
   }
 }
-
 
 /**
  * The picture beside the words.

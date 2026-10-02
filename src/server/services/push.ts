@@ -3,34 +3,21 @@ import { deletePushDevice, listPushDevices } from '@/server/repositories/push'
 import { accessToken, readServiceAccount, SCOPES } from './google-auth'
 
 /**
- * Sending a notification, over FCM's HTTP v1 API.
- *
- * **Data-only, never `notification`.** A message carrying a `notification`
- * block is drawn by the browser itself, which means the words are decided here
- * and cannot be changed, counted or collapsed on the device. Data-only hands
- * the payload to the service worker instead, and `sw.js` draws it — which is
- * also what keeps the Firebase SDK out of that file. It is plain JS with no
- * build step on purpose, and `importScripts` of a compat bundle would end
- * that.
- *
- * The price of data-only is a rule that must not be broken: a push event has
- * to produce a visible notification. A browser that receives pushes which
- * show nothing will revoke the permission, so `sw.js` always calls
- * `showNotification`, even when the payload makes no sense to it.
+ * FCM HTTP v1. **Data-only, never `notification`** — so `sw.js` draws it and
+ * stays free of the Firebase SDK. The price is that every push must end in a
+ * visible notification or the browser revokes the permission.
+ * See docs/reference/realtime/push-notifications.md.
  */
 
 const FCM = 'https://fcm.googleapis.com/v1/projects'
 
-/** What a device is told. Short — the app fetches the rest when opened. */
+/** Short: the app fetches the rest when opened. */
 export type PushPayload = {
   title: string
   body: string
   /** Where tapping it should land. */
   url: string
-  /**
-   * Notifications sharing a tag replace one another instead of stacking. One
-   * room is one line on the lock screen however many messages arrive.
-   */
+  /** Shared tags replace rather than stack: one room, one line. */
   tag: string
   /**
    * The picture drawn beside it, where the conversation has a face of its own.
@@ -45,13 +32,7 @@ export type PushResult = { sent: number; dropped: number; failed: number }
 
 const NOTHING: PushResult = { sent: 0, dropped: 0, failed: 0 }
 
-/**
- * Tells everybody on this list, on every device they have registered.
- *
- * Never throws. It is called from the path that sends a message, and a message
- * that failed to save is a problem — a message that saved and did not buzz a
- * phone is not one worth failing the send over.
- */
+/** Never throws: a saved message that did not buzz a phone is not a failure. */
 export async function notify(userIds: string[], payload: PushPayload): Promise<PushResult> {
   const account = readServiceAccount()
   if (!account || userIds.length === 0) return NOTHING
@@ -63,8 +44,7 @@ export async function notify(userIds: string[], payload: PushPayload): Promise<P
     const token = await accessToken(account, SCOPES.messaging)
     const result = { ...NOTHING }
 
-    // One request per device: FCM's batch endpoint is gone, and a room holds
-    // few enough phones that the simple thing is also the right one.
+    // One request per device — FCM's batch endpoint is gone.
     await Promise.all(
       devices.map(async (device) => {
         const outcome = await send(account.projectId, token, device.token, payload)
@@ -94,8 +74,7 @@ async function send(
       body: JSON.stringify({
         message: {
           token: deviceToken,
-          // Every value a string: FCM rejects a data payload that holds
-          // anything else, and the error says only "invalid argument".
+          // Every value a string, or FCM answers "invalid argument".
           // Every value a string, and a key left out rather than sent empty:
           // FCM rejects a data payload holding anything but strings, and an
           // empty one would reach the worker as a picture that cannot load.
@@ -108,9 +87,7 @@ async function send(
           },
           webpush: {
             headers: {
-              // Four hours. A notification about a message is worth waking a
-              // phone that was off overnight; it is not worth doing so a week
-              // later, when the conversation has moved on.
+              // Four hours: worth waking a phone left overnight, not a week on.
               TTL: '14400',
               Urgency: 'high',
             },
@@ -121,11 +98,7 @@ async function send(
 
     if (response.ok) return 'sent'
 
-    /*
-     * A token the browser has thrown away — reinstalled, storage cleared,
-     * permission revoked. Dead for everyone, so it goes now rather than being
-     * retried nightly for as long as the row exists.
-     */
+    // Thrown away by the browser: dead for everyone, so it goes now.
     if (response.status === 404 || response.status === 403) {
       await deletePushDevice(deviceToken)
       return 'dropped'

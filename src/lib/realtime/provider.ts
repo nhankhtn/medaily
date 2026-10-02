@@ -2,12 +2,9 @@ import type { Auth } from 'firebase/auth'
 import { NO_REALTIME, NO_TYPING, type RealtimeSignal, type TypingChannel } from './signal'
 
 /**
- * Whether live updates are offered.
- *
- * Read from the environment rather than from the picked provider. Every export
- * of a `'use client'` module is a client reference, and reading a property off
- * one from a server component throws — the analytics seam next door documents
- * the same trap.
+ * Read from the environment, not the picked provider: every export of a
+ * `'use client'` module is a client reference, and reading a property off one
+ * from a server component throws.
  */
 export function realtimeEnabled(): boolean {
   return (
@@ -18,12 +15,8 @@ export function realtimeEnabled(): boolean {
 }
 
 /**
- * Picks the transport, in the browser only.
- *
- * Chat never depends on this. Signing in with a password leaves no Firebase
- * session — and that path exists precisely as the way back in when Firebase is
- * unreachable — so a missing transport has to mean "late", not "broken". The
- * screen falls back to asking on a slow timer.
+ * Browser only, and chat never depends on it: the password path leaves no
+ * Firebase session, so a missing transport means "late", not "broken".
  */
 export async function pickRealtimeSignal(): Promise<RealtimeSignal> {
   if (await realtimeOff()) return NO_REALTIME
@@ -33,11 +26,8 @@ export async function pickRealtimeSignal(): Promise<RealtimeSignal> {
 }
 
 /**
- * Picks the typing transport, under exactly the gates the doorbell uses.
- *
- * Separate function rather than a second return value, so a screen that wants
- * only the doorbell never loads the typing code — and so turning one off later
- * does not mean untangling it from the other.
+ * Same gates as the doorbell, separate function: a screen that wants only the
+ * doorbell never loads the typing code.
  */
 export async function pickTypingChannel(): Promise<TypingChannel> {
   if (await realtimeOff()) return NO_TYPING

@@ -9,26 +9,13 @@ import { sweepNoteImages } from '@/server/services/note-images'
 import { sweepRealtimeChannels } from '@/server/services/realtime-gc'
 
 /**
- * Everything that runs once, overnight, for everybody.
+ * Everything that runs once, overnight, for everybody. One schedule rather
+ * than one per job — hobby crons fire to the nearest hour anyway.
  *
- * One schedule rather than one per job. Hobby cron jobs fire once a day and
- * only to the nearest hour anyway, so two of them buy no precision — and a
- * second job would have meant a second route, a second secret check and a
- * second message on the phone for work nobody times separately.
- *
- * **Order is the whole design.** The rollover is two queries and it is the
- * one somebody notices missing: without it the budget tab is blank on the
- * first of the month. The image sweep lists a Cloudinary folder and reads
- * every text column the account owns, so it is the one that might run long
- * enough to be cut off. Cheap and needed goes first; expensive and optional
- * goes second, where being cut off costs a night rather than a month.
- *
- * The channel sweep goes last for the same reason taken further: it deletes
- * orphaned doorbell documents, which nobody is waiting for and which cost a
- * few hundred bytes a room. Cut off, it finishes tomorrow.
- *
- * None can take another down: each account is caught on its own inside the
- * services, and each half is caught separately here.
+ * **Order is the design**, cheapest and most missed first: the budget rollover
+ * (two queries, and the budget tab is blank without it), then the image sweep
+ * (lists Cloudinary, might run long), then the channel sweep (nobody is
+ * waiting; cut off, it finishes tomorrow). Each is caught separately.
  */
 export async function GET(request: Request) {
   // Returned, not merely called. This route is in `PUBLIC_PATHS` — it never
@@ -54,12 +41,8 @@ export async function GET(request: Request) {
     accounts: userIds.length,
   })
 
-  /*
-   * Only when it did something, or could not. Most nights it copies nothing
-   * and deletes nothing, and a message saying so every night is how a channel
-   * stops being read — which matters because the same channel carries the
-   * failures.
-   */
+  // Only when it did something, or could not. A nightly "nothing happened" is
+  // how a channel stops being read — and it carries the failures too.
   const didSomething =
     budgets.created > 0 || images.removed > 0 || realtime.channels > 0 || realtime.typing > 0
   const wentWrong = budgets.failed > 0 || images.failed > 0 || realtime.failed > 0
@@ -77,11 +60,8 @@ export async function GET(request: Request) {
         'Ảnh đã xóa': images.removed,
         'Dung lượng thu hồi': formatBytes(images.freedBytes),
         'Kênh chat đã dọn': `${realtime.channels} phòng · ${realtime.typing} trạng thái gõ`,
-        // One key, decided once. Two spreads both writing 'Dọn kênh' would
-        // have let whichever came last silently win.
         ...(sweepNote ? { 'Dọn kênh': sweepNote } : {}),
-        // Worth seeing once, not every night: a document with no readable
-        // timestamp is left alone rather than guessed at.
+        // A document with no readable timestamp is left alone, not guessed at.
         ...(realtime.skipped > 0
           ? { 'Document không đọc được mốc thời gian': realtime.skipped }
           : {}),

@@ -8,28 +8,15 @@ import { pickRealtimeSignal } from '@/lib/realtime/provider'
 const SETTLE_MS = 800
 
 /**
- * How long the badge waits before asking anyway.
- *
- * The same floor the room itself has, and for the same reason: the doorbell is
- * an optimisation. Without it, anybody signed in with a password — who has no
- * Firebase session to listen with — would have a number that never changed
- * until they navigated, which is indistinguishable from a broken count.
+ * The same floor the room has: without it, the password path — which has no
+ * Firebase session — would show a number that never changed.
  */
 const FLOOR_MS = 60_000
 
 /**
- * The same floor for a tab nobody is looking at, stretched.
- *
- * This used to be "never": the floor checked for a visible tab and did nothing
- * otherwise, which is the right instinct — a forgotten tab polling every
- * minute for the rest of the day is a cost nobody agreed to. But the tab title
- * exists precisely for the window somebody is *not* looking at, so skipping it
- * there left the one feature that needs it with no fallback at all, depending
- * entirely on the doorbell.
- *
- * Three minutes is the compromise: a tab left open overnight asks twenty times
- * an hour instead of sixty, and somebody who looks across at it after a few
- * minutes away sees the right thing even where Firestore never reached them.
+ * Stretched, not skipped, for a hidden tab: the tab title exists precisely for
+ * the window nobody is looking at, so "never" left it with no fallback. Twenty
+ * asks an hour instead of sixty.
  */
 const HIDDEN_FLOOR_MS = 180_000
 
@@ -39,17 +26,11 @@ export function floorDue({ hidden, since }: { hidden: boolean; since: number }):
 }
 
 /**
- * Keeps the unread badge current without anybody reloading.
+ * Listens to every room's doorbell rather than a channel of its own: a
+ * per-person channel would have to be rung by the sender, who would then need
+ * everybody else's key — and a key other people hold is not a key.
  *
- * It listens to the doorbell of every room this person is in, rather than to a
- * channel of their own. A per-person channel would mean one listener instead
- * of a handful, but somebody would have to ring it for them — and the only
- * client that knows a message was sent is the sender's, which would then need
- * everybody else's key. A key that other people hold is not a key.
- *
- * Counting is the server's job, so a ring only asks the route to render again.
- * Nothing about what changed travels here, which is also why it costs no extra
- * Firestore writes: these are the same channels the rooms already ring.
+ * A ring only asks the route to render again, so this costs no extra writes.
  */
 export function UnreadWatch({ channels }: { channels: string[] }) {
   const router = useRouter()

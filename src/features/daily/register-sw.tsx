@@ -4,20 +4,12 @@ import { useEffect } from 'react'
 import { PATHS } from '@/lib/paths'
 
 /**
- * Registers the service worker that makes `/daily` openable with no network.
+ * Registers the offline service worker, after mount so it does not fight first
+ * paint.
  *
- * Registered from the client after mount rather than in the document: it is
- * not needed to render anything, and a worker fighting for the main thread
- * during first paint is a worse trade than a page that works offline on the
- * second visit.
- *
- * **Production only.** The worker serves `/_next/static/**` cache-first on the
- * grounds that those filenames are content-hashed, which is true of a build
- * and not of `next dev`: Turbopack reuses one chunk name and rewrites what is
- * behind it. In development that turns an edit into a stylesheet the worker
- * keeps answering from cache — through a reload, through a hard reload, and
- * through a restart of the dev server, because the worker replies before the
- * network is ever asked.
+ * **Production only.** It serves `/_next/static/**` cache-first because those
+ * names are content-hashed in a build — Turbopack reuses one chunk name and
+ * rewrites behind it, so in dev an edit never reaches the page again.
  */
 export function RegisterServiceWorker() {
   useEffect(() => {
@@ -42,12 +34,8 @@ export function RegisterServiceWorker() {
 }
 
 /**
- * Undoes a worker registered by an earlier build of this app.
- *
- * Guarding the registration is not enough on its own: a worker already
- * installed in this browser keeps intercepting every request whether or not
- * anything registers it again. Whoever is running the dev server has one, and
- * it is the reason their stylesheet is a week old.
+ * Guarding the registration is not enough: a worker already installed keeps
+ * intercepting whether or not anything registers it again.
  */
 async function retireWorker(): Promise<void> {
   try {
@@ -67,11 +55,7 @@ async function retireWorker(): Promise<void> {
   }
 }
 
-/**
- * Drops the cached pages. Called on sign-out: what the worker kept is a
- * rendered page of this person's own day, and it must not be sitting there
- * for whoever signs in next.
- */
+/** On sign-out: the cache holds rendered pages of this person's own day. */
 export async function clearOfflineCaches(): Promise<void> {
   if (!('serviceWorker' in navigator)) return
   try {
@@ -81,7 +65,6 @@ export async function clearOfflineCaches(): Promise<void> {
     /* signing out must not depend on the worker answering */
   }
 }
-
 
 function primeOfflineCaches(registration: ServiceWorkerRegistration): void {
   registration.active?.postMessage('prime-caches')

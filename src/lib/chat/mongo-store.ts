@@ -520,20 +520,11 @@ async function pageOf(uri: string, rows: MessageDoc[], limit: number) {
 }
 
 /**
- * Maps documents to messages, with the message each one answers filled in.
+ * Maps documents to messages with their quotes filled in — one extra query per
+ * page, never one per message.
  *
- * Takes the documents rather than the mapped messages because `replyToId` is
- * on the document and nowhere else — carrying it alongside would be a second
- * list to keep in step with the first.
- *
- * One extra query per page, never one per message: the ids are collected and
- * fetched together. Resolved on read rather than copied in on write for two
- * reasons — a quote of a message later recalled has to say so instead of still
- * showing the words, and bodies are sealed at rest, so a snippet written beside
- * them in the clear would undo that for every line anybody replied to.
- *
- * A quote whose message is gone resolves to null. The answer outlives what it
- * answered, which is the only thing it can do.
+ * Resolved on read, not copied on write: a copy would not follow a recall, and
+ * bodies are sealed at rest. A quote whose message is gone resolves to null.
  */
 async function withQuotes(uri: string, docs: MessageDoc[]): Promise<ChatMessage[]> {
   const items = docs.map((doc) => asMessage(doc)!)

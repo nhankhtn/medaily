@@ -49,16 +49,9 @@ export type MessageKind = 'text' | 'sticker'
 export type ChatMessage = {
   id: string
   roomId: string
-  /**
-   * What `body` holds. A sticker keeps its id there rather than in a field of
-   * its own: one column, and a message is one thing or the other, never both.
-   */
+  /** A sticker keeps its id in `body` — a message is one thing or the other. */
   kind: MessageKind
-  /**
-   * Null once the author erased their account. The words stay — that is the
-   * choice this app made — but nothing points back at a person any more, and
-   * every screen that renders a message has to survive it.
-   */
+  /** Null once the author erased their account; the words stay. */
   userId: string | null
   body: string
   createdAt: string
@@ -71,26 +64,12 @@ export type ChatMessage = {
    * being answered deserves to know which one they are answering.
    */
   editedAt: string | null
-  /**
-   * Who reacted with what, emoji to user ids.
-   *
-   * Kept on the message rather than beside it: a reaction is never read apart
-   * from the message it is on, and both the vocabulary and the room's size
-   * bound how large this can get. Empty rather than absent, so nothing has to
-   * check before counting.
-   */
+  /** Emoji to user ids. Empty rather than absent, so counting needs no check. */
   reactions: Record<string, string[]>
   /**
-   * The message this one answers, resolved for drawing — never stored here.
-   *
-   * A copy of the quoted words would be a second place the same sentence
-   * lives: it would not follow a recall, and bodies are sealed at rest, so
-   * writing a snippet in the clear beside them would undo that for whichever
-   * lines somebody happened to reply to. What is stored is an id; this is what
-   * comes back from resolving it, trimmed to what a quote needs.
-   *
-   * Null when nothing was being answered, and also when the answer outlived
-   * what it answered — a quoted message in a page nobody kept.
+   * Resolved on read, never stored: a copy would not follow a recall, and
+   * bodies are sealed at rest. Null when nothing was answered, or when the
+   * answer outlived what it answered.
    */
   replyTo: ReplyPreview | null
 }
@@ -105,7 +84,7 @@ export type ReplyPreview = {
   deleted: boolean
 }
 
-/** A quote is a pointer, not a copy. Past this it stops being a glance. */
+/** Past this a quote stops being a glance. */
 export const PREVIEW_CHARS = 120
 
 /** The quoted body as a reader sees it: one line, bounded. */

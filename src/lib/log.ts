@@ -21,13 +21,8 @@ export async function currentRequestId(): Promise<string | null> {
 }
 
 /**
- * Scopes that must never raise an alert.
- *
- * `alerts` is the reporter itself: it logs when Telegram refuses a message, and
- * alerting on that would try to tell Telegram that Telegram is unreachable.
- * `jobs` is the same reporter under the name it uses for a finished scheduled
- * job, and it is here for the same reason — a nightly report that could not be
- * delivered must not become an error report down the same pipe.
+ * The reporter itself, under both its names. Alerting here would try to tell
+ * Telegram that Telegram is unreachable.
  */
 const SILENT = new Set(['alerts', 'jobs'])
 
@@ -47,16 +42,11 @@ async function write(
 }
 
 /**
- * Sends a handled failure to the same Telegram chat as an uncaught one.
+ * Handled failures go where uncaught ones do. `instrumentation.ts` sees only
+ * what escapes a request, and a failure turned into `{ ok: false }` leaves the
+ * request looking successful.
  *
- * `instrumentation.ts` sees only what escapes a request, and a failure this app
- * catches and turns into `{ ok: false }` leaves the request looking successful.
- * Those are the ones worth knowing about: the AI said nothing, settings would
- * not load, a sign-in blew up. Without this they lived in a log nobody reads.
- *
- * Only the caught `Error` goes with it. The rest of `details` is whatever the
- * call site found useful — a request body, a parsed note — and that is the
- * user's own writing, which does not belong in a chat message.
+ * Only the `Error` is sent: the rest of `details` is the user's own writing.
  */
 function alert(scope: string, message: string, details: unknown[], requestId: string | null): void {
   const cause = details.find((detail): detail is Error => detail instanceof Error)

@@ -2,17 +2,11 @@ import { importPKCS8, SignJWT } from 'jose'
 import { env } from '@/lib/env'
 
 /**
- * The one service account this app holds, and the access tokens it buys.
+ * The one service account this app holds. Not `firebase-admin` — the Admin SDK
+ * is a gRPC dependency for what is a signed assertion and an HTTP call, and
+ * `jose` is already here.
  *
- * **Not `firebase-admin`.** `firebase-verify.ts` makes the same choice for the
- * same reason: the Admin SDK is a large dependency with a gRPC transport, and
- * what is needed is a signed assertion and an HTTP call. `jose` is already in
- * the tree for verifying ID tokens, and it signs the assertion Google wants.
- *
- * Two things reach for this now — the nightly sweep of orphaned doorbell
- * documents, and sending a push — and each asks for its own scope. A token is
- * minted per scope rather than once with both, so a bug in one cannot act as
- * the other.
+ * A token is minted per scope, so a bug in one caller cannot act as the other.
  */
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token'
@@ -36,12 +30,9 @@ export type ServiceAccount = {
 export class GoogleAuthError extends Error {}
 
 /**
- * The service account, or `null` when nothing that needs it is configured.
- *
- * The project id is checked against the one the browser signs in to. A
- * credential for a different project would let a background job act somewhere
- * nobody is looking — a staging key left in a production environment is
- * exactly how that happens — so a mismatch is refused rather than trusted.
+ * `null` when nothing needing it is configured. The project id is checked
+ * against the one the browser signs in to, so a staging key left in production
+ * is refused rather than trusted.
  */
 export function readServiceAccount(): ServiceAccount | null {
   const raw = env.FIREBASE_SERVICE_ACCOUNT?.trim()
@@ -79,16 +70,8 @@ export function readServiceAccount(): ServiceAccount | null {
   }
 }
 
-/**
- * Trades a self-signed assertion for an access token.
- *
- * Not cached. The jobs that ask run once a night or once per message sent, and
- * a cache would be a lifetime to get wrong for a saving nobody would notice.
- */
-export async function accessToken(
-  account: ServiceAccount,
-  scope: GoogleScope,
-): Promise<string> {
+/** Not cached: a lifetime to get wrong for a saving nobody would notice. */
+export async function accessToken(account: ServiceAccount, scope: GoogleScope): Promise<string> {
   const key = await importPKCS8(account.privateKey, 'RS256')
   const assertion = await new SignJWT({ scope })
     .setProtectedHeader({ alg: 'RS256' })

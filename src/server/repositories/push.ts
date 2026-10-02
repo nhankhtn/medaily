@@ -10,13 +10,7 @@ export type PushDeviceFilter = {
   staleBefore?: Date
 }
 
-/**
- * Devices matching a filter.
- *
- * `userIds` is a list because the only caller that matters asks for a whole
- * room at once: one query per member would be one query per member on every
- * message sent.
- */
+/** `userIds` is a list because a room is asked for at once, not member by member. */
 export async function listPushDevices(
   filter: PushDeviceFilter = {},
   tx: DbOrTx = db,
@@ -28,22 +22,20 @@ export async function listPushDevices(
     filter.staleBefore ? lt(pushDevices.lastSeenAt, filter.staleBefore) : undefined,
   ].filter((clause) => clause !== undefined)
 
-  return tx
-    .select()
-    .from(pushDevices)
-    .where(where.length > 0 ? and(...where) : undefined)
-    // Total by the primary key, so two runs of the same filter agree.
-    .orderBy(pushDevices.id)
+  return (
+    tx
+      .select()
+      .from(pushDevices)
+      .where(where.length > 0 ? and(...where) : undefined)
+      // Total by the primary key, so two runs of the same filter agree.
+      .orderBy(pushDevices.id)
+  )
 }
 
 /**
- * Records a device, or moves an existing one to this account.
- *
- * The token is the key rather than `(user, token)`: FCM hands the same string
- * back to whoever registers the same browser, so after a sign-out and a
- * sign-in by somebody else the row has to change owner rather than be joined
- * by a second one. Getting that wrong sends one person's notifications to the
- * other's phone.
+ * Keyed by the token, not `(user, token)`: FCM returns the same string to
+ * whoever registers the same browser, so the row changes owner after a
+ * sign-out rather than gaining a sibling.
  */
 export async function upsertPushDevice(
   values: { userId: string; token: string; userAgent: string | null },
@@ -58,14 +50,7 @@ export async function upsertPushDevice(
     })
 }
 
-/**
- * Forgets a token.
- *
- * Called when FCM refuses it and when somebody turns notifications off. No
- * user id: a token FCM has rejected is dead for everyone, and asking whose it
- * was before deleting it would be a lookup to answer a question with one
- * answer.
- */
+/** No user id: a token FCM rejected is dead for everyone. */
 export async function deletePushDevice(token: string, tx: DbOrTx = db): Promise<void> {
   await tx.delete(pushDevices).where(eq(pushDevices.token, token))
 }

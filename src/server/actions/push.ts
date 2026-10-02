@@ -6,13 +6,8 @@ import { log } from '@/lib/log'
 import { deletePushDevice, upsertPushDevice } from '@/server/repositories/push'
 
 /**
- * Where a browser leaves its address, and takes it back.
- *
- * The token is not a secret and not a credential: holding one lets you send a
- * notification to that browser, not read anything from this account. What the
- * session does here is decide *whose* device it is — which matters, because
- * registering somebody else's token against your account would send them your
- * notifications.
+ * Where a browser leaves its address. The token is not a credential — the
+ * session is here to decide *whose* device it is.
  */
 
 const tokenSchema = z.string().trim().min(16).max(4096)
@@ -38,13 +33,9 @@ export async function registerPushDevice(input: unknown) {
 }
 
 /**
- * Turning notifications off, and signing out.
- *
- * No owner check before deleting. The token is the name of a browser, and the
- * only thing knowing one buys is the ability to stop it being notified — which
- * is a thing whoever is holding that browser is entitled to do. Requiring it
- * to match the session would mean a device could not be unregistered after
- * somebody else had signed in on it, which is exactly when it should be.
+ * No owner check: knowing a token only buys the ability to stop that browser
+ * being notified, and requiring a match would strand a device after somebody
+ * else signed in on it.
  */
 export async function forgetPushDevice(input: unknown) {
   const parsed = z.object({ token: tokenSchema }).safeParse(input)

@@ -7,30 +7,16 @@ import {
   TYPING_STALE_MS,
   type SweepDoc,
 } from '@/lib/realtime/gc'
-import {
-  firestoreRest,
-  readFirestoreAdminConfig,
-  type FirestoreRest,
-} from './firestore-rest'
+import { firestoreRest, readFirestoreAdminConfig, type FirestoreRest } from './firestore-rest'
 
 /**
- * Removes what the doorbell leaves behind.
+ * Removes what the doorbell leaves behind. Server-side because after
+ * `rotateDoorbell` nobody holds the old key, so no browser can reach that
+ * document even to delete it.
  *
- * Two kinds accumulate and neither can clean itself. A channel document is
- * orphaned when a room is deleted or when `rotateDoorbell` mints a new key —
- * and after a rotation nobody holds the old key, so no browser can reach it
- * even to delete it. A typing claim normally retracts itself on send, but a tab
- * closed mid-word gives no time for the round trip.
- *
- * It is worth being clear what this costs: it is the only job in the app
- * holding a Firebase credential with real power, where everything else runs on
- * public keys and security rules. That is the trade for having the garbage
- * actually go away rather than being deleted by hand when somebody remembers.
- *
- * **Order matters.** Firestore does not delete a document's sub-collections
- * with it, so the typing claims under a channel go first. Reversed, the channel
- * would vanish and leave its claims under a document that no longer exists —
- * invisible in the console unless you already know to look for them.
+ * **Order matters:** Firestore does not delete sub-collections with their
+ * document, so the typing claims under a channel go first. See
+ * docs/reference/realtime/housekeeping.md for the guards and what this costs.
  */
 const CHANNELS = 'channels'
 
@@ -76,11 +62,8 @@ export async function sweepRealtimeChannels(now = Date.now()): Promise<SweepResu
       at: readAt(doc.fields),
     }))
 
-    /*
-     * A channel on its way out takes every claim under it, whatever its age:
-     * leaving a fresh one behind would orphan it somewhere nothing can reach
-     * again. A channel that is staying keeps only its fresh ones.
-     */
+    // A dying channel takes every claim under it; one that stays keeps the
+    // fresh ones. A claim left behind is orphaned beyond reach.
     let doomed: string[]
     if (dead) {
       doomed = [...claims.map((claim) => claim.path)].sort()
@@ -97,8 +80,7 @@ export async function sweepRealtimeChannels(now = Date.now()): Promise<SweepResu
     if (!dead) continue
 
     if (budget <= 0) {
-      // The claims went but the channel stayed. Harmless and self-correcting:
-      // tomorrow's run finds it with nothing under it and finishes the job.
+      // Claims gone, channel left. Tomorrow's run finishes it.
       result.capped = true
       break
     }

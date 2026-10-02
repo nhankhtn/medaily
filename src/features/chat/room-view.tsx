@@ -177,16 +177,8 @@ export function RoomView({
    * member": the doorbell key is all it takes to make a claim, and an
    * unrecognised claimant is exactly the case not worth drawing.
    */
-  /*
-   * The clock the transcript is laid out against.
-   *
-   * Two things read it: a message with no server time yet, which was typed a
-   * moment ago by definition, and the date separators deciding what counts as
-   * today. The second is why it ticks rather than being taken once — a room
-   * left open across midnight would keep calling yesterday "today", and the
-   * separator is the one thing on screen whose whole job is to say which day
-   * it is. A minute is far finer than the question needs.
-   */
+  // Ticks rather than taken once: a room left open across midnight would keep
+  // calling yesterday "today".
   /** The message the box is currently answering, or nothing. */
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null)
   /** The message the box is rewriting, rather than the one it is answering. */
@@ -587,13 +579,14 @@ export function RoomView({
               {startsDay ? <DaySeparator at={message.createdAt} now={now} /> : null}
 
               <div className={cn('group flex px-1', mine ? 'justify-end' : 'justify-start')}>
-                <div className={cn('flex max-w-[85%] items-end gap-1.5 sm:max-w-[70%]', mine && 'flex-row-reverse')}>
-                  {/*
-                    Only for other people, and only on the last of a run: a face
-                    beside every line of one person talking is five copies of
-                    the same information. The empty box keeps the stack above it
-                    aligned, which is the whole reason it is drawn at all.
-                  */}
+                <div
+                  className={cn(
+                    'flex max-w-[85%] items-end gap-1.5 sm:max-w-[70%]',
+                    mine && 'flex-row-reverse',
+                  )}
+                >
+                  {/* Only on the last of a run; the empty box keeps the stack
+                      above it aligned. */}
                   {mine ? null : endsRun ? (
                     <Avatar
                       name={speaker?.name ?? t('formerMember')}
@@ -611,7 +604,7 @@ export function RoomView({
                     <span
                       {...holdProps(message)}
                       className={cn(
-                        'flex flex-col max-sm:[-webkit-touch-callout:none] max-sm:select-none',
+                        'flex flex-col max-sm:select-none max-sm:[-webkit-touch-callout:none]',
                         mine ? 'items-end' : 'items-start',
                         message.pending && 'opacity-60',
                       )}
@@ -644,7 +637,7 @@ export function RoomView({
                         'relative min-w-0 rounded-2xl px-3 py-1.5 text-sm',
                         // A hold is the way into the menu here, so it must not
                         // also be the way into a text selection.
-                        'max-sm:[-webkit-touch-callout:none] max-sm:select-none',
+                        'max-sm:select-none max-sm:[-webkit-touch-callout:none]',
                         // Room kept for the clock sitting in the corner, so the
                         // last word never runs under it. Telegram reserves the
                         // same gap, which is why a one-word bubble there is
@@ -818,7 +811,7 @@ export function RoomView({
       {replyingTo ? (
         <div className="glass flex items-center gap-2 rounded-[var(--radius)] px-2 py-1.5">
           <CornerUpLeft className="text-text-subtle size-3.5 shrink-0" />
-          <div className="min-w-0 flex-1 border-l-2 border-accent pl-2">
+          <div className="border-accent min-w-0 flex-1 border-l-2 pl-2">
             <p className="text-accent truncate text-xs font-medium">
               {replyingTo.userId === me
                 ? t('you')
@@ -861,10 +854,10 @@ export function RoomView({
             className="glass border-border-base block min-h-10 w-full resize-none rounded-[var(--radius)] py-2 pr-11 pl-3 text-base sm:min-h-11 sm:pr-12 sm:text-sm"
           />
           {/*
-            * Inside the box rather than beside it, which is where every chat
-            * app people already use keeps it. `bottom-1` rather than centred
-            * so it stays put if the box ever grows a second line.
-            */}
+           * Inside the box rather than beside it, which is where every chat
+           * app people already use keeps it. `bottom-1` rather than centred
+           * so it stays put if the box ever grows a second line.
+           */}
           <EmojiPicker
             onPick={(emoji) => setDraft((was) => was + emoji)}
             size="iconSm"
@@ -873,11 +866,11 @@ export function RoomView({
           />
         </div>
         {/*
-          * A square on a phone, where the word costs more room than it buys —
-          * the arrow beside a box you have just typed into is not ambiguous.
-          * `sr-only` rather than dropping the text, so it stays in the
-          * accessible tree and the button keeps its name.
-          */}
+         * A square on a phone, where the word costs more room than it buys —
+         * the arrow beside a box you have just typed into is not ambiguous.
+         * `sr-only` rather than dropping the text, so it stays in the
+         * accessible tree and the button keeps its name.
+         */}
         <Button
           type="submit"
           size="icon"
@@ -912,7 +905,11 @@ function DaySeparator({ at, now }: { at: string; now: number }) {
   )
 
   const label =
-    key === today ? t('today') : key === yesterday ? t('yesterday') : format.dateTime(when, 'weekdayDayMonth')
+    key === today
+      ? t('today')
+      : key === yesterday
+        ? t('yesterday')
+        : format.dateTime(when, 'weekdayDayMonth')
 
   return (
     <div className="flex justify-center py-2">
@@ -924,12 +921,8 @@ function DaySeparator({ at, now }: { at: string; now: number }) {
 }
 
 /**
- * The message an answer is answering, drawn above it.
- *
- * A bar down the left rather than a box: it has to read as something quoted
- * from elsewhere, not as a second message nested inside this one. The colour
- * follows the bubble it sits in, because the accent that reads as a quote on a
- * grey bubble disappears entirely on an accent-coloured one.
+ * A bar down the left, not a box — it should read as quoted, not nested. The
+ * colour follows the bubble: the accent vanishes on an accent-coloured one.
  */
 function Quote({
   preview,
@@ -972,12 +965,9 @@ function Quote({
 }
 
 /**
- * One tap, both directions — the same shape the server settles on.
- *
- * Off everything first, because there is one reaction per person: tapping a
- * second emoji moves yours rather than adding to it. The screen has to agree
- * with the store on that or the optimistic row shows two of yours for the
- * length of a round trip and then one of them vanishes.
+ * Off everything first: one reaction per person, so a second emoji moves yours
+ * rather than adding to it. Must agree with the store or the optimistic row
+ * shows two for a round trip.
  */
 function withReaction(message: Shown, emoji: string, me: string): Shown {
   const had = (message.reactions[emoji] ?? []).includes(me)
@@ -1046,7 +1036,7 @@ function MessageActions({
           // Gone on a phone. The press and hold opens the faces along with
           // everything else, so a button beside every line was a second way in
           // that cost a thumb's width of every message.
-          'max-sm:hidden shrink-0 opacity-0 transition-opacity',
+          'shrink-0 opacity-0 transition-opacity max-sm:hidden',
           'group-hover:opacity-100 focus-visible:opacity-100',
           at && 'opacity-100',
         )}
@@ -1073,9 +1063,7 @@ function MessageActions({
         </FloatingPanel>
       ) : null}
 
-      {burst ? (
-        <Burst emoji={burst.emoji} from={burst.from} onDone={() => setBurst(null)} />
-      ) : null}
+      {burst ? <Burst emoji={burst.emoji} from={burst.from} onDone={() => setBurst(null)} /> : null}
     </>
   )
 }
@@ -1109,9 +1097,7 @@ function HoldReaction({
 
   const centre = () => {
     const rect = box.current?.getBoundingClientRect()
-    return rect
-      ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
-      : { x: 0, y: 0 }
+    return rect ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 } : { x: 0, y: 0 }
   }
 
   const stop = () => {
@@ -1346,13 +1332,8 @@ function MessageMenu({
 }
 
 /**
- * What is already on a message, drawn in the bubble's own footprint.
- *
- * Beside the bubble they were a second object competing with it for the 85%
- * a message is allowed, and a long sentence with three reactions ended up
- * narrower than the same sentence without them. Inside, they hang off the end
- * of the words the way they do everywhere else, and the bubble grows to hold
- * them instead of shrinking to make room.
+ * In the bubble's own footprint. Beside it they competed for the 85% a message
+ * is allowed, so a sentence with reactions came out narrower than one without.
  */
 function ReactionPills({
   reactions,
@@ -1376,9 +1357,7 @@ function ReactionPills({
           aria-pressed={who.includes(me)}
           className={cn(
             'flex h-6 shrink-0 items-center gap-1 rounded-full px-1.5 text-xs',
-            who.includes(me)
-              ? 'bg-accent/15 ring-accent/50 ring-1'
-              : 'bg-text/10',
+            who.includes(me) ? 'bg-accent/15 ring-accent/50 ring-1' : 'bg-text/10',
           )}
         >
           <span className="text-sm leading-none">{emoji}</span>
