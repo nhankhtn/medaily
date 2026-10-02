@@ -7,6 +7,7 @@ import {
   budgets,
   financeCategories,
   investments,
+  people,
   recurringTransactions,
   transactions,
 } from '@/lib/db/schema'
@@ -36,8 +37,17 @@ export type TransactionPageFilters = {
   categoryId?: string | null
   from?: string
   to?: string
-  /** Where the money went, or the reference a bank statement prints. */
+  /**
+   * Where the money went, who it went to, or the reference a bank statement
+   * prints.
+   */
   search?: string
+  /**
+   * Only what still owes somebody a transfer: handed to a person, and not yet
+   * marked sent. The flag is the whole of it — the transfer happens in another
+   * app and leaves no row to derive from.
+   */
+  pendingTransfer?: boolean
 }
 
 /**
@@ -389,10 +399,29 @@ export async function findTransactionsPage(
   if (filters.to) {
     conditions.push(lte(transactions.occurredOn, filters.to))
   }
+  if (filters.pendingTransfer) {
+    conditions.push(isNotNull(transactions.payeePersonId))
+    conditions.push(isNull(transactions.transferredAt))
+  }
   if (filters.search) {
     const needle = filters.search.toLowerCase()
+    const like = `%${escapeLike(needle)}%`
     const matches = [
-      sql`f_unaccent(lower(coalesce(${transactions.merchant}, ''))) LIKE f_unaccent(${`%${escapeLike(needle)}%`})`,
+      sql`f_unaccent(lower(coalesce(${transactions.merchant}, ''))) LIKE f_unaccent(${like})`,
+      /*
+       * And whoever it was for. Both columns, because from the search box they
+       * are the same question: a debt and a repayment are kept apart because
+       * one moves a balance and the other does not, which is a distinction
+       * about totals and not about who you are looking for.
+       *
+       * `EXISTS` rather than a join, so a transaction with two people on it
+       * comes back once.
+       */
+      sql`exists (
+        select 1 from ${people} p
+        where p.id in (${transactions.payeePersonId}, ${transactions.personId})
+          and f_unaccent(lower(p.name)) LIKE f_unaccent(${like})
+      )`,
     ]
     if (REFERENCE_RE.test(needle)) {
       // A prefix, because that is the end of the id a transfer reference

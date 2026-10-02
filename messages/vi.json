@@ -1013,7 +1013,7 @@
       "notKept": "Máy không còn chỗ để giữ lại. Có mạng rồi thử lưu lại nhé."
     },
     "search": "Tìm",
-    "searchPlaceholder": "Nơi chi, hoặc mã giao dịch",
+    "searchPlaceholder": "Nơi chi, người nhận, hoặc mã giao dịch",
     "transfer": {
       "title": "Chuyển tiền",
       "pick": "Chuyển cho ai?",
@@ -1046,7 +1046,8 @@
     "copyLastMonth": "Chép ngân sách tháng trước",
     "copiedBudgets": "Đã chép {count} dòng ngân sách",
     "previousMonth": "Tháng trước",
-    "nextMonth": "Tháng sau"
+    "nextMonth": "Tháng sau",
+    "filterOwing": "Chưa chuyển tiền"
   },
   "journal": {
     "title": "Nhật ký",

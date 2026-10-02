@@ -394,15 +394,19 @@ export async function markTransactionTransferred(input: unknown) {
   if (!parsed.success) return { ok: false as const, error: 'invalid_input' as const }
 
   const userId = await getCurrentUserId()
+  const at = new Date()
   try {
-    await updateTransaction(userId, parsed.data.id, { transferredAt: new Date() })
+    await updateTransaction(userId, parsed.data.id, { transferredAt: at })
   } catch {
     // Someone else's row, or one deleted between the list rendering and the tap.
     return { ok: false as const, error: 'not_found' as const }
   }
 
   revalidateFinance()
-  return { ok: true as const }
+  // Handed back so the list can show what was written rather than its own
+  // guess at it — the page holds its rows in client state and would otherwise
+  // go on asking for a transfer that has already happened.
+  return { ok: true as const, at: at.toISOString() }
 }
 
 export const saveTransaction = audited(
@@ -669,6 +673,7 @@ const listTransactionsSchema = z.object({
   from: isoDateSchema.optional(),
   to: isoDateSchema.optional(),
   search: z.string().max(100).optional(),
+  pendingTransfer: z.boolean().optional(),
 })
 
 /** Cursor page for the ledger; filters run in SQL, not on a client-side dump. */
@@ -697,6 +702,7 @@ export async function listTransactions(input: unknown) {
       from: parsed.data.from,
       to: parsed.data.to,
       search: parsed.data.search?.trim() || undefined,
+      pendingTransfer: parsed.data.pendingTransfer,
     },
   })
 

@@ -129,6 +129,20 @@ export function LedgerDesktop({ data }: { data: FinanceData }) {
                 onChange={(event) => setFilter('to', event.target.value)}
               />
             </label>
+
+            {/* A question rather than a list: either you are looking at what
+                still owes somebody a transfer, or you are not. */}
+            <label className="flex items-center gap-2 self-end pb-2.5">
+              <input
+                type="checkbox"
+                className="accent-accent size-4"
+                checked={filters.pendingTransfer}
+                onChange={(event) => setFilter('pendingTransfer', event.target.checked)}
+              />
+              <span className="text-text-muted text-xs font-medium whitespace-nowrap">
+                {t('filterOwing')}
+              </span>
+            </label>
           </div>
 
           {rows.loading ? (

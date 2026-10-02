@@ -1013,7 +1013,7 @@
       "notKept": "This phone had no room to keep it. Try again when you have a connection."
     },
     "search": "Search",
-    "searchPlaceholder": "Where it went, or a code",
+    "searchPlaceholder": "Where it went, who to, or a code",
     "transfer": {
       "title": "Send money",
       "pick": "Who are you sending it to?",
@@ -1046,7 +1046,8 @@
     "copyLastMonth": "Copy last month",
     "copiedBudgets": "Copied {count} budgets",
     "previousMonth": "Previous month",
-    "nextMonth": "Next month"
+    "nextMonth": "Next month",
+    "filterOwing": "Still to transfer"
   },
   "journal": {
     "title": "Journal",

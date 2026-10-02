@@ -166,6 +166,18 @@ export function LedgerMobile({ data }: { data: FinanceData }) {
                   />
                 </label>
               </div>
+
+              {/* A question rather than a list: either you are looking at what
+                  still owes somebody a transfer, or you are not. */}
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  className="accent-accent size-4"
+                  checked={filters.pendingTransfer}
+                  onChange={(event) => setFilter('pendingTransfer', event.target.checked)}
+                />
+                <span className="text-text-muted text-xs font-medium">{t('filterOwing')}</span>
+              </label>
             </div>
           ) : null}
 
