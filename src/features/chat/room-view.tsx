@@ -1,6 +1,6 @@
 'use client'
 
-import { Copy, CornerUpLeft, Pencil, Send, SmilePlus, Trash2, X } from 'lucide-react'
+import { ArrowDown, Copy, CornerUpLeft, Pencil, Send, SmilePlus, Trash2, X } from 'lucide-react'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -18,6 +18,7 @@ import {
   type Speaker,
 } from '@/lib/chat/types'
 import { ringRoom, useRoomLive } from '@/lib/hooks/use-room-live'
+import { CHAT_JUMP, jumpTarget } from './jump'
 import { isSticker, REACTIONS } from '@/lib/chat/stickers'
 import { onlyEmoji } from '@/lib/chat/only-emoji'
 import { dayKeyOf, layoutAt } from '@/lib/chat/grouping'
@@ -30,6 +31,7 @@ import {
   deleteMessage,
   loadNewMessages,
   editMessage,
+  loadAround,
   loadRecentMessages,
   toggleReaction,
   loadOlderMessages,
@@ -46,6 +48,8 @@ import {
 const ROW_ESTIMATE = 60
 /** Long enough not to fire on a tap, short enough not to feel stuck. */
 const HOLD_MS = 450
+/** Two taps further apart than this are two taps. */
+const DOUBLE_TAP_MS = 300
 
 /**
  * A message on screen, which is not quite a message in the database: one that
@@ -86,7 +90,10 @@ export function RoomView({
   const [menu, setMenu] = useState<{ at: Anchor; message: Shown } | null>(null)
   const hold = useRef<ReturnType<typeof setTimeout> | null>(null)
   const heldFrom = useRef<{ x: number; y: number } | null>(null)
+  const lastTap = useRef<{ at: number; x: number; y: number } | null>(null)
   const newest = useRef<string | null>(initialPage.items.at(-1)?.id ?? null)
+  /** `catchUp` is a callback with its own deps; this is how it sees the state. */
+  const landedRef = useRef<string | null>(null)
   const catchingUp = useRef(false)
 
   /**
@@ -98,6 +105,10 @@ export function RoomView({
    */
   const catchUp = useCallback(async () => {
     if (catchingUp.current) return
+    // Somewhere in the middle of the room on purpose. Paging forward from here
+    // would walk the view back to the newest line a hundred messages at a
+    // time, which is the one place somebody who jumped did not ask to be.
+    if (landedRef.current) return
     catchingUp.current = true
     try {
       let more = true
@@ -180,6 +191,17 @@ export function RoomView({
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null)
   /** The message the box is rewriting, rather than the one it is answering. */
   const [editing, setEditing] = useState<ChatMessage | null>(null)
+  /**
+   * The message a search result landed on, or null while the room is showing
+   * its own end.
+   *
+   * Doubles as the row to scroll to and the row to mark, and as the answer to
+   * "is this still the newest page" — which `catchUp` has to know, or it would
+   * quietly page forward until the jump had been undone.
+   */
+  const [landed, setLanded] = useState<string | null>(null)
+  /** Which row is lit, and for how long. Long enough to find, short enough to stop. */
+  const [marked, setMarked] = useState<string | null>(null)
 
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
@@ -190,6 +212,49 @@ export function RoomView({
   const typingNames = typists
     .map((uid) => Object.values(speakers).find((speaker) => speaker.firebaseUid === uid)?.name)
     .filter((name): name is string => Boolean(name))
+
+  useEffect(() => {
+    const go = (event: Event) => {
+      const messageId = jumpTarget(event)
+      if (!messageId) return
+
+      void loadAround({ roomId: room.id, messageId }).then((result) => {
+        if (!result.ok) return toast.error(t('jumpGone'))
+
+        setMessages(result.items)
+        setSpeakers((known) => ({ ...known, ...result.speakers }))
+        setOlder(result.older)
+        // Only a window of the room now. The flag and the ref are set together
+        // because one is read in render and the other inside `catchUp`.
+        landedRef.current = result.hasNewer ? messageId : null
+        setLanded(result.hasNewer ? messageId : null)
+        newest.current = result.items.at(-1)?.id ?? null
+        setMarked(messageId)
+      })
+    }
+
+    window.addEventListener(CHAT_JUMP, go)
+    return () => window.removeEventListener(CHAT_JUMP, go)
+  }, [room.id, t])
+
+  useEffect(() => {
+    if (!marked) return
+    const timer = setTimeout(() => setMarked(null), 2500)
+    return () => clearTimeout(timer)
+  }, [marked])
+
+  /** Back to the end of the room, which is where a conversation normally sits. */
+  const backToLatest = async () => {
+    const recent = await loadRecentMessages(room.id)
+    if (!recent.ok) return
+    setMessages(recent.items)
+    setReads(recent.reads)
+    setOlder(recent.items[0]?.id ?? null)
+    newest.current = recent.items.at(-1)?.id ?? null
+    landedRef.current = null
+    setLanded(null)
+    setMarked(null)
+  }
 
   const loadOlder = useCallback(async () => {
     if (!older || loadingOlder) return
@@ -395,6 +460,18 @@ export function RoomView({
     })
   }
 
+  /**
+   * The one a double tap gives, which is the first of the six.
+   *
+   * Pressing it again takes it off, the same as choosing it from the menu —
+   * a double tap that could only ever add would leave no way to undo one by
+   * the gesture that made it.
+   */
+  const doubleTapReact = (message: Shown) => {
+    if (message.pending || message.deletedAt) return
+    void react(message, REACTIONS[0])
+  }
+
   const endHold = () => {
     if (hold.current) clearTimeout(hold.current)
     hold.current = null
@@ -420,8 +497,26 @@ export function RoomView({
       // A thumb that travelled is a scroll, not a hold.
       if (Math.abs(event.clientX - from.x) > 10 || Math.abs(event.clientY - from.y) > 10) endHold()
     },
-    onPointerUp: endHold,
+    onPointerUp: (event: React.PointerEvent) => {
+      endHold()
+      if (event.pointerType === 'mouse') return
+      // Two taps in the same spot, the way every phone has taught people to
+      // like something. A mouse gets `onDoubleClick` below, which the browser
+      // works out on its own.
+      const last = lastTap.current
+      const quick =
+        last !== null &&
+        event.timeStamp - last.at < DOUBLE_TAP_MS &&
+        Math.abs(event.clientX - last.x) < 24 &&
+        Math.abs(event.clientY - last.y) < 24
+      lastTap.current = quick ? null : { at: event.timeStamp, x: event.clientX, y: event.clientY }
+      if (quick) doubleTapReact(message)
+    },
     onPointerCancel: endHold,
+    onDoubleClick: (event: React.MouseEvent) => {
+      if (event.detail === 0) return
+      doubleTapReact(message)
+    },
   })
 
   return (
@@ -438,6 +533,7 @@ export function RoomView({
         loadingMore={loadingOlder}
         onLoadMore={() => void loadOlder()}
         loadMorePosition="start"
+        scrollToKey={marked}
         stickToBottom
         pinSignal={sentAt}
         loadingMoreLabel={t('loadOlder')}
@@ -480,7 +576,14 @@ export function RoomView({
           // `first:mt-0` matched all of them. The gap between runs was zero
           // however large the class said it was.
           return (
-            <div className={cn(index === 0 ? 'mt-0' : startsRun ? 'mt-4' : 'mt-0.5')}>
+            <div
+              className={cn(
+                index === 0 ? 'mt-0' : startsRun ? 'mt-4' : 'mt-0.5',
+                // Lit for a moment after landing on it, because a row in the
+                // middle of fifty looks like every other row.
+                message.id === marked && 'ring-accent rounded-[var(--radius)] ring-2',
+              )}
+            >
               {startsDay ? <DaySeparator at={message.createdAt} now={now} /> : null}
 
               <div className={cn('group flex px-1', mine ? 'justify-end' : 'justify-start')}>
@@ -639,6 +742,10 @@ export function RoomView({
             setReplyingTo(menu.message)
             setMenu(null)
           }}
+          onReact={(emoji) => {
+            void react(menu.message, emoji)
+            setMenu(null)
+          }}
           onCopy={
             isSticker(menu.message.body)
               ? undefined
@@ -682,6 +789,14 @@ export function RoomView({
             ? t('typing', { name: typingNames[0]! })
             : t('typingMany', { count: typingNames.length })}
         </p>
+      ) : null}
+      {landed ? (
+        <div className="flex justify-center">
+          <Button type="button" variant="secondary" size="sm" onClick={() => void backToLatest()}>
+            <ArrowDown className="size-4" />
+            {t('backToLatest')}
+          </Button>
+        </div>
       ) : null}
       {editing ? (
         <div className="glass flex items-center gap-2 rounded-[var(--radius)] px-2 py-1.5">
@@ -928,9 +1043,12 @@ function MessageActions({
         // out of the way on a pointer, where a button under every line would
         // be louder than the conversation.
         className={cn(
-          'shrink-0 opacity-100 transition-opacity sm:opacity-0',
-          'sm:group-hover:opacity-100 sm:focus-visible:opacity-100',
-          at && 'sm:opacity-100',
+          // Gone on a phone. The press and hold opens the faces along with
+          // everything else, so a button beside every line was a second way in
+          // that cost a thumb's width of every message.
+          'max-sm:hidden shrink-0 opacity-0 transition-opacity',
+          'group-hover:opacity-100 focus-visible:opacity-100',
+          at && 'opacity-100',
         )}
       >
         <SmilePlus className="size-4" />
@@ -1160,10 +1278,12 @@ function MessageMenu({
   onCopy,
   onEdit,
   onRecall,
+  onReact,
 }: {
   at: Anchor
   onClose: () => void
   onReply: () => void
+  onReact: (emoji: string) => void
   /** Absent when there are no words to take — a sticker is an id, not text. */
   onCopy?: () => void
   /** Absent when there are no words of yours to rewrite. */
@@ -1177,6 +1297,26 @@ function MessageMenu({
 
   return (
     <FloatingPanel at={at} onClose={onClose}>
+      {/*
+        The faces above what is done to the message, because reacting is the
+        common answer and a menu that opened on "Reply" buried it. On a phone
+        this is the only way in — the button beside the bubble stands down
+        there, where every chat app puts both behind the same press.
+      */}
+      <div className="border-border-base flex items-center gap-0.5 border-b pb-0.5">
+        {REACTIONS.map((emoji) => (
+          <button
+            key={emoji}
+            type="button"
+            aria-label={t('reactWith', { emoji })}
+            onClick={() => onReact(emoji)}
+            className="hover:bg-surface-2 flex size-9 items-center justify-center rounded-full text-lg"
+          >
+            {emoji}
+          </button>
+        ))}
+      </div>
+
       <div className="flex w-40 flex-col gap-0.5">
         <button type="button" onClick={onReply} className={item}>
           <CornerUpLeft className="size-4" />

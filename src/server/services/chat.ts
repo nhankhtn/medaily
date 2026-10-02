@@ -297,7 +297,9 @@ export async function searchRoom(
   let full = false
 
   while (!full && found.length < SEARCH_LIMIT && scanned < SCAN_CAP) {
-    const page = await store.listBackward(roomId, { before: cursor, limit: SCAN_PAGE })
+    // `scanBackward`, not `listBackward`: nothing here draws a quote, and
+    // building them costs a second query and a second decryption per page.
+    const page = await store.scanBackward(roomId, { before: cursor, limit: SCAN_PAGE })
     scanned += page.items.length
 
     for (const message of page.items) {

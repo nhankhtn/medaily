@@ -891,6 +891,50 @@ export async function nudgeRoom(input: unknown) {
   return { ok: true as const }
 }
 
+/** Either side of the message somebody jumped to. Enough to land in context. */
+const AROUND = 25
+
+/**
+ * The transcript around one message, for landing on a search result.
+ *
+ * Three reads rather than one: the message itself, what came before it, and
+ * what came after. The store pages in one direction at a time, which is right
+ * for a conversation being read and wrong for arriving in the middle of one.
+ *
+ * The screen replaces its whole list with this, so it comes back in reading
+ * order with both cursors — `older` to go on scrolling up, and whether
+ * anything newer was left behind, which is what tells the room it is no longer
+ * showing the end.
+ */
+export async function loadAround(input: unknown) {
+  const parsed = z
+    .object({ roomId: roomIdSchema, messageId: messageIdSchema })
+    .safeParse(input)
+  if (!parsed.success) return { ok: false as const }
+
+  const store = pickChatStore()
+  const userId = await getCurrentUserId()
+  if (!(await allowed(parsed.data.roomId, userId))) return { ok: false as const }
+
+  const [target, before, after] = await Promise.all([
+    store.findMessage(parsed.data.roomId, parsed.data.messageId),
+    store.listBackward(parsed.data.roomId, { before: parsed.data.messageId, limit: AROUND }),
+    store.listForward(parsed.data.roomId, { after: parsed.data.messageId, limit: AROUND }),
+  ])
+  // Gone since the search answered — recalled rooms aside, a message can be
+  // taken back between finding it and tapping it.
+  if (!target) return { ok: false as const }
+
+  const items = [...before.items].reverse().concat(target, after.items)
+  return {
+    ok: true as const,
+    items,
+    older: before.more ? (items[0]?.id ?? null) : null,
+    hasNewer: after.more,
+    speakers: await speakersOf(items.map((m) => m.userId ?? '')),
+  }
+}
+
 /**
  * Finding a message in this room by what it says.
  *

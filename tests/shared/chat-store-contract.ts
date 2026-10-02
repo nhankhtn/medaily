@@ -398,6 +398,35 @@ export function describeChatStore(name: string, makeStore: () => Promise<ChatSto
       expect(await store.countUnread('u1', [{ roomId: 'r1', after: null }])).toEqual({ r1: 1 })
     })
 
+    it('scans the same page as listBackward, minus the quotes', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      const first = await store.appendMessage(message('r1', 'u1', 'one', 'c1'))
+      await store.appendMessage({ ...message('r1', 'u2', 'two', 'c2'), replyToId: first.id })
+
+      const drawn = await store.listBackward('r1', { limit: 50 })
+      const scanned = await store.scanBackward('r1', { limit: 50 })
+
+      // Same rows, same order, same words — only the quote is left out.
+      expect(scanned.items.map((m) => m.id)).toEqual(drawn.items.map((m) => m.id))
+      expect(scanned.items.map((m) => m.body)).toEqual(drawn.items.map((m) => m.body))
+      expect(drawn.items[0]?.replyTo?.id).toBe(first.id)
+      expect(scanned.items.every((m) => m.replyTo === null)).toBe(true)
+    })
+
+    it('pages the same way, so a scan can be continued', async () => {
+      const store = await makeStore()
+      await store.createRoom(room('r1'))
+      for (let i = 0; i < 5; i++) await store.appendMessage(message('r1', 'u1', `m${i}`, `c${i}`))
+
+      const one = await store.scanBackward('r1', { limit: 2 })
+      expect(one.items.map((m) => m.body)).toEqual(['m4', 'm3'])
+      expect(one.more).toBe(true)
+
+      const two = await store.scanBackward('r1', { before: one.cursor, limit: 2 })
+      expect(two.items.map((m) => m.body)).toEqual(['m2', 'm1'])
+    })
+
     it('names who wrote the newest thing still waiting', async () => {
       const store = await makeStore()
       await store.createRoom(room('r1'))

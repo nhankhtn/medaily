@@ -249,6 +249,22 @@ export function mongoChatStore(uri: string): ChatStore {
       return pageOf(uri, rows, limit)
     },
 
+    scanBackward: async (roomId, { before, limit }) => {
+      if (before && !isObjectIdHex(before)) return { items: [], cursor: null, more: false }
+      const rows = await (
+        await messagesIn(uri)
+      )
+        .find({ roomId, ...(before ? { _id: { $lt: new ObjectId(before) } } : {}) })
+        .sort({ _id: -1 })
+        .limit(limit + 1)
+        .toArray()
+
+      // `asMessage` and no further: the second query `pageOf` makes to fill in
+      // quotes, and the decryption of everything it fetches, is the whole
+      // difference this method exists for.
+      const items = rows.slice(0, limit).map((doc) => asMessage(doc)!)
+      return { items, cursor: items.at(-1)?.id ?? null, more: rows.length > limit }
+    },
     listForward: async (roomId, { after, limit }) => {
       if (after && !isObjectIdHex(after)) return pageOf(uri, [], limit)
       const rows = await (

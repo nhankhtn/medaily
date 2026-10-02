@@ -69,6 +69,16 @@ export type VirtualInfiniteListProps<T> = {
   /** IntersectionObserver rootMargin before the sentinel. */
   loadMoreMargin?: string
   loadingMoreLabel?: ReactNode
+  /**
+   * A row to bring into view, by its key.
+   *
+   * For arriving somewhere rather than reading: landing on a search result
+   * means the view has to move to a row that may be a hundred above the
+   * bottom. Setting it also lets go of the pin — otherwise the next thing to
+   * change the height would yank the view straight back to the newest line,
+   * which is exactly where somebody has just asked not to be.
+   */
+  scrollToKey?: string | null
   className?: string
   listClassName?: string
   empty?: ReactNode
@@ -98,6 +108,7 @@ export function VirtualInfiniteList<T>({
   pinSignal,
   loadMoreMargin = DEFAULT_LOAD_MARGIN,
   loadingMoreLabel,
+  scrollToKey,
   className,
   listClassName,
   empty,
@@ -170,6 +181,18 @@ export function VirtualInfiniteList<T>({
     pinned.current = true
     pin.current()
   }, [pinSignal, mounted])
+
+  useEffect(() => {
+    if (!scrollToKey || !mounted) return
+    const index = items.findIndex((item) => getKey(item) === scrollToKey)
+    if (index < 0) return
+
+    pinned.current = false
+    // Centred, because a row landing against the top or bottom edge gives no
+    // sense of what it sits between — which is most of why somebody jumped.
+    virtualizer.scrollToIndex(index, { align: 'center' })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `virtualizer` and `getKey` are new on every render; this must run when the key changes
+  }, [scrollToKey, mounted, items])
 
   /**
    * The changes that arrive without a render.

@@ -1675,6 +1675,8 @@
     "searchPlaceholder": "Một chữ trong tin nhắn",
     "searchEmpty": "Không có tin nào chứa chữ đó.",
     "searchMore": "Tìm ngược lên nữa",
+    "backToLatest": "Về tin mới nhất",
+    "jumpGone": "Tin đó không còn nữa.",
     "open": "Mở",
     "members": "{count} người trong phòng",
     "placeholder": "Viết gì đó",

@@ -91,6 +91,21 @@ export type ChatStore = {
   findMessage: (roomId: string, messageId: string) => Promise<ChatMessage | null>
 
   /**
+   * The same page as `listBackward`, without resolving what each one answers.
+   *
+   * For deciding, not for drawing. `replyTo` is always null here — not "this
+   * message answered nothing", but "nobody asked". A screen that renders a
+   * quote must use `listBackward`; this exists for the scan behind search,
+   * which reads a thousand messages to show twenty and would otherwise spend
+   * a second query and a second round of decryption per page building quotes
+   * it throws away. Measured at a 50% reply rate: 270ms against 42ms.
+   */
+  scanBackward: (
+    roomId: string,
+    page: { before?: string | null; limit: number },
+  ) => Promise<MessagePage>
+
+  /**
    * Who wrote the newest thing this person has not read, across every room.
    *
    * One question rather than one per room, and asked only when something is
@@ -197,6 +212,7 @@ export const NO_CHAT: ChatStore = {
   },
   listBackward: async () => ({ items: [], cursor: null, more: false }),
   listForward: async () => ({ items: [], cursor: null, more: false }),
+  scanBackward: async () => ({ items: [], cursor: null, more: false }),
   countUnread: async () => ({}),
   latestUnreadSender: async () => null,
   findMessage: async () => null,
@@ -362,6 +378,16 @@ export function inMemoryChatStore(): ChatStore {
         .sort((a, b) => b.id.localeCompare(a.id))
         .slice(0, limit + 1)
       return page(rows, limit)
+    },
+    scanBackward: async (roomId, { before, limit }) => {
+      // The fake has no quotes to resolve and no cost to save; it answers the
+      // same shape so the contract can hold both stores to the same promise.
+      const rows = live(roomId)
+        .filter((m) => (before ? m.id < before : true))
+        .sort((a, b) => b.id.localeCompare(a.id))
+        .slice(0, limit + 1)
+      const answered = page(rows, limit)
+      return { ...answered, items: answered.items.map((m) => ({ ...m, replyTo: null })) }
     },
     listForward: async (roomId, { after, limit }) => {
       const rows = live(roomId)

@@ -1675,6 +1675,8 @@
     "searchPlaceholder": "A word from the message",
     "searchEmpty": "Nothing with that in it.",
     "searchMore": "Look further back",
+    "backToLatest": "Back to the latest",
+    "jumpGone": "That message is not there any more.",
     "open": "Open",
     "members": "{count} in the room",
     "placeholder": "Write something",
