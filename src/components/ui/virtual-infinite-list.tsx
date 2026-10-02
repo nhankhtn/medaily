@@ -170,6 +170,12 @@ export function VirtualInfiniteList<T>({
   // eslint-disable-next-line react-hooks/incompatible-library -- useVirtualizer
   const virtualizer = useVirtualizer({
     count: mounted ? items.length : 0,
+    // Sizes are cached per row, not per index: after a removal the next row
+    // inherits the index, and an index cache would hand it the removed row's height.
+    getItemKey: (index) => {
+      const item = items[index]
+      return item === undefined ? index : getKey(item)
+    },
     getScrollElement: () => scrollRef.current,
     estimateSize: () => estimateSize,
     overscan,
