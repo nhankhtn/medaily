@@ -31,7 +31,7 @@ export function StreakStrip({ streaks }: { streaks: DashboardStreak[] }) {
             <Flame
               className={cn('size-4', streak.current > 0 ? 'text-warn' : 'text-text-subtle')}
             />
-            <RollingNumber value={String(streak.current)} className="text-lg font-semibold" />
+            <RollingNumber value={String(streak.current)} className="text-lg font-semibold" rollIn />
             {streak.frozen ? (
               <span title={t('frozen')} aria-label={t('frozen')}>
                 <Snowflake className="size-3.5 text-accent" />

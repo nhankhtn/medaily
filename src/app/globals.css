@@ -1806,3 +1806,15 @@ html.ui-theme-reveal::view-transition-new(root) {
     var(--shadow-card),
     0 0 0 2px var(--accent);
 }
+
+/* RollingNumber `rollIn`: up from 0 on first paint, left digits first. */
+@keyframes rolling-in {
+  from {
+    transform: translateY(0);
+  }
+}
+
+.rolling-in {
+  animation: rolling-in 0.9s var(--ease-out-soft) backwards;
+  animation-delay: calc(var(--slot, 0) * 50ms);
+}

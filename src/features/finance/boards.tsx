@@ -96,6 +96,7 @@ export function AccountsBoard({ data }: BoardProps) {
                   <RollingNumber
                     value={formatMoney(balance.balance, balance.currency, locale)}
                     className="shrink-0 text-sm font-medium"
+                    rollIn
                   />
                 </li>
               )

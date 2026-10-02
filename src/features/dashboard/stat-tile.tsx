@@ -45,7 +45,7 @@ export function StatTile({
             hasValue ? 'text-text' : 'text-text-subtle',
           )}
         >
-          {hasValue ? <RollingNumber value={formatNumber(value)} /> : '—'}
+          {hasValue ? <RollingNumber value={formatNumber(value)} rollIn /> : '—'}
         </span>
         {hasValue && unit ? <span className="text-xs text-text-subtle">{unit}</span> : null}
       </p>

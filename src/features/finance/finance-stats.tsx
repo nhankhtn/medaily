@@ -15,7 +15,7 @@ export function FinanceStats({
         <div key={item.label} className="glass rounded-[var(--radius)] px-3 py-2.5">
           <dt className="text-text-muted truncate text-xs">{item.label}</dt>
           <dd className="mt-0.5 text-xl font-semibold tabular-nums">
-            <RollingNumber value={item.value} />
+            <RollingNumber value={item.value} rollIn />
           </dd>
           {item.hint ? <dd className="text-text-subtle text-xs">{item.hint}</dd> : null}
         </div>

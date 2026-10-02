@@ -9,7 +9,16 @@ const DIGITS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
  * column instead of re-rolling everything. The text itself is in a sr-only
  * span; the columns are decoration.
  */
-export function RollingNumber({ value, className }: { value: string; className?: string }) {
+export function RollingNumber({
+  value,
+  className,
+  rollIn = false,
+}: {
+  value: string
+  className?: string
+  /** Also roll up from 0 on first paint. Not for rows a virtual list remounts on scroll. */
+  rollIn?: boolean
+}) {
   const chars = value.split('')
 
   return (
@@ -27,8 +36,16 @@ export function RollingNumber({ value, className }: { value: string; className?:
             >
               <span className="invisible">0</span>
               <span
-                className="rolling-digit absolute inset-x-0 top-0 flex flex-col"
-                style={{ transform: `translateY(-${Number(char) * 10}%)` }}
+                className={cn(
+                  'rolling-digit absolute inset-x-0 top-0 flex flex-col',
+                  rollIn && 'rolling-in',
+                )}
+                style={
+                  {
+                    transform: `translateY(-${Number(char) * 10}%)`,
+                    '--slot': index,
+                  } as React.CSSProperties
+                }
               >
                 {DIGITS.map((digit) => (
                   <span key={digit} className="h-[1em]">

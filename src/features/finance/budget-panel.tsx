@@ -25,7 +25,7 @@ const monthParam = (date: ISODate) => date.slice(0, 7)
 function rolled(text: string, amounts: string[]) {
   return splitSlots(text).map((part, index) =>
     typeof part === 'number' ? (
-      <RollingNumber key={index} value={amounts[part] ?? ''} />
+      <RollingNumber key={index} value={amounts[part] ?? ''} rollIn />
     ) : (
       <span key={index}>{part}</span>
     ),

@@ -67,7 +67,7 @@ export function StreakFlame({ streak, today }: { streak: LoggingStreak; today: I
         ) : null}
       </span>
       <span aria-hidden>
-        <RollingNumber value={String(current)} />
+        <RollingNumber value={String(current)} rollIn />
       </span>
       <span className="sr-only">{t('dayCount', { count: current })}</span>
     </span>

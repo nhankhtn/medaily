@@ -26,7 +26,7 @@ export async function ScoreCard({
             {day === null ? (
               <span className="text-text-subtle">—</span>
             ) : (
-              <RollingNumber value={String(Math.round(day))} />
+              <RollingNumber value={String(Math.round(day))} rollIn />
             )}
           </p>
           {dayScore && dayScore.componentsUsed > 0 ? (
@@ -45,7 +45,7 @@ export async function ScoreCard({
             {weekScore.score === null ? (
               <span className="text-text-subtle text-base font-normal">{t('notEnoughData')}</span>
             ) : (
-              <RollingNumber value={String(Math.round(weekScore.score))} />
+              <RollingNumber value={String(Math.round(weekScore.score))} rollIn />
             )}
           </p>
           <p className="text-text-subtle mt-0.5 text-xs">
