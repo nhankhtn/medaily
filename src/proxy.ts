@@ -154,11 +154,13 @@ export const config = {
   // Static files under `public/` reach the proxy like any other path, so the
   // ones that are nobody's personal data are named here — otherwise every
   // brand mark costs a session check and can never be cached at the edge.
+  // `themes/` too: the sign-in page paints a theme's scenery before there is
+  // a session to check.
   //
   // `opengraph-image` is in that list for a second reason: the scraper that
   // fetches it to build a link preview has no session and never will, so
   // behind the gate it gets a redirect and the card comes out blank.
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|icon.svg|icon-maskable|apple-icon|opengraph-image|brands/).*)',
+    '/((?!_next/static|_next/image|favicon.ico|icon.svg|icon-maskable|apple-icon|opengraph-image|brands/|themes/).*)',
   ],
 }

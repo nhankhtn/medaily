@@ -98,6 +98,7 @@ describe('the registry', () => {
 
   it('accepts only what it lists', () => {
     expect(isThemePreference('pink')).toBe(true)
+    expect(isThemePreference('meadow')).toBe(true)
     expect(isThemePreference('light')).toBe(true)
     expect(isThemePreference('system')).toBe(false)
     expect(isThemePreference('mauve')).toBe(false)
@@ -145,6 +146,7 @@ describe('the boot script', () => {
     }
 
     expect(run('pink')).toEqual({ theme: 'pink', dark: false })
+    expect(run('meadow')).toEqual({ theme: 'meadow', dark: false })
     expect(run('light')).toEqual({ theme: 'light', dark: false })
     expect(run('dark')).toEqual({ theme: 'dark', dark: true })
     // Stale cookies / rows that still say system fall back to light.
