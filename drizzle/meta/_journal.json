@@ -183,6 +183,13 @@
       "when": 1790842150861,
       "tag": "0025_push_devices",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1790901689923,
+      "tag": "0026_drop_transaction_tags",
+      "breakpoints": true
     }
   ]
 }

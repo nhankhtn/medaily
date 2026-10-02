@@ -300,7 +300,6 @@ const restoreSchema = z
     currency: z.string().min(1).max(10),
     fxRate: z.string().max(30).nullable().default(null),
     transferredAt: z.coerce.date().nullable().default(null),
-    tags: z.array(z.string().max(100)).max(50).nullable().default(null),
     ...transactionFields,
   })
   .refine(transferRule, transferMessage)
@@ -616,9 +615,9 @@ export const removeTransaction = audited(
 /**
  * Puts a deleted row back, id and all. Every field is re-checked the way a new
  * transaction is — the caller is a browser, and a row it hands back is a
- * request, not a record. `currency`, `fxRate`, `transferredAt` and `tags` ride
- * along because unlike a create this is meant to restore, not to re-enter:
- * dropping them would return a different transaction than the one deleted.
+ * request, not a record. `currency`, `fxRate` and `transferredAt` ride along
+ * because unlike a create this is meant to restore, not to re-enter: dropping
+ * them would return a different transaction than the one deleted.
  */
 export const restoreTransaction = audited(
   'transaction.restore',
@@ -657,7 +656,6 @@ export const restoreTransaction = audited(
       payeePersonId: ownedBy(parsed.data.payeePersonId, people),
       transferredAt: parsed.data.transferredAt,
       merchant: parsed.data.merchant ?? null,
-      tags: parsed.data.tags,
     })
 
     revalidateFinance()
