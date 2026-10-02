@@ -1,7 +1,8 @@
 import type { CustomMetric } from '@/lib/db/schema'
 import { db, type DbOrTx } from '@/lib/db'
 import type { DailyLog } from '@/lib/db/schema'
-import { addDays, rangeOfLastDays, today, type ISODate } from '@/lib/dates'
+import { addDays, eachDay, rangeOfLastDays, today, type ISODate } from '@/lib/dates'
+import { loggingStreak, type LoggingStreak } from '@/lib/daily/trail'
 import type { DailyLogPatchInput } from '@/lib/validation/daily'
 import type { HideableField } from '@/lib/daily/hidden-fields'
 import { recomputeDerivedHabitLogs } from '@/server/services/habit-derivation'
@@ -135,32 +136,45 @@ export type DailyFormData = {
   /** Questions this person has turned off; see `lib/daily/hidden-fields`. */
   hiddenFields: HideableField[]
   metricUses: MetricUse
+  /** The logging streak and the last week of days, for the page header. */
+  streak: LoggingStreak
 }
+
+/**
+ * How far back the page's streak looks. A run longer than this still shows,
+ * capped — reading every day ever logged on each visit is not worth the
+ * difference between "400" and "412".
+ */
+const STREAK_LOOKBACK_DAYS = 400
 
 export async function getDailyFormData(date: ISODate): Promise<DailyFormData> {
   const settings = await getSettings()
   const logicalToday = today(dayContextOf(settings))
   const medianSince = addDays(logicalToday, -13)
 
-  const [
-    log,
-    effective,
-    medians,
-    exerciseTypes,
-    previousDay,
-    missingDays,
-    customMetrics,
-    metricUses,
-  ] = await Promise.all([
-    findRawLog(settings.userId, date),
-    findEffectiveLog(settings.userId, date),
-    findMedians(settings.userId, medianSince),
-    findExerciseTypes(settings.userId),
-    findLatestLogBefore(settings.userId, date),
-    findMissingDays(logicalToday, 7),
-    findCustomMetrics(settings.userId),
-    getMetricUses(settings.userId),
-  ])
+  const [log, effective, medians, exerciseTypes, previousDay, recent, customMetrics, metricUses] =
+    await Promise.all([
+      findRawLog(settings.userId, date),
+      findEffectiveLog(settings.userId, date),
+      findMedians(settings.userId, medianSince),
+      findExerciseTypes(settings.userId),
+      findLatestLogBefore(settings.userId, date),
+      // One read serves both the catch-up banner and the streak.
+      findEffectiveRange(settings.userId, rangeOfLastDays(logicalToday, STREAK_LOOKBACK_DAYS)),
+      findCustomMetrics(settings.userId),
+      getMetricUses(settings.userId),
+    ])
+
+  const logged = new Set(recent.map((row) => row.logDate))
+  const missingDays = eachDay(rangeOfLastDays(addDays(logicalToday, -1), 7)).filter(
+    (day) => !logged.has(day),
+  )
+  const streak = loggingStreak({
+    logged,
+    start: addDays(logicalToday, -(STREAK_LOOKBACK_DAYS - 1)),
+    today: logicalToday,
+    graceEnabled: settings.streakGraceEnabled,
+  })
 
   const customValues: Record<string, number | boolean | string | null> = {}
   if (log) {
@@ -187,6 +201,7 @@ export async function getDailyFormData(date: ISODate): Promise<DailyFormData> {
     customValues,
     hiddenFields: settings.hiddenDailyFields,
     metricUses,
+    streak,
   }
 }
 

@@ -4,10 +4,17 @@ import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useEffect, useRef } from 'react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { addDays, fromISODate, type ISODate } from '@/lib/dates'
 import { PATHS } from '@/lib/paths'
 import { useShortcut } from '@/features/shortcuts/provider'
+import { setDayDirection } from './day-events'
+
+const SWIPE_PX = 70
+/** How much of the finger the page follows; far less toward a future that does not exist. */
+const FOLLOW = 0.35
+const RUBBER = 0.12
 
 /**
  * Arrows, a date picker, `[` / `]` and swipe — the same day-hopping affordance
@@ -16,11 +23,13 @@ import { useShortcut } from '@/features/shortcuts/provider'
 export function DateNav({ date, today }: { date: ISODate; today: ISODate }) {
   const router = useRouter()
   const t = useTranslations('common')
+  const td = useTranslations('daily')
   const format = useFormatter()
   const touchStart = useRef<{ x: number; y: number } | null>(null)
 
   const go = (target: ISODate) => {
     if (target > today) return
+    setDayDirection(target > date ? 1 : target < date ? -1 : 0)
     router.push(target === today ? '/daily' : PATHS.dailyOn(target))
   }
 
@@ -29,25 +38,58 @@ export function DateNav({ date, today }: { date: ISODate; today: ISODate }) {
   useShortcut('today', () => go(today))
 
   useEffect(() => {
+    const page = () => document.querySelector<HTMLElement>('[data-daily-swipe]')
+    const settle = () => {
+      const node = page()
+      if (!node) return
+      node.style.transition = 'transform 0.25s var(--ease-out-soft)'
+      node.style.transform = ''
+    }
+
     const onStart = (event: TouchEvent) => {
       const touch = event.touches[0]
-      if (touch) touchStart.current = { x: touch.clientX, y: touch.clientY }
+      // A chip row scrolls sideways; swiping it must not change the day.
+      const inScroller = (event.target as Element | null)?.closest?.(
+        '.overflow-x-auto, [data-no-swipe]',
+      )
+      touchStart.current = touch && !inScroller ? { x: touch.clientX, y: touch.clientY } : null
+    }
+    const onMove = (event: TouchEvent) => {
+      const start = touchStart.current
+      const touch = event.touches[0]
+      const node = page()
+      if (!start || !touch || !node) return
+      const dx = touch.clientX - start.x
+      if (Math.abs(touch.clientY - start.y) > Math.abs(dx)) return
+      const towardFuture = dx < 0 && addDays(date, 1) > today
+      node.style.transition = 'none'
+      node.style.transform = `translateX(${dx * (towardFuture ? RUBBER : FOLLOW)}px)`
     }
     const onEnd = (event: TouchEvent) => {
       const start = touchStart.current
       const touch = event.changedTouches[0]
       touchStart.current = null
+      settle()
       if (!start || !touch) return
       const dx = touch.clientX - start.x
       const dy = touch.clientY - start.y
-      if (Math.abs(dx) < 70 || Math.abs(dy) > 50) return
-      go(addDays(date, dx > 0 ? -1 : 1))
+      if (Math.abs(dx) < SWIPE_PX || Math.abs(dy) > 50) return
+      const target = addDays(date, dx > 0 ? -1 : 1)
+      if (target > today) {
+        toast(td('futureNudge'))
+        return
+      }
+      go(target)
     }
     window.addEventListener('touchstart', onStart, { passive: true })
+    window.addEventListener('touchmove', onMove, { passive: true })
     window.addEventListener('touchend', onEnd, { passive: true })
+    window.addEventListener('touchcancel', settle, { passive: true })
     return () => {
       window.removeEventListener('touchstart', onStart)
+      window.removeEventListener('touchmove', onMove)
       window.removeEventListener('touchend', onEnd)
+      window.removeEventListener('touchcancel', settle)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date, today])

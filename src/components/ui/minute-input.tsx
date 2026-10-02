@@ -2,6 +2,7 @@
 
 import { Plus } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 
 const PRESETS = [15, 30, 45, 60, 90, 120]
@@ -9,6 +10,10 @@ const PRESETS = [15, 30, 45, 60, 90, 120]
 /**
  * Minute entry: numeric keypad, preset chips and a +15 bump, so a typical value
  * is one tap and an unusual one is still typeable (spec 6.2).
+ *
+ * The chosen preset sits on a pill that slides between chips, `+15` floats off
+ * the button that added it, and the 14-day median is offered as a chip that
+ * fills the field in one tap (spec 6.4).
  */
 export function MinuteInput({
   value,
@@ -32,12 +37,44 @@ export function MinuteInput({
   presets?: number[]
 }) {
   const t = useTranslations('common')
+  const [floats, setFloats] = useState<number[]>([])
+  const [solidify, setSolidify] = useState(0)
+
+  const row = useRef<HTMLDivElement>(null)
+  const pill = useRef<HTMLSpanElement>(null)
+  const placed = useRef(false)
+
+  // The pill is moved straight on the DOM: it is a measurement, not state, and
+  // it must land before paint or it visibly starts from the wrong chip.
+  useLayoutEffect(() => {
+    const track = row.current
+    const marker = pill.current
+    if (!track || !marker) return
+    const chip = track.querySelector<HTMLElement>(`[data-preset="${value}"]`)
+    if (!chip) {
+      marker.style.opacity = '0'
+      return
+    }
+    if (!placed.current) marker.style.transition = 'none'
+    marker.style.opacity = '1'
+    marker.style.width = `${chip.offsetWidth}px`
+    marker.style.transform = `translateX(${chip.offsetLeft}px)`
+    if (!placed.current) {
+      // Commit the jump before turning transitions back on.
+      void marker.offsetWidth
+      marker.style.transition = ''
+      placed.current = true
+    }
+  }, [value, presets])
+
+  const offerMedian = value === null && derived == null && medianHint != null && medianHint > 0
 
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
           <input
+            key={solidify}
             type="number"
             inputMode="numeric"
             min={0}
@@ -59,7 +96,8 @@ export function MinuteInput({
               // A derived number is a real number, not a suggestion to ignore.
               derived != null && value === null
                 ? 'border-accent/40 placeholder:font-medium placeholder:text-accent'
-                : 'placeholder:text-text-subtle',
+                : 'daily-ghost placeholder:text-text-subtle',
+              solidify > 0 && 'daily-solidify',
             )}
           />
           <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-text-subtle">
@@ -68,24 +106,56 @@ export function MinuteInput({
         </div>
         <button
           type="button"
-          onClick={() => onChange(Math.min(1440, (value ?? 0) + 15))}
+          onClick={() => {
+            onChange(Math.min(1440, (value ?? 0) + 15))
+            setFloats((prev) => [...prev, Date.now()])
+          }}
           aria-label={`${name} +15`}
-          className="glass-inset flex h-10 items-center gap-1 rounded-[var(--radius)] border-border-strong px-2.5 text-sm text-text-muted hover:bg-inset-hover sm:h-11 sm:px-3"
+          className="glass-inset relative flex h-10 items-center gap-1 rounded-[var(--radius)] border-border-strong px-2.5 text-sm text-text-muted transition-transform hover:bg-inset-hover active:scale-90 sm:h-11 sm:px-3"
         >
           <Plus className="size-3.5" />
           15
+          {floats.map((id) => (
+            <span
+              key={id}
+              aria-hidden
+              onAnimationEnd={() => setFloats((prev) => prev.filter((other) => other !== id))}
+              className="daily-float text-accent pointer-events-none absolute -top-1 left-1/2 text-xs font-semibold"
+            >
+              +15
+            </span>
+          ))}
         </button>
       </div>
-      <div className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1">
+      <div ref={row} className="no-scrollbar relative -mx-1 flex gap-1.5 overflow-x-auto px-1">
+        <span
+          ref={pill}
+          aria-hidden
+          className="bg-accent pointer-events-none absolute top-0 left-0 h-8 rounded-full opacity-0 transition-[transform,width,opacity] duration-300 ease-[var(--ease-out-soft)]"
+        />
+        {offerMedian ? (
+          <button
+            type="button"
+            onClick={() => {
+              onChange(medianHint)
+              setSolidify((n) => n + 1)
+            }}
+            aria-label={t('useValue', { value: medianHint })}
+            className="border-accent/50 text-accent relative h-8 shrink-0 rounded-full border border-dashed px-3 text-xs font-medium transition-transform active:scale-95"
+          >
+            ≈ {medianHint}
+          </button>
+        ) : null}
         {presets.map((preset) => (
           <button
             key={preset}
             type="button"
+            data-preset={preset}
             onClick={() => onChange(value === preset ? null : preset)}
             className={cn(
-              'h-8 shrink-0 rounded-full border px-3 text-xs font-medium transition-colors',
+              'relative h-8 shrink-0 rounded-full border px-3 text-xs font-medium transition-[color,transform] active:scale-95',
               value === preset
-                ? 'border-transparent bg-accent text-accent-text'
+                ? 'border-transparent bg-transparent text-accent-text'
                 : 'glass-inset text-text-muted hover:border-border-strong',
             )}
           >
@@ -96,7 +166,7 @@ export function MinuteInput({
           <button
             type="button"
             onClick={() => onChange(null)}
-            className="h-8 shrink-0 rounded-full px-3 text-xs text-text-subtle hover:text-text"
+            className="relative h-8 shrink-0 rounded-full px-3 text-xs text-text-subtle hover:text-text"
           >
             {t('none')}
           </button>

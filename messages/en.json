@@ -70,7 +70,8 @@
     "loadFailedHint": "Try again in a moment.",
     "backHome": "Back to home",
     "notFound": "This page does not exist",
-    "notFoundHint": "The link may be old, or the page may have moved."
+    "notFoundHint": "The link may be old, or the page may have moved.",
+    "useValue": "Use {value}"
   },
   "daily": {
     "setup": {
@@ -142,14 +143,56 @@
       "title": "Catch up",
       "body": "One row per missing day. Save them all at once.",
       "saveAll": "Save {count} days",
-      "savedToast": "{count} days filled in"
+      "savedToast": "{count} days filled in",
+      "allClear": "All caught up 🧹",
+      "progress": "{done}/{total} days filled"
     },
     "customDone": "Done",
     "customNotDone": "Not yet",
     "offline": {
       "queued": "Saved on this phone. It will go up when you have a connection.",
       "synced": "{count, plural, one {# day sent} other {# days sent}}",
-      "notKept": "This phone had no room to keep it. Try again when you have a connection."
+      "notKept": "This phone had no room to keep it. Try again when you have a connection.",
+      "waiting": "{count, plural, one {# day} other {# days}} waiting for a connection",
+      "upToDate": "Synced"
+    },
+    "copiedTag": "yesterday",
+    "futureNudge": "The future isn’t here yet 😌",
+    "greeting": {
+      "morning": "Good morning ☀️ · {weekday}",
+      "noon": "Lunchtime 🍜 · {weekday}",
+      "afternoon": "Good afternoon 🌤️ · {weekday}",
+      "evening": "Good evening 🌙 · {weekday}",
+      "night": "Up late 🦉 · {weekday}",
+      "rollover": "Still counts as yesterday 🦉"
+    },
+    "trail": {
+      "label": "The last 7 days",
+      "logged": "logged",
+      "missed": "not logged",
+      "frozen": "held by a grace day",
+      "pending": "not logged yet"
+    },
+    "live": {
+      "live": "LIVE",
+      "paused": "Paused",
+      "minutes": "m"
+    },
+    "budget": {
+      "title": "Your 24 hours",
+      "of": "{hours} / {day}h",
+      "sleep": "Sleep",
+      "study": "Study",
+      "deepWork": "Deep work",
+      "exercise": "Exercise",
+      "reading": "Reading",
+      "english": "English",
+      "entertainment": "Entertainment"
+    },
+    "progress": {
+      "enough": "That’s enough to save ✨",
+      "essentialsLeft": "Fill in the essentials and you can save",
+      "count": "{filled}/{total}"
     }
   },
   "dashboard": {
@@ -219,7 +262,8 @@
     "best": "Best {count}",
     "frozen": "Held by grace day",
     "pending": "Log today to keep it",
-    "startAgain": "Start again — your best was {count} days"
+    "startAgain": "Start again — your best was {count} days",
+    "frozenHint": "Missing one day won’t cost you the streak"
   },
   "insights": {
     "title": "Worth noticing",

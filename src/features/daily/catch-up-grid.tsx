@@ -1,6 +1,6 @@
 'use client'
 
-import { Loader2 } from 'lucide-react'
+import { Check, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useState, useTransition } from 'react'
@@ -66,6 +66,11 @@ export function CatchUpGrid({
       row.entertainmentMinutes !== null,
   )
 
+  const columns = (['energy', 'sleepHours', 'technicalStudyMinutes', 'entertainmentMinutes'] as const).filter(show)
+  const complete = (row: Row) => columns.length > 0 && columns.every((field) => row[field] !== null)
+  const done = rows.filter(complete).length
+  const allClear = done === rows.length
+
   const submit = () => {
     startTransition(async () => {
       const result = await saveCatchUp({
@@ -84,7 +89,9 @@ export function CatchUpGrid({
         toast.error(tc('error'))
         return
       }
-      toast.success(t('savedToast', { count: result.count }))
+      toast.success(
+        result.count === dates.length ? t('allClear') : t('savedToast', { count: result.count }),
+      )
       router.push(PATHS.home)
     })
   }
@@ -92,6 +99,32 @@ export function CatchUpGrid({
   return (
     <div className="space-y-4">
       <p className="text-text-muted text-sm">{t('body')}</p>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <ol className="flex gap-1" aria-label={t('progress', { done, total: rows.length })}>
+          {rows.map((row) => (
+            <li
+              key={row.date}
+              aria-hidden
+              className={cn(
+                'flex size-6 items-center justify-center rounded-md text-[10px] tabular-nums transition-colors duration-300',
+                complete(row)
+                  ? 'bg-good text-accent-text daily-pop'
+                  : 'glass-inset text-text-subtle border-dashed',
+              )}
+            >
+              {fromISODate(row.date).getDate()}
+            </li>
+          ))}
+        </ol>
+        {allClear ? (
+          <span className="daily-pop text-good inline-block text-sm font-medium">{t('allClear')}</span>
+        ) : (
+          <span className="text-text-subtle text-xs tabular-nums">
+            {t('progress', { done, total: rows.length })}
+          </span>
+        )}
+      </div>
 
       <Card>
         <CardBody className="p-0 sm:px-4 sm:pb-4">
@@ -112,9 +145,16 @@ export function CatchUpGrid({
               </thead>
               <tbody>
                 {rows.map((row) => (
-                  <tr key={row.date} className="border-border-base border-t">
+                  <tr
+                    key={row.date}
+                    className={cn(
+                      'border-border-base border-t transition-colors duration-300',
+                      complete(row) && 'bg-good-soft',
+                    )}
+                  >
                     <td className="py-2 pr-3 whitespace-nowrap">
-                      <span className="text-sm font-medium">
+                      <span className="flex items-center gap-1.5 text-sm font-medium">
+                        {complete(row) ? <Check className="daily-pop text-good size-3.5" /> : null}
                         {format.dateTime(fromISODate(row.date), 'weekdayDayMonth')}
                       </span>
                     </td>

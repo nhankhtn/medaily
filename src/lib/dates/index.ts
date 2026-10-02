@@ -83,6 +83,11 @@ export function isBeforeRollover(ctx: DayContext, now: Date = new Date()): boole
   return zoned.getHours() < ctx.dayRolloverHour
 }
 
+/** The wall-clock hour (0–23) where the user is, for copy that depends on the time of day. */
+export function wallHourOf(ctx: DayContext, now: Date = new Date()): number {
+  return toZonedTime(now, ctx.timezone).getHours()
+}
+
 export function addDays(date: ISODate, amount: number): ISODate {
   return toISODate(fnsAddDays(fromISODate(date), amount))
 }

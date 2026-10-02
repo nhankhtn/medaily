@@ -16,6 +16,7 @@ export function MarkdownField({
   value,
   placeholder,
   copied,
+  copyIndex,
   off,
   className,
   onChange,
@@ -24,13 +25,14 @@ export function MarkdownField({
   value: string | null
   placeholder?: string
   copied?: boolean
+  copyIndex?: number
   /** Turned off in settings, and empty on this day. */
   off?: boolean
   className?: string
   onChange: (value: string | null) => void
 }) {
   return (
-    <Field label={label} copied={copied} off={off}>
+    <Field label={label} copied={copied} copyIndex={copyIndex} off={off}>
       <MarkdownEditor
         label={label}
         className={className}
