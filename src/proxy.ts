@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
+import { BASIC_REALM, basicCredentialsMatch } from '@/lib/auth/basic'
 import { readAuthConfig, readGoogleConfig } from '@/lib/auth/config'
 import { PATHS, PUBLIC_PATHS, safeNextPath } from '@/lib/paths'
 import { REQUEST_ID_HEADER, requestIdFrom } from '@/lib/request-id'
@@ -48,6 +49,22 @@ export async function proxy(request: NextRequest) {
     return moved
   }
 
+  // A lock of its own, apart from the app's session: the browser asks once for
+  // the hard-coded account, whether or not anyone is signed in to the app.
+  if (pathname === PATHS.docs || pathname.startsWith(`${PATHS.docs}/`)) {
+    if (basicCredentialsMatch(request.headers.get('authorization'), readAuthConfig())) {
+      return forward()
+    }
+    return new NextResponse('Authentication required', {
+      status: 401,
+      headers: {
+        'WWW-Authenticate': `Basic realm="${BASIC_REALM}", charset="UTF-8"`,
+        'Cache-Control': 'no-store',
+        [REQUEST_ID_HEADER]: requestId,
+      },
+    })
+  }
+
   const signingIn = pathname === PATHS.login
   if (
     !signingIn &&
@@ -72,25 +89,6 @@ export async function proxy(request: NextRequest) {
     )
     onwards.headers.set(REQUEST_ID_HEADER, requestId)
     return onwards
-  }
-
-  /*
-   * The docs describe the schema and the reasoning behind the Firestore rules,
-   * which is the owner's business, not every account's. Only the configured
-   * username and password open them; anyone else signed in gets the same 404
-   * as a page that does not exist, so the gate does not announce itself.
-   *
-   * `sub` is checked as well as `provider` so that changing AUTH_USERNAME
-   * shuts out a session issued to the old one.
-   */
-  if (
-    session &&
-    (pathname === PATHS.docs || pathname.startsWith(`${PATHS.docs}/`)) &&
-    !(auth.configured && session.provider === 'password' && session.sub === auth.username)
-  ) {
-    const hidden = new NextResponse('Not Found', { status: 404 })
-    hidden.headers.set(REQUEST_ID_HEADER, requestId)
-    return hidden
   }
 
   if (session) {

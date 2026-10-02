@@ -14,6 +14,13 @@ than the code.
 
 ## 2026-10-02
 
+**Changed**
+
+- [Documentation site](operations/docs-site.md): `/docs` now has a login of its
+  own — the browser's Basic Auth prompt for `AUTH_USERNAME` and
+  `AUTH_PASSWORD` — instead of riding on the app's session. Being signed in to
+  the app no longer opens it, and opening it no longer needs an app account.
+
 **Restructured**
 
 The three long documents became one page per feature, in four sections —

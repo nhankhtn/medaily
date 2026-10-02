@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Docs site | Medaily Docs</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="robots" content="noindex, nofollow"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="http://localhost/docs/operations/docs-site"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Docs site | Medaily Docs"><meta data-rh="true" name="description" content="How the owner-only /docs site is built from docs/ with Docusaurus, kept in step with the sources, and how to add a page."><meta data-rh="true" property="og:description" content="How the owner-only /docs site is built from docs/ with Docusaurus, kept in step with the sources, and how to add a page."><link data-rh="true" rel="canonical" href="http://localhost/docs/operations/docs-site"><link data-rh="true" rel="alternate" href="http://localhost/docs/operations/docs-site" hreflang="en"><link data-rh="true" rel="alternate" href="http://localhost/docs/operations/docs-site" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Docs site","item":"http://localhost/docs/operations/docs-site"}]}</script><link rel="stylesheet" href="/docs/assets/css/styles.55dbd2d6.css">
-<script src="/docs/assets/js/runtime~main.c208fd5b.js" defer="defer"></script>
+<script src="/docs/assets/js/runtime~main.2dd34edd.js" defer="defer"></script>
 <script src="/docs/assets/js/main.f68d91db.js" defer="defer"></script>
 </head>
 <body>
@@ -37,10 +37,12 @@ test fails when it falls behind the sources.</p>
 
 
 
-<table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td><strong>Where</strong></td><td><code>/docs</code> on the app · sources in <code>docs/</code> · renderer in <code>docs/site/</code> · build output in <code>public/docs/</code></td></tr><tr><td><strong>Who can open it</strong></td><td>Only the account signed in with <code>AUTH_USERNAME</code> and <code>AUTH_PASSWORD</code></td></tr><tr><td><strong>Commands</strong></td><td><code>bun run docs:dev</code> (preview) · <code>bun run docs:build</code> (build and stamp)</td></tr></tbody></table>
+<table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td><strong>Where</strong></td><td><code>/docs</code> on the app · sources in <code>docs/</code> · renderer in <code>docs/site/</code> · build output in <code>public/docs/</code></td></tr><tr><td><strong>Who can open it</strong></td><td>Whoever answers the browser&#x27;s sign-in prompt with <code>AUTH_USERNAME</code> and <code>AUTH_PASSWORD</code> — a login of its own, apart from the app&#x27;s</td></tr><tr><td><strong>Commands</strong></td><td><code>bun run docs:dev</code> (preview) · <code>bun run docs:build</code> (build and stamp)</td></tr></tbody></table>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="rules">Rules<a href="#rules" class="hash-link" aria-label="Direct link to Rules" title="Direct link to Rules" translate="no">​</a></h2>
 <ul>
-<li class="">Only the password account configured by <code>AUTH_USERNAME</code> and <code>AUTH_PASSWORD</code> can open <code>/docs</code>. Anyone else who is signed in gets the same 404 as a page that does not exist.</li>
+<li class=""><code>/docs</code> has its own login: the browser&#x27;s sign-in prompt (HTTP Basic Auth), answered with <code>AUTH_USERNAME</code> and <code>AUTH_PASSWORD</code>.</li>
+<li class="">Being signed in to the app does not open the docs, and signing in to the docs does not sign you in to the app.</li>
+<li class="">With the account not configured, the prompt never succeeds.</li>
 <li class="">The documents live in <code>docs/</code>. <code>docs/site/</code> only renders them — edit the <code>.md</code> files, never copies.</li>
 <li class="">The built site in <code>public/docs/</code> is committed; deploys do not build it.</li>
 <li class="">After changing any document, run <code>bun run docs:build</code> and commit <code>public/docs</code>. Otherwise <code>tests/unit/docs-built.test.ts</code> fails.</li>
@@ -88,14 +90,18 @@ test fails when it falls behind the sources.</p>
 </li>
 </ol>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="how-it-works">How it works<a href="#how-it-works" class="hash-link" aria-label="Direct link to How it works" title="Direct link to How it works" translate="no">​</a></h2>
-<p><strong>Why only the owner.</strong> The documentation describes the schema and the
+<p><strong>Why a separate login.</strong> The documentation describes the schema and the
 reasoning behind the Firestore rules, which is the owner&#x27;s business, not every
-account&#x27;s. The check in <code>src/proxy.ts</code> lets a session through to <code>/docs</code> only
-when it is a password sign-in whose subject is the configured <code>AUTH_USERNAME</code>;
-the subject is checked as well as the provider, so changing <code>AUTH_USERNAME</code>
-shuts out a session issued to the old one. Anyone else signed in gets the same
-404 as a page that does not exist, so the gate does not announce itself.
-Someone not signed in meets the sign-in page, as on every other page.</p>
+account&#x27;s — and it is read by people who have no account in the app at all.
+So <code>src/proxy.ts</code> checks <code>/docs</code> and everything under it before it looks at
+the app&#x27;s session: a request without a matching <code>Authorization: Basic</code> header
+gets <code>401</code> with <code>WWW-Authenticate: Basic realm=&quot;medaily docs&quot;</code>, which makes the
+browser show its own prompt. The browser then remembers the answer for the
+tab&#x27;s lifetime and sends it with every page, picture and search request under
+<code>/docs</code>. The username and password are compared in constant time, both always,
+so a wrong username costs the same as a wrong password.</p>
+<p>The service worker never handles <code>/docs</code>, so the prompt is the browser&#x27;s own
+and nothing under <code>/docs</code> is cached for offline use.</p>
 <p><strong>How the pages are served.</strong> Docusaurus writes one <code>.html</code> file per page, with
 <code>baseUrl: &#x27;/docs/&#x27;</code> and no trailing slash. A page&#x27;s address has no extension, so
 <code>next.config.ts</code> rewrites <code>/docs</code> to <code>/docs/index.html</code> and <code>/docs/&lt;page&gt;</code> to
@@ -126,6 +132,8 @@ missing, the test says to run <code>bun run docs:build</code>.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="limits">Limits<a href="#limits" class="hash-link" aria-label="Direct link to Limits" title="Direct link to Limits" translate="no">​</a></h2>
 <ul>
 <li class="">Editing a document does not update the live site until someone rebuilds and commits.</li>
+<li class="">The docs prompt has no rate limit of its own, unlike the app&#x27;s sign-in form. A long, random <code>AUTH_PASSWORD</code> is what keeps guessing out.</li>
+<li class="">There is no sign-out button: the browser forgets the answer when it is closed.</li>
 <li class="">No MDX features: no components, tabs or admonitions. Notes are written as <code>&gt; **Note:**</code> blockquotes, which render both here and on GitHub.</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="related">Related<a href="#related" class="hash-link" aria-label="Direct link to Related" title="Direct link to Related" translate="no">​</a></h2>

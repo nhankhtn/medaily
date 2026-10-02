@@ -166,7 +166,7 @@ never heard of.
 ## Related
 
 - [Scheduled jobs](./scheduled-jobs.md) — what `CRON_SECRET` and `TELEGRAM_*` turn on
-- [Docs site](./docs-site.md) — the owner-only `/docs`, gated on `AUTH_USERNAME`
+- [Docs site](./docs-site.md) — `/docs`, behind a browser prompt for `AUTH_USERNAME` and `AUTH_PASSWORD`
 - [Sign in](../get-started/sign-in.md) — the `AUTH_*` allowlists and Google sign-in
 - [Quick capture and the assistant](../features/assistant.md) — needs the AI service
 - [Reviews](../features/reviews.md) — the written review needs the AI service

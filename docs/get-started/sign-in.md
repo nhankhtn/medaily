@@ -38,7 +38,7 @@ medaily is a personal life-tracking app: one daily log, and everything else buil
 1. On the sign-in page, enter the username and password.
 2. Press the sign-in button.
 
-The username and password are the credential pair set in the environment (`AUTH_USERNAME`, `AUTH_PASSWORD`). This is also the only account that can open the owner-only documentation site; see [Docs site](../operations/docs-site.md).
+The username and password are the credential pair set in the environment (`AUTH_USERNAME`, `AUTH_PASSWORD`). The same pair also opens the documentation site at `/docs`, through a separate browser prompt rather than this form; see [Docs site](../operations/docs-site.md).
 
 ## Sign in with Google
 
@@ -91,6 +91,6 @@ An empty allowlist does not mean "allow everyone": with no lists at all, `AUTH_A
 - [Daily log](../features/daily-log.md) — signing out drops days still waiting to be sent
 - [Notifications](../features/notifications.md) — turned on per device, after signing in
 - [Configuration](../operations/configuration.md) — the `AUTH_*`, Firebase, Google client and Telegram variables
-- [Docs site](../operations/docs-site.md) — the `/docs` site only the credential-pair account can open
+- [Docs site](../operations/docs-site.md) — the `/docs` site, behind its own browser prompt for the same credential pair
 - [Realtime setup](../reference/realtime/setup.md) — how a password sign-in is given a Firestore identity
 - [Data model: core](../reference/data-model/core.md) — `users`, `auth_identities` and the tables behind accounts
