@@ -31,6 +31,9 @@ const config = [
     files: [
       'src/lib/dates/**',
       'src/lib/timer/**',
+      // The same stopwatch on the screen side: a run's start and end are
+      // instants, and `logicalDateOf` would file them under a rollover hour.
+      'src/features/timer/**',
       // Chat stores instants — when a message was sent, when a seat was taken,
       // when an invite stops working. None of them is a calendar day, and
       // putting them through `logicalDateOf` would file them under somebody's
