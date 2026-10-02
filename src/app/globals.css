@@ -267,9 +267,26 @@
       oklch(100% 0 0 / calc((1 - var(--atmosphere)) * 0.6)),
       oklch(100% 0 0 / calc((1 - var(--atmosphere)) * 0.6))
     ),
-    url('/themes/meadow.svg') center bottom / cover no-repeat,
+    url('/themes/meadow.webp') center bottom / cover no-repeat,
     linear-gradient(180deg, oklch(66% 0.12 245), oklch(62% 0.13 140));
   --radius: 0.9rem;
+}
+
+/*
+ * A phone held upright would show the middle third of the landscape and miss
+ * the windmill. The portrait file is that third cut around it instead, at the
+ * source's own resolution — and a quarter of the download.
+ */
+@media (orientation: portrait) {
+  [data-theme='meadow'] {
+    --bg-atmosphere:
+      linear-gradient(
+        oklch(100% 0 0 / calc((1 - var(--atmosphere)) * 0.6)),
+        oklch(100% 0 0 / calc((1 - var(--atmosphere)) * 0.6))
+      ),
+      url('/themes/meadow-portrait.webp') center bottom / cover no-repeat,
+      linear-gradient(180deg, oklch(66% 0.12 245), oklch(62% 0.13 140));
+  }
 }
 
 @theme inline {
