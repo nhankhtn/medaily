@@ -4,7 +4,12 @@ import { getCurrentUserId } from '@/lib/auth/current-user'
 import type { Workout } from '@/lib/db/schema'
 import { rangeOfLastDays, today as todayOf, type ISODate } from '@/lib/dates'
 import { elapsedSeconds } from '@/lib/timer'
-import { customActivityId, isActivityId, type ActivityId } from '@/lib/timer/activities'
+import {
+  customActivityId,
+  isActivityId,
+  type ActivityId,
+  workoutTypeLabel,
+} from '@/lib/timer/activities'
 import { findCustomMetrics } from '@/server/repositories/custom-metrics'
 import { findProjects } from '@/server/repositories/projects'
 import { findRecentWorkouts } from '@/server/repositories/health'
@@ -101,7 +106,7 @@ export const getTimerPageData = cache(async (): Promise<TimerPageData> => {
     topics: topics.map((topic) => ({ id: topic.id, name: topic.name })),
     projects: projects.map((project) => ({ id: project.id, name: project.name })),
     // Past types, so a regular session is one tap rather than retyping.
-    workoutTypes: [...new Set(workouts.map((workout) => workout.type))].slice(0, 8),
+    workoutTypes: [...new Set(workouts.map((w) => workoutTypeLabel(w.type)))].slice(0, 8),
     todayFocusMinutes: sumToday(
       sessions,
       (s) => s.sessionDate,

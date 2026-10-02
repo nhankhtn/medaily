@@ -17,6 +17,7 @@ import {
   TIMED_ACTIVITIES,
   takesTopicAndProject,
   type ActivityId,
+  workoutTypeLabel,
 } from '@/lib/timer/activities'
 import { cn } from '@/lib/utils'
 import type { TimerPageData } from '@/server/services/timer'
@@ -362,7 +363,9 @@ export function TimerConsole({ data }: { data: TimerPageData }) {
                 {data.recentWorkouts.map((workout) => (
                   <li key={workout.id} className="flex items-center gap-3 py-2 text-sm">
                     <Dumbbell className="text-text-subtle size-4 shrink-0" />
-                    <span className="min-w-0 flex-1 truncate">{workout.type}</span>
+                    <span className="min-w-0 flex-1 truncate">
+                      {workoutTypeLabel(workout.type)}
+                    </span>
                     <span className="text-text-subtle shrink-0 text-xs tabular-nums">
                       {formatDayMonth(workout.performedOn)} ·{' '}
                       {t('minutesShort', { minutes: workout.durationMinutes })}

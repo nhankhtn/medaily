@@ -9,7 +9,7 @@ import { getCurrentUserId } from '@/lib/auth/current-user'
 import { logicalDateOf } from '@/lib/dates'
 import { PATHS } from '@/lib/paths'
 import { elapsedSeconds, minutesOf, pausedRun, resumedRun, tooShort, wasCapped } from '@/lib/timer'
-import { activityOf, isActivityId, type ActivityId } from '@/lib/timer/activities'
+import { activityOf, isActivityId, type ActivityId, UNTYPED_WORKOUT } from '@/lib/timer/activities'
 import { saveWorkout } from '@/server/actions/health'
 import { findCustomMetric } from '@/server/repositories/custom-metrics'
 import { findTopic } from '@/server/repositories/learning'
@@ -405,7 +405,7 @@ async function fileToSink(values: {
   if (activity.sink === 'workout') {
     await saveWorkout({
       performedOn: values.date,
-      type: values.workoutType?.trim() || 'other',
+      type: values.workoutType?.trim() || UNTYPED_WORKOUT,
       durationMinutes: values.minutes,
       rpe: values.rpe,
       note: values.note,

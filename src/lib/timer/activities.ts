@@ -43,6 +43,19 @@ export const TIMED_ACTIVITIES: readonly TimedActivity[] = [
   { id: 'entertainment', sink: 'daily', column: 'entertainmentMinutes' },
 ] as const
 
+/**
+ * What an exercise run with no type of its own is filed as.
+ *
+ * Written into `workouts.type` and `daily_logs.exercise_type`, which is to say
+ * it is stored as though the person had typed it — so it reads back beside
+ * their own words and has to look like one of them.
+ */
+export const UNTYPED_WORKOUT = 'Other'
+
+/** Rows written before it was capitalised still hold the lower-case one. */
+export const workoutTypeLabel = (type: string): string =>
+  type.trim().toLowerCase() === 'other' ? UNTYPED_WORKOUT : type
+
 export type ActivityId = TimedActivity['id']
 
 /** The built-in ids only; a custom one is not in any list. */

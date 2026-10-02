@@ -3,6 +3,7 @@ import { db, type DbOrTx } from '@/lib/db'
 import { dailyEffective, dailyLogs } from '@/lib/db/schema'
 import type { DailyLog } from '@/lib/db/schema'
 import type { DateRange, ISODate } from '@/lib/dates'
+import { workoutTypeLabel } from '@/lib/timer/activities'
 import type { EffectiveDailyLog } from '@/lib/types'
 
 /** Columns a user can write from the daily form. */
@@ -210,7 +211,13 @@ export async function findExerciseTypes(userId: string, limit = 8): Promise<stri
     .groupBy(dailyLogs.exerciseType)
     .orderBy(desc(sql`count(*)`))
     .limit(limit)
-  return rows.map((r) => r.type).filter((t): t is string => Boolean(t && t.trim()))
+  const named = rows
+    .map((r) => r.type)
+    .filter((t): t is string => Boolean(t && t.trim()))
+    .map(workoutTypeLabel)
+  // Deduped again after the label: a tree holding both `other` and `Other`
+  // would otherwise draw the same chip twice.
+  return [...new Set(named)]
 }
 
 export async function countLogsSince(userId: string, since: ISODate): Promise<number> {
