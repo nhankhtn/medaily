@@ -96,6 +96,11 @@ export async function saveManyDailyLogs(
   if (future) throw new FutureDateError(future.date)
 
   return db.transaction(async (tx) => {
+    // A statement per day, deliberately. `toDbPatch` keeps only the fields the
+    // caller sent, so two days rarely carry the same columns — and one
+    // multi-row upsert would fill the gaps with nulls and write them over what
+    // is stored. Derivation inside is batched, which was the part that scaled
+    // with the number of habits.
     for (const row of rows) {
       await upsertLog(
         settings.userId,

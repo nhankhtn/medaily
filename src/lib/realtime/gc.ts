@@ -12,6 +12,20 @@ export const TYPING_STALE_MS = 60 * 60 * 1000
 /** A blast radius, not a performance limit. */
 export const MAX_DELETES_PER_RUN = 500
 
+/**
+ * How many channels one run looks inside.
+ *
+ * Each needs its own listing of the typing claims under it — a sub-collection
+ * cannot be read without naming its parent — so this is the read budget the
+ * delete cap does not cover. Past it the sweep would be one request per
+ * channel every night whether or not anything was there to remove.
+ *
+ * Sorted by name, so a run that stops here stops in the same place each time.
+ * If the collection ever outgrows this, the sweep needs a collection-group
+ * query rather than a larger number.
+ */
+export const MAX_CHANNELS_PER_RUN = 1_000
+
 export type SweepDoc = {
   /** Full Firestore document path, as the REST API names it. */
   path: string

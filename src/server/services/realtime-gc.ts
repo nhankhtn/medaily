@@ -1,6 +1,7 @@
 import { log } from '@/lib/log'
 import {
   CHANNEL_STALE_MS,
+  MAX_CHANNELS_PER_RUN,
   MAX_DELETES_PER_RUN,
   readAt,
   selectStale,
@@ -37,13 +38,19 @@ export async function sweepRealtimeChannels(now = Date.now()): Promise<SweepResu
   if (!config) return null
 
   const client = await firestoreRest(config)
-  const channels = await client.list(CHANNELS)
-  if (channels.length === 0) return EMPTY
+  const all = await client.list(CHANNELS)
+  if (all.length === 0) return EMPTY
 
   const result = { ...EMPTY }
   let budget = MAX_DELETES_PER_RUN
 
-  for (const channel of channels) {
+  // One listing per channel is unavoidable — a sub-collection cannot be read
+  // without naming its parent — so the read budget is capped too. Sorted, so a
+  // run that stops at the cap stops in the same place each time.
+  const channels = [...all].sort((a, b) => (a.name < b.name ? -1 : 1))
+  if (channels.length > MAX_CHANNELS_PER_RUN) result.capped = true
+
+  for (const channel of channels.slice(0, MAX_CHANNELS_PER_RUN)) {
     if (budget <= 0) {
       result.capped = true
       break

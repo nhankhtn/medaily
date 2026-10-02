@@ -12,6 +12,7 @@ import {
   reorderGoals,
   updateGoal,
   upsertMilestone,
+  upsertMilestones,
 } from '@/server/repositories/goals'
 import { canBindMetric } from '@/server/services/metrics'
 import { audited, type NoteChange } from '@/server/services/audited'
@@ -190,18 +191,20 @@ export const saveGoal = audited(
 
     if (values.progressMode === 'milestones' && milestoneTitles?.length) {
       const existing = await findMilestonesFor([goal.id])
-      for (const [index, title] of milestoneTitles.entries()) {
-        const current = existing[index]
-        await upsertMilestone({
-          id: current?.id,
-          goalId: goal.id,
-          title,
-          sortOrder: index,
-          weight: current?.weight ?? '1',
-          completedAt: current?.completedAt ?? null,
-          dueDate: current?.dueDate ?? null,
-        })
-      }
+      await upsertMilestones(
+        milestoneTitles.map((title, index) => {
+          const current = existing[index]
+          return {
+            id: current?.id,
+            goalId: goal.id,
+            title,
+            sortOrder: index,
+            weight: current?.weight ?? '1',
+            completedAt: current?.completedAt ?? null,
+            dueDate: current?.dueDate ?? null,
+          }
+        }),
+      )
     }
 
     revalidatePath(PATHS.goals)

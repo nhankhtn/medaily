@@ -1,5 +1,5 @@
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
-import { db } from '@/lib/db'
+import { db, type DbOrTx } from '@/lib/db'
 import { goalMilestones, goals } from '@/lib/db/schema'
 import type { Goal, GoalInsert, GoalMilestone } from '@/lib/db/schema'
 import type { DateRange } from '@/lib/dates'
@@ -60,24 +60,45 @@ export async function updateGoal(
   return row
 }
 
-export async function upsertMilestone(
-  values: typeof goalMilestones.$inferInsert & { id?: string },
-): Promise<GoalMilestone> {
-  if (values.id) {
-    const rows = await db
-      .update(goalMilestones)
-      .set({ ...values, updatedAt: new Date() })
-      // The goal id pins the milestone to a goal the caller has already
-      // checked, so an id lifted from someone else's goal updates nothing.
-      .where(and(eq(goalMilestones.id, values.id), eq(goalMilestones.goalId, values.goalId)))
-      .returning()
-    const row = rows[0]
-    if (!row) throw new Error('milestone not found')
-    return row
-  }
-  const rows = await db.insert(goalMilestones).values(values).returning()
-  const row = rows[0]
-  if (!row) throw new Error('failed to insert milestone')
+export type MilestoneValues = typeof goalMilestones.$inferInsert & { id?: string }
+
+/**
+ * Writes a whole list in one statement. A row without an id inserts; one with
+ * an id updates, because the id is the primary key the conflict is on.
+ *
+ * `setWhere` keeps what the single-row version had: the goal id pins the
+ * milestone to a goal the caller has already checked, so an id lifted from
+ * somebody else's goal conflicts and then updates nothing.
+ */
+export async function upsertMilestones(
+  values: MilestoneValues[],
+  tx: DbOrTx = db,
+): Promise<GoalMilestone[]> {
+  if (values.length === 0) return []
+
+  return tx
+    .insert(goalMilestones)
+    .values(values)
+    .onConflictDoUpdate({
+      target: goalMilestones.id,
+      // `excluded` is the row this statement tried to insert, so each row in
+      // the batch updates from its own values rather than from the first.
+      set: {
+        title: sql`excluded.title`,
+        sortOrder: sql`excluded.sort_order`,
+        weight: sql`excluded.weight`,
+        completedAt: sql`excluded.completed_at`,
+        dueDate: sql`excluded.due_date`,
+        updatedAt: new Date(),
+      },
+      setWhere: eq(goalMilestones.goalId, sql`excluded.goal_id`),
+    })
+    .returning()
+}
+
+export async function upsertMilestone(values: MilestoneValues): Promise<GoalMilestone> {
+  const row = (await upsertMilestones([values]))[0]
+  if (!row) throw new Error(values.id ? 'milestone not found' : 'failed to insert milestone')
   return row
 }
 
