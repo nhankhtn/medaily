@@ -203,6 +203,7 @@ export async function sendMessage(input: unknown) {
     roomId: parsed.data.roomId,
     senderId: userId,
     title: room?.title ?? null,
+    avatarUrl: room?.avatarUrl ?? null,
     kind: parsed.data.kind,
     body: parsed.data.body,
     store,

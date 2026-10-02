@@ -20,6 +20,7 @@ export async function notifyRoom({
   roomId,
   senderId,
   title,
+  avatarUrl,
   kind,
   body,
   store,
@@ -27,6 +28,8 @@ export async function notifyRoom({
   roomId: string
   senderId: string
   title: string | null
+  /** The room's own picture, where somebody has given it one. */
+  avatarUrl: string | null
   kind: MessageKind
   body: string
   store: ChatStore
@@ -44,6 +47,7 @@ export async function notifyRoom({
     const shown = notificationFor({ kind, body, title, who: who || null })
     await notify(audience, {
       ...shown,
+      icon: faceFor({ avatarUrl, senderImage: sender?.imageUrl ?? null }),
       url: PATHS.chatRoom(roomId),
       // One room is one line on the lock screen, however many messages arrive
       // while the phone is face down.
@@ -92,3 +96,31 @@ export function notificationFor({
   }
 }
 
+
+/**
+ * The picture beside the words.
+ *
+ * The room's own where it has one; otherwise the sender's, because a direct
+ * conversation has no face of its own and the person is the conversation. The
+ * same order the room list and the room header already draw in, so the
+ * notification looks like the thing it opens.
+ *
+ * `undefined` rather than an empty string when there is neither: the payload
+ * leaves the key out, and the worker falls back to the app's icon.
+ *
+ * Only `https`. The value is written into a notification the browser then
+ * fetches, so anything else is a request this app would be making on behalf of
+ * a payload rather than a picture.
+ */
+export function faceFor({
+  avatarUrl,
+  senderImage,
+}: {
+  avatarUrl: string | null
+  senderImage: string | null
+}): string | undefined {
+  for (const candidate of [avatarUrl, senderImage]) {
+    if (candidate && candidate.startsWith('https://')) return candidate
+  }
+  return undefined
+}

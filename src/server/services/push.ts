@@ -32,6 +32,13 @@ export type PushPayload = {
    * room is one line on the lock screen however many messages arrive.
    */
   tag: string
+  /**
+   * The picture drawn beside it, where the conversation has a face of its own.
+   * Absent falls back to the app's icon in the worker — which is what every
+   * notification used to show, and what makes three rooms look like one app
+   * talking rather than three conversations.
+   */
+  icon?: string
 }
 
 export type PushResult = { sent: number; dropped: number; failed: number }
@@ -89,7 +96,16 @@ async function send(
           token: deviceToken,
           // Every value a string: FCM rejects a data payload that holds
           // anything else, and the error says only "invalid argument".
-          data: { title: payload.title, body: payload.body, url: payload.url, tag: payload.tag },
+          // Every value a string, and a key left out rather than sent empty:
+          // FCM rejects a data payload holding anything but strings, and an
+          // empty one would reach the worker as a picture that cannot load.
+          data: {
+            title: payload.title,
+            body: payload.body,
+            url: payload.url,
+            tag: payload.tag,
+            ...(payload.icon ? { icon: payload.icon } : {}),
+          },
           webpush: {
             headers: {
               // Four hours. A notification about a message is worth waking a

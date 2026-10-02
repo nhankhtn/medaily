@@ -126,6 +126,23 @@ describe('the push handler', () => {
     expect(title).toBe('medaily')
   })
 
+  it('draws the conversation own face when the payload carries one', async () => {
+    const { options } = await shown({ data: { ...SENT, icon: 'https://img.test/room.png' } })
+    expect(options.icon).toBe('https://img.test/room.png')
+  })
+
+  it('falls back to the app icon when there is no face', async () => {
+    const { options } = await shown({ data: SENT })
+    expect(options.icon).toBe('/icon.svg')
+  })
+
+  it('refuses a face that is not https, rather than fetching it', async () => {
+    // Drawn by the browser, which goes and gets it — so an arbitrary value
+    // here is a request this app makes on behalf of whatever was sent.
+    const { options } = await shown({ data: { ...SENT, icon: 'http://img.test/room.png' } })
+    expect(options.icon).toBe('/icon.svg')
+  })
+
   it('refuses a url that would leave the app', async () => {
     // The url is written into the notification and followed on a tap, so an
     // absolute one would make a push a way to open any page in this browser.

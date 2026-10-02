@@ -236,9 +236,18 @@ self.addEventListener('push', (event) => {
       const body = typeof data.body === 'string' ? data.body : ''
       const url = typeof data.url === 'string' && data.url.startsWith('/') ? data.url : '/'
 
+      /*
+       * The conversation's own face where the payload carries one, so three
+       * rooms do not all arrive looking like the same app talking. `https`
+       * only: this is fetched by the browser, and the app's own icon is a
+       * better outcome than a request made on behalf of whatever was sent.
+       */
+      const icon =
+        typeof data.icon === 'string' && data.icon.startsWith('https://') ? data.icon : '/icon.svg'
+
       await self.registration.showNotification(title, {
         body,
-        icon: '/icon.svg',
+        icon,
         badge: '/icon.svg',
         // Same tag replaces rather than stacks: one room is one line on the
         // lock screen however many messages arrive while the phone is down.
