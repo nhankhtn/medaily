@@ -4,7 +4,7 @@ import { Heart, Moon, Mountain, Sun, type LucideIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useState, useTransition } from 'react'
 import { flushSync } from 'react-dom'
-import { cn } from '@/lib/utils'
+import { SegmentedSwitch } from '@/components/ui/segmented-switch'
 import {
   DARK_THEME_IDS,
   THEME_PREFERENCES,
@@ -75,36 +75,19 @@ export function ThemeToggle({
   }
 
   return (
-    <div
-      className={cn('glass flex items-center gap-0.5 rounded-full p-0.5', className)}
-      role="group"
-      aria-label={t('theme')}
-    >
-      {THEME_PREFERENCES.map((value) => {
+    <SegmentedSwitch
+      options={THEME_PREFERENCES.map((value) => {
         const Icon = ICONS[value]
         const label = t(`theme${cap(value)}`)
-
-        return (
-          <button
-            key={value}
-            type="button"
-            disabled={pending}
-            aria-pressed={selected === value}
-            title={label}
-            aria-label={label}
-            onClick={(event) => apply(value, event.currentTarget)}
-            className={cn(
-              'flex size-7 items-center justify-center rounded-full transition-colors',
-              selected === value
-                ? 'bg-surface text-text shadow-[var(--shadow-card)]'
-                : 'text-text-subtle hover:text-text',
-            )}
-          >
-            <Icon className="size-3.5" />
-          </button>
-        )
+        return { value, label: <Icon className="size-3.5" />, ariaLabel: label, title: label }
       })}
-    </div>
+      value={selected}
+      onChange={apply}
+      ariaLabel={t('theme')}
+      disabled={pending}
+      className={className}
+      itemClassName="size-7"
+    />
   )
 }
 
