@@ -17,7 +17,7 @@ Follow this when adding or changing UI. Source of truth: `src/app/globals.css` +
 ## Tokens only
 
 - Every colour comes from CSS tokens (`bg-surface`, `text-text-muted`, `border-border-base`, `bg-accent`, …). Never hardcode hex/rgb/oklch in components.
-- New theme colours: add the token to **every** theme block in `globals.css` (`:root`, `.dark`, `[data-theme='pink']`).
+- New theme colours: add the token to **every** theme block in `globals.css` (`:root`, `.dark`, `[data-theme='pink']`, `[data-theme='meadow']`).
 
 ## Surfaces
 

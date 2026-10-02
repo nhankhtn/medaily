@@ -7,7 +7,7 @@
  * the contrast test reads the CSS so an unreadable palette fails the suite.
  */
 
-export type ThemeId = 'light' | 'dark' | 'pink'
+export type ThemeId = 'light' | 'dark' | 'pink' | 'meadow'
 
 /** What the user chose — always a concrete palette, never the OS preference. */
 export type ThemePreference = ThemeId
@@ -27,6 +27,7 @@ export const THEMES: readonly Theme[] = [
   { id: 'light', base: 'light', labelKey: 'themeLight' },
   { id: 'dark', base: 'dark', labelKey: 'themeDark' },
   { id: 'pink', base: 'light', labelKey: 'themePink' },
+  { id: 'meadow', base: 'light', labelKey: 'themeMeadow' },
 ] as const
 
 export const DEFAULT_THEME: ThemePreference = 'light'

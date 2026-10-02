@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3d8ad6"/>
+      <stop offset="0.55" stop-color="#7dbbea"/>
+      <stop offset="1" stop-color="#cfeaf8"/>
+    </linearGradient>
+    <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1f7fc4"/>
+      <stop offset="0.6" stop-color="#2a9bd4"/>
+      <stop offset="1" stop-color="#5cc6d8"/>
+    </linearGradient>
+    <linearGradient id="hillBack" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a8d672"/>
+      <stop offset="1" stop-color="#78b24a"/>
+    </linearGradient>
+    <linearGradient id="hillMid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8cc552"/>
+      <stop offset="1" stop-color="#4f9238"/>
+    </linearGradient>
+    <linearGradient id="hillFront" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6aae3e"/>
+      <stop offset="1" stop-color="#2f6e2c"/>
+    </linearGradient>
+    <linearGradient id="path" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#eadbb8"/>
+      <stop offset="1" stop-color="#cdb48a"/>
+    </linearGradient>
+    <linearGradient id="cliff" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#b3ab98"/>
+      <stop offset="1" stop-color="#6f6a5c"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="0.72" cy="0.08" r="0.45">
+      <stop offset="0" stop-color="#fffbe6" stop-opacity="0.75"/>
+      <stop offset="1" stop-color="#fffbe6" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="soft" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="2.5"/>
+    </filter>
+    <g id="cloud">
+      <ellipse cx="0" cy="40" rx="190" ry="48" fill="#dfe9f5"/>
+      <circle cx="-90" cy="10" r="62" fill="#ffffff"/>
+      <circle cx="-10" cy="-30" r="88" fill="#ffffff"/>
+      <circle cx="85" cy="-5" r="70" fill="#ffffff"/>
+      <circle cx="150" cy="25" r="46" fill="#f6f9fd"/>
+      <circle cx="-150" cy="32" r="38" fill="#f6f9fd"/>
+      <ellipse cx="0" cy="52" rx="180" ry="26" fill="#c9d9ec" opacity="0.7"/>
+    </g>
+    <g id="flower">
+      <circle cx="0" cy="-9" r="8" fill="#e8402f"/>
+      <circle cx="9" cy="-2" r="8" fill="#e8402f"/>
+      <circle cx="5" cy="8" r="8" fill="#d73528"/>
+      <circle cx="-6" cy="8" r="8" fill="#d73528"/>
+      <circle cx="-9" cy="-2" r="8" fill="#e8402f"/>
+      <circle cx="0" cy="0" r="4" fill="#3a1d12"/>
+    </g>
+    <g id="post">
+      <rect x="-4" y="-46" width="8" height="50" rx="2" fill="#8a6440"/>
+      <rect x="-4" y="-46" width="3" height="50" fill="#a88058"/>
+    </g>
+  </defs>
+
+  <rect width="1600" height="1000" fill="url(#sky)"/>
+  <rect width="1600" height="1000" fill="url(#sun)"/>
+
+  <use href="#cloud" transform="translate(1120 160) scale(1.5)"/>
+  <use href="#cloud" transform="translate(560 230) scale(1.05)"/>
+  <use href="#cloud" transform="translate(1460 330) scale(0.8)"/>
+  <use href="#cloud" transform="translate(230 120) scale(0.75)"/>
+  <use href="#cloud" transform="translate(820 360) scale(0.55)" opacity="0.9"/>
+
+  <rect y="430" width="1600" height="190" fill="url(#sea)"/>
+  <g stroke="#e6f6ff" stroke-width="3" stroke-linecap="round" opacity="0.7">
+    <line x1="900" y1="455" x2="940" y2="455"/>
+    <line x1="1100" y1="470" x2="1150" y2="470"/>
+    <line x1="1300" y1="462" x2="1330" y2="462"/>
+    <line x1="1000" y1="500" x2="1060" y2="500"/>
+    <line x1="1240" y1="520" x2="1300" y2="520"/>
+    <line x1="1420" y1="490" x2="1470" y2="490"/>
+    <line x1="820" y1="530" x2="880" y2="530"/>
+  </g>
+  <path d="M0 440 C120 432 260 445 380 470 C 300 500 140 505 0 500 Z" fill="#6aa850"/>
+
+  <path d="M0 560 C220 500 420 520 640 545 C 860 570 1040 520 1240 545 C 1400 565 1520 555 1600 560 L1600 1000 L0 1000 Z" fill="url(#hillBack)"/>
+  <path d="M1180 560 C1300 540 1420 548 1600 535 L1600 620 C1450 610 1300 600 1180 560 Z" fill="#4fae9a" opacity="0.55"/>
+
+  <path d="M170 520 C 230 430 330 420 380 470 C 420 520 410 600 360 650 L 180 660 C 150 610 140 560 170 520 Z" fill="url(#cliff)"/>
+  <path d="M175 520 C 240 450 320 440 372 478 C 330 470 260 480 210 540 Z" fill="#7fbf4a"/>
+  <g stroke="#5e594c" stroke-width="3" opacity="0.5" fill="none">
+    <path d="M250 520 L 240 610"/>
+    <path d="M320 500 L 330 600"/>
+  </g>
+
+  <path d="M0 640 C 260 590 520 620 760 660 C 980 700 1240 640 1600 650 L1600 1000 L0 1000 Z" fill="url(#hillMid)"/>
+
+  <path d="M1010 1000 C 1000 900 900 860 860 800 C 830 750 900 720 980 690 C 1040 670 1060 650 1040 630 C 1070 650 1080 680 1020 710 C 950 745 920 770 960 820 C 1010 880 1130 920 1180 1000 Z" fill="url(#path)"/>
+
+  <path d="M0 780 C 300 720 560 800 820 840 C 900 852 960 900 980 1000 L0 1000 Z" fill="url(#hillFront)"/>
+  <path d="M1200 1000 C 1220 900 1350 830 1600 800 L1600 1000 Z" fill="url(#hillFront)"/>
+
+  <g stroke="#6b4a2c" stroke-width="2" fill="none" opacity="0.8">
+    <path d="M1100 930 Q 1140 900 1170 888 Q 1200 870 1240 856 Q 1280 842 1320 834"/>
+    <path d="M1100 945 Q 1140 915 1170 903 Q 1200 885 1240 871 Q 1280 857 1320 849"/>
+  </g>
+  <use href="#post" transform="translate(1100 950)"/>
+  <use href="#post" transform="translate(1170 905) scale(0.9)"/>
+  <use href="#post" transform="translate(1240 873) scale(0.82)"/>
+  <use href="#post" transform="translate(1320 851) scale(0.74)"/>
+
+  <g fill="#1f5a28" opacity="0.9">
+    <circle cx="40" cy="60" r="120"/>
+    <circle cx="170" cy="20" r="90"/>
+    <circle cx="-20" cy="200" r="90"/>
+  </g>
+  <g fill="#2f7a36" opacity="0.8">
+    <circle cx="90" cy="90" r="70"/>
+    <circle cx="200" cy="50" r="50"/>
+  </g>
+
+  <g transform="translate(1560 720)">
+    <circle r="70" fill="#2c6d32"/>
+    <circle cx="-50" cy="20" r="50" fill="#3b8a3e"/>
+    <rect x="-6" y="40" width="12" height="60" fill="#5a4030"/>
+  </g>
+
+  <g filter="url(#soft)">
+    <use href="#flower" transform="translate(70 880) scale(1.6)"/>
+    <use href="#flower" transform="translate(150 930) scale(1.9)"/>
+    <use href="#flower" transform="translate(250 870) scale(1.4)"/>
+    <use href="#flower" transform="translate(40 970) scale(2.1)"/>
+    <use href="#flower" transform="translate(330 940) scale(1.5)"/>
+    <use href="#flower" transform="translate(420 900) scale(1.1)"/>
+    <use href="#flower" transform="translate(200 820) scale(1.0)"/>
+  </g>
+  <use href="#flower" transform="translate(620 860) scale(0.7)"/>
+  <use href="#flower" transform="translate(700 890) scale(0.8)"/>
+  <use href="#flower" transform="translate(1400 900) scale(0.9)"/>
+  <use href="#flower" transform="translate(1480 950) scale(1.1)"/>
+  <use href="#flower" transform="translate(560 720) scale(0.5)"/>
+  <use href="#flower" transform="translate(480 700) scale(0.45)"/>
+
+  <g fill="#ffffff" opacity="0.9">
+    <circle cx="520" cy="900" r="4"/><circle cx="560" cy="940" r="3.5"/>
+    <circle cx="760" cy="880" r="3.5"/><circle cx="1350" cy="940" r="4"/>
+    <circle cx="300" cy="760" r="3"/><circle cx="380" cy="800" r="3"/>
+    <circle cx="1450" cy="860" r="3"/><circle cx="860" cy="920" r="3.5"/>
+  </g>
+</svg>
