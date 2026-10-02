@@ -22,6 +22,8 @@ const config: Config = {
   noIndex: true,
 
   onBrokenLinks: 'throw',
+  // A renamed heading must fail the build, not leave a link to the top of a page.
+  onBrokenAnchors: 'throw',
 
   i18n: { defaultLocale: 'en', locales: ['en'] },
 
@@ -37,7 +39,13 @@ const config: Config = {
     '@docusaurus/theme-mermaid',
     [
       '@easyops-cn/docusaurus-search-local',
-      { hashed: true, indexBlog: false, docsDir: '..', docsRouteBasePath: '/', highlightSearchTermsOnTargetPage: true },
+      {
+        hashed: true,
+        indexBlog: false,
+        docsDir: '..',
+        docsRouteBasePath: '/',
+        highlightSearchTermsOnTargetPage: true,
+      },
     ],
   ],
 

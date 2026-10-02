@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, relative } from 'node:path'
 
 /**
  * Records which documents the committed `/docs` site was built from.
@@ -18,16 +18,27 @@ import { join } from 'node:path'
 const SOURCE_DIR = 'docs'
 const STAMP = 'public/docs/.sources.json'
 
+// `_category_.json` sets sidebar labels, so it is a source too. `site/` is the renderer.
+const isSource = (name: string) => name.endsWith('.md') || name === '_category_.json'
+const SKIPPED_DIRS = new Set(['site', 'node_modules'])
+
 export function stampOf(dir = SOURCE_DIR): Record<string, string> {
   const stamp: Record<string, string> = {}
 
-  for (const name of readdirSync(dir)
-    .filter((f) => f.endsWith('.md'))
-    .sort()) {
-    const body = readFileSync(join(dir, name))
-    stamp[name] = createHash('sha256').update(body).digest('hex').slice(0, 16)
+  const walk = (current: string) => {
+    for (const entry of readdirSync(current, { withFileTypes: true })) {
+      const path = join(current, entry.name)
+      if (entry.isDirectory()) {
+        if (!SKIPPED_DIRS.has(entry.name)) walk(path)
+      } else if (isSource(entry.name)) {
+        const body = readFileSync(path)
+        stamp[relative(dir, path)] = createHash('sha256').update(body).digest('hex').slice(0, 16)
+      }
+    }
   }
-  return stamp
+  walk(dir)
+
+  return Object.fromEntries(Object.entries(stamp).sort(([a], [b]) => a.localeCompare(b)))
 }
 
 // Only when run directly: the test imports `stampOf` and must not write.

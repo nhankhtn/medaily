@@ -1,3 +1,9 @@
+---
+title: Changelog
+description: What changed in these documents, and when. Newest first.
+sidebar_position: 99
+---
+
 # Documentation changelog
 
 What changed in `docs/`, and when. Newest first.
@@ -8,9 +14,35 @@ than the code.
 
 ## 2026-10-02
 
+**Restructured**
+
+The three long documents became one page per feature, in four sections —
+**Get started**, **Features**, **Operations** and **Reference** — and every page
+now ends with **Related** links to the features it affects. Feature pages lead
+with the **Rules** a business analyst needs, then the steps, then how it works.
+The separate `medaily-ai` service is documented for the first time, from its
+`origin/main` at `1bc432d`.
+
+| Was | Is now |
+| --- | --- |
+| `features.md` | [Get started](get-started/sign-in.md), [Features](features/daily-log.md) — one page each, with Finance and Chat split into sub-pages — and [Operations](operations/configuration.md) |
+| `database.md` | [Data model](reference/data-model/overview.md) — one page per domain, plus the Mongo collections |
+| `realtime.md` | [Live updates](reference/realtime/overview.md) — doorbell, typing, setup, housekeeping, push |
+| — | [AI service](reference/ai-service/overview.md) |
+
+Corrected on the way, against the code: chat invites are link-only (the email
+field is gone); message actions moved into a press-and-hold / right-click menu
+with **Copy** and **Edit**; push also needs `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+and `NEXT_PUBLIC_FIREBASE_APP_ID`; the timezone control in Settings is hidden;
+milestone weight is honoured by progress but the form always writes `1`.
+
+Entries below this one name the old file names as they were then.
+
+## 2026-10-02 (earlier)
+
 **Added**
 
-- [features.md](features.md): the **evening reminder**. A second cron at
+- `features.md`: the **evening reminder**. A second cron at
   20:00 Vietnam time notifies everybody with notifications on whose day has
   neither a daily log nor a transaction dated on it, in their own language,
   with one tag so a later reminder replaces the earlier one.
@@ -22,7 +54,7 @@ than the code.
 All three documents were read line by line against the code as it stands
 today, and every claim below was checked in the source before it was written.
 
-- [features.md](features.md), corrected. `/knowledge` is a redirect to
+- `features.md`, corrected. `/knowledge` is a redirect to
   `/learning?tab=notes`. Your own activities live under **Daily log → Set
   up**, not Settings, and Settings has no density control. Finance has four
   tabs, not two. Budgets are copied by a nightly check plus **Copy last
@@ -34,7 +66,7 @@ today, and every claim below was checked in the source before it was written.
   Gemini key. Without `MONGODB_URI` Chat still shows in the nav and 404s. Chat
   invites send no email. The "What changed" trail also records goals, habits,
   notes and people. `⌘B` does not fire while typing.
-- [features.md](features.md), added. The welcome and legal pages, the first
+- `features.md`, added. The welcome and legal pages, the first
   few days (tour, checklist, add to home screen), the dashboard, **Journal**,
   **Career**, the editor, the assistant, Get in touch, the overnight job, the
   shell and phone dock, People in full, chat replies, one reaction per person,
@@ -42,7 +74,7 @@ today, and every claim below was checked in the source before it was written.
   One Tap, the owner-only `/docs`, and the missing rows in the optional
   services table. Health, Projects, Goals, Habits, Reviews, Analytics,
   Calendar, the palette and shortcuts were deepened.
-- [database.md](database.md). 47 tables plus two views, not 46.
+- `database.md`. 47 tables plus two views, not 46.
   `timer_filings` and the Career tables (`skills`, `achievements`,
   `portfolio_items`) were missing, as was every column from migrations 0015
   to 0024. `updated_at` **is** kept by a trigger that `drizzle/views.sql`
@@ -53,7 +85,7 @@ today, and every claim below was checked in the source before it was written.
   more than money and sign-in. Foreign keys that do not exist, ON DELETE
   rules, unique and CHECK constraints, chat replies and avatars, and every
   Mongo index are now written down.
-- [realtime.md](realtime.md). Password sign-ins **do** get live updates and
+- `realtime.md`. Password sign-ins **do** get live updates and
   typing when `FIREBASE_SERVICE_ACCOUNT` is set (custom token), so the table,
   the typing section and the troubleshooting advice were wrong. `stop()` runs
   before `sendMessage`, not after. `catchUp` also refreshes recalls and
@@ -65,13 +97,13 @@ today, and every claim below was checked in the source before it was written.
 
 **Added**
 
-- [features.md](features.md) finally has a **Chat** section, closing the gap
+- `features.md` finally has a **Chat** section, closing the gap
   the 2026-09-30 entry below admits to. Rooms of two kinds, invites that are
   spent on first use, optimistic send, recall, reactions and stickers, who
   sits on which side, and who may do what — including that the ranks live on
   the member's seat rather than on the room's `createdBy`, so a room older
   than that column still knows its owner.
-- [database.md](database.md) gained a second half: the **MongoDB collections**.
+- `database.md` gained a second half: the **MongoDB collections**.
   Until now the document described 46 Postgres tables and said nothing about
   where the activity trail or any chat message actually lives. Four chat
   collections and `activity`, their indexes, and why there are no transactions
@@ -95,7 +127,7 @@ today, and every claim below was checked in the source before it was written.
   why it is held off in the markdown editor.
 - The markdown editor's `/` menu and its `?` panel.
 - **What changed** narrowed to money and the door, in both
-  [features.md](features.md) and [database.md](database.md).
+  `features.md` and `database.md`.
 - [README.md](README.md) now tells you to update the Mongo half of
   `database.md` when a collection's shape moves. Those collections have no
   migration file to force the issue.
@@ -104,7 +136,7 @@ today, and every claim below was checked in the source before it was written.
 
 **Added**
 
-- Push notifications for chat, and a section in [realtime.md](realtime.md) for
+- Push notifications for chat, and a section in `realtime.md` for
   the two things about them that are not obvious: messages are sent data-only
   so `sw.js` draws them and stays free of the Firebase SDK, and iOS delivers
   web push only to an app added to the Home Screen — so the settings card
@@ -128,7 +160,7 @@ today, and every claim below was checked in the source before it was written.
 
 **Added**
 
-- [realtime.md](realtime.md) — a fourth document. How a message reaches
+- `realtime.md` — a fourth document. How a message reaches
   another screen, why the doorbell carries no payload, and why the typing
   indicator is the one exception. It exists because the reasoning behind
   `firestore.rules` lived only in code comments, and rules that deny fail
@@ -148,7 +180,7 @@ today, and every claim below was checked in the source before it was written.
   delete it. Typing claims go after an hour, channels after thirty days, and
   claims under a dying channel go with it — sub-collections outlive the
   document above them, so order matters.
-- `FIREBASE_SERVICE_ACCOUNT`, and [realtime.md](realtime.md) says plainly what
+- `FIREBASE_SERVICE_ACCOUNT`, and `realtime.md` says plainly what
   it costs: it is the only Firebase credential here with real power, where
   everything else runs on public keys and rules. Contained to one file that
   speaks the REST API rather than pulling in the Admin SDK, reachable only from

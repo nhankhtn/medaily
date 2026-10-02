@@ -8,7 +8,7 @@ import { stampOf } from '../../scripts/docs-stamp'
  * bundler to publish a page nobody changed.
  *
  * What that trades away is the guarantee that the published page matches the
- * document. Editing `docs/features.md` and pushing it now changes the source
+ * document. Editing `docs/features/daily-log.md` and pushing it now changes the source
  * and leaves the site as it was — and a page that is quietly a week old reads
  * exactly like a page that is right.
  *
