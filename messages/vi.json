@@ -620,7 +620,8 @@
     "saved": "Đã đặt {metric} = {value}",
     "searching": "Đang tìm…",
     "inYourData": "Trong ghi chú & bản ghi",
-    "nothingInData": "Chưa có gì viết về “{query}”"
+    "nothingInData": "Chưa có gì viết về “{query}”",
+    "noResultsHint": "Thử gõ tên một trang, một ngày như 2026-09-18, hoặc ghi nhanh kiểu “sleep 7.5”."
   },
   "auth": {
     "brand": "Personal OS",
@@ -1092,7 +1093,27 @@
     "copiedBudgets": "Đã chép {count} dòng ngân sách",
     "previousMonth": "Tháng trước",
     "nextMonth": "Tháng sau",
-    "filterOwing": "Chưa chuyển tiền"
+    "filterOwing": "Chưa chuyển tiền",
+    "emptyLedger": "Chưa có giao dịch nào, ví đang ngủ đông 🐻‍❄️",
+    "emptyLedgerAction": "Ghi khoản đầu tiên",
+    "emptyFiltered": "Không có gì khớp cả. Bỏ bớt bộ lọc thử xem?",
+    "dayIn": "Thu",
+    "dayOut": "Chi",
+    "pendingSending": "Đang gửi…",
+    "pendingQueued": "Chờ có mạng",
+    "errors": {
+      "deleteFailed": "Chưa xóa được. Kiểm tra mạng rồi thử lại nhé.",
+      "restoreFailed": "Không lấy lại được. Cần thì bạn nhập lại khoản này nhé.",
+      "editRefused": "Chưa lưu được thay đổi. Xem lại số tiền và tài khoản rồi thử lại.",
+      "editFailed": "Chưa lưu được thay đổi. Kiểm tra mạng rồi thử lại nhé.",
+      "markFailed": "Chưa đánh dấu đã chuyển được. Lát nữa thử lại nhé."
+    },
+    "hold": {
+      "hint": "Giữ để xác nhận",
+      "holding": "Giữ thêm chút…",
+      "confirmAccount": "Xóa tài khoản “{name}”? Xóa rồi là không lấy lại được.",
+      "confirmCategory": "Xóa danh mục “{name}”? Xóa rồi là không lấy lại được."
+    }
   },
   "journal": {
     "title": "Nhật ký",
@@ -1784,7 +1805,13 @@
     "copy": "Chép",
     "copied": "Đã chép",
     "copyFailed": "Không chép được",
-    "copyBlocked": "Chép tay link này giúp — trình duyệt không cho trang ghi vào clipboard."
+    "copyBlocked": "Chép tay link này giúp — trình duyệt không cho trang ghi vào clipboard.",
+    "unreadDivider": "{count, plural, other {# tin mới}}",
+    "newBelow": "{count, plural, other {# tin mới}}",
+    "notSent": "Chưa gửi được",
+    "retrySend": "Gửi lại",
+    "failedEdit": "Sửa lại",
+    "failedDrop": "Bỏ"
   },
   "activity": {
     "title": "Những gì đã đổi",

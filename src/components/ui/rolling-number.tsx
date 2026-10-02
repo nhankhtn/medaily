@@ -15,12 +15,16 @@ export function RollingNumber({ value, className }: { value: string; className?:
   return (
     <span className={cn('inline-flex tabular-nums', className)}>
       <span className="sr-only">{value}</span>
-      <span aria-hidden className="inline-flex leading-none">
+      <span aria-hidden className="inline-flex items-baseline">
         {chars.map((char, index) => {
           const slot = chars.length - index
           if (!/\d/.test(char)) return <span key={`s${slot}`}>{char}</span>
           return (
-            <span key={`d${slot}`} className="relative inline-block h-[1em] overflow-hidden">
+            // clip-path, not overflow: an overflow-hidden inline-block sits on its bottom edge, lifting the digit.
+            <span
+              key={`d${slot}`}
+              className="relative inline-block h-[1em] leading-none [clip-path:inset(0)]"
+            >
               <span className="invisible">0</span>
               <span
                 className="rolling-digit absolute inset-x-0 top-0 flex flex-col"

@@ -1,6 +1,16 @@
 'use client'
 
-import { ArrowDown, Copy, CornerUpLeft, Pencil, Send, SmilePlus, Trash2, X } from 'lucide-react'
+import {
+  ArrowDown,
+  CircleAlert,
+  Copy,
+  CornerUpLeft,
+  Pencil,
+  Send,
+  SmilePlus,
+  Trash2,
+  X,
+} from 'lucide-react'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -24,6 +34,16 @@ import { onlyEmoji } from '@/lib/chat/only-emoji'
 import { dayKeyOf, layoutAt } from '@/lib/chat/grouping'
 import { EmojiPicker, StickerPicker } from './pickers'
 import { StickerArt } from './sticker-art'
+import { celebrate } from './celebrate'
+import {
+  bubbleCorners,
+  easterEggOf,
+  grownReaction,
+  SWIPE_REPLY_PX,
+  swipeIntent,
+  unreadStart,
+  type EasterEgg,
+} from './motion'
 import { useTyping } from '@/lib/hooks/use-typing'
 import { Avatar } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
@@ -56,7 +76,20 @@ const DOUBLE_TAP_MS = 300
  * has been typed but not yet acknowledged is standing there under its client
  * id, waiting to be swapped for the stored row.
  */
-type Shown = ChatMessage & { pending?: boolean }
+type Shown = ChatMessage & { pending?: boolean; failed?: boolean; retried?: boolean }
+
+/** Within this of the bottom counts as reading the newest line. */
+const AT_BOTTOM_PX = 48
+
+/** Plays an easter egg from the row it belongs to once that row is drawn. */
+function celebrateRow(egg: EasterEgg, id: string, fallback: Element | null) {
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() => {
+      const row = document.querySelector(`[data-chat-row="${CSS.escape(id)}"]`)
+      celebrate(egg, row ?? fallback)
+    }),
+  )
+}
 
 export function RoomView({
   room,
@@ -64,6 +97,7 @@ export function RoomView({
   initialPage,
   initialSpeakers,
   initialReads,
+  myRead = null,
 }: {
   room: ChatRoom
   me: string
@@ -71,6 +105,8 @@ export function RoomView({
   initialSpeakers: Record<string, Speaker>
   /** Who has read up to which message — a face goes under the one they stopped at. */
   initialReads: Record<string, string>
+  /** Where I had read up to when the room opened — the "N new" line goes after it. */
+  myRead?: string | null
 }) {
   const t = useTranslations('chat')
   const router = useRouter()
@@ -95,6 +131,17 @@ export function RoomView({
   /** `catchUp` is a callback with its own deps; this is how it sees the state. */
   const landedRef = useRef<string | null>(null)
   const catchingUp = useRef(false)
+  const composer = useRef<HTMLFormElement>(null)
+
+  // Frozen at open: the read mark moves the moment the room is on screen.
+  const [unread] = useState(() => unreadStart(initialPage.items, myRead, me))
+  const [divider, setDivider] = useState<'shown' | 'fading' | 'gone'>('shown')
+  /** Rows that were pending a moment ago, so they ease to solid instead of snapping. */
+  const [settled, setSettled] = useState<ReadonlySet<string>>(new Set())
+  const atBottom = useRef(true)
+  const [unseen, setUnseen] = useState(0)
+  /** Readers whose mark just moved, so their face slides in rather than appearing. */
+  const [movedReaders, setMovedReaders] = useState<ReadonlySet<string>>(new Set())
 
   /**
    * Keeps asking while the server says there is more.
@@ -116,6 +163,15 @@ export function RoomView({
         const result = await loadNewMessages({ roomId: room.id, after: newest.current })
         if (!result.ok) return
         if (result.items.length > 0) {
+          const arrived = result.items.filter((m) => m.userId !== me && !m.deletedAt)
+          if (!atBottom.current && arrived.length > 0) setUnseen((count) => count + arrived.length)
+          // Only what arrived live, never history, and one per batch.
+          const egg = arrived
+            .filter((m) => m.kind === 'text')
+            .map((m) => ({ id: m.id, egg: easterEggOf(m.body) }))
+            .reverse()
+            .find((found) => found.egg !== null)
+          if (egg?.egg) celebrateRow(egg.egg, egg.id, composer.current)
           newest.current = result.cursor
           setSpeakers((known) => ({ ...known, ...result.speakers }))
           setMessages((shown) => {
@@ -140,9 +196,34 @@ export function RoomView({
     } finally {
       catchingUp.current = false
     }
-  }, [room.id])
+  }, [room.id, me])
 
   useRoomLive(room.doorbellKey, () => void catchUp())
+
+  const [readsBefore, setReadsBefore] = useState(reads)
+  if (reads !== readsBefore) {
+    setReadsBefore(reads)
+    const moved = Object.keys(reads).filter((id) => readsBefore[id] !== reads[id])
+    if (moved.length > 0) setMovedReaders(new Set(moved))
+  }
+  useEffect(() => {
+    if (movedReaders.size === 0) return
+    const timer = setTimeout(() => setMovedReaders(new Set()), 800)
+    return () => clearTimeout(timer)
+  }, [movedReaders])
+
+  useEffect(() => {
+    if (settled.size === 0) return
+    const timer = setTimeout(() => setSettled(new Set()), 400)
+    return () => clearTimeout(timer)
+  }, [settled])
+
+  useEffect(() => {
+    if (divider !== 'fading') return
+    // Backstop for a transition that never ends, e.g. a row scrolled out mid-fade.
+    const timer = setTimeout(() => setDivider('gone'), 1000)
+    return () => clearTimeout(timer)
+  }, [divider])
 
   /**
    * Having the room open is having read it.
@@ -343,29 +424,38 @@ export function RoomView({
     setMessages((shown) => [...shown, optimistic])
     // Whatever they had scrolled up to read, writing something is asking to
     // be at the bottom again.
-    setSentAt(Date.now())
+    setSentAt((was) => (was ?? 0) + 1)
+    setUnseen(0)
+    if (divider === 'shown') setDivider('fading')
     // Before the request, not after: the name should go the moment the words
     // do, not a round trip later.
     stop()
-
-    const answering = replyingTo
     setReplyingTo(null)
 
+    const egg = kind === 'text' ? easterEggOf(body) : null
+    if (egg) celebrateRow(egg, clientId, composer.current)
+
+    await deliver(optimistic)
+    setSending(false)
+  }
+
+  /**
+   * One attempt at storing a row that is already on screen. The client id is
+   * what the server dedupes on, so a retry after a lost answer cannot post twice.
+   */
+  const deliver = async (row: Shown) => {
     const result = await sendMessage({
       roomId: room.id,
-      kind,
-      body,
-      clientId,
-      ...(answering ? { replyToId: answering.id } : {}),
+      kind: row.kind,
+      body: row.body,
+      clientId: row.id,
+      ...(row.replyTo ? { replyToId: row.replyTo.id } : {}),
     })
-    setSending(false)
 
     if (!result.ok) {
-      setMessages((shown) => shown.filter((m) => m.id !== clientId))
-      setDraft(body)
-      // The quote comes back with the words. Losing it would make the retry a
-      // different message from the one that failed.
-      setReplyingTo(answering)
+      // Left standing with a retry, rather than handed back to the box: a
+      // sticker has no words to give back, and the quote stays with the row.
+      setMessages((shown) => shown.map((m) => (m.id === row.id ? { ...m, failed: true } : m)))
       toast.error(t(result.error === 'rate_limited' ? 'tooFast' : 'sendFailed'))
       return
     }
@@ -374,15 +464,31 @@ export function RoomView({
       // The doorbell can bring the stored row back before this reply arrives,
       // so the placeholder is removed first and the real one added only if it
       // is not already standing there.
-      const without = shown.filter((m) => m.id !== clientId)
+      const without = shown.filter((m) => m.id !== row.id)
       return without.some((m) => m.id === result.message.id)
         ? without
         : [...without, result.message]
     })
+    setSettled(new Set([result.message.id]))
     newest.current = result.message.id
     // Told after it is saved, so nobody is sent looking for something that is
     // not there yet.
     void ringRoom(result.doorbellKey)
+  }
+
+  const retry = (row: Shown) => {
+    const again = { ...row, failed: false, retried: true }
+    setMessages((shown) => shown.map((m) => (m.id === row.id ? again : m)))
+    void deliver(again)
+  }
+
+  /** Gives up on a failed row; words go back to the box if it is free, so nothing typed is lost. */
+  const discard = (row: Shown) => {
+    setMessages((shown) => shown.filter((m) => m.id !== row.id))
+    if (row.kind !== 'text' || draft !== '' || editing) return
+    setDraft(row.body)
+    const quoted = row.replyTo ? messages.find((m) => m.id === row.replyTo?.id) : undefined
+    if (quoted) setReplyingTo(quoted)
   }
 
   /**
@@ -464,6 +570,24 @@ export function RoomView({
     void react(message, REACTIONS[0])
   }
 
+  /** Moved by hand on the element, not through state: a re-render per pointer move is the whole list. */
+  const swipe = useRef<{ x: number; y: number; intent: 'swipe' | 'scroll' | null } | null>(null)
+
+  const releaseSwipe = (element: HTMLElement, message: Shown) => {
+    const from = swipe.current
+    swipe.current = null
+    if (!from || from.intent !== 'swipe') return false
+    const travelled = -parseFloat(element.dataset.swipe ?? '0')
+    element.style.transition = 'transform 0.2s var(--ease-out-soft)'
+    element.style.transform = ''
+    delete element.dataset.swipe
+    if (travelled >= SWIPE_REPLY_PX && !message.pending && !message.deletedAt) {
+      setEditing(null)
+      setReplyingTo(message)
+    }
+    return true
+  }
+
   const endHold = () => {
     if (hold.current) clearTimeout(hold.current)
     hold.current = null
@@ -480,10 +604,27 @@ export function RoomView({
       // somebody selects text.
       if (event.pointerType === 'mouse') return
       const { clientX, clientY } = event
+      swipe.current = { x: clientX, y: clientY, intent: null }
       heldFrom.current = { x: clientX, y: clientY }
       hold.current = setTimeout(() => openMenu(clientX, clientY, message), HOLD_MS)
     },
     onPointerMove: (event: React.PointerEvent) => {
+      const gesture = swipe.current
+      if (gesture && event.pointerType !== 'mouse') {
+        const dx = event.clientX - gesture.x
+        gesture.intent ??= swipeIntent(dx, event.clientY - gesture.y)
+        if (gesture.intent === 'swipe') {
+          const element = event.currentTarget as HTMLElement
+          // Resists past the threshold, so the bubble never leaves the screen.
+          const shift = Math.max(dx, -SWIPE_REPLY_PX - Math.max(0, -dx - SWIPE_REPLY_PX) * 0.2)
+          const crossed =
+            -shift >= SWIPE_REPLY_PX && Number(element.dataset.swipe ?? 0) > -SWIPE_REPLY_PX
+          if (crossed) navigator.vibrate?.(8)
+          element.style.transition = 'none'
+          element.style.transform = `translateX(${Math.min(0, shift)}px)`
+          element.dataset.swipe = String(Math.min(0, shift))
+        }
+      }
       const from = heldFrom.current
       if (!from) return
       // A thumb that travelled is a scroll, not a hold.
@@ -492,6 +633,7 @@ export function RoomView({
     onPointerUp: (event: React.PointerEvent) => {
       endHold()
       if (event.pointerType === 'mouse') return
+      if (releaseSwipe(event.currentTarget as HTMLElement, message)) return
       // Two taps in the same spot, the way every phone has taught people to
       // like something. A mouse gets `onDoubleClick` below, which the browser
       // works out on its own.
@@ -504,7 +646,10 @@ export function RoomView({
       lastTap.current = quick ? null : { at: event.timeStamp, x: event.clientX, y: event.clientY }
       if (quick) doubleTapReact(message)
     },
-    onPointerCancel: endHold,
+    onPointerCancel: (event: React.PointerEvent) => {
+      endHold()
+      releaseSwipe(event.currentTarget as HTMLElement, message)
+    },
     onDoubleClick: (event: React.MouseEvent) => {
       if (event.detail === 0) return
       doubleTapReact(message)
@@ -513,219 +658,283 @@ export function RoomView({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <VirtualInfiniteList
-        fill
-        items={messages}
-        getKey={(message) => message.id}
-        estimateSize={ROW_ESTIMATE}
-        // Kept for the estimate the virtualiser starts from; `fill` is what
-        // decides the height once the parent has one.
-        maxVisibleRows={{ base: 7, sm: 9 }}
-        hasMore={Boolean(older)}
-        loadingMore={loadingOlder}
-        onLoadMore={() => void loadOlder()}
-        loadMorePosition="start"
-        scrollToKey={marked}
-        stickToBottom
-        pinSignal={sentAt}
-        loadingMoreLabel={t('loadOlder')}
-        listClassName=""
-        /*
-         * Fills, because an empty list drops the scroll box entirely and
-         * returns this node bare — so without a `flex-1` here the composer
-         * climbs to meet the line of text and sits halfway up an empty room.
-         */
-        empty={
-          <p className="text-text-subtle flex min-h-0 flex-1 items-center justify-center text-center text-sm">
-            {t('emptyRoom')}
-          </p>
-        }
-        renderItem={(message, index) => {
-          const mine = message.userId === me
-          const speaker = message.userId ? speakers[message.userId] : undefined
-          const { startsRun, endsRun, startsDay } = layoutAt(messages, index, now)
-          const bare =
-            (message.kind === 'sticker' && !message.deletedAt && isSticker(message.body)) ||
-            (!message.deletedAt && onlyEmoji(message.body))
-
+      <div
+        className="relative flex min-h-0 flex-1 flex-col"
+        // Capture, because the list scrolls its own box and scroll does not bubble.
+        onScrollCapture={(event) => {
+          const element = event.target as HTMLElement
+          const bottom =
+            element.scrollHeight - element.scrollTop - element.clientHeight < AT_BOTTOM_PX
+          atBottom.current = bottom
+          if (bottom && unseen > 0) setUnseen(0)
+        }}
+      >
+        <VirtualInfiniteList
+          fill
+          items={messages}
+          getKey={(message) => message.id}
+          estimateSize={ROW_ESTIMATE}
+          // Kept for the estimate the virtualiser starts from; `fill` is what
+          // decides the height once the parent has one.
+          maxVisibleRows={{ base: 7, sm: 9 }}
+          hasMore={Boolean(older)}
+          loadingMore={loadingOlder}
+          onLoadMore={() => void loadOlder()}
+          loadMorePosition="start"
+          scrollToKey={marked}
+          stickToBottom
+          pinSignal={sentAt}
+          loadingMoreLabel={t('loadOlder')}
+          listClassName=""
           /*
-           * Side says who, so the name does not have to. Mine on the right in
-           * the accent, everyone else's on the left — the arrangement every
-           * chat app has trained people to read at a glance.
-           *
-           * Runs are what make it a conversation rather than a log. Five
-           * messages from one person say the name once, wear one face, and sit
-           * two pixels apart; the next run starts sixteen pixels down. The gap
-           * between runs has to beat the gap inside one by enough to be read
-           * as a break rather than a wobble — at eight it did not, and a
-           * screen of messages five minutes apart, each its own run, came out
-           * as one undifferentiated column. The corners follow: the tail
-           * corner is square only on the last of a run, so a stack reads as
-           * one block of speech.
+           * Fills, because an empty list drops the scroll box entirely and
+           * returns this node bare — so without a `flex-1` here the composer
+           * climbs to meet the line of text and sits halfway up an empty room.
            */
-          // `index`, not `first:` — the virtualiser gives every row its own
-          // `<li>`, so each wrapper is the first child of its own parent and a
-          // `first:mt-0` matched all of them. The gap between runs was zero
-          // however large the class said it was.
-          return (
-            <div
-              className={cn(
-                index === 0 ? 'mt-0' : startsRun ? 'mt-4' : 'mt-0.5',
-                // Lit for a moment after landing on it, because a row in the
-                // middle of fifty looks like every other row.
-                message.id === marked && 'ring-accent rounded-[var(--radius)] ring-2',
-              )}
-            >
-              {startsDay ? <DaySeparator at={message.createdAt} now={now} /> : null}
+          empty={
+            <p className="text-text-subtle flex min-h-0 flex-1 items-center justify-center text-center text-sm">
+              {t('emptyRoom')}
+            </p>
+          }
+          renderItem={(message, index) => {
+            const mine = message.userId === me
+            const speaker = message.userId ? speakers[message.userId] : undefined
+            const { startsRun, endsRun, startsDay } = layoutAt(messages, index, now)
+            const bare =
+              (message.kind === 'sticker' && !message.deletedAt && isSticker(message.body)) ||
+              (!message.deletedAt && onlyEmoji(message.body))
 
-              <div className={cn('group flex px-1', mine ? 'justify-end' : 'justify-start')}>
+            /*
+             * Side says who, so the name does not have to. Mine on the right in
+             * the accent, everyone else's on the left — the arrangement every
+             * chat app has trained people to read at a glance.
+             *
+             * Runs are what make it a conversation rather than a log. Five
+             * messages from one person say the name once, wear one face, and sit
+             * two pixels apart; the next run starts sixteen pixels down. The gap
+             * between runs has to beat the gap inside one by enough to be read
+             * as a break rather than a wobble — at eight it did not, and a
+             * screen of messages five minutes apart, each its own run, came out
+             * as one undifferentiated column. The corners follow: the tail
+             * side tucks in wherever the run carries on, so a stack reads as
+             * one block of speech.
+             */
+            // `index`, not `first:` — the virtualiser gives every row its own
+            // `<li>`, so each wrapper is the first child of its own parent and a
+            // `first:mt-0` matched all of them. The gap between runs was zero
+            // however large the class said it was.
+            return (
+              <div
+                data-chat-row={message.id}
+                className={cn(
+                  index === 0 ? 'mt-0' : startsRun ? 'mt-4' : 'mt-0.5',
+                  // Lit for a moment after landing on it, because a row in the
+                  // middle of fifty looks like every other row.
+                  message.id === marked && 'ring-accent rounded-[var(--radius)] ring-2',
+                )}
+              >
+                {startsDay ? <DaySeparator at={message.createdAt} now={now} /> : null}
+                {unread?.id === message.id && divider !== 'gone' ? (
+                  <UnreadDivider
+                    label={t('unreadDivider', { count: unread.count })}
+                    fading={divider === 'fading'}
+                    onSeen={() => setDivider((was) => (was === 'shown' ? 'fading' : was))}
+                    onFaded={() => setDivider('gone')}
+                  />
+                ) : null}
+
                 <div
                   className={cn(
-                    'flex max-w-[85%] items-end gap-1.5 sm:max-w-[70%]',
-                    mine && 'flex-row-reverse',
+                    'group flex px-1',
+                    mine ? 'justify-end' : 'justify-start',
+                    // Only the first attempt flies; a retry is the same row staying put.
+                    mine && message.pending && !message.failed && !message.retried && 'chat-fly',
                   )}
                 >
-                  {/* Only on the last of a run; the empty box keeps the stack
+                  <div
+                    className={cn(
+                      'flex max-w-[85%] items-end gap-1.5 sm:max-w-[70%]',
+                      mine && 'flex-row-reverse',
+                    )}
+                  >
+                    {/* Only on the last of a run; the empty box keeps the stack
                       above it aligned. */}
-                  {mine ? null : endsRun ? (
-                    <Avatar
-                      name={speaker?.name ?? t('formerMember')}
-                      src={speaker?.imageUrl}
-                      className="size-7 shrink-0"
-                    />
-                  ) : (
-                    <span aria-hidden className="size-7 shrink-0" />
-                  )}
+                    {mine ? null : endsRun ? (
+                      <Avatar
+                        name={speaker?.name ?? t('formerMember')}
+                        src={speaker?.imageUrl}
+                        className="size-7 shrink-0"
+                      />
+                    ) : (
+                      <span aria-hidden className="size-7 shrink-0" />
+                    )}
 
-                  {bare ? (
-                    // No bubble: a sticker or a line of nothing but emoji is
-                    // the message, and a coloured box round it would only fight
-                    // what is drawn inside.
-                    <span
-                      {...holdProps(message)}
-                      className={cn(
-                        'flex flex-col max-sm:select-none max-sm:[-webkit-touch-callout:none]',
-                        mine ? 'items-end' : 'items-start',
-                        message.pending && 'opacity-60',
-                      )}
-                    >
-                      {/* Asked again here rather than trusted from `bare`:
+                    {bare ? (
+                      // No bubble: a sticker or a line of nothing but emoji is
+                      // the message, and a coloured box round it would only fight
+                      // what is drawn inside.
+                      <span
+                        {...holdProps(message)}
+                        className={cn(
+                          'flex flex-col max-sm:select-none max-sm:[-webkit-touch-callout:none]',
+                          // Vertical pans stay the browser's, so a sideways swipe never fights the scroll.
+                          'max-sm:[touch-action:pan-y_pinch-zoom]',
+                          mine ? 'items-end' : 'items-start',
+                          message.pending && 'opacity-60',
+                          settled.has(message.id) && 'chat-settle',
+                        )}
+                      >
+                        {/* Asked again here rather than trusted from `bare`:
                           `isSticker` is what narrows the body to an id, and a
                           cast in its place would be the same check written so
                           it cannot fail. */}
-                      {isSticker(message.body) ? (
-                        <StickerArt id={message.body} size={96} />
-                      ) : (
-                        <span className="px-1 text-4xl leading-tight">{message.body}</span>
-                      )}
-                      <ReactionPills
-                        reactions={message.reactions}
-                        me={me}
-                        onToggle={(emoji) => void react(message, emoji)}
-                      />
-                      {message.pending ? null : (
-                        <span className="text-text-subtle px-1 text-[10px] tabular-nums">
-                          {message.editedAt && !message.deletedAt ? `${t('edited')} · ` : ''}
-                          {format.dateTime(new Date(message.createdAt), 'clock')}
-                        </span>
-                      )}
-                    </span>
-                  ) : (
-                    <div
-                      {...holdProps(message)}
-                      className={cn(
-                        'relative min-w-0 rounded-2xl px-3 py-1.5 text-sm',
-                        // A hold is the way into the menu here, so it must not
-                        // also be the way into a text selection.
-                        'max-sm:select-none max-sm:[-webkit-touch-callout:none]',
-                        // Room kept for the clock sitting in the corner, so the
-                        // last word never runs under it. Telegram reserves the
-                        // same gap, which is why a one-word bubble there is
-                        // wider than the word.
-                        'pr-14',
-                        mine ? 'bg-accent text-accent-text' : 'bg-surface-2',
-                        // Square on the tail side except at the end of the run.
-                        mine
-                          ? endsRun
-                            ? 'rounded-br-md'
-                            : 'rounded-r-md'
-                          : endsRun
-                            ? 'rounded-bl-md'
-                            : 'rounded-l-md',
-                        !startsRun && (mine ? 'rounded-tr-md' : 'rounded-tl-md'),
-                        message.deletedAt && 'text-text-subtle bg-surface-2 italic',
-                        // Faded until the server has it. Showing it as though
-                        // it had landed would be a lie on the one occasion it
-                        // matters: when the send is about to fail.
-                        message.pending && 'opacity-60',
-                      )}
-                    >
-                      {/* Inside the bubble and only once per run, which is
+                        {isSticker(message.body) ? (
+                          <StickerArt id={message.body} size={96} />
+                        ) : (
+                          <span className="px-1 text-4xl leading-tight">{message.body}</span>
+                        )}
+                        <ReactionPills
+                          reactions={message.reactions}
+                          me={me}
+                          onToggle={(emoji) => void react(message, emoji)}
+                        />
+                        {message.pending ? null : (
+                          <span className="text-text-subtle px-1 text-[10px] tabular-nums">
+                            {message.editedAt && !message.deletedAt ? `${t('edited')} · ` : ''}
+                            {format.dateTime(new Date(message.createdAt), 'clock')}
+                          </span>
+                        )}
+                      </span>
+                    ) : (
+                      <div
+                        {...holdProps(message)}
+                        className={cn(
+                          'relative min-w-0 rounded-2xl px-3 py-1.5 text-sm',
+                          // A hold is the way into the menu here, so it must not
+                          // also be the way into a text selection.
+                          'max-sm:select-none max-sm:[-webkit-touch-callout:none]',
+                          'max-sm:[touch-action:pan-y_pinch-zoom]',
+                          // Room kept for the clock sitting in the corner, so the
+                          // last word never runs under it. Telegram reserves the
+                          // same gap, which is why a one-word bubble there is
+                          // wider than the word.
+                          'pr-14',
+                          mine ? 'bg-accent text-accent-text' : 'bg-surface-2',
+                          bubbleCorners({ mine, startsRun }),
+                          message.deletedAt && 'text-text-subtle bg-surface-2 italic',
+                          // Faded until the server has it. Showing it as though
+                          // it had landed would be a lie on the one occasion it
+                          // matters: when the send is about to fail.
+                          message.pending && 'opacity-60',
+                          settled.has(message.id) && 'chat-settle',
+                        )}
+                      >
+                        {/* Inside the bubble and only once per run, which is
                           where every chat app puts it — above it, the name was
                           a line of its own competing with the words. */}
-                      {mine || !startsRun ? null : (
-                        /*
-                         * Takes back the gutter the clock is holding. `pr-14`
-                         * keeps a last line of words clear of a clock sitting
-                         * in the bottom corner — but the name is the first
-                         * line and the clock is nowhere near it, and paying
-                         * 3.5rem for that on a phone is what sent a name of
-                         * four short words onto two, with the room to its
-                         * right empty.
-                         */
-                        <span className="text-accent -mr-11 block text-xs font-semibold">
-                          {speaker?.name ?? t('formerMember')}
+                        {mine || !startsRun ? null : (
+                          /*
+                           * Takes back the gutter the clock is holding. `pr-14`
+                           * keeps a last line of words clear of a clock sitting
+                           * in the bottom corner — but the name is the first
+                           * line and the clock is nowhere near it, and paying
+                           * 3.5rem for that on a phone is what sent a name of
+                           * four short words onto two, with the room to its
+                           * right empty.
+                           */
+                          <span className="text-accent -mr-11 block text-xs font-semibold">
+                            {speaker?.name ?? t('formerMember')}
+                          </span>
+                        )}
+
+                        {message.replyTo && !message.deletedAt ? (
+                          <Quote preview={message.replyTo} speakers={speakers} mine={mine} />
+                        ) : null}
+
+                        <span className="block break-words whitespace-pre-wrap">
+                          {message.deletedAt ? t('recalled') : message.body}
                         </span>
-                      )}
 
-                      {message.replyTo && !message.deletedAt ? (
-                        <Quote preview={message.replyTo} speakers={speakers} mine={mine} />
-                      ) : null}
+                        <ReactionPills
+                          reactions={message.reactions}
+                          me={me}
+                          onToggle={(emoji) => void react(message, emoji)}
+                        />
 
-                      <span className="block break-words whitespace-pre-wrap">
-                        {message.deletedAt ? t('recalled') : message.body}
-                      </span>
+                        {message.pending ? null : (
+                          <span
+                            className={cn(
+                              'absolute right-2.5 bottom-1 text-[10px] tabular-nums',
+                              mine ? 'text-accent-text/70' : 'text-text-subtle',
+                            )}
+                          >
+                            {message.editedAt && !message.deletedAt ? `${t('edited')} · ` : ''}
+                            {format.dateTime(new Date(message.createdAt), 'clock')}
+                          </span>
+                        )}
+                      </div>
+                    )}
 
-                      <ReactionPills
-                        reactions={message.reactions}
-                        me={me}
-                        onToggle={(emoji) => void react(message, emoji)}
-                      />
-
-                      {message.pending ? null : (
-                        <span
-                          className={cn(
-                            'absolute right-2.5 bottom-1 text-[10px] tabular-nums',
-                            mine ? 'text-accent-text/70' : 'text-text-subtle',
-                          )}
-                        >
-                          {message.editedAt && !message.deletedAt ? `${t('edited')} · ` : ''}
-                          {format.dateTime(new Date(message.createdAt), 'clock')}
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  {/* One control beside the bubble, not three. Reply and
+                    {/* One control beside the bubble, not three. Reply and
                       recall live in the panel it opens: a row of icons under
                       every line was louder than the conversation, and on a
                       phone — where nothing hides behind a hover — it was all
                       anyone saw. */}
-                  {message.pending || message.deletedAt ? null : (
-                    <MessageActions mine={mine} onReact={(emoji) => void react(message, emoji)} />
-                  )}
+                    {message.pending || message.deletedAt ? null : (
+                      <MessageActions mine={mine} onReact={(emoji) => void react(message, emoji)} />
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              <Seen
-                readers={readersOf(reads, speakers, message.id, me)}
-                mine={mine}
-                label={t('seenBy')}
-              />
-            </div>
-          )
-        }}
-      />
+                {message.failed ? (
+                  <div className="text-bad flex items-center justify-end gap-1 px-1 text-xs">
+                    <CircleAlert className="size-3.5 shrink-0" />
+                    <span>{t('notSent')}</span>
+                    <button
+                      type="button"
+                      onClick={() => retry(message)}
+                      className="hover:bg-surface-2 h-8 rounded-full px-2 font-semibold"
+                    >
+                      {t('retrySend')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => discard(message)}
+                      className="text-text-subtle hover:bg-surface-2 h-8 rounded-full px-2"
+                    >
+                      {message.kind === 'text' ? t('failedEdit') : t('failedDrop')}
+                    </button>
+                  </div>
+                ) : null}
+
+                <Seen
+                  readers={readersOf(reads, speakers, message.id, me)}
+                  mine={mine}
+                  label={t('seenBy')}
+                  moved={movedReaders}
+                />
+              </div>
+            )
+          }}
+        />
+        {unseen > 0 && !landed ? (
+          <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setUnseen(0)
+                setSentAt((was) => (was ?? 0) + 1)
+              }}
+              className="chat-rise pointer-events-auto shadow-lg"
+            >
+              <ArrowDown className="size-4" />
+              {t('newBelow', { count: unseen })}
+            </Button>
+          </div>
+        ) : null}
+      </div>
 
       {menu ? (
         <MessageMenu
@@ -777,7 +986,22 @@ export function RoomView({
           permanent empty line under a conversation is a worse trade than the
           layout shifting by one row for four seconds. */}
       {typingNames.length > 0 ? (
-        <p aria-live="polite" className="text-text-subtle px-1 text-xs">
+        <p
+          aria-live="polite"
+          className="chat-rise text-text-subtle flex items-center gap-1.5 px-1 text-xs"
+        >
+          <span
+            aria-hidden
+            className="bg-surface-2 flex h-4 items-center gap-0.5 rounded-full px-1.5"
+          >
+            {[0, 1, 2].map((dot) => (
+              <span
+                key={dot}
+                className="chat-typing-dot bg-text-subtle inline-block size-1 rounded-full"
+                style={{ animationDelay: `${dot * 150}ms` }}
+              />
+            ))}
+          </span>
           {typingNames.length === 1
             ? t('typing', { name: typingNames[0]! })
             : t('typingMany', { count: typingNames.length })}
@@ -832,7 +1056,7 @@ export function RoomView({
         </div>
       ) : null}
 
-      <form onSubmit={submit} className="flex items-end gap-1 sm:gap-2">
+      <form ref={composer} onSubmit={submit} className="flex items-end gap-1 sm:gap-2">
         <StickerPicker onPick={(id) => void send('sticker', id)} />
         <div className="relative flex-1">
           <textarea
@@ -1345,6 +1569,18 @@ function ReactionPills({
   onToggle: (emoji: string) => void
 }) {
   const chosen = Object.entries(reactions).filter(([, who]) => who.length > 0)
+  const counts = Object.fromEntries(chosen.map(([emoji, who]) => [emoji, who.length]))
+
+  // Compared during render, not in an effect: a remount by the virtualiser
+  // starts from what is there and pops nothing.
+  const [before, setBefore] = useState(counts)
+  const [pop, setPop] = useState<{ emoji: string; at: number } | null>(null)
+  if (JSON.stringify(counts) !== JSON.stringify(before)) {
+    setBefore(counts)
+    const grown = grownReaction(before, counts)
+    if (grown) setPop((was) => ({ emoji: grown, at: (was?.at ?? 0) + 1 }))
+  }
+
   if (chosen.length === 0) return null
 
   return (
@@ -1360,8 +1596,14 @@ function ReactionPills({
             who.includes(me) ? 'bg-accent/15 ring-accent/50 ring-1' : 'bg-text/10',
           )}
         >
-          <span className="text-sm leading-none">{emoji}</span>
-          <span className="tabular-nums">{who.length}</span>
+          <span
+            // A new key restarts the pop; the button keeps its own, so focus stays put.
+            key={pop?.emoji === emoji ? pop.at : 0}
+            className={cn('inline-block text-sm leading-none', pop?.emoji === emoji && 'daily-pop')}
+          >
+            {emoji}
+          </span>
+          {who.length > 1 ? <span className="tabular-nums">×{who.length}</span> : null}
         </button>
       ))}
     </span>
@@ -1393,7 +1635,18 @@ function readersOf(
 /** Nothing said out loud: the faces are the sentence. */
 const SEEN_SHOWN = 5
 
-function Seen({ readers, mine, label }: { readers: Speaker[]; mine: boolean; label: string }) {
+function Seen({
+  readers,
+  mine,
+  label,
+  moved,
+}: {
+  readers: Speaker[]
+  mine: boolean
+  label: string
+  /** Readers whose mark just arrived here, who slide down from the line above. */
+  moved: ReadonlySet<string>
+}) {
   if (readers.length === 0) return null
 
   return (
@@ -1406,7 +1659,7 @@ function Seen({ readers, mine, label }: { readers: Speaker[]; mine: boolean; lab
           key={who.id}
           name={who.name}
           src={who.imageUrl}
-          className="size-4 text-[8px]"
+          className={cn('size-4 text-[8px]', moved.has(who.id) && 'chat-seen-in')}
           /* Title rather than a tooltip of our own: it is a detail somebody
              goes looking for, and the browser already draws one. */
         />
@@ -1416,6 +1669,60 @@ function Seen({ readers, mine, label }: { readers: Speaker[]; mine: boolean; lab
           +{readers.length - SEEN_SHOWN}
         </span>
       ) : null}
+    </div>
+  )
+}
+
+/** How long the line stays once it has been on screen. */
+const DIVIDER_SEEN_MS = 3000
+
+/** "N new" across the transcript, fading once it has had time to be read. */
+function UnreadDivider({
+  label,
+  fading,
+  onSeen,
+  onFaded,
+}: {
+  label: string
+  fading: boolean
+  onSeen: () => void
+  onFaded: () => void
+}) {
+  const line = useRef<HTMLDivElement>(null)
+  const seen = useRef(onSeen)
+  useEffect(() => {
+    seen.current = onSeen
+  })
+
+  useEffect(() => {
+    const element = line.current
+    if (!element) return
+    let timer: ReturnType<typeof setTimeout> | null = null
+    const observer = new IntersectionObserver((entries) => {
+      if (timer || !entries.some((entry) => entry.isIntersecting)) return
+      timer = setTimeout(() => seen.current(), DIVIDER_SEEN_MS)
+    })
+    observer.observe(element)
+    return () => {
+      observer.disconnect()
+      if (timer) clearTimeout(timer)
+    }
+  }, [])
+
+  return (
+    <div
+      ref={line}
+      role="separator"
+      aria-label={label}
+      onTransitionEnd={fading ? onFaded : undefined}
+      className={cn(
+        'text-accent flex items-center gap-2 px-1 py-2 text-[11px] font-semibold transition-opacity duration-700',
+        fading && 'opacity-0',
+      )}
+    >
+      <span aria-hidden className="bg-accent/40 h-px flex-1" />
+      <span className="chat-rise inline-block">{label}</span>
+      <span aria-hidden className="bg-accent/40 h-px flex-1" />
     </div>
   )
 }

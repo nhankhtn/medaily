@@ -620,7 +620,8 @@
     "saved": "{metric} set to {value}",
     "searching": "Searching…",
     "inYourData": "In your notes and logs",
-    "nothingInData": "Nothing written about “{query}” yet"
+    "nothingInData": "Nothing written about “{query}” yet",
+    "noResultsHint": "Try a page name, a date like 2026-09-18, or a quick log such as “sleep 7.5”."
   },
   "auth": {
     "brand": "Personal OS",
@@ -1092,7 +1093,27 @@
     "copiedBudgets": "Copied {count} budgets",
     "previousMonth": "Previous month",
     "nextMonth": "Next month",
-    "filterOwing": "Still to transfer"
+    "filterOwing": "Still to transfer",
+    "emptyLedger": "No transactions yet — the wallet is hibernating 🐻‍❄️",
+    "emptyLedgerAction": "Add the first one",
+    "emptyFiltered": "Nothing matches. Loosen a filter or two?",
+    "dayIn": "In",
+    "dayOut": "Out",
+    "pendingSending": "Sending…",
+    "pendingQueued": "Waiting for signal",
+    "errors": {
+      "deleteFailed": "Couldn’t delete that. Check your connection and try again.",
+      "restoreFailed": "Couldn’t bring it back. Add it again if you still need it.",
+      "editRefused": "Your changes weren’t saved. Check the amount and the accounts, then try again.",
+      "editFailed": "Your changes weren’t saved. Check your connection and try again.",
+      "markFailed": "Couldn’t mark it as sent. Try again in a moment."
+    },
+    "hold": {
+      "hint": "Hold to confirm",
+      "holding": "Keep holding…",
+      "confirmAccount": "Delete the account “{name}”? This can’t be undone.",
+      "confirmCategory": "Delete the category “{name}”? This can’t be undone."
+    }
   },
   "journal": {
     "title": "Journal",
@@ -1784,7 +1805,13 @@
     "copy": "Copy",
     "copied": "Copied",
     "copyFailed": "Could not copy that",
-    "copyBlocked": "Copy this link by hand — the browser would not let the page reach the clipboard."
+    "copyBlocked": "Copy this link by hand — the browser would not let the page reach the clipboard.",
+    "unreadDivider": "{count, plural, one {# new message} other {# new messages}}",
+    "newBelow": "{count, plural, one {# new message} other {# new messages}}",
+    "notSent": "Not sent",
+    "retrySend": "Send again",
+    "failedEdit": "Edit",
+    "failedDrop": "Remove"
   },
   "activity": {
     "title": "What changed",

@@ -1,8 +1,10 @@
 import { Flame, Snowflake } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Badge } from '@/components/ui/badge'
+import { RollingNumber } from '@/components/ui/rolling-number'
 import type { DashboardStreak } from '@/server/services/dashboard'
 import { cn } from '@/lib/utils'
+import { GlowSurface } from './glow-surface'
 
 const LABEL_KEYS: Record<string, string> = {
   logging: 'logging',
@@ -23,16 +25,13 @@ export function StreakStrip({ streaks }: { streaks: DashboardStreak[] }) {
   return (
     <ul className="grid grid-cols-2 gap-2 px-4 pb-4 sm:grid-cols-4">
       {streaks.map((streak) => (
-        <li
-          key={streak.kind}
-          className="glass rounded-[var(--radius)] px-3 py-2"
-        >
+        <GlowSurface as="li" key={streak.kind} className="glass rounded-[var(--radius)] px-3 py-2">
           <p className="truncate text-xs text-text-muted">{t(LABEL_KEYS[streak.kind] ?? 'logging')}</p>
           <p className="mt-0.5 flex items-center gap-1.5">
             <Flame
               className={cn('size-4', streak.current > 0 ? 'text-warn' : 'text-text-subtle')}
             />
-            <span className="text-lg font-semibold tabular-nums">{streak.current}</span>
+            <RollingNumber value={String(streak.current)} className="text-lg font-semibold" />
             {streak.frozen ? (
               <span title={t('frozen')} aria-label={t('frozen')}>
                 <Snowflake className="size-3.5 text-accent" />
@@ -46,7 +45,7 @@ export function StreakStrip({ streaks }: { streaks: DashboardStreak[] }) {
                 ? t('pending')
                 : t('best', { count: streak.best })}
           </p>
-        </li>
+        </GlowSurface>
       ))}
     </ul>
   )

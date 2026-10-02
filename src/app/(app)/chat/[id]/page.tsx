@@ -11,7 +11,7 @@ import { RoomSearch } from '@/features/chat/room-search'
 import { RoomSettings } from '@/features/chat/room-settings'
 import { RoomView } from '@/features/chat/room-view'
 import { getCurrentUserId } from '@/lib/auth/current-user'
-import { chatEnabled } from '@/lib/chat/provider'
+import { chatEnabled, pickChatStore } from '@/lib/chat/provider'
 import { PATHS } from '@/lib/paths'
 import { loadRoom } from '@/server/actions/chat'
 
@@ -19,10 +19,16 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
   if (!chatEnabled()) notFound()
 
   const { id } = await params
-  const [t, userId, loaded] = await Promise.all([
+  const [t, userId, loaded, seat] = await Promise.all([
     getTranslations('chat'),
     getCurrentUserId(),
     loadRoom(id),
+    // My own seat, read before the room marks itself read, so "N new" knows
+    // where I left off.
+    getCurrentUserId()
+      .then((me) => pickChatStore().findMember(id, me))
+      // A malformed id is `loadRoom`'s to turn into a 404, not this read's to throw on.
+      .catch(() => null),
   ])
   // Somebody who is not in the room is told the room is not there, rather than
   // that it exists and is none of their business.
@@ -114,6 +120,7 @@ export default async function RoomPage({ params }: { params: Promise<{ id: strin
           initialPage={loaded.page}
           initialSpeakers={loaded.speakers}
           initialReads={loaded.reads}
+          myRead={seat?.lastReadMessageId ?? null}
         />
       </Card>
 

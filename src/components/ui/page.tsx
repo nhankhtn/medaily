@@ -22,25 +22,37 @@ export function PageHeader({
   )
 }
 
-/** One sentence on why the module matters, and exactly one primary action. */
+/**
+ * One sentence on why the module matters, and exactly one primary action.
+ * `illustration` is decoration (an emoji or small svg) and is hidden from screen readers.
+ */
 export function EmptyState({
   title,
   body,
   action,
+  illustration,
   className,
 }: {
   title: string
   body?: string
   action?: React.ReactNode
+  illustration?: React.ReactNode
   className?: string
 }) {
   return (
     <div
       className={cn(
-        'glass border-border-strong rounded-[var(--radius)] border-dashed p-6 text-center',
+        'glass border-border-strong ui-rise rounded-[var(--radius)] border-dashed p-6 text-center',
         className,
       )}
     >
+      {illustration ? (
+        <div aria-hidden className="mb-3">
+          <span className="ui-float inline-block text-4xl leading-none select-none">
+            {illustration}
+          </span>
+        </div>
+      ) : null}
       <p className="font-medium">{title}</p>
       {body ? <p className="text-text-subtle mx-auto mt-1 max-w-prose text-sm">{body}</p> : null}
       {action ? <div className="mt-4 flex justify-center">{action}</div> : null}

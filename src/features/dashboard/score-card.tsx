@@ -1,4 +1,5 @@
 import { Card } from '@/components/ui/card'
+import { RollingNumber } from '@/components/ui/rolling-number'
 import type { DayScore, PeriodScore } from '@/lib/scoring'
 import { getTranslations } from 'next-intl/server'
 
@@ -22,7 +23,11 @@ export async function ScoreCard({
         <div className="flex-1 px-4 py-3">
           <p className="text-text-muted text-xs">{t('dayScore')}</p>
           <p className="text-3xl font-semibold tabular-nums">
-            {day === null ? <span className="text-text-subtle">—</span> : Math.round(day)}
+            {day === null ? (
+              <span className="text-text-subtle">—</span>
+            ) : (
+              <RollingNumber value={String(Math.round(day))} />
+            )}
           </p>
           {dayScore && dayScore.componentsUsed > 0 ? (
             <p className="text-text-subtle mt-0.5 text-xs">
@@ -40,7 +45,7 @@ export async function ScoreCard({
             {weekScore.score === null ? (
               <span className="text-text-subtle text-base font-normal">{t('notEnoughData')}</span>
             ) : (
-              Math.round(weekScore.score)
+              <RollingNumber value={String(Math.round(weekScore.score))} />
             )}
           </p>
           <p className="text-text-subtle mt-0.5 text-xs">

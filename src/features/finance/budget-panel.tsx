@@ -8,16 +8,29 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardBody, CardHeader } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
+import { RollingNumber } from '@/components/ui/rolling-number'
 import { addMonthsISO, fromISODate, type ISODate } from '@/lib/dates'
 import { formatMoney } from '@/lib/format/money'
 import { PATHS } from '@/lib/paths'
 import { copyLastMonthBudgets } from '@/server/actions/finance'
 import type { BudgetMonth } from '@/server/services/budgets'
 import { BudgetDialog, BudgetEditDialog } from './finance-dialogs'
+import { slot, splitSlots } from './ledger-days'
 import type { FinanceData } from '@/server/services/finance'
 
 /** `2026-09-01` as the address wants it. */
 const monthParam = (date: ISODate) => date.slice(0, 7)
+
+/** A translated sentence with its amounts rolling; ICU only takes strings, so slots stand in for them. */
+function rolled(text: string, amounts: string[]) {
+  return splitSlots(text).map((part, index) =>
+    typeof part === 'number' ? (
+      <RollingNumber key={index} value={amounts[part] ?? ''} />
+    ) : (
+      <span key={index}>{part}</span>
+    ),
+  )
+}
 
 export function BudgetPanel({
   month,
@@ -102,7 +115,10 @@ export function BudgetPanel({
               <div className="flex items-baseline justify-between gap-2">
                 <span className="text-sm font-medium">{t('budgetTotal')}</span>
                 <span className="text-text-muted shrink-0 text-xs tabular-nums">
-                  {t('budgetOf', { spent: money(spent), amount: money(budgeted) })}
+                  {rolled(t('budgetOf', { spent: slot(0), amount: slot(1) }), [
+                    money(spent),
+                    money(budgeted),
+                  ])}
                 </span>
               </div>
               <Progress
@@ -112,8 +128,8 @@ export function BudgetPanel({
               />
               <p className={over ? 'text-bad text-xs' : 'text-text-subtle text-xs'}>
                 {over
-                  ? t('overBudget', { amount: money(spent - budgeted) })
-                  : t('remaining', { amount: money(budgeted - spent) })}
+                  ? rolled(t('overBudget', { amount: slot(0) }), [money(spent - budgeted)])
+                  : rolled(t('remaining', { amount: slot(0) }), [money(budgeted - spent)])}
               </p>
             </div>
 
@@ -128,7 +144,10 @@ export function BudgetPanel({
                     <div className="flex items-baseline justify-between gap-2">
                       <BudgetEditDialog budget={budget} />
                       <span className="text-text-muted shrink-0 text-xs tabular-nums">
-                        {t('budgetOf', { spent: money(budget.spent), amount: money(amount) })}
+                        {rolled(t('budgetOf', { spent: slot(0), amount: slot(1) }), [
+                          money(budget.spent),
+                          money(amount),
+                        ])}
                       </span>
                     </div>
                     <Progress
@@ -138,8 +157,12 @@ export function BudgetPanel({
                     />
                     <p className={lineOver ? 'text-bad text-xs' : 'text-text-subtle text-xs'}>
                       {lineOver
-                        ? t('overBudget', { amount: money(budget.spent - amount) })
-                        : t('remaining', { amount: money(amount - budget.spent) })}
+                        ? rolled(t('overBudget', { amount: slot(0) }), [
+                            money(budget.spent - amount),
+                          ])
+                        : rolled(t('remaining', { amount: slot(0) }), [
+                            money(amount - budget.spent),
+                          ])}
                     </p>
                   </li>
                 )

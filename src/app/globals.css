@@ -1405,3 +1405,404 @@ input[type='number'] {
 .daily-mood[data-mood='cool'] {
   --mood-tint: var(--accent);
 }
+
+/*
+ * Finance motion — decorative, so reduced motion loses nothing. Fills are
+ * `backwards` or `forwards`, never `both`, and no class here sets `display`.
+ */
+
+/* A saved row arriving where its pending copy sat. */
+@keyframes fin-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+.fin-arrive {
+  animation: fin-arrive 0.35s var(--ease-out-soft) backwards;
+}
+
+/* The tint fades on a pseudo-element, so only opacity animates. Needs `relative isolate` at the call site. */
+@keyframes fin-flash {
+  from {
+    opacity: 1;
+  }
+}
+
+.fin-flash::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  pointer-events: none;
+  opacity: 0;
+  animation: fin-flash 1.6s var(--ease-out-soft) 0.2s backwards;
+}
+
+/* A deleted row folding shut; `grid` goes on at the call site. */
+@keyframes fin-collapse {
+  from {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+}
+
+.fin-collapse {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  animation: fin-collapse 0.24s var(--ease-out-soft) backwards;
+}
+
+.fin-collapse > * {
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* The pinned day header changing to the next day. */
+@keyframes fin-day-swap {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.fin-day-swap {
+  animation: fin-day-swap 0.2s var(--ease-out-soft) backwards;
+}
+
+/* Hold to confirm: the pill fills from the left while it is held. */
+@keyframes fin-hold {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.fin-hold-fill {
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0.22;
+  pointer-events: none;
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+[data-holding='true'] > .fin-hold-fill {
+  animation: fin-hold var(--hold-ms, 1200ms) linear forwards;
+}
+
+/*
+ * Chat motion (more) — decorative only, so reduced motion loses nothing. Fills
+ * are `backwards`/`forwards`, never `both`, and no `display` in here: the call
+ * site says `inline-block` where it needs one.
+ */
+@keyframes chat-fly {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.94);
+  }
+}
+
+/* My message leaving the composer for its place at the bottom. */
+.chat-fly {
+  animation: chat-fly 0.32s var(--ease-out-soft) backwards;
+  transform-origin: bottom right;
+}
+
+@keyframes chat-settle {
+  from {
+    opacity: 0.6;
+  }
+}
+
+/* The server said yes: dimmed to solid, rather than a snap. */
+.chat-settle {
+  animation: chat-settle 0.3s var(--ease-out-soft) backwards;
+}
+
+@keyframes chat-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.chat-rise {
+  animation: chat-rise 0.22s var(--ease-out-soft) backwards;
+}
+
+@keyframes chat-seen-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+/* A read mark arriving from the line above. */
+.chat-seen-in {
+  animation: chat-seen-in 0.35s var(--ease-spring) backwards;
+}
+
+@keyframes chat-typing-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.4;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+.chat-typing-dot {
+  animation: chat-typing-dot 1s ease-in-out infinite;
+}
+
+@keyframes chat-balloon {
+  from {
+    opacity: 0;
+    transform: translate(0, 0) rotate(-6deg);
+  }
+  10% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.9;
+    transform: translate(var(--sway, 0px), -115vh) rotate(6deg);
+  }
+}
+
+.chat-balloon {
+  position: fixed;
+  bottom: -64px;
+  z-index: 60;
+  font-size: 2.25rem;
+  line-height: 1;
+  pointer-events: none;
+  animation: chat-balloon 3.6s cubic-bezier(0.3, 0.1, 0.5, 1) forwards;
+}
+
+/*
+ * Shell motion — decorative, transform/opacity only. Fills are `backwards` or
+ * `forwards`, never `both`, and nothing here sets `display`: an unlayered rule
+ * would beat the Tailwind utility at the call site.
+ */
+@keyframes ui-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.ui-rise {
+  animation: ui-rise 0.36s var(--ease-out-soft) backwards;
+  animation-delay: calc(var(--i, 0) * 30ms);
+}
+
+@keyframes ui-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-5px) rotate(-3deg);
+  }
+}
+
+.ui-float {
+  animation: ui-float 3.6s ease-in-out infinite;
+}
+
+@keyframes ui-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes ui-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+.ui-fade-in {
+  animation: ui-fade-in 0.18s ease-out backwards;
+}
+
+.ui-fade-out {
+  animation: ui-fade-out 0.15s ease-in forwards;
+}
+
+/* Command palette: the panel grows from just above where it settles. */
+@keyframes ui-palette-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+}
+
+@keyframes ui-palette-out {
+  to {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+
+.ui-palette-in {
+  animation: ui-palette-in 0.22s var(--ease-out-soft) backwards;
+}
+
+.ui-palette-out {
+  animation: ui-palette-out 0.15s ease-in forwards;
+}
+
+.ui-palette-highlight[data-ready] {
+  transition:
+    transform 0.2s var(--ease-out-soft),
+    opacity 0.15s ease;
+}
+
+/* Loading placeholders: a diagonal band of light sweeping across the fill. */
+@keyframes ui-shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.ui-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 25%,
+    var(--inset-hover) 50%,
+    transparent 75%
+  );
+  transform: translateX(-100%);
+  animation: ui-shimmer 1.6s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * 90ms);
+}
+
+/* Stat tiles: a soft light under the mouse. Touch never hovers, so it never shows there. */
+.ui-glow::before {
+  content: '';
+  position: absolute;
+  top: -6rem;
+  left: -6rem;
+  z-index: -1;
+  width: 12rem;
+  height: 12rem;
+  border-radius: 9999px;
+  pointer-events: none;
+  background: radial-gradient(closest-side, var(--inset-hover), transparent);
+  opacity: 0;
+  transform: translate(var(--glow-x, -100vw), var(--glow-y, 0));
+  transition: opacity 0.3s ease;
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .ui-glow:hover::before {
+    opacity: 1;
+  }
+}
+
+/*
+ * The global reduced-motion rule shortens durations, which turns an infinite
+ * loop into a flicker. Loops stop outright instead.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .ui-float,
+  .ui-shimmer::after {
+    animation: none;
+  }
+
+  .ui-shimmer::after {
+    opacity: 0;
+  }
+}
+
+/* Theme switch: the new palette grows out of the toggle (theme-toggle.tsx sets the vars). */
+@keyframes ui-theme-reveal {
+  from {
+    clip-path: circle(0 at var(--ui-reveal-x, 50%) var(--ui-reveal-y, 0));
+  }
+  to {
+    clip-path: circle(var(--ui-reveal-r, 150vmax) at var(--ui-reveal-x, 50%) var(--ui-reveal-y, 0));
+  }
+}
+
+html.ui-theme-reveal::view-transition-old(root),
+html.ui-theme-reveal::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+html.ui-theme-reveal::view-transition-new(root) {
+  animation: ui-theme-reveal 0.55s var(--ease-out-soft);
+}
+
+/*
+ * Toasts as glass. Sonner injects its stylesheet at runtime, so these carry
+ * one extra `:root` of specificity rather than depending on source order.
+ */
+:root [data-sonner-toaster][data-sonner-theme] {
+  --border-radius: var(--radius);
+  --normal-bg: var(--surface-solid);
+  --normal-bg-hover: var(--inset-hover);
+  --normal-border: var(--border-strong);
+  --normal-border-hover: var(--border-strong);
+  --normal-text: var(--text);
+  --success-bg: color-mix(in oklch, var(--good) 14%, var(--surface-solid));
+  --success-border: color-mix(in oklch, var(--good) 40%, var(--border));
+  --success-text: color-mix(in oklch, var(--good) 55%, var(--text));
+  --info-bg: color-mix(in oklch, var(--accent) 12%, var(--surface-solid));
+  --info-border: color-mix(in oklch, var(--accent) 40%, var(--border));
+  --info-text: color-mix(in oklch, var(--accent) 55%, var(--text));
+  --warning-bg: color-mix(in oklch, var(--warn) 16%, var(--surface-solid));
+  --warning-border: color-mix(in oklch, var(--warn) 45%, var(--border));
+  --warning-text: color-mix(in oklch, var(--warn) 55%, var(--text));
+  --error-bg: color-mix(in oklch, var(--bad) 14%, var(--surface-solid));
+  --error-border: color-mix(in oklch, var(--bad) 40%, var(--border));
+  --error-text: color-mix(in oklch, var(--bad) 55%, var(--text));
+}
+
+@keyframes ui-toast-in {
+  from {
+    scale: 0.92;
+  }
+}
+
+:root [data-sonner-toast][data-styled='true'] {
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  box-shadow: var(--shadow-card);
+}
+
+/* `scale`, not `transform`: Sonner drives `transform` itself, and owns `animation` once swiped. */
+:root [data-sonner-toast][data-styled='true'][data-swipe-out='false'] {
+  animation: ui-toast-in 0.45s var(--ease-spring);
+}
+
+/* Sonner hardcodes a dark grey here, which disappears on the dark palette. */
+:root [data-sonner-toast][data-styled='true'] [data-description] {
+  color: var(--text-muted);
+}
+
+:root [data-sonner-toast][data-styled='true']:focus-visible {
+  box-shadow:
+    var(--shadow-card),
+    0 0 0 2px var(--accent);
+}

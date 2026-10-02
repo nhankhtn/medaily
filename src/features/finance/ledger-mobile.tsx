@@ -1,6 +1,6 @@
 'use client'
 
-import { FilterX, SlidersHorizontal } from 'lucide-react'
+import { FilterX, Plus, SlidersHorizontal } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -8,7 +8,7 @@ import { Card, CardBody, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import type { FinanceData } from '@/server/services/finance'
-import { TransactionForm } from './transaction-form'
+import { focusAmount, TransactionForm } from './transaction-form'
 import { TransactionList } from './transaction-list'
 import { useTransactionFeed } from './use-transaction-feed'
 
@@ -191,7 +191,21 @@ export function LedgerMobile({ data }: { data: FinanceData }) {
               accounts={names}
               people={data.people}
               currency={data.currency}
-              emptyLabel={filtering ? t('noMatchingTransactions') : t('noTransactions')}
+              emptyLabel={filtering ? t('emptyFiltered') : t('emptyLedger')}
+              emptyAction={
+                filtering ? (
+                  <Button type="button" variant="outline" onClick={clearFilters}>
+                    <FilterX className="size-4" />
+                    {t('clearFilters')}
+                  </Button>
+                ) : (
+                  <Button type="button" onClick={focusAmount}>
+                    <Plus className="size-4" />
+                    {t('emptyLedgerAction')}
+                  </Button>
+                )
+              }
+              today={data.today}
               loadingMore={rows.loadingMore}
               hasMore={rows.hasMore}
               onLoadMore={rows.loadMore}

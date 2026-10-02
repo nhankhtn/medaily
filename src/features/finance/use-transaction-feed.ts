@@ -188,6 +188,7 @@ export function useTransactionFeed({
     categoryId: entry.categoryId,
     personId: entry.personId,
     merchant: entry.merchant,
+    queued: true,
   }))
 
   const queuedKeys = new Set(queuedRows.map((row) => row.key))

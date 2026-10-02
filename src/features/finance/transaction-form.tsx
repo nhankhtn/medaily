@@ -1,23 +1,37 @@
 'use client'
 
-import { Plus, Send } from 'lucide-react'
+import { Check, Plus, Send } from 'lucide-react'
 import type { AccountType } from '@/lib/finance/account-types'
 import { useLocale, useTranslations } from 'next-intl'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { MoneyInput } from '@/components/ui/money-input'
 import { Select } from '@/components/ui/select'
+import { haptic, rippleFrom } from '@/features/daily/celebrate'
 import type { FinanceCategory } from '@/lib/db/schema'
 import type { ISODate } from '@/lib/dates'
 import { randomUuid } from '@/lib/uuid'
 import { canReceive, type Payee } from '@/lib/finance/payee'
 import { transferNote } from '@/lib/finance/vietqr'
+import { cn } from '@/lib/utils'
 import { createTransaction, markTransactionTransferred } from '@/server/actions/finance'
 import { TransferDialog } from './transfer-dialog'
 import { queuePendingTransaction } from './pending-transactions'
 import type { PendingTransaction } from './pending'
+
+/** The amount field, for the empty ledger's "add the first one" to focus. */
+export const AMOUNT_FIELD_ID = 'transaction-amount'
+const SAVED_MS = 1400
+
+/** The empty ledger's one action: the form is already on the page, so go to it. */
+export function focusAmount() {
+  const field = document.getElementById(AMOUNT_FIELD_ID)
+  if (!field) return
+  field.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  field.focus({ preventScroll: true })
+}
 
 /**
  * One row that covers income, expense and transfer. The category field swaps
@@ -45,6 +59,15 @@ export function TransactionForm({
   const [kind, setKind] = useState<'income' | 'expense' | 'transfer'>('expense')
   const formRef = useRef<HTMLFormElement>(null)
   const payeeRef = useRef<HTMLInputElement>(null)
+  const submitRef = useRef<HTMLButtonElement>(null)
+  /** Bumped per save; keys the button's inner span so the tick replays without remounting the button. */
+  const [savedTick, setSavedTick] = useState(0)
+  const [justSaved, setJustSaved] = useState(false)
+  useEffect(() => {
+    if (!justSaved) return
+    const timer = window.setTimeout(() => setJustSaved(false), SAVED_MS)
+    return () => window.clearTimeout(timer)
+  }, [justSaved, savedTick])
 
   const [transferOpen, setTransferOpen] = useState(false)
   /**
@@ -133,6 +156,10 @@ export function TransactionForm({
           return false
         }
         toast.success(t('saved'))
+        setSavedTick((tick) => tick + 1)
+        setJustSaved(true)
+        if (submitRef.current) rippleFrom(submitRef.current)
+        haptic()
         return true
       } catch (error) {
         // The action throws when it cannot reach the server. That one is worth
@@ -240,7 +267,12 @@ export function TransactionForm({
 
         <label className="space-y-1.5 lg:w-28 lg:shrink-0">
           <span className="text-text-muted text-xs font-medium">{t('amount')}</span>
-          <MoneyInput name="amount" required className="text-right tabular-nums" />
+          <MoneyInput
+            id={AMOUNT_FIELD_ID}
+            name="amount"
+            required
+            className="text-right tabular-nums"
+          />
         </label>
 
         <label className="space-y-1.5 lg:w-28 lg:shrink-0">
@@ -310,9 +342,14 @@ export function TransactionForm({
         <input type="hidden" name="payeePersonId" ref={payeeRef} defaultValue="" />
 
         <div className="col-span-2 flex w-full gap-2 lg:col-auto lg:w-auto lg:shrink-0">
-          <Button type="submit" className="flex-1 lg:flex-none">
-            <Plus className="size-4" />
-            {t('addTransaction')}
+          <Button ref={submitRef} type="submit" className="flex-1 lg:flex-none">
+            <span
+              key={savedTick}
+              className={cn('inline-flex items-center gap-2', savedTick > 0 && 'daily-save-done')}
+            >
+              {justSaved ? <Check className="daily-pop size-4" /> : <Plus className="size-4" />}
+              {t('addTransaction')}
+            </span>
           </Button>
           {/* A transfer is between your own accounts; there is nobody to send to. */}
           {kind === 'transfer' || !reachable ? null : (

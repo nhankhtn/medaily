@@ -1,5 +1,7 @@
 import { ArrowDown, ArrowUp, Minus } from 'lucide-react'
+import { RollingNumber } from '@/components/ui/rolling-number'
 import { cn } from '@/lib/utils'
+import { GlowSurface } from './glow-surface'
 
 /**
  * A number with its unit and, when a comparison exists, a delta chip. A tile
@@ -34,7 +36,7 @@ export function StatTile({
   const Icon = tone === 'flat' ? Minus : delta && delta > 0 ? ArrowUp : ArrowDown
 
   return (
-    <div className="glass rounded-[var(--radius)] px-3 py-2.5">
+    <GlowSurface className="glass rounded-[var(--radius)] px-3 py-2.5">
       <p className="truncate text-xs text-text-muted">{label}</p>
       <p className="mt-0.5 flex items-baseline gap-1">
         <span
@@ -43,7 +45,7 @@ export function StatTile({
             hasValue ? 'text-text' : 'text-text-subtle',
           )}
         >
-          {hasValue ? formatNumber(value) : '—'}
+          {hasValue ? <RollingNumber value={formatNumber(value)} /> : '—'}
         </span>
         {hasValue && unit ? <span className="text-xs text-text-subtle">{unit}</span> : null}
       </p>
@@ -61,7 +63,7 @@ export function StatTile({
       ) : !hasValue ? (
         <p className="mt-1 text-xs text-text-subtle">{emptyLabel}</p>
       ) : null}
-    </div>
+    </GlowSurface>
   )
 }
 

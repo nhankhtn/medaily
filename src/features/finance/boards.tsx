@@ -3,6 +3,7 @@
 import { useLocale, useTranslations } from 'next-intl'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardBody, CardHeader } from '@/components/ui/card'
+import { RollingNumber } from '@/components/ui/rolling-number'
 import { formatMoney } from '@/lib/format/money'
 import type { FinanceData } from '@/server/services/finance'
 import { AccountIcon } from './account-icon'
@@ -92,9 +93,10 @@ export function AccountsBoard({ data }: BoardProps) {
                   ) : (
                     <span className="min-w-0 flex-1 truncate text-sm">{balance.name}</span>
                   )}
-                  <span className="shrink-0 text-sm font-medium tabular-nums">
-                    {formatMoney(balance.balance, balance.currency, locale)}
-                  </span>
+                  <RollingNumber
+                    value={formatMoney(balance.balance, balance.currency, locale)}
+                    className="shrink-0 text-sm font-medium"
+                  />
                 </li>
               )
             })}
