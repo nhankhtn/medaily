@@ -1,4 +1,4 @@
-import { and, asc, between, desc, eq, gte, isNotNull, isNull, lt, lte, or, sql } from 'drizzle-orm'
+import { and, asc, between, desc, eq, gte, inArray, isNotNull, isNull, lt, lte, or, sql } from 'drizzle-orm'
 import { db, type DbOrTx } from '@/lib/db'
 import { escapeLike } from '@/lib/text'
 import {
@@ -511,6 +511,29 @@ export async function insertTransactions(
  * One row by id, scoped to its owner. Read before an edit overwrites it, so
  * the trail can say what the amount used to be.
  */
+/**
+ * Of these people, the ones with any transaction dated this day.
+ *
+ * Dated, not entered: a purchase from last week typed in tonight is about last
+ * week. One query for the whole list, on `idx_transactions_user_date`.
+ */
+export async function findUserIdsWithTransactionOn(
+  filter: { userIds: string[]; occurredOn: ISODate },
+  tx: DbOrTx = db,
+): Promise<string[]> {
+  if (filter.userIds.length === 0) return []
+  const rows = await tx
+    .selectDistinct({ userId: transactions.userId })
+    .from(transactions)
+    .where(
+      and(
+        inArray(transactions.userId, filter.userIds),
+        eq(transactions.occurredOn, filter.occurredOn),
+      ),
+    )
+  return rows.map((row) => row.userId)
+}
+
 export async function findTransaction(userId: string, id: string): Promise<Transaction | null> {
   const rows = await db
     .select()

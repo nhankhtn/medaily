@@ -501,7 +501,7 @@
     },
     "notifications": {
       "title": "Thông báo",
-      "help": "Nhận thông báo trên thiết bị này khi có người nhắn cho bạn. Mỗi thiết bị phải bật riêng.",
+      "help": "Nhận thông báo trên thiết bị này khi có người nhắn cho bạn, và lúc 8 giờ tối nếu hôm đó bạn chưa ghi gì. Mỗi thiết bị phải bật riêng.",
       "turnOn": "Bật cho thiết bị này",
       "turnOff": "Tắt cho thiết bị này",
       "on": "Đã bật thông báo cho thiết bị này",
@@ -1867,5 +1867,9 @@
         "delete": "Xoá phòng"
       }
     }
+  },
+  "logReminder": {
+    "title": "Hôm nay chưa ghi gì",
+    "body": "Bạn chưa ghi nhật ký hay khoản thu chi nào. Ghi nhanh một phút trước khi quên nhé."
   }
 }

@@ -1,8 +1,7 @@
-import { timingSafeEqual } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { formatBytes } from '@/lib/alerts/report'
-import { env } from '@/lib/env'
 import { log } from '@/lib/log'
+import { refuseUnlessCron } from '@/server/cron-auth'
 import { findAllUserIds } from '@/server/repositories/auth'
 import { environmentName, sendJobReport } from '@/server/services/alerts'
 import { rolloverBudgets } from '@/server/services/budget-rollover'
@@ -35,7 +34,7 @@ export async function GET(request: Request) {
   // Returned, not merely called. This route is in `PUBLIC_PATHS` — it never
   // meets the session gate — so this line is the only thing standing between
   // the open internet and a run that deletes images for every account.
-  const refused = await validateCronSecret(request)
+  const refused = await refuseUnlessCron(request, 'nightly')
   if (refused) return refused
 
   const startedAt = Date.now()
@@ -94,33 +93,6 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({ budgets, images, realtime, accounts: userIds.length })
-}
-
-/** Answers with the refusal to send back, or nothing when the caller is allowed. */
-const validateCronSecret = async (request: Request): Promise<NextResponse | null> => {
-  const userAgent = request.headers.get('user-agent') ?? ''
-  const caller = userAgent.startsWith('vercel-cron') ? 'the scheduler' : 'an unknown caller'
-  const secret = env.CRON_SECRET
-  if (!secret) {
-    await log.error('cron', 'the nightly run cannot start: CRON_SECRET is not set', { userAgent })
-    return NextResponse.json({ error: 'not configured' }, { status: 503 })
-  }
-  if (!sameSecret(request.headers.get('authorization'), `Bearer ${secret}`)) {
-    await log.error('cron', `the nightly run refused ${caller}: wrong or missing secret`, {
-      userAgent,
-    })
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  }
-
-  return null
-}
-
-/** Constant-time, so the response time says nothing about how much of the secret matched. */
-function sameSecret(given: string | null, expected: string): boolean {
-  if (given === null) return false
-  const a = Buffer.from(given)
-  const b = Buffer.from(expected)
-  return a.length === b.length && timingSafeEqual(a, b)
 }
 
 const handleSweepNoteImages = async (userIds: string[]) => {

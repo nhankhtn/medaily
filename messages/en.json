@@ -501,7 +501,7 @@
     },
     "notifications": {
       "title": "Notifications",
-      "help": "Get a notification on this device when somebody sends you a message. Each device is asked separately.",
+      "help": "Get a notification on this device when somebody sends you a message, and at 8 in the evening if the day has nothing logged yet. Each device is asked separately.",
       "turnOn": "Turn on for this device",
       "turnOff": "Turn off for this device",
       "on": "Notifications are on for this device",
@@ -1867,5 +1867,9 @@
         "delete": "Deleted a room"
       }
     }
+  },
+  "logReminder": {
+    "title": "Nothing logged today",
+    "body": "No daily log and no money in or out yet. A minute now, before the day slips away."
   }
 }

@@ -114,6 +114,7 @@ export const PATHS = {
   api: {
     health: '/api/health',
     cronNightly: '/api/cron/nightly',
+    cronReminders: '/api/cron/reminders',
     googleAuth: '/api/auth/google',
     calendarIcs: '/api/calendar.ics',
     exportJson: '/api/export?format=json',
@@ -184,6 +185,8 @@ export const PUBLIC_PATHS = [
   // Not public in the ordinary sense: it carries no session because the
   // scheduler has none, and checks a shared secret of its own instead.
   PATHS.api.cronNightly,
+  // Same reason as the nightly run, and the same secret.
+  PATHS.api.cronReminders,
   PATHS.api.googleAuth,
   PATHS.manifest,
   PATHS.robots,

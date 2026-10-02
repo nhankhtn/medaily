@@ -6,6 +6,15 @@ Dates are the day the document was written, not the day the code shipped. A
 line here is the cheapest way to know whether what you are reading is older
 than the code.
 
+## 2026-10-02
+
+**Added**
+
+- [features.md](features.md): the **evening reminder**. A second cron at
+  20:00 Vietnam time notifies everybody with notifications on whose day has
+  neither a daily log nor a transaction dated on it, in their own language,
+  with one tag so a later reminder replaces the earlier one.
+
 ## 2026-10-01
 
 **Audited against the code**

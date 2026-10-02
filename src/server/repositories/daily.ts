@@ -1,4 +1,4 @@
-import { and, asc, between, desc, eq, gte, isNotNull, sql } from 'drizzle-orm'
+import { and, asc, between, desc, eq, gte, inArray, isNotNull, sql } from 'drizzle-orm'
 import { db, type DbOrTx } from '@/lib/db'
 import { dailyEffective, dailyLogs } from '@/lib/db/schema'
 import type { DailyLog } from '@/lib/db/schema'
@@ -95,6 +95,25 @@ export async function findEffectiveRange(
     )
     .orderBy(asc(dailyEffective.logDate))
   return rows.map(toEffective)
+}
+
+/**
+ * Of these people, the ones who have a log for this day.
+ *
+ * One query for the whole list rather than one per person: the evening
+ * reminder asks it about everybody at once. A row exists only once something
+ * was saved, so its presence is the whole answer.
+ */
+export async function findUserIdsWithLogOn(
+  filter: { userIds: string[]; date: ISODate },
+  tx: DbOrTx = db,
+): Promise<string[]> {
+  if (filter.userIds.length === 0) return []
+  const rows = await tx
+    .selectDistinct({ userId: dailyLogs.userId })
+    .from(dailyLogs)
+    .where(and(inArray(dailyLogs.userId, filter.userIds), eq(dailyLogs.logDate, filter.date)))
+  return rows.map((row) => row.userId)
 }
 
 export async function findRecentLogDates(userId: string, limit = 30): Promise<ISODate[]> {

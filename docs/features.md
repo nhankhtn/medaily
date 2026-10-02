@@ -1033,6 +1033,30 @@ channel carries the failures.
 
 ---
 
+## Evening reminder — `/api/cron/reminders`
+
+A second schedule, at 13:00 UTC — 8 in the evening in Vietnam. Hobby cron
+fires anywhere inside the hour, so it lands between 20:00 and 20:59. Same
+secret, same 503 and 401 as the overnight run.
+
+It sends one notification, **Nothing logged today**, to everybody whose day is
+still blank: no daily log for it **and** no transaction dated on it. Either
+one is enough to be left alone. Tapping the notification opens the daily log.
+
+- Only devices with notifications turned on in **Settings → Notifications**
+  are reached; there is no separate switch. Turning a device off turns this
+  off for it too
+- "Today" is each person's own, from their timezone and day rollover hour. At
+  20:00 somebody whose day turns over at 22:00 is still on yesterday, and is
+  asked about yesterday
+- A transaction counts by the date it is filed under, not when it was typed:
+  last week's coffee entered tonight does not count for today
+- Every reminder carries the same tag, so a second one — a retried run, or
+  tomorrow's — replaces the one still on the lock screen instead of stacking
+- The words follow the person's language setting
+
+---
+
 ## Optional services
 
 Everything below is off unless configured, and the UI mostly hides rather than
