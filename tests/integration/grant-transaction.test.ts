@@ -4,6 +4,7 @@ import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import * as schema from '@/lib/db/schema'
+import { transferReference } from '@/lib/finance/vietqr'
 
 // Nothing to notify in a test database, and a push attempt would be a network
 // call in the middle of an assertion about a row.
@@ -167,6 +168,22 @@ describeDb('filing a transaction through a grant', () => {
     })
 
     expect((await file({ occurredOn: day })).ok).toBe(true)
+  })
+
+  /**
+   * The notification is about one expense; landing on a month of them is
+   * landing nowhere. The link carries the same six characters a transfer note
+   * does, which the ledger search already matches against the start of an id.
+   */
+  it('points the notification at the row it just wrote', async () => {
+    const { notify } = await import('@/server/services/push')
+    const result = await file({ occurredOn: '2026-10-23' })
+    expect(result.ok).toBe(true)
+
+    const [, payload] = vi.mocked(notify).mock.calls.at(-1) ?? []
+    const reference = result.ok ? transferReference(result.id) : ''
+    expect(payload?.url).toBe(`/finance?q=${reference}`)
+    expect(reference, 'six characters, as a transfer note carries').toHaveLength(6)
   })
 
   it('takes a category by name', async () => {

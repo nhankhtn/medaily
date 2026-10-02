@@ -1,6 +1,7 @@
 import type { GrantClaims } from '@/lib/auth/grant'
 import type { ISODate } from '@/lib/dates'
 import { log } from '@/lib/log'
+import { transferReference } from '@/lib/finance/vietqr'
 import { PATHS } from '@/lib/paths'
 import { findCategories, findExpenseOn, insertTransaction } from '@/server/repositories/finance'
 import { findPerson } from '@/server/repositories/people'
@@ -114,7 +115,9 @@ async function announce(
     await notify([grant.ownerUserId], {
       title: `${who} vừa ghi một khoản chi`,
       body: `${request.amount.toLocaleString('vi-VN')}₫${request.merchant ? ` · ${request.merchant}` : ''}`,
-      url: PATHS.finance,
+      // Straight to the row, not just the ledger: the notification is about
+      // one expense, and arriving at a month of them is arriving nowhere.
+      url: PATHS.financeSearch(transferReference(id)),
       tag: `grant:${id}`,
     })
   } catch (error) {

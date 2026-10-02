@@ -37,6 +37,13 @@ export const PATHS = {
   health: '/health',
   finance: '/finance',
   /**
+   * The ledger with the search box already filled in. The six characters are
+   * the same reference a transfer note carries, which the ledger search
+   * already matches against the start of an id — so one convention, whether it
+   * came back from a bank statement or from a notification.
+   */
+  financeSearch: (query: string) => `/finance?q=${encodeURIComponent(query)}`,
+  /**
    * The finance page on one of its tabs; `overview` is the plain address. The
    * report carries the stretch it is reporting on — `2026-09` or `2026` — so
    * a period can be linked to and the back button returns to the last one.

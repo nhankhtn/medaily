@@ -78,7 +78,10 @@ A named category that does not exist is **refused**, not created. An endpoint
 that invents categories fills the ledger with near-duplicates nobody chose, and
 you are not there to notice.
 
-You get a notification when something is filed.
+You get a notification when something is filed. Tapping it opens the ledger
+with the search already filled in — `/finance?q=<six characters>`, the same
+reference a transfer note carries, which the ledger search matches against the
+start of a transaction id. So you land on that row rather than on the month.
 
 ## One meal, filed once
 

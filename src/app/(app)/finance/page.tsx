@@ -31,7 +31,7 @@ function tabFrom(value: string | undefined): FinanceTab {
 export default async function FinancePage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; period?: string }>
+  searchParams: Promise<{ tab?: string; period?: string; q?: string }>
 }) {
   const [params, t] = await Promise.all([searchParams, getTranslations('finance')])
   const tab = tabFrom(params.tab)
@@ -135,7 +135,11 @@ export default async function FinancePage({
         />
       ) : (
         // What the last visit measured; a first visit may correct itself once.
-        <LedgerView data={data} initialDesktop={isDesktopCookie(jar.get(VIEWPORT_COOKIE)?.value)} />
+        <LedgerView
+          data={data}
+          initialDesktop={isDesktopCookie(jar.get(VIEWPORT_COOKIE)?.value)}
+          initialSearch={params.q}
+        />
       )}
     </div>
   )

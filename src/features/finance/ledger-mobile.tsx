@@ -20,13 +20,20 @@ import { useTransactionFeed } from './use-transaction-feed'
  * `useTransactionFeed`, which is what keeps one filter state and one cursor
  * however differently the two arrange them.
  */
-export function LedgerMobile({ data }: { data: FinanceData }) {
+export function LedgerMobile({
+  data,
+  initialSearch,
+}: {
+  data: FinanceData
+  initialSearch?: string
+}) {
   const t = useTranslations('finance')
   const tc = useTranslations('common')
   const { filters, setFilter, clearFilters, activeFilters, filtering, rows, addPending } =
     useTransactionFeed({
       initialPage: data.transactionsPage,
       categories: data.categories,
+      initialSearch,
     })
   const [filtersOpen, setFiltersOpen] = useState(false)
   // `type` travels with the name: the transfer sheet opens the app behind

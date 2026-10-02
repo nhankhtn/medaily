@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Letting someone file an expense | Medaily Docs</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="robots" content="noindex, nofollow"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="http://localhost/docs/operations/granting-an-api-token"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Letting someone file an expense | Medaily Docs"><meta data-rh="true" name="description" content="One token, one person, one thing they may do — how to mint it, what it allows, and how to take it back."><meta data-rh="true" property="og:description" content="One token, one person, one thing they may do — how to mint it, what it allows, and how to take it back."><link data-rh="true" rel="canonical" href="http://localhost/docs/operations/granting-an-api-token"><link data-rh="true" rel="alternate" href="http://localhost/docs/operations/granting-an-api-token" hreflang="en"><link data-rh="true" rel="alternate" href="http://localhost/docs/operations/granting-an-api-token" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Letting someone file an expense","item":"http://localhost/docs/operations/granting-an-api-token"}]}</script><link rel="stylesheet" href="/docs/assets/css/styles.55dbd2d6.css">
-<script src="/docs/assets/js/runtime~main.ac508656.js" defer="defer"></script>
+<script src="/docs/assets/js/runtime~main.8bc23e9c.js" defer="defer"></script>
 <script src="/docs/assets/js/main.6a34247c.js" defer="defer"></script>
 </head>
 <body>
@@ -75,7 +75,10 @@ to somebody else.</p>
 <p>A named category that does not exist is <strong>refused</strong>, not created. An endpoint
 that invents categories fills the ledger with near-duplicates nobody chose, and
 you are not there to notice.</p>
-<p>You get a notification when something is filed.</p>
+<p>You get a notification when something is filed. Tapping it opens the ledger
+with the search already filled in — <code>/finance?q=&lt;six characters&gt;</code>, the same
+reference a transfer note carries, which the ledger search matches against the
+start of a transaction id. So you land on that row rather than on the month.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="one-meal-filed-once">One meal, filed once<a href="#one-meal-filed-once" class="hash-link" aria-label="Direct link to One meal, filed once" title="Direct link to One meal, filed once" translate="no">​</a></h2>
 <p><code>(date, category, payer)</code> is what this endpoint treats as the same expense.
 Wednesday&#x27;s lunch covered by the same person is Wednesday&#x27;s lunch, whether you
