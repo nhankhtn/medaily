@@ -116,6 +116,9 @@ export const PATHS = {
     cronNightly: '/api/cron/nightly',
     cronReminders: '/api/cron/reminders',
     googleAuth: '/api/auth/google',
+    // Under `external` because the caller is not this app's own browser: it
+    // carries a capability token rather than a session cookie.
+    externalGrantTransaction: '/api/external/grant/transaction',
     calendarIcs: '/api/calendar.ics',
     exportJson: '/api/export?format=json',
     exportCsv: (table: string) => `/api/export?format=csv&table=${table}`,
@@ -188,6 +191,8 @@ export const PUBLIC_PATHS = [
   // Same reason as the nightly run, and the same secret.
   PATHS.api.cronReminders,
   PATHS.api.googleAuth,
+  // Carries its own token; a browser session is not what calls it.
+  PATHS.api.externalGrantTransaction,
   PATHS.manifest,
   PATHS.robots,
   PATHS.legalRoot,

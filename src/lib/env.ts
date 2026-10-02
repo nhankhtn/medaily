@@ -72,6 +72,16 @@ const envSchema = z.object({
    * which then also needs `roles/firebasemessaging.admin`.
    */
   NEXT_PUBLIC_FIREBASE_VAPID_KEY: z.string().optional(),
+
+  /*
+   * One capability token, minted by `scripts/grant-token.ts`, holding who may
+   * write and what they may write — see docs/operations. Blank and the
+   * endpoint answers 503 to everyone.
+   *
+   * The key that opens it is derived from AUTH_SECRET, so there is no second
+   * secret here; rotating AUTH_SECRET therefore invalidates the token.
+   */
+  GRANT_TOKEN: z.string().optional(),
   /**
    * Wanted by messaging, not by sign-in. Without it no token is ever issued,
    * so a deploy with a VAPID key and no sender id offers notifications that
@@ -197,6 +207,7 @@ export const env: Env = parsed.success
       NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
       NEXT_PUBLIC_REALTIME_ENABLED: process.env.NEXT_PUBLIC_REALTIME_ENABLED,
       NEXT_PUBLIC_FIREBASE_VAPID_KEY: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
+      GRANT_TOKEN: process.env.GRANT_TOKEN,
       NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID:
         process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
       NEXT_PUBLIC_FIREBASE_APP_ID: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
