@@ -30,7 +30,9 @@ describeDb('evening reminder', () => {
   const logged = randomUUID()
   const spent = randomUUID()
   const unreachable = randomUUID()
-  const everyone = [blank, logged, spent, unreachable]
+  // `string[]`, not the template literal `randomUUID` infers: the ids are
+  // compared against what the sender recorded, which is plain `string`.
+  const everyone: string[] = [blank, logged, spent, unreachable]
 
   const now = new Date()
   const today = logicalDateOf(now, {
