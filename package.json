@@ -16,6 +16,7 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "db:push": "drizzle-kit push",
     "db:seed": "tsx scripts/seed.ts",
+    "db:fill-usernames": "tsx scripts/fill-usernames.ts",
     "db:reset": "tsx scripts/reset.ts",
     "test": "vitest run",
     "test:watch": "vitest",
