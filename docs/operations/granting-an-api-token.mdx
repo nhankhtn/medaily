@@ -81,7 +81,7 @@ terminal.
 | `amount` | Required. At most two decimal places, and refused above the token's limit |
 | `category` | Optional. Matched by name against your categories; the token's default when absent |
 | `merchant` | Optional. The one line the ledger shows |
-| `occurredOn` | Optional. Your own logical day by default. Refused when it is in the future or older than the two days before today (`date_out_of_range`) |
+| `occurredOn` | Optional. `yyyy-MM-dd`, your own logical day by default. `19/01/2026` is refused. A day in the future or older than the two days before today is `date_out_of_range`. A bad body names the `field` and what was `expected` |
 
 Nothing names a user, an account or a person — those are in the token, which is
 what stops a caller writing into a different ledger or attributing a purchase

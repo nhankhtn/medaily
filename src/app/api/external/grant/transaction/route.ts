@@ -2,10 +2,14 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { readConfiguredGrant } from '@/lib/auth/grant'
 import { clientKey } from '@/lib/client-ip'
-import { today } from '@/lib/dates'
+import { addDays, today } from '@/lib/dates'
 import { isoDateSchema } from '@/lib/validation/daily'
 import { createLimit } from '@/lib/rate-limit'
-import { fileGrantedTransaction, isGrantDay, isLedgerAmount } from '@/server/services/grant-transaction'
+import {
+  fileGrantedTransaction,
+  isGrantDay,
+  isLedgerAmount,
+} from '@/server/services/grant-transaction'
 import { dayContextOf, settingsOf } from '@/server/services/settings'
 
 /**
@@ -22,17 +26,25 @@ export const runtime = 'nodejs'
 /** Generous: one person filing what they bought, not a sync. */
 const filings = createLimit({ capacity: 30, refillMs: 60 * 60 * 1000 })
 
-const body = z.object({
-  amount: z.number().refine(isLedgerAmount),
+export const grantTransactionBody = z.object({
+  amount: z.number().refine(isLedgerAmount, 'a positive number with at most two decimal places'),
   occurredOn: isoDateSchema.optional(),
-  category: z.string().trim().max(120).optional(),
-  merchant: z.string().trim().max(200).optional(),
+  category: z.string().trim().max(120, 'at most 120 characters').optional(),
+  merchant: z.string().trim().max(200, 'at most 200 characters').optional(),
 })
 
 const nostore = { 'cache-control': 'no-store' } as const
 
-function fail(error: string, status: number) {
-  return NextResponse.json({ ok: false, error }, { status, headers: nostore })
+function fail(error: string, status: number, detail?: { field: string; expected: string }) {
+  return NextResponse.json({ ok: false, error, ...detail }, { status, headers: nostore })
+}
+
+/** The first field that failed, and the shape it should have had. */
+export function inputProblem(error: z.ZodError): { field: string; expected: string } {
+  const issue = error.issues[0]
+  const field = issue?.path.find((part) => typeof part === 'string')
+  if (!issue || typeof field !== 'string') return { field: 'body', expected: 'a JSON object' }
+  return { field, expected: issue.message }
 }
 
 export async function POST(request: Request) {
@@ -49,8 +61,8 @@ export async function POST(request: Request) {
   // endpoint cannot be used to find out which.
   if (!grant) return fail('unauthorized', 401)
 
-  const parsed = body.safeParse(await request.json().catch(() => null))
-  if (!parsed.success) return fail('invalid_input', 400)
+  const parsed = grantTransactionBody.safeParse(await request.json().catch(() => null))
+  if (!parsed.success) return fail('invalid_input', 400, inputProblem(parsed.error))
 
   // The owner's own day, not the server's: a purchase at 1am belongs to the
   // night before if that is how they have set the rollover.
@@ -59,7 +71,12 @@ export async function POST(request: Request) {
   const occurredOn = parsed.data.occurredOn ?? logicalToday
   // Three days, and none of them in the future. Older than that is a backfill,
   // which this endpoint is not for.
-  if (!isGrantDay(occurredOn, logicalToday)) return fail('date_out_of_range', 422)
+  if (!isGrantDay(occurredOn, logicalToday)) {
+    return fail('date_out_of_range', 422, {
+      field: 'occurredOn',
+      expected: `yyyy-MM-dd from ${addDays(logicalToday, -2)} to ${logicalToday}`,
+    })
+  }
 
   const result = await fileGrantedTransaction(grant, {
     ...parsed.data,
