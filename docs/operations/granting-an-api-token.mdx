@@ -64,6 +64,7 @@ tsx scripts/grant-token.ts --inspect "$GRANT_TOKEN"
   warning="This files a real expense in the live ledger."
   body={{
     amount: 15000,
+    occurredOn: '2026-10-03',
     category: 'Ăn sáng',
     merchant: 'bánh mì',
   }}
@@ -80,7 +81,7 @@ terminal.
 | `amount` | Required. At most two decimal places, and refused above the token's limit |
 | `category` | Optional. Matched by name against your categories; the token's default when absent |
 | `merchant` | Optional. The one line the ledger shows |
-| `occurredOn` | Optional. Your own logical day by default, so a purchase at 1am lands where your rollover puts it |
+| `occurredOn` | Optional. Your own logical day by default. Refused when it is in the future or older than the two days before today (`date_out_of_range`) |
 
 Nothing names a user, an account or a person — those are in the token, which is
 what stops a caller writing into a different ledger or attributing a purchase

@@ -24,6 +24,17 @@ describe('presentNotification', () => {
     expect(shown.url).toBe('/finance?q=4f3a9c')
   })
 
+  it('includes the day the expense was filed for', () => {
+    const shown = presentNotification(
+      'grant_expense',
+      { ...expense, occurredOn: '2026-10-03' },
+      'en',
+      copy,
+    )
+    expect(shown.body).toContain('Oct')
+    expect(shown.body).toContain('3')
+  })
+
   it('leaves the merchant off when there is none', () => {
     const shown = presentNotification('grant_expense', { ...expense, merchant: null }, 'en', copy)
     expect(shown.body).not.toContain('·')

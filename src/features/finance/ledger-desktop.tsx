@@ -58,7 +58,7 @@ export function LedgerDesktop({
         </CardBody>
       </Card>
 
-      <Card>
+      <Card data-ledger className="scroll-mt-[calc(max(0.75rem,env(safe-area-inset-top,0px))+4.25rem)]">
         <CardHeader
           title={t('transactions')}
           // Only once something is on. A permanent reset button for filters

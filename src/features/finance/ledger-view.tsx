@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useLayoutEffect } from 'react'
 import { useMediaQuery } from '@/lib/hooks/use-media-query'
 import { DESKTOP_QUERY, VIEWPORT_COOKIE, viewportCookieValue } from '@/lib/viewport'
 import type { FinanceData } from '@/server/services/finance'
@@ -34,6 +34,13 @@ export function LedgerView({
     // A year: the answer only changes when someone picks up a different device.
     document.cookie = `${VIEWPORT_COOKIE}=${viewportCookieValue(desktop)}; path=/; max-age=31536000; samesite=lax`
   }, [desktop])
+
+  // A notification lands on this page with a search already filled. The list
+  // sits under the totals, so without this the row it found is still off screen.
+  useLayoutEffect(() => {
+    if (!initialSearch) return
+    document.querySelector('[data-ledger]')?.scrollIntoView({ block: 'start' })
+  }, [initialSearch, desktop])
 
   return desktop ? (
     <LedgerDesktop data={data} initialSearch={initialSearch} />

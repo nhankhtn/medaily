@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm'
 import type { GrantClaims } from '@/lib/auth/grant'
 import { db } from '@/lib/db'
-import type { ISODate } from '@/lib/dates'
+import { addDays, type ISODate } from '@/lib/dates'
 import { log } from '@/lib/log'
 import { findCategories, findExpenseOn, insertTransaction } from '@/server/repositories/finance'
 import { findPerson } from '@/server/repositories/people'
@@ -43,6 +43,16 @@ export type GrantRequest = {
  * those places are kept. `0.004` would round to `0.00` and then fail the
  * database check as a 500.
  */
+/**
+ * A grant may name a day that has already started, and not one older than three.
+ *
+ * Today counts: the expense is being filed now. `today - 3` does not, so the
+ * open days are today and the two before it.
+ */
+export function isGrantDay(occurredOn: ISODate, today: ISODate): boolean {
+  return occurredOn <= today && occurredOn > addDays(today, -3)
+}
+
 export function isLedgerAmount(amount: number): boolean {
   if (!Number.isFinite(amount) || amount <= 0 || amount > 1_000_000_000) return false
   const cents = Math.round(amount * 100)
@@ -149,6 +159,7 @@ async function announce(
       amount: request.amount,
       currency: request.currency,
       merchant: request.merchant ?? null,
+      occurredOn: request.occurredOn,
     }
     const dedupeKey = `grant:${id}`
     // Facts only. The bell turns them into a sentence in whatever language is open.

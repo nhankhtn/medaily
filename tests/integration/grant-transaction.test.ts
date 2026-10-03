@@ -108,6 +108,7 @@ describeDb('filing a transaction through a grant', () => {
       merchant: 'bánh mì',
       amount: 15_000,
       currency: 'VND',
+      occurredOn: '2026-10-02',
       transactionId: result.ok ? result.id : '',
     })
   })

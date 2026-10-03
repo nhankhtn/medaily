@@ -5,7 +5,7 @@ import { clientKey } from '@/lib/client-ip'
 import { today } from '@/lib/dates'
 import { isoDateSchema } from '@/lib/validation/daily'
 import { createLimit } from '@/lib/rate-limit'
-import { fileGrantedTransaction, isLedgerAmount } from '@/server/services/grant-transaction'
+import { fileGrantedTransaction, isGrantDay, isLedgerAmount } from '@/server/services/grant-transaction'
 import { dayContextOf, settingsOf } from '@/server/services/settings'
 
 /**
@@ -55,7 +55,11 @@ export async function POST(request: Request) {
   // The owner's own day, not the server's: a purchase at 1am belongs to the
   // night before if that is how they have set the rollover.
   const settings = await settingsOf(grant.ownerUserId)
-  const occurredOn = parsed.data.occurredOn ?? today(dayContextOf(settings))
+  const logicalToday = today(dayContextOf(settings))
+  const occurredOn = parsed.data.occurredOn ?? logicalToday
+  // Three days, and none of them in the future. Older than that is a backfill,
+  // which this endpoint is not for.
+  if (!isGrantDay(occurredOn, logicalToday)) return fail('date_out_of_range', 422)
 
   const result = await fileGrantedTransaction(grant, {
     ...parsed.data,

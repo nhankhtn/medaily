@@ -60,7 +60,7 @@ export function LedgerMobile({
         </CardBody>
       </Card>
 
-      <Card>
+      <Card data-ledger className="scroll-mt-[calc(max(0.75rem,env(safe-area-inset-top,0px))+4.25rem)]">
         <CardHeader title={t('transactions')} />
         <CardBody className="space-y-3">
           <div className="flex items-end gap-2">

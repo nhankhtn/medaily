@@ -12,6 +12,8 @@ const grantExpense = z.object({
   amount: z.number().finite(),
   currency: z.string().min(1),
   merchant: z.string().nullable(),
+  /** Absent on notices written before the day was stored. */
+  occurredOn: z.string().optional(),
 })
 
 /** Rows written before kind existed: the words were already chosen. */
@@ -62,12 +64,14 @@ function render(
   if (kind === 'grant_expense') {
     const data = grantExpense.safeParse(payload)
     if (!data.success) return null
-    const merchant = data.data.merchant
+    const parts = [
+      money(locale, data.data.amount, data.data.currency),
+      data.data.merchant,
+      data.data.occurredOn ? dayLabel(locale, data.data.occurredOn) : null,
+    ].filter((part) => part)
     return {
       title: copy('grantExpense', { name: data.data.personName }),
-      body: merchant
-        ? `${money(locale, data.data.amount, data.data.currency)} · ${merchant}`
-        : money(locale, data.data.amount, data.data.currency),
+      body: parts.join(' · '),
       url: PATHS.financeSearch(transferReference(data.data.transactionId)),
     }
   }
@@ -92,6 +96,14 @@ function render(
   }
 
   return null
+}
+
+function dayLabel(locale: string, iso: string): string {
+  const [year, month, day] = iso.split('-').map(Number)
+  if (!year || !month || !day) return iso
+  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(
+    new Date(year, month - 1, day),
+  )
 }
 
 function money(locale: string, amount: number, currency: string): string {
