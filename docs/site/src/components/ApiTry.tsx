@@ -37,7 +37,7 @@ const TOKEN_KEY = 'medaily-docs-token'
 function Caller({ method, path, body, bearer, warning }: ApiTryProps) {
   const [origin, setOrigin] = useState('')
   const [token, setToken] = useState('')
-  const [text, setText] = useState(() => (body ? JSON.stringify(withId(body), null, 2) : ''))
+  const [text, setText] = useState(() => (body ? JSON.stringify(body, null, 2) : ''))
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<{ status: number; body: string } | null>(null)
 
@@ -120,8 +120,12 @@ function Caller({ method, path, body, bearer, warning }: ApiTryProps) {
         <label className={styles.field}>
           <span>
             Body
-            <button type="button" className={styles.small} onClick={() => setText(JSON.stringify(withId(body), null, 2))}>
-              reset, new clientId
+            <button
+              type="button"
+              className={styles.small}
+              onClick={() => setText(body ? JSON.stringify(body, null, 2) : '')}
+            >
+              reset
             </button>
           </span>
           <textarea rows={8} value={text} onChange={(event) => setText(event.target.value)} spellCheck={false} />
@@ -151,17 +155,6 @@ function Caller({ method, path, body, bearer, warning }: ApiTryProps) {
       ) : null}
     </div>
   )
-}
-
-/**
- * A fresh `clientId` each time the body is reset.
- *
- * The id is the row's primary key, which is what makes a retry file once — so
- * calling twice with the same one answers `ok` and writes nothing, and reading
- * that as "it worked" twice is the mistake this avoids.
- */
-function withId(body: Record<string, unknown>): Record<string, unknown> {
-  return 'clientId' in body ? { ...body, clientId: crypto.randomUUID() } : body
 }
 
 function pretty(body: string): string {

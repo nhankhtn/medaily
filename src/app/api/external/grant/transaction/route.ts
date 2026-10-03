@@ -5,7 +5,7 @@ import { clientKey } from '@/lib/client-ip'
 import { today } from '@/lib/dates'
 import { isoDateSchema } from '@/lib/validation/daily'
 import { createLimit } from '@/lib/rate-limit'
-import { fileGrantedTransaction } from '@/server/services/grant-transaction'
+import { fileGrantedTransaction, isLedgerAmount } from '@/server/services/grant-transaction'
 import { dayContextOf, settingsOf } from '@/server/services/settings'
 
 /**
@@ -23,13 +23,10 @@ export const runtime = 'nodejs'
 const filings = createLimit({ capacity: 30, refillMs: 60 * 60 * 1000 })
 
 const body = z.object({
-  amount: z.number().positive().max(1_000_000_000),
+  amount: z.number().refine(isLedgerAmount),
   occurredOn: isoDateSchema.optional(),
   category: z.string().trim().max(120).optional(),
   merchant: z.string().trim().max(200).optional(),
-  // A uuid, because it becomes the row's primary key — which is what makes a
-  // retry over a bad connection file once rather than twice.
-  clientId: z.string().uuid(),
 })
 
 const nostore = { 'cache-control': 'no-store' } as const
@@ -60,20 +57,20 @@ export async function POST(request: Request) {
   const settings = await settingsOf(grant.ownerUserId)
   const occurredOn = parsed.data.occurredOn ?? today(dayContextOf(settings))
 
-  const result = await fileGrantedTransaction(grant, { ...parsed.data, occurredOn })
+  const result = await fileGrantedTransaction(grant, {
+    ...parsed.data,
+    occurredOn,
+    currency: settings.defaultCurrency,
+  })
 
   if (!result.ok) {
+    if (result.error === 'invalid_amount') return fail('invalid_input', 400)
     if (result.error === 'too_much') return fail('too_much', 403)
     if (result.error === 'unknown_category') return fail('unknown_category', 422)
     // That day, that category, that payer already has one. 409 rather than
     // 422: nothing about the request is malformed, the ledger simply already
     // says this.
     if (result.error === 'already_recorded') return fail('already_recorded', 409)
-    // Already filed under this id. The caller asked for it to exist, and it
-    // does, so this is success rather than a collision to report.
-    if (result.error === 'conflict') {
-      return NextResponse.json({ ok: true, id: parsed.data.clientId }, { headers: nostore })
-    }
     return fail('failed', 500)
   }
 
