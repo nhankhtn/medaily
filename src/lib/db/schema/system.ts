@@ -1,4 +1,14 @@
-import { date, index, jsonb, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
+import {
+  date,
+  index,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  unique,
+  uniqueIndex,
+  uuid,
+} from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
 import { users } from './core'
 import { insightSeverityEnum } from './enums'
@@ -66,3 +76,36 @@ export const notifications = pgTable(
 )
 
 export type StoredNotification = typeof notifications.$inferSelect
+
+/**
+ * A seat that has been offered and not yet taken.
+ *
+ * The room itself lives in the chat store. This row is the question put to one
+ * account, so they can accept or refuse it, and so a second offer for the same
+ * seat does not stack while the first is still open.
+ */
+export const roomInvites = pgTable(
+  'room_invites',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    roomId: text('room_id').notNull(),
+    inviterId: uuid('inviter_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    inviteeId: uuid('invitee_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    /** pending, accepted, or declined. */
+    status: text('status').notNull().default('pending'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    answeredAt: timestamp('answered_at', { withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex('room_invites_pending_uniq')
+      .on(t.roomId, t.inviteeId)
+      .where(sql`status = 'pending'`),
+    index('idx_room_invites_invitee').on(t.inviteeId, t.status),
+  ],
+)
+
+export type RoomInvite = typeof roomInvites.$inferSelect

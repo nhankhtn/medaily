@@ -19,6 +19,7 @@ import { SettingsForm } from '@/features/settings/settings-form'
 import { ShortcutsDialog } from '@/features/settings/shortcuts-panel'
 import { readSession } from '@/lib/auth/current-user'
 import { findUserById } from '@/server/repositories/auth'
+import { claimUsername } from '@/server/services/auth'
 import { aiServiceConfigured } from '@/server/services/ai-service'
 import { getSettings } from '@/server/services/settings'
 
@@ -29,7 +30,13 @@ export default async function SettingsPage() {
     getSettings(),
     readSession(),
   ])
-  const user = await findUserById(settings.userId)
+  let user = await findUserById(settings.userId)
+  // The handle starts as the mailbox name. Filling it here means an account
+  // that signed up before usernames existed can be found without signing in again.
+  if (user && !user.username && user.email) {
+    await claimUsername(user.id, user.email)
+    user = await findUserById(settings.userId)
+  }
   // Read here rather than inside the dialog so the first page is already in
   // the markup when the button is pressed.
   const trail = activityLogEnabled() ? await findActivity(settings.userId) : null

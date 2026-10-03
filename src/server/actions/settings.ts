@@ -10,6 +10,8 @@ import { DEFAULT_SCORE_TARGETS, DEFAULT_SCORE_WEIGHTS } from '@/lib/defaults'
 import { PATHS } from '@/lib/paths'
 import { weightsAreValid } from '@/lib/scoring'
 import { SCORE_COMPONENTS } from '@/lib/types'
+import { parseUsername } from '@/lib/username'
+import { updateUserProfile } from '@/server/repositories/auth'
 import { updateSettings } from '@/server/repositories/settings'
 import { isThemePreference, THEME_COOKIE } from '@/lib/themes'
 
@@ -99,6 +101,35 @@ export async function saveHiddenDailyFields(input: unknown) {
   revalidatePath(PATHS.catchUp)
   revalidatePath(PATHS.settings)
   return { ok: true as const }
+}
+
+export async function saveProfile(input: unknown) {
+  const parsed = z
+    .object({
+      displayName: z.string().trim().min(1).max(80),
+      username: z.string().max(40),
+    })
+    .safeParse(input)
+  if (!parsed.success) return { ok: false as const, error: 'invalid_name' as const }
+
+  const username = parseUsername(parsed.data.username)
+  if (!username) return { ok: false as const, error: 'invalid' as const }
+
+  try {
+    await updateUserProfile(await getCurrentUserId(), {
+      displayName: parsed.data.displayName,
+      username,
+    })
+  } catch (error) {
+    const cause = error instanceof Error ? error.cause : null
+    const code = cause && typeof cause === 'object' && 'code' in cause ? String(cause.code) : ''
+    if (code === '23505') return { ok: false as const, error: 'taken' as const }
+    throw error
+  }
+
+  revalidatePath(PATHS.settings)
+  revalidatePath(PATHS.home, 'layout')
+  return { ok: true as const, username }
 }
 
 export async function resetScoreDefaults() {

@@ -177,12 +177,14 @@ export function mongoChatStore(uri: string): ChatStore {
       ).updateOne(
         { _id: seat(member.roomId, member.userId) },
         {
+          // A person who left still has a seat. Putting them back clears that,
+          // and leaves the role they already had.
+          $set: { leftAt: null },
           $setOnInsert: {
             roomId: member.roomId,
             userId: member.userId,
             role: member.role,
             joinedAt: new Date(member.joinedAt),
-            leftAt: null,
             lastReadMessageId: null,
           },
         },

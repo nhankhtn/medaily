@@ -338,7 +338,11 @@ export function inMemoryChatStore(): ChatStore {
     },
 
     addMember: async (member) => {
-      if (seatIn(member.roomId, member.userId)) return
+      const existing = seatIn(member.roomId, member.userId)
+      if (existing) {
+        existing.leftAt = null
+        return
+      }
       members.push({ ...member, leftAt: null, lastReadMessageId: null })
     },
     findMember: async (roomId, userId) => copy(seatIn(roomId, userId) ?? null),

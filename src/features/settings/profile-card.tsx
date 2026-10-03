@@ -3,13 +3,14 @@ import { getFormatter, getTranslations } from 'next-intl/server'
 import type { SessionProvider } from '@/lib/auth/session'
 import { Card } from '@/components/ui/card'
 import { ProfileAvatar } from '@/features/settings/profile-avatar'
+import { ProfileEdit } from '@/features/settings/profile-edit'
 import type { User } from '@/lib/db/schema'
 import { isUploadedAvatar } from '@/lib/media/cloudinary'
 import { mediaEnabled } from '@/server/services/media'
 
 /**
- * Who you are signed in as. Name still follows the Google account; the photo
- * can be replaced here and survives the next sign-in.
+ * Who you are signed in as. The photo is changed on the circle. History sits
+ * at the end of the row, and the pencil that edits the name is under it.
  */
 export async function ProfileCard({
   user,
@@ -20,7 +21,7 @@ export async function ProfileCard({
   user: User
   provider: SessionProvider
   subject: string
-  /** Anything that acts on the account itself, sat at the end of the top row. */
+  /** The history button, drawn above the pencil. */
   actions?: React.ReactNode
 }) {
   const [t, format] = await Promise.all([getTranslations('settings.profile'), getFormatter()])
@@ -37,6 +38,9 @@ export async function ProfileCard({
         />
         <div className="min-w-0 flex-1">
           <p className="truncate text-base font-semibold">{user.displayName}</p>
+          {user.username ? (
+            <p className="text-text-subtle truncate text-sm">@{user.username}</p>
+          ) : null}
           <p className="text-text-subtle mt-0.5 flex items-center gap-1.5 truncate text-sm">
             {email ? (
               <>
@@ -51,7 +55,10 @@ export async function ProfileCard({
             )}
           </p>
         </div>
-        {actions}
+        <div className="flex shrink-0 flex-col items-center">
+          {actions}
+          <ProfileEdit displayName={user.displayName} username={user.username} />
+        </div>
       </div>
 
       <dl className="border-border-base mt-4 grid gap-x-8 gap-y-3 border-t pt-3 sm:grid-cols-2">

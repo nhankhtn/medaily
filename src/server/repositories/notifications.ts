@@ -70,6 +70,25 @@ export async function markNotificationsRead(
     )
 }
 
+/** The notice that was raised for one event, found by the key it was stored under. */
+export async function markNotificationsReadByKey(
+  userId: string,
+  dedupeKeys: string[],
+  tx: DbOrTx = db,
+): Promise<void> {
+  if (dedupeKeys.length === 0) return
+  await tx
+    .update(notifications)
+    .set({ readAt: new Date() })
+    .where(
+      and(
+        eq(notifications.userId, userId),
+        inArray(notifications.dedupeKey, dedupeKeys),
+        isNull(notifications.readAt),
+      ),
+    )
+}
+
 export async function markAllNotificationsRead(userId: string, tx: DbOrTx = db): Promise<void> {
   await tx
     .update(notifications)

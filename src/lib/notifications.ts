@@ -21,17 +21,25 @@ const legacyNotice = z.object({
   url: z.string().min(1),
 })
 
+const roomInvite = z.object({
+  inviteId: z.uuid(),
+  roomId: z.string().min(1),
+  roomTitle: z.string(),
+  inviterName: z.string(),
+})
+
 export const NOTIFICATION_KINDS = {
   grant_expense: grantExpense,
   legacy: legacyNotice,
+  room_invite: roomInvite,
 } as const
 
 export type NotificationKind = keyof typeof NOTIFICATION_KINDS
 export type GrantExpenseData = z.infer<typeof grantExpense>
 
 export type NoticeCopy = (
-  key: 'grantExpense' | 'unknown',
-  values?: { name: string },
+  key: 'grantExpense' | 'unknown' | 'roomInvite' | 'roomInviteUntitled',
+  values?: { name?: string; room?: string },
 ) => string
 
 /** Title, body and where a tap lands. The same words the push is sent with. */
@@ -61,6 +69,19 @@ function render(
         ? `${money(locale, data.data.amount, data.data.currency)} · ${merchant}`
         : money(locale, data.data.amount, data.data.currency),
       url: PATHS.financeSearch(transferReference(data.data.transactionId)),
+    }
+  }
+
+  if (kind === 'room_invite') {
+    const data = roomInvite.safeParse(payload)
+    if (!data.success) return null
+    const room = data.data.roomTitle.trim()
+    return {
+      title: room
+        ? copy('roomInvite', { name: data.data.inviterName, room })
+        : copy('roomInviteUntitled', { name: data.data.inviterName }),
+      body: '',
+      url: PATHS.chatWithMembershipInvite(data.data.inviteId),
     }
   }
 

@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { presentNotification, type NoticeCopy } from '@/lib/notifications'
 
-const copy: NoticeCopy = (key, values) =>
-  key === 'grantExpense' ? `${values?.name} recorded an expense` : 'Notification'
+const copy: NoticeCopy = (key, values) => {
+  if (key === 'grantExpense') return `${values?.name} recorded an expense`
+  if (key === 'roomInvite') return `${values?.name} invited you to ${values?.room}`
+  if (key === 'roomInviteUntitled') return `${values?.name} invited you to a room`
+  return 'Notification'
+}
 
 const expense = {
   transactionId: '4f3a9c00-0000-4000-8000-000000000001',
@@ -34,6 +38,22 @@ describe('presentNotification', () => {
         copy,
       ),
     ).toEqual({ title: 'Hello', body: 'there', url: '/finance' })
+  })
+
+  it('points a room invite at the question the invitee answers', () => {
+    const shown = presentNotification(
+      'room_invite',
+      {
+        inviteId: '4f3a9c00-0000-4000-8000-000000000002',
+        roomId: 'room-1',
+        roomTitle: 'Lunch',
+        inviterName: 'Ada',
+      },
+      'en',
+      copy,
+    )
+    expect(shown.title).toBe('Ada invited you to Lunch')
+    expect(shown.url).toBe('/chat?invite=4f3a9c00-0000-4000-8000-000000000002')
   })
 
   it('does not drop a kind it has not learned yet', () => {
