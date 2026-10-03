@@ -1,0 +1,16 @@
+---
+description: Do not build the docs site unless the user asks in that turn
+alwaysApply: true
+---
+
+# Docs site
+
+Do not build the docs site. The user builds it themselves when they want to.
+
+That means, unless they explicitly ask in the same turn:
+
+- Do not run `bun run docs:build`, `docs:dev`, `docusaurus build`, or `scripts/docs-stamp.ts`.
+- Do not write or refresh `public/docs`, including `.sources.json`.
+- Editing a source under `docs/` is fine. Leave the published site stale.
+
+`tests/unit/docs-built.test.ts` fails when the sources and the published site disagree. That failure is expected. Do not rebuild to make it pass. Say that the docs source changed and the site has not been rebuilt.
