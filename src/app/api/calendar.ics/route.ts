@@ -1,4 +1,5 @@
 import { getCurrentUserId } from '@/lib/auth/current-user'
+import { escapeIcs } from '@/lib/calendar/ics'
 import { addDays, fromISODate, today as todayOf } from '@/lib/dates'
 import { toRrule } from '@/lib/planning/recurrence'
 import { findEvents } from '@/server/repositories/planning'
@@ -51,5 +52,3 @@ export async function GET() {
 
 const toIcsDate = (date: Date) => date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
 const toIcsDay = (date: Date) => date.toISOString().slice(0, 10).replace(/-/g, '')
-const escapeIcs = (value: string) =>
-  value.replace(/\\/g, '\\\\').replace(/;/g, '\;').replace(/,/g, '\\,').replace(/\n/g, '\\n')
