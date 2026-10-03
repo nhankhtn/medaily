@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { matchCategoryId, toDrafts, MAX_DRAFTS } from '../../src/lib/finance/drafts'
+import { matchAccountId, matchCategoryId, toDrafts, MAX_DRAFTS } from '../../src/lib/finance/drafts'
 import { foldText } from '../../src/lib/text'
 
 const categories = [
@@ -39,6 +39,19 @@ describe('matchCategoryId', () => {
       { id: 'long', name: 'Ăn uống ngoài', kind: 'expense' },
     ]
     expect(matchCategoryId('ăn uống ngoài hàng', pool, 'expense')).toBe('long')
+  })
+})
+
+describe('matchAccountId', () => {
+  const accounts = [
+    { id: 'cash', name: 'Tiền mặt' },
+    { id: 'momo', name: 'Momo' },
+  ]
+
+  it('matches the account the note named, and nothing it invented', () => {
+    expect(matchAccountId('momo', accounts)).toBe('momo')
+    expect(matchAccountId('tiền mặt', accounts)).toBe('cash')
+    expect(matchAccountId('BIDV', accounts)).toBeNull()
   })
 })
 
@@ -85,6 +98,7 @@ describe('toDrafts', () => {
         amount: 40000,
         kind: 'expense',
         categoryId: 'cat-food',
+        accountId: null,
         merchant: 'Phở Thìn',
       },
     ])

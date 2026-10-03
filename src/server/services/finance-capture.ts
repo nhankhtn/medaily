@@ -19,7 +19,7 @@ import { aiClient } from '@/server/services/ai-service'
  * check that turns an answer off a model into rows this form can render.
  *
  * What leaves the machine is the sentence the user just typed plus their own
- * category names — no balances, no history, no other module's data.
+ * category and account names — no balances, no history, no other module's data.
  */
 const TIMEOUT_MS = 45_000
 
@@ -28,11 +28,13 @@ export async function parseTransactions({
   today,
   currency,
   categories,
+  accounts,
 }: {
   text: string
   today: ISODate
   currency: string
   categories: CategoryOption[]
+  accounts: { id: string; name: string }[]
 }): Promise<TransactionDraft[]> {
   const body = await aiClient('capture', TIMEOUT_MS).request<{
     transactions?: ParsedTransaction[]
@@ -50,9 +52,10 @@ export async function parseTransactions({
         kind: category.kind,
         ...(category.note?.trim() ? { note: category.note.trim() } : {}),
       })),
+      accounts: accounts.map((account) => ({ name: account.name })),
       maxItems: MAX_DRAFTS,
     }),
   })
 
-  return toDrafts({ parsed: body.transactions ?? [], categories, today })
+  return toDrafts({ parsed: body.transactions ?? [], categories, accounts, today })
 }

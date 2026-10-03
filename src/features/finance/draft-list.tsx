@@ -40,7 +40,6 @@ export function FinanceDraftList({
   const tc = useTranslations('common')
   const locale = useLocale()
   const [rows, setRows] = useState(drafts)
-  const [accountId, setAccountId] = useState(accounts[0]?.id ?? '')
   const [saving, startSaving] = useTransition()
 
   const formRef = useRef<HTMLFormElement>(null)
@@ -89,6 +88,7 @@ export function FinanceDraftList({
         occurredOn: emptyToNull(data.get(`occurredOn:${row.id}`)) ?? row.occurredOn,
         amount: Number(data.get(`amount:${row.id}`) ?? 0),
         kind: String(data.get(`kind:${row.id}`) ?? 'expense') as DraftKind,
+        accountId: String(data.get(`accountId:${row.id}`) ?? ''),
         categoryId: emptyToNull(data.get(`categoryId:${row.id}`)),
         merchant: emptyToNull(data.get(`merchant:${row.id}`)),
       }))
@@ -98,7 +98,7 @@ export function FinanceDraftList({
         return
       }
 
-      const result = await createTransactions({ accountId, rows: payload })
+      const result = await createTransactions({ rows: payload })
       if (!result.ok) {
         toast.error(tc('error'))
         return
@@ -114,22 +114,12 @@ export function FinanceDraftList({
     <form ref={formRef} onInput={recount} className="space-y-3">
       <p className="text-text-muted text-xs leading-snug">{t('reviewHint')}</p>
 
-      <label className="block space-y-1.5">
-        <span className="text-text-muted text-xs font-medium">{t('intoAccount')}</span>
-        <Select value={accountId} onChange={(event) => setAccountId(event.target.value)}>
-          {accounts.map((account) => (
-            <option key={account.id} value={account.id}>
-              {account.name}
-            </option>
-          ))}
-        </Select>
-      </label>
-
       <ul className="space-y-2 pb-16">
         {rows.map((row) => (
           <DraftRow
             key={row.id}
             draft={row}
+            accounts={accounts}
             categories={categories}
             onRemove={() => {
               const next = rows.filter((candidate) => candidate.id !== row.id)
@@ -172,10 +162,12 @@ export function FinanceDraftList({
 
 function DraftRow({
   draft,
+  accounts,
   categories,
   onRemove,
 }: {
   draft: TransactionDraft
+  accounts: { id: string; name: string }[]
   categories: FinanceCategory[]
   onRemove: () => void
 }) {
@@ -184,6 +176,13 @@ function DraftRow({
   const [kind, setKind] = useState<DraftKind>(draft.kind)
   // A category belongs to one kind, so flipping the kind invalidates the pick.
   const [categoryId, setCategoryId] = useState(draft.categoryId ?? '')
+  // The model may name an account. It has to stay a choice: the note is often
+  // wrong about which wallet the money left.
+  const [accountId, setAccountId] = useState(
+    accounts.some((account) => account.id === draft.accountId)
+      ? (draft.accountId as string)
+      : (accounts[0]?.id ?? ''),
+  )
 
   const relevant = categories.filter((category) => category.kind === kind)
 
@@ -216,6 +215,20 @@ function DraftRow({
       </div>
 
       <div className="flex flex-wrap gap-2">
+        <Select
+          name={`accountId:${draft.id}`}
+          value={accountId}
+          aria-label={t('account')}
+          onChange={(event) => setAccountId(event.target.value)}
+          className="h-9 min-w-32 flex-1 text-base sm:text-sm"
+        >
+          {accounts.map((account) => (
+            <option key={account.id} value={account.id}>
+              {account.name}
+            </option>
+          ))}
+        </Select>
+
         <Select
           name={`kind:${draft.id}`}
           value={kind}

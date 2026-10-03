@@ -22,6 +22,7 @@ export type ParsedTransaction = {
   amount?: unknown
   kind?: unknown
   category?: unknown
+  account?: unknown
   merchant?: unknown
   note?: unknown
 }
@@ -33,8 +34,12 @@ export type TransactionDraft = {
   amount: number
   kind: DraftKind
   categoryId: string | null
+  /** The account the note named, when it names one this person has. */
+  accountId: string | null
   merchant: string | null
 }
+
+export type AccountOption = { id: string; name: string }
 
 export type CategoryOption = {
   id: string
@@ -58,29 +63,42 @@ function mergeMerchant(merchant: string | null, note: string | null): string | n
  * A category id for the name the model produced, or null. Only names the user
  * already created can match: a category is never invented from free text.
  */
+/**
+ * An id for the name the model produced, or null. Longest name first so a
+ * short label does not steal a longer one that also contains it.
+ */
+function matchByName(name: string | null, rows: { id: string; name: string }[]): string | null {
+  if (!name) return null
+  const needle = foldText(name)
+  if (needle === '') return null
+
+  const exact = rows.find((row) => foldText(row.name) === needle)
+  if (exact) return exact.id
+
+  const partial = [...rows]
+    .sort((a, b) => b.name.length - a.name.length)
+    .find((row) => {
+      const hay = foldText(row.name)
+      return hay.includes(needle) || needle.includes(hay)
+    })
+
+  return partial?.id ?? null
+}
+
 export function matchCategoryId(
   name: string | null,
   categories: CategoryOption[],
   kind: DraftKind,
 ): string | null {
-  if (!name) return null
-  const needle = foldText(name)
-  if (needle === '') return null
+  return matchByName(
+    name,
+    categories.filter((category) => category.kind === kind),
+  )
+}
 
-  const pool = categories.filter((category) => category.kind === kind)
-  const exact = pool.find((category) => foldText(category.name) === needle)
-  if (exact) return exact.id
-
-  // A one-sided prefix or containment, longest name first so "Ăn uống ngoài"
-  // wins over "Ăn" when both would match.
-  const partial = [...pool]
-    .sort((a, b) => b.name.length - a.name.length)
-    .find((category) => {
-      const hay = foldText(category.name)
-      return hay.includes(needle) || needle.includes(hay)
-    })
-
-  return partial?.id ?? null
+/** Same rule as a category: only an account this person already has can match. */
+export function matchAccountId(name: string | null, accounts: AccountOption[]): string | null {
+  return matchByName(name, accounts)
 }
 
 function asString(value: unknown): string | null {
@@ -102,10 +120,12 @@ function asAmount(value: unknown): number | null {
 export function toDrafts({
   parsed,
   categories,
+  accounts = [],
   today,
 }: {
   parsed: ParsedTransaction[]
   categories: CategoryOption[]
+  accounts?: AccountOption[]
   today: ISODate
 }): TransactionDraft[] {
   const earliest = addDays(today, -MAX_BACKDATE_DAYS)
@@ -128,6 +148,7 @@ export function toDrafts({
       amount,
       kind,
       categoryId: matchCategoryId(asString(row.category), categories, kind),
+      accountId: matchAccountId(asString(row.account), accounts),
       merchant: mergeMerchant(asString(row.merchant), asString(row.note)),
     })
   }

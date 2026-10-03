@@ -136,6 +136,7 @@ async function parseWithRetry(note: string, attempt = 0): Promise<TransactionDra
       today: TODAY,
       currency: 'VND',
       categories: CATEGORIES,
+      accounts: [],
     })
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
