@@ -77,6 +77,7 @@
     "open": "Weather, {condition}, {temperature} degrees",
     "place": "Ho Chi Minh City",
     "nearYou": "Near you",
+    "blocked": "Location is blocked. Allow it in the browser settings, then tap the weather again.",
     "humidity": "Humidity",
     "precipitation": "Precipitation",
     "rain": "Rain",

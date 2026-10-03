@@ -77,6 +77,7 @@
     "open": "Thời tiết, {condition}, {temperature} độ",
     "place": "TP. Hồ Chí Minh",
     "nearYou": "Gần bạn",
+    "blocked": "Trình duyệt đang chặn vị trí. Bật lại trong cài đặt, rồi bấm thời tiết lần nữa.",
     "humidity": "Độ ẩm",
     "precipitation": "Lượng mưa",
     "rain": "Mưa",

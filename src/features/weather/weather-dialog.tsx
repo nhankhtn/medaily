@@ -16,7 +16,7 @@ import { useFormatter, useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import type { WeatherIconName, WeatherNow } from '@/lib/weather'
-import { hereWeather } from './here'
+import { hereWeather, requestHereWeather } from './here'
 
 const ICONS: Record<WeatherIconName, LucideIcon> = {
   sun: Sun,
@@ -42,13 +42,14 @@ export function WeatherDialog({ weather: initial }: { weather: WeatherNow }) {
   const [open, setOpen] = useState(false)
   const [weather, setWeather] = useState(initial)
   const [located, setLocated] = useState(false)
+  const [blocked, setBlocked] = useState(false)
   const Icon = ICONS[weather.icon]
 
   useEffect(() => {
     let dropped = false
-    void hereWeather().then((next) => {
-      if (dropped || !next) return
-      setWeather(next)
+    void hereWeather().then((outcome) => {
+      if (dropped || !outcome.ok) return
+      setWeather(outcome.weather)
       setLocated(true)
     })
     return () => {
@@ -65,6 +66,18 @@ export function WeatherDialog({ weather: initial }: { weather: WeatherNow }) {
           type="button"
           aria-label={t('open', { condition, temperature })}
           className="text-text-muted hover:bg-surface-2 hover:text-text flex h-9 shrink-0 items-center gap-1 rounded-full px-2"
+          onClick={() => {
+            if (located) return
+            void requestHereWeather().then((outcome) => {
+              if (outcome.ok) {
+                setWeather(outcome.weather)
+                setLocated(true)
+                setBlocked(false)
+                return
+              }
+              setBlocked(outcome.blocked)
+            })
+          }}
         >
           <Icon className="size-4" />
           <span className="text-sm tabular-nums">{temperature}°</span>
@@ -72,6 +85,7 @@ export function WeatherDialog({ weather: initial }: { weather: WeatherNow }) {
       </DialogTrigger>
 
       <DialogContent title={condition} description={located ? t('nearYou') : t('place')}>
+        {blocked ? <p className="text-text-muted mb-4 text-sm">{t('blocked')}</p> : null}
         <div className="flex items-center gap-4">
           <span className="bg-accent-soft text-accent flex size-16 items-center justify-center rounded-full">
             <Icon className="size-8" />

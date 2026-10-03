@@ -8,7 +8,9 @@ const securityHeaders = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'Referrer-Policy', value: 'no-referrer' },
-  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+  // Geolocation stays on for this origin: the weather chip asks for it on tap.
+  // An empty list would refuse the prompt before the browser ever showed it.
+  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(self)' },
 ]
 
 /**
