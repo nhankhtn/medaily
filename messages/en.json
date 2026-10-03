@@ -73,6 +73,33 @@
     "notFoundHint": "The link may be old, or the page may have moved.",
     "useValue": "Use {value}"
   },
+  "weather": {
+    "open": "Weather, {condition}, {temperature} degrees",
+    "place": "Ho Chi Minh City",
+    "humidity": "Humidity",
+    "precipitation": "Precipitation",
+    "rain": "Rain",
+    "cloudCover": "Cloud cover",
+    "percent": "{value}%",
+    "millimetres": "{value} mm",
+    "conditions": {
+      "clear": "Clear",
+      "mainlyClear": "Mainly clear",
+      "partlyCloudy": "Partly cloudy",
+      "overcast": "Overcast",
+      "fog": "Fog",
+      "drizzle": "Drizzle",
+      "freezingDrizzle": "Freezing drizzle",
+      "rain": "Rain",
+      "freezingRain": "Freezing rain",
+      "snow": "Snow",
+      "showers": "Showers",
+      "snowShowers": "Snow showers",
+      "thunder": "Thunderstorm",
+      "thunderHail": "Thunderstorm with hail",
+      "unknown": "Unknown"
+    }
+  },
   "daily": {
     "setup": {
       "title": "Set up"
@@ -159,9 +186,9 @@
     "copiedTag": "yesterday",
     "futureNudge": "The future isn’t here yet 😌",
     "greeting": {
-      "morning": "Good morning ☀️ · {weekday}",
+      "morning": "Good morning {sky} · {weekday}",
       "noon": "Lunchtime 🍜 · {weekday}",
-      "afternoon": "Good afternoon 🌤️ · {weekday}",
+      "afternoon": "Good afternoon {sky} · {weekday}",
       "evening": "Good evening 🌙 · {weekday}",
       "night": "Up late 🦉 · {weekday}",
       "rollover": "Still counts as yesterday 🦉"
@@ -1430,8 +1457,7 @@
       "later": "Not now"
     },
     "notifyOffer": {
-      "title": "Get told when someone messages you",
-      "body": "This browser only — a phone and a laptop are asked separately.",
+      "title": "Turn on notifications for this app",
       "turnOn": "Turn on",
       "no": "No thanks"
     },
@@ -1812,6 +1838,14 @@
     "retrySend": "Send again",
     "failedEdit": "Edit",
     "failedDrop": "Remove"
+  },
+  "inbox": {
+    "title": "Notifications",
+    "open": "Notifications",
+    "empty": "Nothing here yet",
+    "markAllRead": "Mark all as read",
+    "grantExpense": "{name} recorded an expense",
+    "unknown": "Notification"
   },
   "activity": {
     "title": "What changed",

@@ -73,6 +73,33 @@
     "notFoundHint": "Có thể link đã cũ, hoặc trang đã chuyển chỗ.",
     "useValue": "Dùng {value}"
   },
+  "weather": {
+    "open": "Thời tiết, {condition}, {temperature} độ",
+    "place": "TP. Hồ Chí Minh",
+    "humidity": "Độ ẩm",
+    "precipitation": "Lượng mưa",
+    "rain": "Mưa",
+    "cloudCover": "Mây che",
+    "percent": "{value}%",
+    "millimetres": "{value} mm",
+    "conditions": {
+      "clear": "Quang đãng",
+      "mainlyClear": "Nắng nhẹ",
+      "partlyCloudy": "Có mây",
+      "overcast": "U ám",
+      "fog": "Sương mù",
+      "drizzle": "Mưa phùn",
+      "freezingDrizzle": "Mưa phùn đóng băng",
+      "rain": "Mưa",
+      "freezingRain": "Mưa đóng băng",
+      "snow": "Tuyết",
+      "showers": "Mưa rào",
+      "snowShowers": "Mưa tuyết",
+      "thunder": "Dông",
+      "thunderHail": "Dông kèm mưa đá",
+      "unknown": "Không rõ"
+    }
+  },
   "daily": {
     "setup": {
       "title": "Thiết lập"
@@ -159,9 +186,9 @@
     "copiedTag": "hôm qua",
     "futureNudge": "Tương lai chưa tới đâu 😌",
     "greeting": {
-      "morning": "Chào buổi sáng ☀️ · {weekday}",
+      "morning": "Chào buổi sáng {sky} · {weekday}",
       "noon": "Trưa rồi, ăn gì chưa 🍜 · {weekday}",
-      "afternoon": "Chào buổi chiều 🌤️ · {weekday}",
+      "afternoon": "Chào buổi chiều {sky} · {weekday}",
       "evening": "Chào buổi tối 🌙 · {weekday}",
       "night": "Khuya rồi đó 🦉 · {weekday}",
       "rollover": "Vẫn tính là hôm qua nha 🦉"
@@ -1430,8 +1457,7 @@
       "later": "Để sau"
     },
     "notifyOffer": {
-      "title": "Có người nhắn thì báo cho bạn nhé",
-      "body": "Chỉ riêng trình duyệt này. Điện thoại và máy tính phải bật riêng.",
+      "title": "Bật thông báo cho app này",
       "turnOn": "Bật",
       "no": "Thôi"
     },
@@ -1812,6 +1838,14 @@
     "retrySend": "Gửi lại",
     "failedEdit": "Sửa lại",
     "failedDrop": "Bỏ"
+  },
+  "inbox": {
+    "title": "Thông báo",
+    "open": "Thông báo",
+    "empty": "Chưa có thông báo",
+    "markAllRead": "Đánh dấu đã đọc",
+    "grantExpense": "{name} vừa ghi một khoản chi",
+    "unknown": "Thông báo"
   },
   "activity": {
     "title": "Những gì đã đổi",

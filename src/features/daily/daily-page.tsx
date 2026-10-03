@@ -4,9 +4,11 @@ import { ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { fromISODate, isBeforeRollover, wallHourOf, type ISODate } from '@/lib/dates'
 import { PATHS } from '@/lib/paths'
+import { skyEmoji } from '@/lib/weather'
 import { getDailyFormData } from '@/server/services/daily'
 import { getDayContext } from '@/server/services/settings'
 import { getRunningTimer } from '@/server/services/timer'
+import { readWeather } from '@/server/services/weather'
 import { DailyForm } from './daily-form'
 import { DailySettingsDialog } from './daily-settings-dialog'
 import { DateNav } from './date-nav'
@@ -15,6 +17,15 @@ import { StreakFlame } from './streak-flame'
 import { valuesFromLog } from './types'
 
 type PartOfDay = 'morning' | 'noon' | 'afternoon' | 'evening' | 'night'
+
+/** Used only when the forecast did not arrive. Noon, evening and night ignore it. */
+const FALLBACK_SKY: Record<PartOfDay, string> = {
+  morning: '☀️',
+  noon: '☀️',
+  afternoon: '🌤️',
+  evening: '🌙',
+  night: '🦉',
+}
 
 function partOfDay(hour: number): PartOfDay {
   if (hour >= 4 && hour < 11) return 'morning'
@@ -34,17 +45,20 @@ function moodOf(energy: number | null): { mood: 'warm' | 'cool'; strength: numbe
 
 /** Shared by `/daily` (today) and `/daily/[date]`. */
 export async function DailyPage({ date }: { date: ISODate }) {
-  const [t, format, data, ctx, timer] = await Promise.all([
+  const [t, format, data, ctx, timer, weather] = await Promise.all([
     getTranslations('daily'),
     getFormatter(),
     getDailyFormData(date),
     getDayContext(),
     // The header already asked; this is the cached answer.
     getRunningTimer().catch(() => null),
+    // Same cache as the header chip. A miss leaves the old sun in the greeting.
+    readWeather(),
   ])
 
   const isToday = date === data.today
   const greeting = partOfDay(wallHourOf(ctx))
+  const sky = weather ? skyEmoji(weather.condition) : FALLBACK_SKY[greeting]
   const mood = moodOf(data.previousDay?.energy ?? null)
   const missingShown = data.missingDays.slice(-5)
 
@@ -69,6 +83,7 @@ export async function DailyPage({ date }: { date: ISODate }) {
             {isToday
               ? t(`greeting.${greeting}`, {
                   weekday: format.dateTime(fromISODate(date), 'weekdayLong'),
+                  sky,
                 })
               : t('subtitlePast', {
                   date: format.dateTime(fromISODate(date), 'fullDay'),
