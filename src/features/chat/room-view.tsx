@@ -810,9 +810,18 @@ export function RoomView({
                           onToggle={(emoji) => void react(message, emoji)}
                         />
                         {message.pending ? null : (
-                          <span className="text-text-subtle px-1 text-[10px] tabular-nums">
-                            {message.editedAt && !message.deletedAt ? `${t('edited')} · ` : ''}
-                            {format.dateTime(new Date(message.createdAt), 'time')}
+                          <span
+                            className={cn(
+                              'text-text-subtle flex flex-col px-1 text-[10px] leading-tight',
+                              mine ? 'items-end' : 'items-start',
+                            )}
+                          >
+                            {message.editedAt && !message.deletedAt ? (
+                              <span>{t('edited')}</span>
+                            ) : null}
+                            <span className="tabular-nums">
+                              {format.dateTime(new Date(message.createdAt), 'time')}
+                            </span>
                           </span>
                         )}
                       </span>
@@ -877,12 +886,16 @@ export function RoomView({
                         {message.pending ? null : (
                           <span
                             className={cn(
-                              'absolute right-2.5 bottom-1 text-[10px] tabular-nums',
+                              'absolute right-2.5 bottom-1 flex flex-col items-end text-[10px] leading-tight',
                               mine ? 'text-accent-text/70' : 'text-text-subtle',
                             )}
                           >
-                            {message.editedAt && !message.deletedAt ? `${t('edited')} · ` : ''}
-                            {format.dateTime(new Date(message.createdAt), 'time')}
+                            {message.editedAt && !message.deletedAt ? (
+                              <span>{t('edited')}</span>
+                            ) : null}
+                            <span className="tabular-nums">
+                              {format.dateTime(new Date(message.createdAt), 'time')}
+                            </span>
                           </span>
                         )}
                       </div>
