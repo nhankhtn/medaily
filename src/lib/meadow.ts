@@ -17,12 +17,12 @@ export type MeadowScene = {
 
 export const MEADOW_SCENES: readonly MeadowScene[] = [
   { landscape: '/themes/meadow.webp', portrait: '/themes/meadow-portrait.webp' },
-  { landscape: '/themes/meadow-road.webp', portrait: '/themes/meadow-road-portrait.webp' },
-  { landscape: '/themes/meadow-shrine.webp', portrait: '/themes/meadow-shrine-portrait.webp' },
-  { landscape: '/themes/meadow-river.webp', portrait: '/themes/meadow-river-portrait.webp' },
-  { landscape: '/themes/meadow-house.webp', portrait: '/themes/meadow-house-portrait.webp' },
-  { landscape: '/themes/meadow-blossom.webp', portrait: '/themes/meadow-blossom-portrait.webp' },
-  { landscape: '/themes/meadow-field.webp', portrait: '/themes/meadow-field-portrait.webp' },
+  { landscape: '/themes/meadow-forest.webp', portrait: '/themes/meadow-forest-portrait.webp' },
+  { landscape: '/themes/meadow-valley.webp', portrait: '/themes/meadow-valley-portrait.webp' },
+  { landscape: '/themes/meadow-cliff.webp', portrait: '/themes/meadow-cliff-portrait.webp' },
+  { landscape: '/themes/meadow-glow.webp', portrait: '/themes/meadow-glow-portrait.webp' },
+  { landscape: '/themes/meadow-coast.webp', portrait: '/themes/meadow-coast-portrait.webp' },
+  { landscape: '/themes/meadow-sunset.webp', portrait: '/themes/meadow-sunset-portrait.webp' },
 ]
 
 const layer = (path: string) => `url('${path}') center bottom / cover no-repeat`
