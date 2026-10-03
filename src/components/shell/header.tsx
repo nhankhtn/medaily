@@ -28,7 +28,7 @@ export async function Header({ today, theme }: { today: ISODate; theme: ThemePre
      * chip itself carries glass-chip.
      */
     <div className={cn('sticky top-0 z-30 px-3', 'pt-[max(0.75rem,env(safe-area-inset-top,0px))]')}>
-      <header className="glass-chip flex h-14 items-center gap-3 rounded-[1.75rem] px-3 sm:px-4">
+      <header className="glass-chip flex h-14 items-center gap-1.5 rounded-[1.75rem] px-3 sm:gap-3 sm:px-4">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <span className="text-text-muted truncate text-sm font-medium">
             {format.dateTime(fromISODate(today), 'weekdayDayMonthYear')}
@@ -39,13 +39,16 @@ export async function Header({ today, theme }: { today: ISODate; theme: ThemePre
           </Suspense>
         </div>
 
-        {/* Streamed separately: the badge must not hold up the whole shell
-            for a database round trip. */}
-        <Suspense fallback={null}>
-          <HeaderInbox />
-        </Suspense>
-        <StandaloneReload />
-        <CommandPalette today={today} />
+        {/* Tight on a phone: the date is what gets cut when these sit far apart. */}
+        <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
+          {/* Streamed separately: the badge must not hold up the whole shell
+              for a database round trip. */}
+          <Suspense fallback={null}>
+            <HeaderInbox />
+          </Suspense>
+          <StandaloneReload />
+          <CommandPalette today={today} />
+        </div>
         <Link
           href={PATHS.daily}
           className={cn(
