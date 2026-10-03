@@ -76,6 +76,7 @@
   "weather": {
     "open": "Thời tiết, {condition}, {temperature} độ",
     "place": "TP. Hồ Chí Minh",
+    "nearYou": "Gần bạn",
     "humidity": "Độ ẩm",
     "precipitation": "Lượng mưa",
     "rain": "Mưa",
@@ -186,9 +187,9 @@
     "copiedTag": "hôm qua",
     "futureNudge": "Tương lai chưa tới đâu 😌",
     "greeting": {
-      "morning": "Chào buổi sáng {sky} · {weekday}",
+      "morning": "Chào buổi sáng <sky></sky> · {weekday}",
       "noon": "Trưa rồi, ăn gì chưa 🍜 · {weekday}",
-      "afternoon": "Chào buổi chiều {sky} · {weekday}",
+      "afternoon": "Chào buổi chiều <sky></sky> · {weekday}",
       "evening": "Chào buổi tối 🌙 · {weekday}",
       "night": "Khuya rồi đó 🦉 · {weekday}",
       "rollover": "Vẫn tính là hôm qua nha 🦉"

@@ -13,9 +13,10 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { useFormatter, useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import type { WeatherIconName, WeatherNow } from '@/lib/weather'
+import { hereWeather } from './here'
 
 const ICONS: Record<WeatherIconName, LucideIcon> = {
   sun: Sun,
@@ -35,11 +36,25 @@ const ICONS: Record<WeatherIconName, LucideIcon> = {
  * Open-Meteo returns a WMO code, not a picture. The chip and the dialog
  * both draw the icon that code maps to.
  */
-export function WeatherDialog({ weather }: { weather: WeatherNow }) {
+export function WeatherDialog({ weather: initial }: { weather: WeatherNow }) {
   const t = useTranslations('weather')
   const format = useFormatter()
   const [open, setOpen] = useState(false)
+  const [weather, setWeather] = useState(initial)
+  const [located, setLocated] = useState(false)
   const Icon = ICONS[weather.icon]
+
+  useEffect(() => {
+    let dropped = false
+    void hereWeather().then((next) => {
+      if (dropped || !next) return
+      setWeather(next)
+      setLocated(true)
+    })
+    return () => {
+      dropped = true
+    }
+  }, [])
   const condition = t(`conditions.${weather.condition}`)
   const temperature = format.number(weather.temperature, { maximumFractionDigits: 1 })
 
@@ -56,7 +71,7 @@ export function WeatherDialog({ weather }: { weather: WeatherNow }) {
         </button>
       </DialogTrigger>
 
-      <DialogContent title={condition} description={t('place')}>
+      <DialogContent title={condition} description={located ? t('nearYou') : t('place')}>
         <div className="flex items-center gap-4">
           <span className="bg-accent-soft text-accent flex size-16 items-center justify-center rounded-full">
             <Icon className="size-8" />

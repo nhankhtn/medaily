@@ -1,21 +1,24 @@
 import { log } from '@/lib/log'
 import {
+  forecastUrl,
+  HCMC_FIX,
   parseForecast,
-  WEATHER_FORECAST_URL,
   WEATHER_FRESH_FOR_S,
+  type WeatherFix,
   type WeatherNow,
 } from '@/lib/weather'
 
 /**
  * The reading behind the header chip.
  *
- * Cached for 15 minutes, so opening the dialog does not ask Open-Meteo again.
- * A failure leaves the chip off: the date in the header is not worth holding
- * up, and a blank sky is quieter than an error in the shell.
+ * Cached for 15 minutes per place, so opening the dialog does not ask
+ * Open-Meteo again. With no device fix this is Ho Chi Minh City. A failure
+ * leaves the chip off: the date in the header is not worth holding up, and a
+ * blank sky is quieter than an error in the shell.
  */
-export async function readWeather(): Promise<WeatherNow | null> {
+export async function readWeather(fix: WeatherFix = HCMC_FIX): Promise<WeatherNow | null> {
   try {
-    const response = await fetch(WEATHER_FORECAST_URL, {
+    const response = await fetch(forecastUrl(fix), {
       headers: { Accept: 'application/json', 'User-Agent': 'medaily' },
       signal: AbortSignal.timeout(4_000),
       next: { revalidate: WEATHER_FRESH_FOR_S },

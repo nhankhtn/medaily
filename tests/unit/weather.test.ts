@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { describeWeather, parseForecast, skyEmoji } from '@/lib/weather'
+import {
+  forecastUrl,
+  HCMC_FIX,
+  describeWeather,
+  parseForecast,
+  sameWeatherFix,
+  skyEmoji,
+  weatherFix,
+} from '@/lib/weather'
 
 /** The reading Open-Meteo returned for Ho Chi Minh City on 2026-10-03. */
 const NOW = {
@@ -41,6 +49,17 @@ describe('open-meteo forecast', () => {
     expect(skyEmoji('drizzle')).toBe('🌦️')
     expect(skyEmoji('clear')).toBe('☀️')
     expect(skyEmoji('thunder')).toBe('⛈️')
+  })
+
+  it('rounds a device position to about a kilometre', () => {
+    expect(weatherFix(10.8231, 106.6297)).toEqual(HCMC_FIX)
+    expect(
+      sameWeatherFix(weatherFix(21.0285, 105.8542)!, { latitude: 21.03, longitude: 105.85 }),
+    ).toBe(true)
+    expect(weatherFix(91, 0)).toBeNull()
+    expect(forecastUrl({ latitude: 21.03, longitude: 105.85 })).toBe(
+      'https://api.open-meteo.com/v1/forecast?latitude=21.03&longitude=105.85&current=temperature_2m%2Crelative_humidity_2m%2Cprecipitation%2Crain%2Cweather_code%2Ccloud_cover&timezone=auto',
+    )
   })
 
   it('picks an icon from the WMO code', () => {

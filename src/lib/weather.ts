@@ -1,13 +1,42 @@
 /**
- * Current weather for Ho Chi Minh City, from Open-Meteo.
+ * Current weather from Open-Meteo.
  *
  * The forecast answers with a WMO code, not a picture. The icon is chosen
  * here from that code; nothing else is downloaded.
  *
- * https://api.open-meteo.com/v1/forecast?latitude=10.8231&longitude=106.6297&current=temperature_2m,relative_humidity_2m,precipitation,rain,weather_code,cloud_cover&timezone=Asia/Ho_Chi_Minh
+ * Ho Chi Minh City is only the reading used when the browser has no position
+ * of its own. A device fix is rounded to two decimals — about a kilometre —
+ * which is as fine as this forecast is, and is not a street address.
  */
-export const WEATHER_FORECAST_URL =
-  'https://api.open-meteo.com/v1/forecast?latitude=10.8231&longitude=106.6297&current=temperature_2m,relative_humidity_2m,precipitation,rain,weather_code,cloud_cover&timezone=Asia/Ho_Chi_Minh'
+export type WeatherFix = { latitude: number; longitude: number }
+
+export const HCMC_FIX: WeatherFix = { latitude: 10.82, longitude: 106.63 }
+
+const CURRENT = 'temperature_2m,relative_humidity_2m,precipitation,rain,weather_code,cloud_cover'
+
+export function forecastUrl(fix: WeatherFix): string {
+  const params = new URLSearchParams({
+    latitude: fix.latitude.toFixed(2),
+    longitude: fix.longitude.toFixed(2),
+    current: CURRENT,
+    timezone: 'auto',
+  })
+  return `https://api.open-meteo.com/v1/forecast?${params}`
+}
+
+/** Two decimals, or nothing when the numbers are not a place on earth. */
+export function weatherFix(latitude: number, longitude: number): WeatherFix | null {
+  if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) return null
+  if (!Number.isFinite(longitude) || longitude < -180 || longitude > 180) return null
+  return {
+    latitude: Math.round(latitude * 100) / 100,
+    longitude: Math.round(longitude * 100) / 100,
+  }
+}
+
+export function sameWeatherFix(a: WeatherFix, b: WeatherFix): boolean {
+  return a.latitude === b.latitude && a.longitude === b.longitude
+}
 
 /** How long a reading stays current. Open-Meteo steps `current` every 15 minutes. */
 export const WEATHER_FRESH_FOR_S = 15 * 60

@@ -9,6 +9,7 @@ import { getDailyFormData } from '@/server/services/daily'
 import { getDayContext } from '@/server/services/settings'
 import { getRunningTimer } from '@/server/services/timer'
 import { readWeather } from '@/server/services/weather'
+import { HereSky } from '@/features/weather/here-sky'
 import { DailyForm } from './daily-form'
 import { DailySettingsDialog } from './daily-settings-dialog'
 import { DateNav } from './date-nav'
@@ -79,12 +80,16 @@ export async function DailyPage({ date }: { date: ISODate }) {
             <h1 className="text-2xl font-semibold">{t('title')}</h1>
             <StreakFlame streak={data.streak} today={data.today} />
           </div>
-          <p className="text-sm text-text-muted">
+          <p className="text-text-muted text-sm">
             {isToday
-              ? t(`greeting.${greeting}`, {
-                  weekday: format.dateTime(fromISODate(date), 'weekdayLong'),
-                  sky,
-                })
+              ? greeting === 'morning' || greeting === 'afternoon'
+                ? t.rich(`greeting.${greeting}`, {
+                    weekday: format.dateTime(fromISODate(date), 'weekdayLong'),
+                    sky: () => <HereSky initial={sky} />,
+                  })
+                : t(`greeting.${greeting}`, {
+                    weekday: format.dateTime(fromISODate(date), 'weekdayLong'),
+                  })
               : t('subtitlePast', {
                   date: format.dateTime(fromISODate(date), 'fullDay'),
                 })}
@@ -107,7 +112,7 @@ export async function DailyPage({ date }: { date: ISODate }) {
       </div>
 
       {data.missingDays.length >= 2 ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius)] border border-border-base bg-accent-soft px-4 py-3">
+        <div className="border-border-base bg-accent-soft flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius)] border px-4 py-3">
           <div className="flex items-center gap-3">
             <ul aria-hidden className="flex gap-1">
               {missingShown.map((day, index) => (
@@ -123,7 +128,7 @@ export async function DailyPage({ date }: { date: ISODate }) {
                 </li>
               ))}
             </ul>
-            <p className="text-sm text-text">
+            <p className="text-text text-sm">
               {t('catchUp.banner', { count: data.missingDays.length })}
             </p>
           </div>

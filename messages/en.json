@@ -76,6 +76,7 @@
   "weather": {
     "open": "Weather, {condition}, {temperature} degrees",
     "place": "Ho Chi Minh City",
+    "nearYou": "Near you",
     "humidity": "Humidity",
     "precipitation": "Precipitation",
     "rain": "Rain",
@@ -186,9 +187,9 @@
     "copiedTag": "yesterday",
     "futureNudge": "The future isn’t here yet 😌",
     "greeting": {
-      "morning": "Good morning {sky} · {weekday}",
+      "morning": "Good morning <sky></sky> · {weekday}",
       "noon": "Lunchtime 🍜 · {weekday}",
-      "afternoon": "Good afternoon {sky} · {weekday}",
+      "afternoon": "Good afternoon <sky></sky> · {weekday}",
       "evening": "Good evening 🌙 · {weekday}",
       "night": "Up late 🦉 · {weekday}",
       "rollover": "Still counts as yesterday 🦉"
