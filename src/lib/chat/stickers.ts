@@ -46,6 +46,9 @@ export const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🎉'] as c
 
 export type Reaction = (typeof REACTIONS)[number]
 
+/** What a double tap leaves. A heart — the gesture a phone already means by tym. */
+export const DOUBLE_TAP_REACTION: Reaction = '❤️'
+
 const REACTABLE = new Set<string>(REACTIONS)
 
 export function isReaction(value: unknown): value is Reaction {

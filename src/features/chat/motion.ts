@@ -69,6 +69,34 @@ export function grownReaction(
 export const SWIPE_REPLY_PX = 56
 
 /**
+ * A thumb's second tap, not a mouse's. Three hundred was inside the gap people
+ * actually leave between two presses, so the heart never landed.
+ */
+export const DOUBLE_TAP_MS = 450
+
+/** A fingertip's wander between the two presses. Tighter than this, and the second tap misses. */
+export const DOUBLE_TAP_SLOP_PX = 56
+
+/**
+ * Two taps on the same bubble, close enough to be one gesture.
+ *
+ * Read on the way down of the second tap: a phone often never delivers the
+ * lift, because it has already spent that tap zooming the page.
+ */
+export function isDoubleTap(
+  last: { id: string; at: number; x: number; y: number } | null,
+  next: { id: string; at: number; x: number; y: number },
+): boolean {
+  if (!last || last.id !== next.id) return false
+  const elapsed = next.at - last.at
+  if (elapsed < 0 || elapsed >= DOUBLE_TAP_MS) return false
+  return (
+    Math.abs(next.x - last.x) <= DOUBLE_TAP_SLOP_PX &&
+    Math.abs(next.y - last.y) <= DOUBLE_TAP_SLOP_PX
+  )
+}
+
+/**
  * Whether a drag is a sideways swipe rather than the start of a scroll. Decided
  * once, early: a gesture that changed its mind half-way would fight the list.
  */

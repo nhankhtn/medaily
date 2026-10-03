@@ -42,6 +42,8 @@ describe('the shared format names', () => {
     expect(render('en', 'dayMonth')).toBe('Sep 14')
     expect(render('en', 'clock')).toBe('09:30:07')
     expect(render('vi', 'clock')).toBe('09:30:07')
+    expect(render('en', 'time')).toBe('09:30')
+    expect(render('vi', 'time')).toBe('09:30')
   })
 
   it('never asks for a twelve-hour clock', () => {

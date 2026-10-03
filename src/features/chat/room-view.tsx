@@ -29,7 +29,7 @@ import {
 } from '@/lib/chat/types'
 import { ringRoom, useRoomLive } from '@/lib/hooks/use-room-live'
 import { CHAT_JUMP, jumpTarget } from './jump'
-import { isSticker, REACTIONS } from '@/lib/chat/stickers'
+import { DOUBLE_TAP_REACTION, isSticker, REACTIONS } from '@/lib/chat/stickers'
 import { onlyEmoji } from '@/lib/chat/only-emoji'
 import { dayKeyOf, layoutAt } from '@/lib/chat/grouping'
 import { EmojiPicker, StickerPicker } from './pickers'
@@ -39,6 +39,7 @@ import {
   bubbleCorners,
   easterEggOf,
   grownReaction,
+  isDoubleTap,
   SWIPE_REPLY_PX,
   swipeIntent,
   unreadStart,
@@ -68,8 +69,6 @@ import {
 const ROW_ESTIMATE = 60
 /** Long enough not to fire on a tap, short enough not to feel stuck. */
 const HOLD_MS = 450
-/** Two taps further apart than this are two taps. */
-const DOUBLE_TAP_MS = 300
 
 /**
  * A message on screen, which is not quite a message in the database: one that
@@ -126,7 +125,9 @@ export function RoomView({
   const [menu, setMenu] = useState<{ at: Anchor; message: Shown } | null>(null)
   const hold = useRef<ReturnType<typeof setTimeout> | null>(null)
   const heldFrom = useRef<{ x: number; y: number } | null>(null)
-  const lastTap = useRef<{ at: number; x: number; y: number } | null>(null)
+  const lastTap = useRef<{ id: string; at: number; x: number; y: number } | null>(null)
+  /** When a touch double tap already reacted, so a synthesised click cannot take it back off. */
+  const touchReactedAt = useRef(0)
   const newest = useRef<string | null>(initialPage.items.at(-1)?.id ?? null)
   /** `catchUp` is a callback with its own deps; this is how it sees the state. */
   const landedRef = useRef<string | null>(null)
@@ -559,15 +560,13 @@ export function RoomView({
   }
 
   /**
-   * The one a double tap gives, which is the first of the six.
-   *
-   * Pressing it again takes it off, the same as choosing it from the menu —
-   * a double tap that could only ever add would leave no way to undo one by
-   * the gesture that made it.
+   * A heart. Pressing again takes it off, the same as choosing it from the
+   * menu — a double tap that could only ever add would leave no way to undo
+   * one by the gesture that made it.
    */
   const doubleTapReact = (message: Shown) => {
     if (message.pending || message.deletedAt) return
-    void react(message, REACTIONS[0])
+    void react(message, DOUBLE_TAP_REACTION)
   }
 
   /** Moved by hand on the element, not through state: a re-render per pointer move is the whole list. */
@@ -603,6 +602,25 @@ export function RoomView({
       // A mouse already has a button for this, and holding one down is how
       // somebody selects text.
       if (event.pointerType === 'mouse') return
+      // The previous press may never have lifted — a phone drops that event
+      // when it starts a scroll — and its timer would still open the menu.
+      endHold()
+      const tap = {
+        id: message.id,
+        at: performance.now(),
+        x: event.clientX,
+        y: event.clientY,
+      }
+      if (isDoubleTap(lastTap.current, tap)) {
+        lastTap.current = null
+        touchReactedAt.current = tap.at
+        // Stops the click the browser still owes for this tap, which would
+        // toggle the heart straight back off.
+        event.preventDefault()
+        doubleTapReact(message)
+        return
+      }
+      lastTap.current = tap
       const { clientX, clientY } = event
       swipe.current = { x: clientX, y: clientY, intent: null }
       heldFrom.current = { x: clientX, y: clientY }
@@ -633,18 +651,7 @@ export function RoomView({
     onPointerUp: (event: React.PointerEvent) => {
       endHold()
       if (event.pointerType === 'mouse') return
-      if (releaseSwipe(event.currentTarget as HTMLElement, message)) return
-      // Two taps in the same spot, the way every phone has taught people to
-      // like something. A mouse gets `onDoubleClick` below, which the browser
-      // works out on its own.
-      const last = lastTap.current
-      const quick =
-        last !== null &&
-        event.timeStamp - last.at < DOUBLE_TAP_MS &&
-        Math.abs(event.clientX - last.x) < 24 &&
-        Math.abs(event.clientY - last.y) < 24
-      lastTap.current = quick ? null : { at: event.timeStamp, x: event.clientX, y: event.clientY }
-      if (quick) doubleTapReact(message)
+      releaseSwipe(event.currentTarget as HTMLElement, message)
     },
     onPointerCancel: (event: React.PointerEvent) => {
       endHold()
@@ -652,6 +659,9 @@ export function RoomView({
     },
     onDoubleClick: (event: React.MouseEvent) => {
       if (event.detail === 0) return
+      // Touch already reacted on the second press. This click arriving as well
+      // is the heart appearing and vanishing in the same gesture.
+      if (performance.now() - touchReactedAt.current < 700) return
       doubleTapReact(message)
     },
   })
@@ -778,7 +788,8 @@ export function RoomView({
                         className={cn(
                           'flex flex-col max-sm:select-none max-sm:[-webkit-touch-callout:none]',
                           // Vertical pans stay the browser's, so a sideways swipe never fights the scroll.
-                          'max-sm:[touch-action:pan-y_pinch-zoom]',
+                          // Pinch stays off the bubble: with it on, a phone spends the second tap zooming.
+                          'max-sm:[touch-action:pan-y]',
                           mine ? 'items-end' : 'items-start',
                           message.pending && 'opacity-60',
                           settled.has(message.id) && 'chat-settle',
@@ -801,7 +812,7 @@ export function RoomView({
                         {message.pending ? null : (
                           <span className="text-text-subtle px-1 text-[10px] tabular-nums">
                             {message.editedAt && !message.deletedAt ? `${t('edited')} · ` : ''}
-                            {format.dateTime(new Date(message.createdAt), 'clock')}
+                            {format.dateTime(new Date(message.createdAt), 'time')}
                           </span>
                         )}
                       </span>
@@ -813,7 +824,9 @@ export function RoomView({
                           // A hold is the way into the menu here, so it must not
                           // also be the way into a text selection.
                           'max-sm:select-none max-sm:[-webkit-touch-callout:none]',
-                          'max-sm:[touch-action:pan-y_pinch-zoom]',
+                          // Vertical pans stay the browser's, so a sideways swipe never fights the scroll.
+                          // Pinch stays off the bubble: with it on, a phone spends the second tap zooming.
+                          'max-sm:[touch-action:pan-y]',
                           // Room kept for the clock sitting in the corner, so the
                           // last word never runs under it. Telegram reserves the
                           // same gap, which is why a one-word bubble there is
@@ -869,7 +882,7 @@ export function RoomView({
                             )}
                           >
                             {message.editedAt && !message.deletedAt ? `${t('edited')} · ` : ''}
-                            {format.dateTime(new Date(message.createdAt), 'clock')}
+                            {format.dateTime(new Date(message.createdAt), 'time')}
                           </span>
                         )}
                       </div>
