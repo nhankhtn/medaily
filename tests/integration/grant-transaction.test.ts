@@ -95,6 +95,21 @@ describeDb('filing a transaction through a grant', () => {
     expect(row?.amount).toBe('15000.00')
     expect(row?.currency).toBe('VND')
     expect(row?.categoryId).toBe(categoryId)
+
+    const [notice] = await db
+      .select()
+      .from(schema.notifications)
+      .where(eq(schema.notifications.userId, userId))
+    expect(notice?.kind).toBe('grant_expense')
+    expect(notice?.readAt).toBeNull()
+    expect(notice?.dedupeKey).toBe(result.ok ? `grant:${result.id}` : '')
+    expect(notice?.payload).toMatchObject({
+      personName: 'A',
+      merchant: 'bánh mì',
+      amount: 15_000,
+      currency: 'VND',
+      transactionId: result.ok ? result.id : '',
+    })
   })
 
   it('records the ledger currency it was given', async () => {

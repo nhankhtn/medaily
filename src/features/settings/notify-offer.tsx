@@ -44,7 +44,6 @@ export function NotifyOffer() {
 
       markPushOffered()
       toast(t('title'), {
-        description: t('body'),
         duration: Infinity,
         action: {
           label: t('turnOn'),

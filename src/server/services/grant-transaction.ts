@@ -3,10 +3,13 @@ import type { GrantClaims } from '@/lib/auth/grant'
 import { db } from '@/lib/db'
 import type { ISODate } from '@/lib/dates'
 import { log } from '@/lib/log'
-import { transferReference } from '@/lib/finance/vietqr'
-import { PATHS } from '@/lib/paths'
 import { findCategories, findExpenseOn, insertTransaction } from '@/server/repositories/finance'
 import { findPerson } from '@/server/repositories/people'
+import { createTranslator } from 'next-intl'
+import { DEFAULT_LOCALE, isLocale, type Locale } from '@/i18n/config'
+import { presentNotification, type GrantExpenseData } from '@/lib/notifications'
+import { findSettings } from '@/server/repositories/settings'
+import { insertNotifications } from '@/server/repositories/notifications'
 import { notify } from './push'
 
 /**
@@ -126,6 +129,12 @@ async function resolveCategory(
   return found.length === 1 ? found[0]!.id : undefined
 }
 
+/** The inbox strings, in one person's language. The push is sent once, so it cannot follow a later switch. */
+async function inboxCopy(locale: Locale) {
+  const messages = (await import(`../../../messages/${locale}.json`)).default
+  return createTranslator({ locale, messages, namespace: 'inbox' })
+}
+
 /** Somebody else just wrote in your ledger; you should hear about it. */
 async function announce(
   grant: GrantClaims,
@@ -134,15 +143,27 @@ async function announce(
 ): Promise<void> {
   try {
     const person = await findPerson(grant.ownerUserId, grant.payeePersonId)
-    const who = person?.name ?? 'Ai đó'
-    await notify([grant.ownerUserId], {
-      title: `${who} vừa ghi một khoản chi`,
-      body: `${request.amount.toLocaleString('vi-VN')}₫${request.merchant ? ` · ${request.merchant}` : ''}`,
-      // Straight to the row, not just the ledger: the notification is about
-      // one expense, and arriving at a month of them is arriving nowhere.
-      url: PATHS.financeSearch(transferReference(id)),
-      tag: `grant:${id}`,
-    })
+    const payload: GrantExpenseData = {
+      transactionId: id,
+      personName: person?.name ?? 'Ai đó',
+      amount: request.amount,
+      currency: request.currency,
+      merchant: request.merchant ?? null,
+    }
+    const dedupeKey = `grant:${id}`
+    // Facts only. The bell turns them into a sentence in whatever language is open.
+    await insertNotifications([
+      { userId: grant.ownerUserId, kind: 'grant_expense', payload, dedupeKey },
+    ])
+    const settings = await findSettings(grant.ownerUserId)
+    const locale = isLocale(settings?.locale) ? settings.locale : DEFAULT_LOCALE
+    const shown = presentNotification(
+      'grant_expense',
+      payload,
+      locale,
+      await inboxCopy(locale),
+    )
+    await notify([grant.ownerUserId], { ...shown, tag: dedupeKey })
   } catch (error) {
     // The row is saved. Failing the request because the phone could not be
     // told would undo something that already happened.
