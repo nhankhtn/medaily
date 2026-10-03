@@ -1763,7 +1763,6 @@
     "encryptRoomUnavailable": "Not available here: no encryption key is set up.",
     "roomLocked": "Messages are encrypted",
     "roomPlain": "Messages are not encrypted",
-    "searchLockedNote": "This room is encrypted, so search is slower and looks back 1,000 messages at a time.",
     "create": "Create",
     "untitled": "Room",
     "unread": "{count} unread",

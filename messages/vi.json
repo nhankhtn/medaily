@@ -1763,7 +1763,6 @@
     "encryptRoomUnavailable": "Chưa dùng được ở đây: chưa cài khoá mã hoá.",
     "roomLocked": "Tin nhắn được mã hoá",
     "roomPlain": "Tin nhắn không mã hoá",
-    "searchLockedNote": "Phòng này có mã hoá nên tìm chậm hơn, mỗi lượt dò 1.000 tin.",
     "create": "Tạo",
     "untitled": "Phòng",
     "unread": "{count} tin chưa đọc",
