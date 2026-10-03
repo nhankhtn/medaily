@@ -25,6 +25,11 @@ export const users = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     displayName: text('display_name').notNull().default('Me'),
     email: text('email'),
+    /**
+     * How someone else names this account when adding them to a room. Null
+     * until they choose one; the address stays a second way to find them.
+     */
+    username: text('username'),
     imageUrl: text('image_url'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -35,6 +40,9 @@ export const users = pgTable(
     uniqueIndex('users_email_uniq')
       .on(sql`lower(${t.email})`)
       .where(sql`${t.email} IS NOT NULL`),
+    uniqueIndex('users_username_uniq')
+      .on(sql`lower(${t.username})`)
+      .where(sql`${t.username} IS NOT NULL`),
   ],
 )
 

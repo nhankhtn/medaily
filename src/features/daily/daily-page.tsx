@@ -4,9 +4,12 @@ import { ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { fromISODate, isBeforeRollover, wallHourOf, type ISODate } from '@/lib/dates'
 import { PATHS } from '@/lib/paths'
+import { skyEmoji } from '@/lib/weather'
 import { getDailyFormData } from '@/server/services/daily'
 import { getDayContext } from '@/server/services/settings'
 import { getRunningTimer } from '@/server/services/timer'
+import { readWeather } from '@/server/services/weather'
+import { HereSky } from '@/features/weather/here-sky'
 import { DailyForm } from './daily-form'
 import { DailySettingsDialog } from './daily-settings-dialog'
 import { DateNav } from './date-nav'
@@ -15,6 +18,15 @@ import { StreakFlame } from './streak-flame'
 import { valuesFromLog } from './types'
 
 type PartOfDay = 'morning' | 'noon' | 'afternoon' | 'evening' | 'night'
+
+/** Used only when the forecast did not arrive. Noon, evening and night ignore it. */
+const FALLBACK_SKY: Record<PartOfDay, string> = {
+  morning: '☀️',
+  noon: '☀️',
+  afternoon: '🌤️',
+  evening: '🌙',
+  night: '🦉',
+}
 
 function partOfDay(hour: number): PartOfDay {
   if (hour >= 4 && hour < 11) return 'morning'
@@ -34,17 +46,20 @@ function moodOf(energy: number | null): { mood: 'warm' | 'cool'; strength: numbe
 
 /** Shared by `/daily` (today) and `/daily/[date]`. */
 export async function DailyPage({ date }: { date: ISODate }) {
-  const [t, format, data, ctx, timer] = await Promise.all([
+  const [t, format, data, ctx, timer, weather] = await Promise.all([
     getTranslations('daily'),
     getFormatter(),
     getDailyFormData(date),
     getDayContext(),
     // The header already asked; this is the cached answer.
     getRunningTimer().catch(() => null),
+    // Same cache as the header chip. A miss leaves the old sun in the greeting.
+    readWeather(),
   ])
 
   const isToday = date === data.today
   const greeting = partOfDay(wallHourOf(ctx))
+  const sky = weather ? skyEmoji(weather.condition) : FALLBACK_SKY[greeting]
   const mood = moodOf(data.previousDay?.energy ?? null)
   const missingShown = data.missingDays.slice(-5)
 
@@ -65,11 +80,16 @@ export async function DailyPage({ date }: { date: ISODate }) {
             <h1 className="text-2xl font-semibold">{t('title')}</h1>
             <StreakFlame streak={data.streak} today={data.today} />
           </div>
-          <p className="text-sm text-text-muted">
+          <p className="text-text-muted text-sm">
             {isToday
-              ? t(`greeting.${greeting}`, {
-                  weekday: format.dateTime(fromISODate(date), 'weekdayLong'),
-                })
+              ? greeting === 'morning' || greeting === 'afternoon'
+                ? t.rich(`greeting.${greeting}`, {
+                    weekday: format.dateTime(fromISODate(date), 'weekdayLong'),
+                    sky: () => <HereSky initial={sky} />,
+                  })
+                : t(`greeting.${greeting}`, {
+                    weekday: format.dateTime(fromISODate(date), 'weekdayLong'),
+                  })
               : t('subtitlePast', {
                   date: format.dateTime(fromISODate(date), 'fullDay'),
                 })}
@@ -92,7 +112,7 @@ export async function DailyPage({ date }: { date: ISODate }) {
       </div>
 
       {data.missingDays.length >= 2 ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius)] border border-border-base bg-accent-soft px-4 py-3">
+        <div className="border-border-base bg-accent-soft flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius)] border px-4 py-3">
           <div className="flex items-center gap-3">
             <ul aria-hidden className="flex gap-1">
               {missingShown.map((day, index) => (
@@ -108,7 +128,7 @@ export async function DailyPage({ date }: { date: ISODate }) {
                 </li>
               ))}
             </ul>
-            <p className="text-sm text-text">
+            <p className="text-text text-sm">
               {t('catchUp.banner', { count: data.missingDays.length })}
             </p>
           </div>

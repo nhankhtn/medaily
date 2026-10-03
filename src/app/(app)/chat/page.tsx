@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { Avatar } from '@/components/ui/avatar'
 import { Card } from '@/components/ui/card'
 import { InviteDialog } from '@/features/chat/invite-dialog'
+import { MembershipDialog } from '@/features/chat/membership-dialog'
 import { NewRoom } from '@/features/chat/new-room'
 import { getCurrentUserId } from '@/lib/auth/current-user'
 import { canSeal } from '@/lib/chat/message-crypto'
@@ -15,7 +16,7 @@ import { listRooms, unreadByRoom } from '@/server/services/chat'
 export default async function ChatPage({
   searchParams,
 }: {
-  searchParams: Promise<{ join?: string }>
+  searchParams: Promise<{ join?: string; invite?: string }>
 }) {
   // Chat cannot half work: a room you can open but not write to is worse than
   // no room at all, so without a database the page is simply not there.
@@ -37,6 +38,7 @@ export default async function ChatPage({
 
       {/* An invite arrives as a question over the list, not as a page. */}
       {params.join ? <InviteDialog code={params.join} /> : null}
+      {params.invite ? <MembershipDialog inviteId={params.invite} /> : null}
 
       {rooms.length === 0 ? (
         <p className="text-text-subtle text-sm">{t('empty')}</p>

@@ -79,7 +79,7 @@ Recalled messages and stickers cannot be edited.
 1. Open **Search** in the room and type a word from the message.
 2. Pick a result to jump to it, shown with the messages around it. **Look further back** searches older stretches of the room.
    - In a room that is not encrypted, search covers the whole room at once.
-   - In an encrypted room, the box says so: each try looks back 1,000 messages and is slower. See [Chat privacy](./privacy.md).
+   - In an encrypted room, each try looks back 1,000 messages and is slower. See [Chat privacy](./privacy.md).
 3. Press **Back to the latest** to return to the end of the conversation.
 
 ## Nudge the room

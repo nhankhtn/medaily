@@ -220,11 +220,14 @@
 }
 
 /*
- * Meadow. The only theme whose atmosphere is a picture rather than blooms: a
- * summer hillside over the sea. A scene has darker patches than a bloom does,
- * so surfaces carry more fill than the other light themes, and --bg is the
- * mid sky-blue the blur averages to rather than the palest pixel — the
- * contrast test measures against it, so it has to be the honest backdrop.
+ * Meadow. The only theme whose atmosphere is a picture rather than blooms.
+ * Which picture is today's is written on the document as `--meadow-landscape`
+ * and `--meadow-portrait` (see `meadowSceneVars`); the fallbacks are the
+ * original hillside, so a page that has not chosen yet still has a scene.
+ * A scene has darker patches than a bloom does, so surfaces carry more fill
+ * than the other light themes, and --bg is the mid sky-blue the blur averages
+ * to rather than the palest pixel — the contrast test measures against it, so
+ * it has to be the honest backdrop.
  */
 [data-theme='meadow'] {
   --bg: oklch(84% 0.05 225);
@@ -267,15 +270,14 @@
       oklch(100% 0 0 / calc((1 - var(--atmosphere)) * 0.6)),
       oklch(100% 0 0 / calc((1 - var(--atmosphere)) * 0.6))
     ),
-    url('/themes/meadow.webp') center bottom / cover no-repeat,
+    var(--meadow-landscape, url('/themes/meadow.webp') center bottom / cover no-repeat),
     linear-gradient(180deg, oklch(66% 0.12 245), oklch(62% 0.13 140));
   --radius: 0.9rem;
 }
 
 /*
- * A phone held upright would show the middle third of the landscape and miss
- * the windmill. The portrait file is that third cut around it instead, at the
- * source's own resolution — and a quarter of the download.
+ * A phone held upright would show the middle of the wide file and miss the
+ * subject the portrait file was cut around.
  */
 @media (orientation: portrait) {
   [data-theme='meadow'] {
@@ -284,7 +286,7 @@
         oklch(100% 0 0 / calc((1 - var(--atmosphere)) * 0.6)),
         oklch(100% 0 0 / calc((1 - var(--atmosphere)) * 0.6))
       ),
-      url('/themes/meadow-portrait.webp') center bottom / cover no-repeat,
+      var(--meadow-portrait, url('/themes/meadow-portrait.webp') center bottom / cover no-repeat),
       linear-gradient(180deg, oklch(66% 0.12 245), oklch(62% 0.13 140));
   }
 }

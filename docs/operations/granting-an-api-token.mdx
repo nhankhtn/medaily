@@ -64,9 +64,9 @@ tsx scripts/grant-token.ts --inspect "$GRANT_TOKEN"
   warning="This files a real expense in the live ledger."
   body={{
     amount: 15000,
+    occurredOn: '2026-10-03',
     category: 'Ăn sáng',
     merchant: 'bánh mì',
-    clientId: '',
   }}
 />
 
@@ -76,17 +76,12 @@ above goes to the real endpoint with no proxy in between — which also means
 there is no sandbox. Open the curl panel if you would rather paste it into a
 terminal.
 
-"reset, new clientId" matters more than it looks: the id is the row's primary
-key, so calling twice with the same one answers `ok` and writes nothing. Press
-it between two real filings or the second will look like it worked.
-
 | Field | |
 | --- | --- |
-| `amount` | Required. Refused above the token's limit |
-| `clientId` | Required, a uuid. It becomes the row's id, so sending the same one twice files once |
+| `amount` | Required. At most two decimal places, and refused above the token's limit |
 | `category` | Optional. Matched by name against your categories; the token's default when absent |
 | `merchant` | Optional. The one line the ledger shows |
-| `occurredOn` | Optional. Your own logical day by default, so a purchase at 1am lands where your rollover puts it |
+| `occurredOn` | Optional. `yyyy-MM-dd`, your own logical day by default. `19/01/2026` is refused. A day in the future or older than the two days before today is `date_out_of_range`. A bad body names the `field` and what was `expected` |
 
 Nothing names a user, an account or a person — those are in the token, which is
 what stops a caller writing into a different ledger or attributing a purchase
@@ -105,25 +100,21 @@ start of a transaction id. So you land on that row rather than on the month.
 
 `(date, category, payer)` is what this endpoint treats as the same expense.
 Wednesday's lunch covered by the same person is Wednesday's lunch, whether you
-typed it in the app first or the caller is sending it twice under new ids. The
-second attempt answers **409 `already_recorded`** and writes nothing.
+typed it in the app first or the caller is sending it again. The second attempt
+answers **409 `already_recorded`** and writes nothing. The amount is stored in
+your ledger's currency, not in one the caller names.
 
 | | |
 | --- | --- |
 | Same day, same category, same payer | refused |
 | Same day, different category | filed |
 | Same day, same category, but you paid for it yourself | filed — an expense nobody covered is not the same row |
-| Same `clientId` sent twice | filed once, answered `ok` both times |
-
-That last one is why the check skips the row it is about to write: a retry over
-a bad connection would otherwise find its own first attempt and refuse it.
 
 **Not a unique index.** The rule is not true of the ledger generally — two
 coffees from the same person on one afternoon are two rows, and you have to be
-able to enter both. It is a rule about this one endpoint, enforced where this
-endpoint writes. A caller racing itself with two simultaneous requests could
-still slip two through; one person with curl is not that, and a constraint that
-stopped it would stop you as well.
+able to enter both. The check and the insert share a lock instead, so two
+requests for that same meal are taken one at a time and the second finds the
+first. A constraint that stopped the race would stop you as well.
 
 ## Taking it back
 

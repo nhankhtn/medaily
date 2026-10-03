@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
@@ -61,7 +61,7 @@ describeDb('filing a transaction through a grant', () => {
       occurredOn?: string
       category?: string | null
       merchant?: string | null
-      clientId?: string
+      currency?: string
     },
   ) {
     const { fileGrantedTransaction } = await import('@/server/services/grant-transaction')
@@ -70,7 +70,7 @@ describeDb('filing a transaction through a grant', () => {
       occurredOn: (over.occurredOn ?? '2026-10-02') as never,
       category: over.category,
       merchant: over.merchant,
-      clientId: over.clientId ?? randomUUID(),
+      currency: over.currency ?? 'VND',
     })
   }
 
@@ -93,24 +93,65 @@ describeDb('filing a transaction through a grant', () => {
     expect(row?.transferredAt, 'still owed until it is settled').toBeNull()
     expect(row?.kind).toBe('expense')
     expect(row?.amount).toBe('15000.00')
+    expect(row?.currency).toBe('VND')
     expect(row?.categoryId).toBe(categoryId)
+
+    const [notice] = await db
+      .select()
+      .from(schema.notifications)
+      .where(eq(schema.notifications.userId, userId))
+    expect(notice?.kind).toBe('grant_expense')
+    expect(notice?.readAt).toBeNull()
+    expect(notice?.dedupeKey).toBe(result.ok ? `grant:${result.id}` : '')
+    expect(notice?.payload).toMatchObject({
+      personName: 'A',
+      merchant: 'bánh mì',
+      amount: 15_000,
+      currency: 'VND',
+      occurredOn: '2026-10-02',
+      transactionId: result.ok ? result.id : '',
+    })
   })
 
-  it('files once however many times the same id arrives', async () => {
-    const clientId = randomUUID()
-    // A day of its own: the duplicate rule would otherwise refuse the second
-    // call for clashing with another test's row rather than with its own.
-    const first = await file({ clientId, occurredOn: '2026-10-24' })
-    const again = await file({ clientId, occurredOn: '2026-10-24' })
+  it('records the ledger currency it was given', async () => {
+    const result = await file({ occurredOn: '2026-10-21', currency: 'USD', amount: 12 })
+    expect(result.ok).toBe(true)
 
-    expect(first.ok).toBe(true)
-    expect(again).toEqual({ ok: false, error: 'conflict' })
+    const [row] = await db
+      .select()
+      .from(schema.transactions)
+      .where(eq(schema.transactions.id, result.ok ? result.id : ''))
+    expect(row?.currency).toBe('USD')
+    expect(row?.amount).toBe('12.00')
+  })
+
+  /**
+   * The check and the insert share a lock. Two arrivals for the same meal
+   * must not both see an empty ledger.
+   */
+  it('files one of two that arrive together', async () => {
+    const day = '2026-10-22'
+    const [first, second] = await Promise.all([
+      file({ occurredOn: day, amount: 10_000 }),
+      file({ occurredOn: day, amount: 12_000 }),
+    ])
+
+    const outcomes = [first, second]
+    expect(outcomes.filter((result) => result.ok)).toHaveLength(1)
+    expect(outcomes.filter((result) => !result.ok && result.error === 'already_recorded')).toHaveLength(1)
 
     const rows = await db
       .select()
       .from(schema.transactions)
-      .where(eq(schema.transactions.id, clientId))
+      .where(and(eq(schema.transactions.userId, userId), eq(schema.transactions.occurredOn, day)))
     expect(rows).toHaveLength(1)
+  })
+
+  it('refuses an amount that would round down to nothing', async () => {
+    expect(await file({ amount: 0.004, occurredOn: '2026-10-20' })).toEqual({
+      ok: false,
+      error: 'invalid_amount',
+    })
   })
 
   /**

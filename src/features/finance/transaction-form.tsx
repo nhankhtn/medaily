@@ -1,11 +1,12 @@
 'use client'
 
-import { Check, Plus, Send } from 'lucide-react'
+import { Check, ChevronDown, Plus, Send } from 'lucide-react'
 import type { AccountType } from '@/lib/finance/account-types'
 import { useLocale, useTranslations } from 'next-intl'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { Card, CardBody } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { MoneyInput } from '@/components/ui/money-input'
 import { Select } from '@/components/ui/select'
@@ -25,12 +26,77 @@ import type { PendingTransaction } from './pending'
 export const AMOUNT_FIELD_ID = 'transaction-amount'
 const SAVED_MS = 1400
 
-/** The empty ledger's one action: the form is already on the page, so go to it. */
+const ADD_TRANSACTION_EVENT = 'medaily:add-transaction'
+
+/** The empty ledger's one action: open the form if it is folded, then go to it. */
 export function focusAmount() {
+  window.dispatchEvent(new Event(ADD_TRANSACTION_EVENT))
+}
+
+function focusAmountField() {
   const field = document.getElementById(AMOUNT_FIELD_ID)
   if (!field) return
   field.scrollIntoView({ block: 'center', behavior: 'smooth' })
   field.focus({ preventScroll: true })
+}
+
+/**
+ * The add form, folded behind its own heading. The ledger is what you came
+ * to read; the form is there when you want to write one.
+ */
+export function AddTransactionSection({ children }: { children: React.ReactNode }) {
+  const t = useTranslations('finance')
+  const [open, setOpen] = useState(true)
+  const bodyId = useId()
+  const openRef = useRef(open)
+  const pendingFocus = useRef(false)
+  openRef.current = open
+
+  useEffect(() => {
+    const ask = () => {
+      if (openRef.current) focusAmountField()
+      else {
+        pendingFocus.current = true
+        setOpen(true)
+      }
+    }
+    window.addEventListener(ADD_TRANSACTION_EVENT, ask)
+    return () => window.removeEventListener(ADD_TRANSACTION_EVENT, ask)
+  }, [])
+
+  useEffect(() => {
+    if (!open || !pendingFocus.current) return
+    pendingFocus.current = false
+    focusAmountField()
+  }, [open])
+
+  return (
+    <Card>
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        aria-expanded={open}
+        aria-controls={bodyId}
+        className={cn(
+          'flex w-full items-center justify-between gap-3 px-4 text-left',
+          open ? 'pt-4 pb-2' : 'py-4',
+        )}
+      >
+        <span className="text-text-muted text-sm font-semibold tracking-wide uppercase">
+          {t('addTransactionTitle')}
+        </span>
+        <ChevronDown
+          className={cn(
+            'text-text-subtle size-4 shrink-0 transition-transform duration-300',
+            open && 'rotate-180',
+          )}
+        />
+      </button>
+      <CardBody id={bodyId} hidden={!open}>
+        {children}
+      </CardBody>
+    </Card>
+  )
 }
 
 /**

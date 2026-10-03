@@ -10,10 +10,13 @@ import { ThemeToggle } from './theme-toggle'
 import { fromISODate, type ISODate } from '@/lib/dates'
 import { PATHS } from '@/lib/paths'
 import { buttonVariants } from '@/components/ui/button-variants'
-import { TimerBadge } from '@/features/timer/timer-badge'
-import { getRunningTimer } from '@/server/services/timer'
+import { NotificationBell } from './notification-bell'
+import { WeatherDialog } from '@/features/weather/weather-dialog'
+import { getCurrentUserId } from '@/lib/auth/current-user'
 import type { ThemePreference } from '@/lib/themes'
+import { readWeather } from '@/server/services/weather'
 import { cn } from '@/lib/utils'
+import { readInbox } from '@/server/services/inbox'
 
 export async function Header({ today, theme }: { today: ISODate; theme: ThemePreference }) {
   const [t, format] = await Promise.all([getTranslations('common'), getFormatter()])
@@ -24,35 +27,40 @@ export async function Header({ today, theme }: { today: ISODate; theme: ThemePre
      * dock. Outer sticky stays transparent; padding clears the notch while the
      * chip itself carries glass-chip.
      */
-    <div
-      className={cn(
-        'sticky top-0 z-30 px-3',
-        'pt-[max(0.75rem,env(safe-area-inset-top,0px))]',
-      )}
-    >
-      <header className="glass-chip flex h-14 items-center gap-3 rounded-[1.75rem] px-3 sm:px-4">
+    <div className={cn('sticky top-0 z-30 px-3', 'pt-[max(0.75rem,env(safe-area-inset-top,0px))]')}>
+      <header className="glass-chip flex h-14 items-center gap-1.5 rounded-[1.75rem] px-3 sm:gap-3 sm:px-4">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <span className="text-text-muted truncate text-sm font-medium">
             {format.dateTime(fromISODate(today), 'weekdayDayMonthYear')}
           </span>
+          {/* Streamed on its own: a slow forecast must not hold the date. */}
+          <Suspense fallback={null}>
+            <HeaderWeather />
+          </Suspense>
         </div>
 
-        {/* Streamed separately: a badge that is usually absent must not hold up
-            the whole shell for a database round trip. */}
-        <Suspense fallback={null}>
-          <HeaderTimer />
-        </Suspense>
-        <StandaloneReload />
-        <CommandPalette today={today} />
+        {/* Tight on a phone: the date is what gets cut when these sit far apart. */}
+        <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
+          {/* Streamed separately: the badge must not hold up the whole shell
+              for a database round trip. */}
+          <Suspense fallback={null}>
+            <HeaderInbox />
+          </Suspense>
+          <StandaloneReload />
+          <CommandPalette today={today} />
+        </div>
         <Link
           href={PATHS.daily}
-          className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'hidden sm:inline-flex')}
+          className={cn(
+            buttonVariants({ variant: 'outline', size: 'sm' }),
+            'hidden sm:inline-flex',
+          )}
         >
           <ClipboardList className="size-4" />
           {t('today')}
         </Link>
         {/* Language, theme and sign-out live in the More sheet on a phone —
-            the header has room for the date, the run and search, and no more. */}
+            the header has room for the date, the bell and search, and no more. */}
         <LocaleSwitcher className="hidden sm:flex" />
         <ThemeToggle current={theme} className="hidden sm:flex" />
         <span className="hidden sm:block">
@@ -63,16 +71,26 @@ export async function Header({ today, theme }: { today: ISODate; theme: ThemePre
   )
 }
 
-async function HeaderTimer() {
+async function HeaderWeather() {
+  const weather = await readWeather()
+  if (!weather) return null
+  return <WeatherDialog weather={weather} />
+}
+
+async function HeaderInbox() {
   /*
    * `Suspense` above catches pending, not throwing. This query lives in the
    * layout, so an unreachable database here would take the whole shell down
-   * before any page-level boundary could help. A missing badge is the right
-   * degraded state for it.
+   * before any page-level boundary could help. A bell with nothing in it is
+   * the right degraded state for that.
    */
-  const timer = await getRunningTimer().catch((error: unknown) => {
-    console.error('[shell] running timer unavailable:', error)
-    return null
+  const userId = await getCurrentUserId().catch(() => null)
+  if (!userId) return null
+  const inbox = await readInbox(userId).catch((error: unknown) => {
+    console.error('[shell] inbox unavailable:', error)
+    return { items: [], unread: 0 }
   })
-  return <TimerBadge key={timer?.startedAt ?? 'idle'} timer={timer} />
+  return (
+    <NotificationBell key={`${inbox.unread}:${inbox.items[0]?.id ?? 'empty'}`} initial={inbox} />
+  )
 }

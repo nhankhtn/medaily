@@ -77,6 +77,8 @@ export const PATHS = {
   chatJoin: (code: string) => `/chat/join/${code}`,
   /** The room list with an invite waiting to be answered on top of it. */
   chatWithInvite: (code: string) => `/chat?join=${encodeURIComponent(code)}`,
+  /** The same list, for an invite addressed to one account. */
+  chatWithMembershipInvite: (id: string) => `/chat?invite=${encodeURIComponent(id)}`,
 
   people: '/people',
   career: '/career',

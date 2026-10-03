@@ -1,10 +1,15 @@
+import { sql } from 'drizzle-orm'
 import type { GrantClaims } from '@/lib/auth/grant'
-import type { ISODate } from '@/lib/dates'
+import { db } from '@/lib/db'
+import { addDays, type ISODate } from '@/lib/dates'
 import { log } from '@/lib/log'
-import { transferReference } from '@/lib/finance/vietqr'
-import { PATHS } from '@/lib/paths'
 import { findCategories, findExpenseOn, insertTransaction } from '@/server/repositories/finance'
 import { findPerson } from '@/server/repositories/people'
+import { createTranslator } from 'next-intl'
+import { DEFAULT_LOCALE, isLocale, type Locale } from '@/i18n/config'
+import { presentNotification, type GrantExpenseData } from '@/lib/notifications'
+import { findSettings } from '@/server/repositories/settings'
+import { insertNotifications } from '@/server/repositories/notifications'
 import { notify } from './push'
 
 /**
@@ -17,71 +22,102 @@ import { notify } from './push'
  * is still owed.
  */
 export type GrantFailure =
+  | 'invalid_amount'
   | 'too_much'
   | 'unknown_category'
   | 'already_recorded'
-  | 'conflict'
   | 'failed'
 
 export type GrantRequest = {
   amount: number
   occurredOn: ISODate
+  /** The ledger's own currency. The caller does not choose it. */
+  currency: string
   /** Resolved against this ledger's categories; the grant's default when absent. */
   category?: string | null
   merchant?: string | null
-  /** Decided by the caller, so a retry over a bad connection files once. */
-  clientId: string
+}
+
+/**
+ * A ledger amount: at most two decimal places, and still above zero once
+ * those places are kept. `0.004` would round to `0.00` and then fail the
+ * database check as a 500.
+ */
+/**
+ * A grant may name a day that has already started, and not one older than three.
+ *
+ * Today counts: the expense is being filed now. `today - 3` does not, so the
+ * open days are today and the two before it.
+ */
+export function isGrantDay(occurredOn: ISODate, today: ISODate): boolean {
+  return occurredOn <= today && occurredOn > addDays(today, -3)
+}
+
+export function isLedgerAmount(amount: number): boolean {
+  if (!Number.isFinite(amount) || amount <= 0 || amount > 1_000_000_000) return false
+  const cents = Math.round(amount * 100)
+  return cents >= 1 && Math.abs(amount * 100 - cents) < 1e-6
 }
 
 export async function fileGrantedTransaction(
   grant: GrantClaims,
   request: GrantRequest,
 ): Promise<{ ok: true; id: string } | { ok: false; error: GrantFailure }> {
+  if (!isLedgerAmount(request.amount)) return { ok: false, error: 'invalid_amount' }
   if (request.amount > grant.maxAmount) return { ok: false, error: 'too_much' }
 
   const categoryId = await resolveCategory(grant, request.category)
   if (categoryId === undefined) return { ok: false, error: 'unknown_category' }
 
-  /*
-   * One meal per day, per category, per payer. A second filing of Wednesday's
-   * lunch covered by the same person is that lunch again — whether the owner
-   * typed it in the app first or the caller is sending it twice under new ids.
-   *
-   * `exceptId` keeps a genuine retry working: carrying the same `clientId`
-   * would otherwise find its own first attempt and refuse it.
-   */
-  const standing = await findExpenseOn(
-    grant.ownerUserId,
-    request.occurredOn,
-    categoryId,
-    grant.payeePersonId,
-    request.clientId,
-  )
-  if (standing) return { ok: false, error: 'already_recorded' }
-
   try {
-    const saved = await insertTransaction({
-      id: request.clientId,
-      userId: grant.ownerUserId,
-      occurredOn: request.occurredOn,
-      amount: String(request.amount),
-      kind: 'expense',
-      accountId: grant.accountId,
-      categoryId,
-      payeePersonId: grant.payeePersonId,
-      merchant: request.merchant ?? null,
+    const saved = await db.transaction(async (tx) => {
+      // One meal at a time. Two requests for the same day, category and payer
+      // would otherwise both see an empty ledger and both write. Not a unique
+      // index: the owner may still record two coffees themselves.
+      await tx.execute(
+        sql`select pg_advisory_xact_lock(hashtextextended(${mealKey(grant, request.occurredOn, categoryId)}, 0::bigint))`,
+      )
+
+      const standing = await findExpenseOn(
+        grant.ownerUserId,
+        request.occurredOn,
+        categoryId,
+        grant.payeePersonId,
+        tx,
+      )
+      if (standing) return { status: 'duplicate' as const }
+
+      const row = await insertTransaction(
+        {
+          userId: grant.ownerUserId,
+          occurredOn: request.occurredOn,
+          amount: (Math.round(request.amount * 100) / 100).toFixed(2),
+          currency: request.currency,
+          kind: 'expense',
+          accountId: grant.accountId,
+          categoryId,
+          payeePersonId: grant.payeePersonId,
+          merchant: request.merchant ?? null,
+        },
+        tx,
+      )
+      return row ? { status: 'saved' as const, row } : { status: 'failed' as const }
     })
 
-    // `insertTransaction` answers null when that id is already there, which is
-    // the retry working as intended rather than a failure.
-    if (!saved) return { ok: false, error: 'conflict' }
+    if (saved.status === 'duplicate') return { ok: false, error: 'already_recorded' }
+    if (saved.status === 'failed') return { ok: false, error: 'failed' }
 
-    await announce(grant, saved.id, request)
-    return { ok: true, id: saved.id }
+    await announce(grant, saved.row.id, request)
+    return { ok: true, id: saved.row.id }
   } catch (error) {
     await log.error('grant', 'could not file a granted transaction', error)
     return { ok: false, error: 'failed' }
   }
+}
+
+/** What the lock is held on: one meal, and nothing else waits. */
+function mealKey(grant: GrantClaims, occurredOn: ISODate, categoryId: string | null): string {
+  return `grant:${grant.ownerUserId}:${occurredOn}:${categoryId ?? ''}:${grant.payeePersonId}`
 }
 
 /**
@@ -103,6 +139,12 @@ async function resolveCategory(
   return found.length === 1 ? found[0]!.id : undefined
 }
 
+/** The inbox strings, in one person's language. The push is sent once, so it cannot follow a later switch. */
+async function inboxCopy(locale: Locale) {
+  const messages = (await import(`../../../messages/${locale}.json`)).default
+  return createTranslator({ locale, messages, namespace: 'inbox' })
+}
+
 /** Somebody else just wrote in your ledger; you should hear about it. */
 async function announce(
   grant: GrantClaims,
@@ -111,15 +153,28 @@ async function announce(
 ): Promise<void> {
   try {
     const person = await findPerson(grant.ownerUserId, grant.payeePersonId)
-    const who = person?.name ?? 'Ai đó'
-    await notify([grant.ownerUserId], {
-      title: `${who} vừa ghi một khoản chi`,
-      body: `${request.amount.toLocaleString('vi-VN')}₫${request.merchant ? ` · ${request.merchant}` : ''}`,
-      // Straight to the row, not just the ledger: the notification is about
-      // one expense, and arriving at a month of them is arriving nowhere.
-      url: PATHS.financeSearch(transferReference(id)),
-      tag: `grant:${id}`,
-    })
+    const payload: GrantExpenseData = {
+      transactionId: id,
+      personName: person?.name ?? 'Ai đó',
+      amount: request.amount,
+      currency: request.currency,
+      merchant: request.merchant ?? null,
+      occurredOn: request.occurredOn,
+    }
+    const dedupeKey = `grant:${id}`
+    // Facts only. The bell turns them into a sentence in whatever language is open.
+    await insertNotifications([
+      { userId: grant.ownerUserId, kind: 'grant_expense', payload, dedupeKey },
+    ])
+    const settings = await findSettings(grant.ownerUserId)
+    const locale = isLocale(settings?.locale) ? settings.locale : DEFAULT_LOCALE
+    const shown = presentNotification(
+      'grant_expense',
+      payload,
+      locale,
+      await inboxCopy(locale),
+    )
+    await notify([grant.ownerUserId], { ...shown, tag: dedupeKey })
   } catch (error) {
     // The row is saved. Failing the request because the phone could not be
     // told would undo something that already happened.

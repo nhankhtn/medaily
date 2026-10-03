@@ -190,6 +190,34 @@
       "when": 1790901689923,
       "tag": "0026_drop_transaction_tags",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1791013701178,
+      "tag": "0027_notifications",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1791018000000,
+      "tag": "0028_notification_payload",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1791100000000,
+      "tag": "0029_username_room_invites",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1791180000000,
+      "tag": "0030_username_from_email",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,6 @@
 @AGENTS.md
 @.cursor/rules/design-system.mdc
+@.cursor/rules/docs.mdc
 
 # Deploying
 

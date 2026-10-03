@@ -73,6 +73,34 @@
     "notFoundHint": "Có thể link đã cũ, hoặc trang đã chuyển chỗ.",
     "useValue": "Dùng {value}"
   },
+  "weather": {
+    "open": "Thời tiết, {condition}, {temperature} độ",
+    "place": "TP. Hồ Chí Minh",
+    "nearYou": "Gần bạn",
+    "humidity": "Độ ẩm",
+    "precipitation": "Lượng mưa",
+    "rain": "Mưa",
+    "cloudCover": "Mây che",
+    "percent": "{value}%",
+    "millimetres": "{value} mm",
+    "conditions": {
+      "clear": "Quang đãng",
+      "mainlyClear": "Nắng nhẹ",
+      "partlyCloudy": "Có mây",
+      "overcast": "U ám",
+      "fog": "Sương mù",
+      "drizzle": "Mưa phùn",
+      "freezingDrizzle": "Mưa phùn đóng băng",
+      "rain": "Mưa",
+      "freezingRain": "Mưa đóng băng",
+      "snow": "Tuyết",
+      "showers": "Mưa rào",
+      "snowShowers": "Mưa tuyết",
+      "thunder": "Dông",
+      "thunderHail": "Dông kèm mưa đá",
+      "unknown": "Không rõ"
+    }
+  },
   "daily": {
     "setup": {
       "title": "Thiết lập"
@@ -159,9 +187,9 @@
     "copiedTag": "hôm qua",
     "futureNudge": "Tương lai chưa tới đâu 😌",
     "greeting": {
-      "morning": "Chào buổi sáng ☀️ · {weekday}",
+      "morning": "Chào buổi sáng <sky></sky> · {weekday}",
       "noon": "Trưa rồi, ăn gì chưa 🍜 · {weekday}",
-      "afternoon": "Chào buổi chiều 🌤️ · {weekday}",
+      "afternoon": "Chào buổi chiều <sky></sky> · {weekday}",
       "evening": "Chào buổi tối 🌙 · {weekday}",
       "night": "Khuya rồi đó 🦉 · {weekday}",
       "rollover": "Vẫn tính là hôm qua nha 🦉"
@@ -436,6 +464,14 @@
       "signedInWith": "Đăng nhập bằng",
       "since": "Dùng app từ",
       "username": "Đang đăng nhập là {name}",
+      "editProfile": "Sửa hồ sơ",
+      "name": "Tên",
+      "nameInvalid": "Nhập một tên",
+      "profileSaved": "Đã lưu hồ sơ",
+      "handle": "Tên người dùng",
+      "handleHelp": "3 đến 20 ký tự: bắt đầu bằng chữ, rồi chữ, số hoặc gạch dưới.",
+      "handleTaken": "Tên này đã có người dùng",
+      "handleInvalid": "Bắt đầu bằng chữ, rồi chữ, số hoặc gạch dưới, từ 3 đến 20 ký tự",
       "changePhoto": "Đổi ảnh đại diện",
       "photoUpdated": "Đã đổi ảnh đại diện",
       "photoRemoved": "Đã gỡ ảnh đại diện",
@@ -1430,8 +1466,7 @@
       "later": "Để sau"
     },
     "notifyOffer": {
-      "title": "Có người nhắn thì báo cho bạn nhé",
-      "body": "Chỉ riêng trình duyệt này. Điện thoại và máy tính phải bật riêng.",
+      "title": "Bật thông báo cho app này",
       "turnOn": "Bật",
       "no": "Thôi"
     },
@@ -1728,7 +1763,6 @@
     "encryptRoomUnavailable": "Chưa dùng được ở đây: chưa cài khoá mã hoá.",
     "roomLocked": "Tin nhắn được mã hoá",
     "roomPlain": "Tin nhắn không mã hoá",
-    "searchLockedNote": "Phòng này có mã hoá nên tìm chậm hơn, mỗi lượt dò 1.000 tin.",
     "create": "Tạo",
     "untitled": "Phòng",
     "unread": "{count} tin chưa đọc",
@@ -1787,6 +1821,19 @@
     "joinOpen": "Mở phòng",
     "backToRooms": "Về danh sách phòng",
     "addMember": "Thêm thành viên",
+    "findMember": "Email hoặc tên người dùng",
+    "searching": "Đang tìm…",
+    "noMatch": "Không có ai khớp",
+    "inviteSent": "Đã gửi lời mời",
+    "alreadyInvited": "Họ đã có một lời mời đang chờ",
+    "alreadyMember": "Họ đã ở trong nhóm này",
+    "inviteThem": "Mời",
+    "membershipTitle": "Vào nhóm này?",
+    "membershipBody": "{name} mời bạn vào <b>{room}</b>.",
+    "membershipUntitled": "{name} mời bạn vào một nhóm.",
+    "membershipAccept": "Đồng ý",
+    "membershipDecline": "Từ chối",
+    "membershipGone": "Lời mời này không còn mở.",
     "renameRoom": "Đổi tên phòng",
     "deleteRoom": "Xoá phòng",
     "deleteConfirm": "Xoá phòng này? Mọi người sẽ mất hết tin nhắn trong đó.",
@@ -1812,6 +1859,16 @@
     "retrySend": "Gửi lại",
     "failedEdit": "Sửa lại",
     "failedDrop": "Bỏ"
+  },
+  "inbox": {
+    "title": "Thông báo",
+    "open": "Thông báo",
+    "empty": "Chưa có thông báo",
+    "markAllRead": "Đánh dấu đã đọc",
+    "grantExpense": "{name} vừa ghi một khoản chi",
+    "roomInvite": "{name} mời bạn vào {room}",
+    "roomInviteUntitled": "{name} mời bạn vào một nhóm",
+    "unknown": "Thông báo"
   },
   "activity": {
     "title": "Những gì đã đổi",

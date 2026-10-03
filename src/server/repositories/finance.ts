@@ -1,4 +1,4 @@
-import { and, asc, between, desc, eq, gte, inArray, isNotNull, isNull, lt, lte, ne, or, sql } from 'drizzle-orm'
+import { and, asc, between, desc, eq, gte, inArray, isNotNull, isNull, lt, lte, or, sql } from 'drizzle-orm'
 import { db, type DbOrTx } from '@/lib/db'
 import { escapeLike } from '@/lib/text'
 import {
@@ -497,19 +497,15 @@ export async function findTransactionsPage(
  * coffees from the same person on one afternoon are two rows, and the owner
  * must be able to enter both. It is a rule about one endpoint, enforced where
  * that endpoint writes.
- *
- * `exceptId` is the row the caller is about to write: without it a retry that
- * carries the same id would find its own first attempt and report a clash with
- * itself.
  */
 export async function findExpenseOn(
   userId: string,
   occurredOn: ISODate,
   categoryId: string | null,
   payeePersonId: string | null,
-  exceptId?: string,
+  tx: DbOrTx = db,
 ): Promise<Transaction | null> {
-  const rows = await db
+  const rows = await tx
     .select()
     .from(transactions)
     .where(
@@ -523,7 +519,6 @@ export async function findExpenseOn(
         payeePersonId === null
           ? isNull(transactions.payeePersonId)
           : eq(transactions.payeePersonId, payeePersonId),
-        exceptId ? ne(transactions.id, exceptId) : undefined,
       ),
     )
     // Total by the primary key, so two runs agree on which one it reports.
@@ -534,8 +529,9 @@ export async function findExpenseOn(
 
 export async function insertTransaction(
   values: typeof transactions.$inferInsert,
+  tx: DbOrTx = db,
 ): Promise<Transaction | null> {
-  const rows = await db
+  const rows = await tx
     .insert(transactions)
     .values(values)
     .onConflictDoNothing({ target: transactions.id })

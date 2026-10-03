@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   bubbleCorners,
+  DOUBLE_TAP_MS,
+  DOUBLE_TAP_SLOP_PX,
   easterEggOf,
   grownReaction,
+  isDoubleTap,
   swipeIntent,
   unreadStart,
 } from '@/features/chat/motion'
@@ -73,6 +76,31 @@ describe('grownReaction', () => {
   it('ignores reactions that stayed or shrank', () => {
     expect(grownReaction({ '👍': 2 }, { '👍': 1 })).toBeNull()
     expect(grownReaction({ '👍': 1 }, { '👍': 1 })).toBeNull()
+  })
+})
+
+describe('isDoubleTap', () => {
+  const first = { id: 'm', at: 1_000, x: 40, y: 80 }
+
+  it('is a second tap on the same bubble, close and soon', () => {
+    expect(isDoubleTap(first, { id: 'm', at: 1_300, x: 50, y: 90 })).toBe(true)
+    expect(
+      isDoubleTap(first, {
+        id: 'm',
+        at: 1_000 + DOUBLE_TAP_MS - 1,
+        x: 40 + DOUBLE_TAP_SLOP_PX,
+        y: 80,
+      }),
+    ).toBe(true)
+  })
+
+  it('ignores a first tap, a different bubble, a slow pair, and a jump', () => {
+    expect(isDoubleTap(null, { id: 'm', at: 1_300, x: 40, y: 80 })).toBe(false)
+    expect(isDoubleTap(first, { id: 'other', at: 1_200, x: 40, y: 80 })).toBe(false)
+    expect(isDoubleTap(first, { id: 'm', at: 1_000 + DOUBLE_TAP_MS, x: 40, y: 80 })).toBe(false)
+    expect(
+      isDoubleTap(first, { id: 'm', at: 1_200, x: 40 + DOUBLE_TAP_SLOP_PX + 1, y: 80 }),
+    ).toBe(false)
   })
 })
 

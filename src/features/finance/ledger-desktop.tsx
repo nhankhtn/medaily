@@ -7,7 +7,7 @@ import { Card, CardBody, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import type { FinanceData } from '@/server/services/finance'
-import { focusAmount, TransactionForm } from './transaction-form'
+import { AddTransactionSection, focusAmount, TransactionForm } from './transaction-form'
 import { TransactionList } from './transaction-list'
 import { useTransactionFeed } from './use-transaction-feed'
 
@@ -44,21 +44,18 @@ export function LedgerDesktop({
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader title={t('addTransactionTitle')} />
-        <CardBody>
-          <TransactionForm
-            accounts={names}
-            categories={data.categories}
-            people={data.people}
-            currency={data.currency}
-            today={data.today}
-            onPending={addPending}
-          />
-        </CardBody>
-      </Card>
+      <AddTransactionSection>
+        <TransactionForm
+          accounts={names}
+          categories={data.categories}
+          people={data.people}
+          currency={data.currency}
+          today={data.today}
+          onPending={addPending}
+        />
+      </AddTransactionSection>
 
-      <Card>
+      <Card data-ledger className="scroll-mt-[calc(max(0.75rem,env(safe-area-inset-top,0px))+4.25rem)]">
         <CardHeader
           title={t('transactions')}
           // Only once something is on. A permanent reset button for filters

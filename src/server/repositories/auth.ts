@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from 'drizzle-orm'
+import { and, eq, inArray, notInArray, or, sql } from 'drizzle-orm'
 import { db, type DbOrTx } from '@/lib/db'
 import { authIdentities, users } from '@/lib/db/schema'
 import type { AuthIdentity, AuthIdentityInsert, User } from '@/lib/db/schema'
@@ -91,6 +91,42 @@ export async function findUsersByIds(ids: string[], tx: DbOrTx = db): Promise<Us
   return tx.select().from(users).where(inArray(users.id, ids))
 }
 
+/**
+ * People a room owner might mean.
+ *
+ * An address is exact: a prefix would hand over every mailbox that starts the
+ * same way. A username matches exactly first, then as a prefix, and only once
+ * two characters have been typed.
+ */
+export async function searchUsers(
+  query: string,
+  exceptIds: string[],
+  tx: DbOrTx = db,
+): Promise<User[]> {
+  const needle = query.trim().toLowerCase()
+  if (needle.length < 2) return []
+
+  const handle = needle.replace(/[%_\\]/g, '')
+  if (!needle.includes('@') && handle.length < 2) return []
+
+  const where = needle.includes('@')
+    ? sql`lower(${users.email}) = ${needle}`
+    : or(
+        sql`lower(${users.username}) = ${handle}`,
+        sql`lower(${users.username}) like ${`${handle}%`}`,
+      )
+
+  return tx
+    .select()
+    .from(users)
+    .where(and(where, exceptIds.length > 0 ? notInArray(users.id, exceptIds) : undefined))
+    .orderBy(
+      sql`case when lower(${users.username}) = ${needle} then 0 else 1 end`,
+      users.displayName,
+    )
+    .limit(8)
+}
+
 export async function findUserById(userId: string, tx: DbOrTx = db): Promise<User | null> {
   const rows = await tx.select().from(users).where(eq(users.id, userId)).limit(1)
   return rows[0] ?? null
@@ -129,13 +165,19 @@ export async function deleteUser(userId: string, tx: DbOrTx = db): Promise<void>
 
 export async function updateUserProfile(
   userId: string,
-  patch: { email?: string | null; displayName?: string | null; imageUrl?: string | null },
+  patch: {
+    email?: string | null
+    displayName?: string | null
+    imageUrl?: string | null
+    username?: string | null
+  },
   tx: DbOrTx = db,
 ): Promise<void> {
   const set: Partial<typeof users.$inferInsert> = { updatedAt: new Date() }
   if (patch.email) set.email = patch.email
   if (patch.displayName) set.displayName = patch.displayName
   if (patch.imageUrl) set.imageUrl = patch.imageUrl
+  if (patch.username) set.username = patch.username
   if (Object.keys(set).length === 1) return
 
   await tx.update(users).set(set).where(eq(users.id, userId))

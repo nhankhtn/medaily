@@ -73,20 +73,16 @@ function Row({ entry }: { entry: ActivityEntry }) {
   return (
     <li className="py-3">
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm">
-        <span className="text-text-subtle w-28 shrink-0 text-xs tabular-nums">
-          {formatAt(entry.at)}
-        </span>
+        <span className="text-text-subtle shrink-0 text-xs tabular-nums">{formatAt(entry.at)}</span>
         {/* `action` is already `<entity>.<verb>`, which is the path next-intl
             nests these under — a dot in a key of its own is refused, and
             refused loudly enough to take the whole app down with it. */}
         <span className="font-medium">{t(`actions.${entry.action}`)}</span>
-        {entry.label ? (
-          <span className="text-text-muted min-w-0 flex-1 truncate">{entry.label}</span>
-        ) : null}
       </div>
+      {entry.label ? <p className="text-text-muted mt-0.5 text-sm break-words">{entry.label}</p> : null}
 
       {entry.changes.length > 0 ? (
-        <dl className="mt-1.5 ml-0 grid gap-x-3 gap-y-1 sm:ml-28 sm:grid-cols-[auto_1fr]">
+        <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-2">
           {entry.changes.map((change) => (
             <Change key={change.field} change={change} />
           ))}
@@ -108,9 +104,9 @@ function Change({ change }: { change: ActivityChange }) {
   const to = change.to === null ? null : (translate(t, 'values', change.to) ?? change.to)
 
   return (
-    <>
-      <dt className="text-text-subtle text-xs sm:pt-px">{field}</dt>
-      <dd className="min-w-0 text-xs">
+    <div className="min-w-0">
+      <dt className="text-text-subtle text-xs">{field}</dt>
+      <dd className="text-xs break-words">
         {from !== null && to !== null ? (
           <>
             <span className="text-text-muted line-through">{from}</span>
@@ -123,7 +119,7 @@ function Change({ change }: { change: ActivityChange }) {
           </span>
         )}
       </dd>
-    </>
+    </div>
   )
 }
 

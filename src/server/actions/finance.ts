@@ -514,6 +514,7 @@ export async function parseTransactionText(input: unknown): Promise<ParseTransac
       today: today(dayContextOf(settings)),
       currency: settings.defaultCurrency,
       categories,
+      accounts,
     })
     return {
       ok: true,
@@ -533,13 +534,13 @@ export async function parseTransactionText(input: unknown): Promise<ParseTransac
 export async function createTransactions(input: unknown) {
   const parsed = z
     .object({
-      accountId: z.uuid(),
       rows: z
         .array(
           z.object({
             occurredOn: isoDateSchema,
             amount: money,
             kind: z.enum(['income', 'expense']),
+            accountId: z.uuid(),
             categoryId: z.uuid().nullable().optional(),
             merchant: optionalText,
           }),
@@ -558,7 +559,8 @@ export async function createTransactions(input: unknown) {
   ])
 
   // A well-formed uuid still has to name a row this user owns (spec 29).
-  if (!accounts.some((account) => account.id === parsed.data.accountId)) {
+  const ownedAccount = (id: string) => (accounts.some((account) => account.id === id) ? id : null)
+  if (parsed.data.rows.some((row) => ownedAccount(row.accountId) === null)) {
     return { ok: false as const, error: 'invalid_input' as const }
   }
   const ownedCategory = (id: string | null | undefined) =>
@@ -571,7 +573,7 @@ export async function createTransactions(input: unknown) {
       amount: String(row.amount),
       currency: settings.defaultCurrency,
       kind: row.kind,
-      accountId: parsed.data.accountId,
+      accountId: row.accountId,
       counterAccountId: null,
       categoryId: ownedCategory(row.categoryId),
       merchant: row.merchant ?? null,

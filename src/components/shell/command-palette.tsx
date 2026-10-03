@@ -307,7 +307,7 @@ export function CommandPalette({ today }: { today: ISODate }) {
       type="button"
       onClick={() => setOpen(true)}
       aria-label={t('open')}
-      className="glass text-text-subtle hover:border-border-strong flex h-9 items-center gap-2 rounded-full px-3 text-xs"
+      className="glass text-text-subtle hover:border-border-strong flex size-8 items-center justify-center gap-2 rounded-full text-xs sm:h-9 sm:w-auto sm:px-3"
     >
       <Search className="size-3.5" />
       <span className="hidden sm:inline">{t('open')}</span>

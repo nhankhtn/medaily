@@ -46,8 +46,8 @@ export const FORMATS = {
     weekdayLong: { weekday: 'long' },
     /** S — a mini calendar. */
     weekdayNarrow: { weekday: 'narrow' },
-    /** 09:30. */
-    time: { hour: '2-digit', minute: '2-digit' },
+    /** 09:30 — hours and minutes, never a twelve-hour clock. */
+    time: { hour: '2-digit', minute: '2-digit', hour12: false },
     /** 09:30:07 — the wall clock, never in twelve-hour form. */
     clock: { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false },
     /** 14 Sep, 09:30. */

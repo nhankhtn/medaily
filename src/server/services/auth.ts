@@ -26,6 +26,7 @@ import { eraseActivity } from '@/server/services/activity'
 import { claimInvitesFor, eraseChat } from '@/server/services/chat'
 import { insertAccounts, insertCategories } from '@/server/repositories/finance'
 import { starterFor } from '@/lib/onboarding/starter'
+import { usernameCandidates, usernameFromEmail } from '@/lib/username'
 import { DEFAULT_LOCALE, type Locale } from '@/i18n/config'
 
 export type ResolveFailure = 'not_allowed' | 'signup_closed'
@@ -138,6 +139,7 @@ async function provision(identity: FirebaseIdentity, locale: Locale): Promise<Re
         },
         tx,
       )
+      await claimUsername(user.id, identity.email, tx)
       await insertUserSettings(user.id, tx)
       await seedWorkspace(user.id, locale, tx)
       await insertIdentity(
@@ -243,6 +245,39 @@ export async function eraseAccount(userId: string): Promise<void> {
  * Restores the owner row if a database was built with `drizzle-kit push`,
  * which creates the tables but runs none of the seed SQL in views.sql.
  */
+/**
+ * Gives an account the handle in its address, when it does not have one yet.
+ *
+ * The first candidate is the mailbox name. The next ones add a short suffix,
+ * so two people who share that name can both keep one.
+ */
+export async function claimUsername(
+  userId: string,
+  email: string | null | undefined,
+  tx: DbOrTx = db,
+): Promise<string | null> {
+  const base = email ? usernameFromEmail(email) : null
+  if (!base) return null
+  const current = await findUserById(userId, tx)
+  if (current?.username) return current.username
+
+  for (const candidate of usernameCandidates(base)) {
+    try {
+      await updateUserProfile(userId, { username: candidate }, tx)
+      return candidate
+    } catch (error) {
+      if (!isUnique(error)) throw error
+    }
+  }
+  return null
+}
+
+function isUnique(error: unknown): boolean {
+  const cause = error instanceof Error ? error.cause : null
+  const code = cause && typeof cause === 'object' && 'code' in cause ? String(cause.code) : ''
+  return code === '23505'
+}
+
 async function ensureUserExists(userId: string, displayName: string): Promise<void> {
   const user = await findUserById(userId)
   if (!user) {
@@ -270,9 +305,11 @@ async function afterSignIn(
 
   await updateUserProfile(userId, {
     email: identity.email,
-    displayName: identity.displayName,
+    // The name is edited in settings. Putting Google's name back on every
+    // sign-in would throw that edit away.
     imageUrl: keepAvatar ? undefined : identity.photoUrl,
   })
+  if (!user?.username) await claimUsername(userId, identity.email)
 
   // Where an invite by address finally meets the person it was for. Writing
   // the invite never asked whether that address had an account — which is the
