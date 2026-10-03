@@ -6,12 +6,14 @@ import { Toaster } from 'sonner'
 import { RequestIdProvider } from '@/components/shell/request-id'
 import { AnalyticsMount } from '@/lib/analytics'
 import { SpeedInsightsMount } from '@/lib/analytics/speed'
+import { today } from '@/lib/dates'
 import { FORMATS } from '@/lib/format/dates'
 import { fontBrand, fontSans } from '@/lib/fonts'
+import { meadowSceneVars } from '@/lib/meadow'
 import { REQUEST_ID_HEADER } from '@/lib/request-id'
 import { siteUrl } from '@/lib/site'
 import { themeBootScript } from '@/lib/themes'
-import { getShellSettings, getShellTheme } from '@/server/services/settings'
+import { dayContextOf, getShellSettings, getShellTheme } from '@/server/services/settings'
 import './globals.css'
 
 const TITLE = 'Personal OS'
@@ -100,6 +102,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       data-theme-pref={theme}
       data-density={settings.density}
       className={`${fontSans.variable} ${fontBrand.variable}`}
+      style={meadowSceneVars(today(dayContextOf(settings)))}
       suppressHydrationWarning
     >
       <head>
